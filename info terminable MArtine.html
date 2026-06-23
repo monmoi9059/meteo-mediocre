@@ -301,10 +301,24 @@
     </div>
 </div>
 
+<!-- MODAL PETIT LANGLOIS ILLUSTRÉ -->
+<div id="image-modal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 90%; max-height: 90vh; display: flex; flex-direction: column;">
+        <div class="modal-header">
+            <h3>🖼️ Petit Langlois Illustré</h3>
+            <button id="close-image" class="btn-close">✖</button>
+        </div>
+        <div class="modal-body" style="flex: 1; overflow: auto; padding: 0; display: flex; justify-content: center; align-items: center;">
+            <img src="image.png" alt="Petit Langlois Illustré" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+        </div>
+    </div>
+</div>
+
 <!-- EN-TÊTE -->
 <div class="header">
     <h1>⚓ Terminal St-Romuald - Monitoring Avancé</h1>
     <div class="header-actions">
+        <button id="image-toggle" class="theme-toggle">🖼️ petit Langlois ilustrée</button>
         <button id="rules-toggle" class="theme-toggle">📖 Règles</button>
         <button id="calc-toggle" class="theme-toggle">🧮 Calc ETA</button>
         <button id="theme-toggle" class="theme-toggle">🌙 Mode Nuit</button>
@@ -812,6 +826,7 @@
     // --- MODALS : CALCULATRICE ET RÈGLES ---
     const modalCalc = document.getElementById('calc-modal');
     const modalRules = document.getElementById('rules-modal');
+    const modalImage = document.getElementById('image-modal');
     
     // Toggle Calculatrice
     document.getElementById('calc-toggle').addEventListener('click', () => { modalCalc.classList.add('active'); document.getElementById('calc-total').focus(); });
@@ -822,6 +837,11 @@
     document.getElementById('rules-toggle').addEventListener('click', () => modalRules.classList.add('active'));
     document.getElementById('close-rules').addEventListener('click', () => modalRules.classList.remove('active'));
     modalRules.addEventListener('click', (e) => { if(e.target === modalRules) modalRules.classList.remove('active'); });
+
+    // Toggle Image
+    document.getElementById('image-toggle').addEventListener('click', () => modalImage.classList.add('active'));
+    document.getElementById('close-image').addEventListener('click', () => modalImage.classList.remove('active'));
+    modalImage.addEventListener('click', (e) => { if(e.target === modalImage) modalImage.classList.remove('active'); });
 
     // Logique Calculatrice
     const inTotal = document.getElementById('calc-total'), inDone = document.getElementById('calc-done'), inRate = document.getElementById('calc-rate');
