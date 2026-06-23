@@ -12,7 +12,7 @@
             --bg-color: transparent; 
             --text-color: #0f172a;
             --text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8), 0 0 5px rgba(255, 255, 255, 0.5);
-            --card-bg: rgba(255, 255, 255, 0.25);
+            --card-bg: rgba(255, 255, 255, 0.02);
             --tooltip-bg: rgba(255, 255, 255, 0.85);
             --border-color: rgba(255, 255, 255, 0.4);
             --th-bg: rgba(0, 122, 153, 0.08);
@@ -30,7 +30,7 @@
             --bg-color: transparent;
             --text-color: #f8fafc;
             --text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9), 0 0 5px rgba(0, 0, 0, 0.7);
-            --card-bg: rgba(15, 23, 42, 0.35);
+            --card-bg: rgba(15, 23, 42, 0.02);
             --tooltip-bg: rgba(15, 23, 42, 0.85);
             --border-color: rgba(255, 255, 255, 0.1);
             --th-bg: rgba(255, 255, 255, 0.05);
@@ -53,30 +53,39 @@
 
         /* --- WATER LAYER --- */
         .water-layer {
-            position: fixed; left: -100vw; right: -100vw; bottom: 0; height: var(--water-h); z-index: 1;
-            background: var(--water-c);
-            mask: radial-gradient(40px at 40px 0px, transparent 100%, black 100%) -40px 15px / 80px 100% repeat-x,
-                  radial-gradient(40px at 40px 30px, black 100%, transparent 100%) 0px -15px / 80px 100% repeat-x;
-            -webkit-mask: radial-gradient(40px at 40px 0px, transparent 100%, black 100%) -40px 15px / 80px 100% repeat-x,
-                          radial-gradient(40px at 40px 30px, black 100%, transparent 100%) 0px -15px / 80px 100% repeat-x;
-            mask-composite: exclude;
-            -webkit-mask-composite: destination-out;
+            position: fixed; left: 0; right: 0; bottom: 0; height: var(--water-h); z-index: 1;
             transition: height 0.5s ease-in-out;
+            display: flex;
+            align-items: flex-end;
+        }
+        .waves {
+            width: 100%;
+            height: 100%;
+            min-height: 100px;
+            max-height: 100%;
+            display: block;
         }
 
-        .water-layer.flow-left { animation: waterFlowLeft 4s linear infinite; }
-        .water-layer.flow-right { animation: waterFlowRight 4s linear infinite; }
+        /* Animation for parallax waves */
+        .water-layer.flow-left .parallax > use { animation: move-forever-left 25s cubic-bezier(.55,.5,.45,.5) infinite; }
+        .water-layer.flow-right .parallax > use { animation: move-forever-right 25s cubic-bezier(.55,.5,.45,.5) infinite; }
 
-        @keyframes waterFlowLeft { 0% { transform: translateX(0); } 100% { transform: translateX(-80px); } }
-        @keyframes waterFlowRight { 0% { transform: translateX(0); } 100% { transform: translateX(80px); } }
+        /* Staggered animation delays for the different layers */
+        .parallax > use:nth-child(1) { animation-delay: -2s; animation-duration: 7s; }
+        .parallax > use:nth-child(2) { animation-delay: -3s; animation-duration: 10s; }
+        .parallax > use:nth-child(3) { animation-delay: -4s; animation-duration: 13s; }
+        .parallax > use:nth-child(4) { animation-delay: -5s; animation-duration: 20s; }
+
+        @keyframes move-forever-left { 0% { transform: translate3d(85px,0,0); } 100% { transform: translate3d(-90px,0,0); } }
+        @keyframes move-forever-right { 0% { transform: translate3d(-90px,0,0); } 100% { transform: translate3d(85px,0,0); } }
 
         /* --- BOAT LAYER --- */
         .boat-container {
-            position: fixed; left: 50vw; bottom: calc(var(--water-h) - 15px); z-index: 1;
+            position: fixed; left: 50vw; bottom: calc(var(--water-h) - 30px); z-index: 1;
             transform: translateX(-50%); transition: bottom 0.5s ease-in-out;
-            animation: boatBobbing 4s ease-in-out infinite; pointer-events: none;
+            animation: boatBobbing 6s ease-in-out infinite; pointer-events: none;
         }
-        @keyframes boatBobbing { 0%, 100% { transform: translate(-50%, 0) rotate(-1deg); } 50% { transform: translate(-50%, -10px) rotate(1deg); } }
+        @keyframes boatBobbing { 0%, 100% { transform: translate(-50%, 0) rotate(-0.5deg); } 50% { transform: translate(-50%, -15px) rotate(0.5deg); } }
 
         /* --- CANVAS EFFETS --- */
         .sky-fx, .weather-fx { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 0; }
@@ -121,14 +130,26 @@
         .col-right { width: 33.333%; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 
         .card {
-            background: var(--card-bg); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            background: var(--card-bg);
             border: 1px solid var(--border-color); border-radius: 8px;
             display: flex; flex-direction: column; overflow: hidden;
             box-shadow: 0 8px 16px rgba(0,0,0,0.1); max-height: calc(100vh - 85px);
         }
-        .card-header { background: var(--th-bg); padding: 8px 15px; border-bottom: 1px solid var(--border-color); }
+        .card-header { background: var(--th-bg); padding: 8px 15px; border-bottom: 1px solid var(--border-color); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); }
         .card-header h2 { margin: 0; font-size: 1.1rem; color: var(--secondary); display: flex; align-items: center; gap: 6px;}
         .card-body { flex: 1; padding: 10px; overflow-y: auto; }
+
+        .card-body p, .card-body table, .card-body .live-bar, .card-body .ocean-banner, .card-body .status-block {
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+        }
+        .dark-mode .card-body p, .dark-mode .card-body table, .dark-mode .card-body .live-bar, .dark-mode .card-body .ocean-banner, .dark-mode .card-body .status-block {
+            background: rgba(15, 23, 42, 0.05);
+        }
+        .card-body table { background: rgba(255,255,255, 0.1); }
+        .dark-mode .card-body table { background: rgba(15, 23, 42, 0.1); }
 
         .chart-wrapper { height: 180px; min-height: 180px; width: 100%; margin-bottom: 10px; position: relative;}
 
@@ -227,18 +248,77 @@
 <canvas id="sky-fx" class="sky-fx"></canvas>
 <canvas id="weather-fx" class="weather-fx"></canvas>
 <div id="boat-container" class="boat-container">
-    <svg width="180" height="70" viewBox="0 0 180 70" xmlns="http://www.w3.org/2000/svg">
-        <path d="M 10 50 L 30 20 L 150 20 L 170 50 Z" fill="#333" stroke="#111" stroke-width="2"/>
-        <rect x="40" y="5" width="20" height="15" fill="#555" />
-        <rect x="70" y="10" width="10" height="10" fill="#777" />
-        <rect x="90" y="10" width="10" height="10" fill="#777" />
-        <rect x="110" y="10" width="10" height="10" fill="#777" />
-        <rect x="130" y="10" width="10" height="10" fill="#777" />
-        <rect x="45" y="-10" width="5" height="15" fill="#111" />
-        <path d="M 0 50 L 180 50 L 160 70 L 20 70 Z" fill="#222" stroke="#111" stroke-width="2"/>
+    <!-- Cap Quebec Suezmax Tanker -->
+    <svg width="600" height="180" viewBox="0 0 600 180" xmlns="http://www.w3.org/2000/svg">
+        <!-- Lower Hull (Red) -->
+        <path d="M 20 150 L 50 180 L 520 180 L 570 150 Z" fill="#c0392b" />
+        <!-- Upper Hull (Dark Blue) -->
+        <path d="M 10 100 L 20 150 L 570 150 L 590 100 L 585 95 L 15 95 Z" fill="#1a252f" />
+        <!-- Draft marks / Plimsoll line (White) -->
+        <text x="300" y="140" fill="white" font-size="12" font-family="sans-serif" font-weight="bold" font-style="italic">CAP QUEBEC</text>
+        <circle cx="280" cy="120" r="5" fill="none" stroke="white" stroke-width="1.5"/>
+        <path d="M 270 120 L 290 120" stroke="white" stroke-width="1.5"/>
+
+        <!-- Accommodation Block (White) - Stern -->
+        <path d="M 30 95 L 30 40 L 100 40 L 110 95 Z" fill="#ecf0f1" />
+        <path d="M 40 40 L 40 20 L 80 20 L 90 40 Z" fill="#ecf0f1" />
+        <!-- Bridge windows -->
+        <rect x="45" y="25" width="5" height="10" fill="#34495e" />
+        <rect x="55" y="25" width="5" height="10" fill="#34495e" />
+        <rect x="65" y="25" width="5" height="10" fill="#34495e" />
+        <rect x="75" y="25" width="5" height="10" fill="#34495e" />
+
+        <rect x="40" y="50" width="8" height="8" fill="#34495e" />
+        <rect x="55" y="50" width="8" height="8" fill="#34495e" />
+        <rect x="70" y="50" width="8" height="8" fill="#34495e" />
+        <rect x="85" y="50" width="8" height="8" fill="#34495e" />
+
+        <!-- Funnel (Exhaust) -->
+        <path d="M 35 20 L 40 -10 L 55 -10 L 50 20 Z" fill="#1a252f" />
+        <rect x="40" y="-10" width="15" height="5" fill="#c0392b" />
+
+        <!-- Main Deck Pipes and Manifolds -->
+        <rect x="120" y="85" width="440" height="10" fill="#bdc3c7" />
+
+        <!-- Vertical pipe clusters -->
+        <rect x="150" y="70" width="10" height="25" fill="#e74c3c" />
+        <rect x="165" y="70" width="10" height="25" fill="#e74c3c" />
+        <rect x="250" y="70" width="10" height="25" fill="#e74c3c" />
+        <rect x="265" y="70" width="10" height="25" fill="#e74c3c" />
+        <rect x="350" y="70" width="10" height="25" fill="#e74c3c" />
+        <rect x="365" y="70" width="10" height="25" fill="#e74c3c" />
+        <rect x="450" y="70" width="10" height="25" fill="#e74c3c" />
+        <rect x="465" y="70" width="10" height="25" fill="#e74c3c" />
+
+        <!-- Central Manifold / Cranes -->
+        <path d="M 300 70 L 300 40 L 330 30" fill="none" stroke="#bdc3c7" stroke-width="4" />
+        <path d="M 310 70 L 310 40 L 280 30" fill="none" stroke="#bdc3c7" stroke-width="4" />
+        <circle cx="300" cy="70" r="8" fill="#7f8c8d" />
+
+        <!-- Forecastle / Bow structure (Right side) -->
+        <path d="M 540 95 L 540 80 L 580 80 L 585 95 Z" fill="#1a252f" />
+        <!-- Bow anchor -->
+        <circle cx="560" cy="115" r="5" fill="#ecf0f1" />
+
+        <!-- Radar / Mast on bridge -->
+        <path d="M 60 20 L 60 0" stroke="#7f8c8d" stroke-width="2" />
+        <path d="M 50 0 L 70 0" stroke="#7f8c8d" stroke-width="2" />
     </svg>
 </div>
-<div id="water-layer" class="water-layer"></div>
+<!-- WATER LAYER (MULTI-LAYER SVG WAVES) -->
+<div id="water-layer" class="water-layer">
+    <svg class="waves" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 24 150 28" preserveAspectRatio="none" shape-rendering="auto">
+        <defs>
+            <path id="gentle-wave" d="M-160 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352z" />
+        </defs>
+        <g class="parallax">
+            <use xlink:href="#gentle-wave" x="48" y="0" fill="var(--water-c)" opacity="0.3" />
+            <use xlink:href="#gentle-wave" x="48" y="3" fill="var(--water-c)" opacity="0.5" />
+            <use xlink:href="#gentle-wave" x="48" y="5" fill="var(--water-c)" opacity="0.7" />
+            <use xlink:href="#gentle-wave" x="48" y="7" fill="var(--water-c)" opacity="1.0" />
+        </g>
+    </svg>
+</div>
 
 <!-- MODAL CALCULATRICE ETA -->
 <div id="calc-modal" class="modal-overlay">
