@@ -524,16 +524,6 @@
         </div>
 
 
-        <!-- Horaires Navires -->
-        <div class="card" style="margin-top: 10px;">
-            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
-                <h2>🚢 Navires Attendus (86/87)</h2>
-                <button id="refresh-vessels" class="theme-toggle" style="padding: 2px 10px; font-size: 0.75rem;">🔄 Actu</button>
-            </div>
-            <div class="card-body" id="vessels-body" style="padding: 10px;">
-                <p class="loading" style="font-size:0.85rem;">Chargement des navires...</p>
-            </div>
-        </div>
         <!-- Carte AIS & Meteo Map -->
         <div class="card">
             <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
@@ -1159,107 +1149,6 @@
 
     // INIT
     updateDynamicBackground(); fetchWeather(); fetchTides();
-
-    // --- VESSEL SCRAPER ---
-    async function fetchVessels() {
-        const body = document.getElementById('vessels-body');
-        body.innerHTML = '<p class="loading" style="font-size:0.85rem;">Chargement des navires...</p>';
-        try {
-            // Scraping direct via un simple script côté serveur qui pourrait contourner les restrictions
-            // Comme GitHub Pages / serveur statique ne peut pas faire ça, on essaie allorigins.win
-            // Si timeout, on utilise une autre alternative `corsproxy.io` ou des données fallback.
-            const targetUrl = encodeURIComponent('https://www.portquebec.ca/affaires-et-operations/horaire-des-navires/');
-            let htmlText = "";
-
-            try {
-                // Tentative avec allorigins en raw, avec un timeout manuel
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 8000);
-                // Utilisation de corsproxy.io en backup car allorigins.win lance des 500/522 assez souvent
-                const primaryUrl = `https://api.allorigins.win/raw?url=${targetUrl}`;
-                const fallbackProxyUrl = `https://corsproxy.io/?${targetUrl}`;
-
-                let res = await fetch(primaryUrl, { signal: controller.signal });
-                if (!res.ok) {
-                    res = await fetch(fallbackProxyUrl, { signal: controller.signal });
-                }
-
-                clearTimeout(timeoutId);
-                if(!res.ok) throw new Error("HTTP error " + res.status);
-                htmlText = await res.text();
-            } catch (err) {
-                console.warn("Proxies ont échoué. Utilisation des données fallback réelles:", err);
-
-                // Static snapshot of real future vessels from Port of Quebec to ensure precision
-                // No fake or generated data.
-                htmlText = `<h2>Navires attendus</h2><table><tbody>
-                    <tr><td>87</td><td>LAURENTIA DESGAGNES</td><td>-</td><td data-date="2026-06-24 18:30:00">24 juin 18:30</td></tr>
-                    <tr><td>86</td><td>GAIA DESGAGNES</td><td>-</td><td data-date="2026-06-25 08:15:00">25 juin 08:15</td></tr>
-                    <tr><td>87</td><td>CAP PEMBROKE</td><td>-</td><td data-date="2026-06-25 19:30:00">25 juin 19:30</td></tr>
-                    <tr><td>86</td><td>PAUL A. DESGAGNES</td><td>-</td><td data-date="2026-06-27 07:45:00">27 juin 07:45</td></tr>
-                    <tr><td>87</td><td>ESPADA DESGAGNES</td><td>-</td><td data-date="2026-06-27 08:30:00">27 juin 08:30</td></tr>
-                </tbody></table>`;
-            }
-
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(htmlText, 'text/html');
-
-            // Cherche le h2 "Navires attendus" et le tableau qui suit
-            const headings = Array.from(doc.querySelectorAll('h2'));
-            const expectedHeading = headings.find(h => h.textContent.includes('Navires attendus'));
-            if (!expectedHeading) throw new Error("Tableau introuvable");
-
-            let table = expectedHeading.nextElementSibling;
-            if (table && table.tagName !== 'TABLE') {
-                const container = expectedHeading.nextElementSibling || expectedHeading.parentElement.nextElementSibling;
-                table = container ? container.querySelector('table') : null;
-            }
-            if (!table) throw new Error("Tableau introuvable");
-
-            const rows = table.querySelectorAll('tbody tr');
-            let html = `<table><tr><th>Poste</th><th>Navire</th><th>Date</th></tr>`;
-            let found = false;
-            const now = new Date();
-            const oneDayAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000));
-
-            rows.forEach(r => {
-                const cells = r.querySelectorAll('td');
-                if(cells.length > 3) {
-                    const poste = cells[0].textContent.trim();
-
-                    if(poste === '86' || poste === '87') {
-                        const dateCell = cells[3];
-                        let dateText = dateCell.textContent.trim();
-                        const dataDate = dateCell.getAttribute('data-date');
-
-                        let isPast = false;
-                        if (dataDate) {
-                            const parsedDate = new Date(dataDate);
-                            if (parsedDate < oneDayAgo) {
-                                isPast = true;
-                            }
-                        }
-
-                        if (!isPast) {
-                            found = true;
-                            const navire = cells[1].textContent.trim();
-                            html += `<tr><td><strong>${poste}</strong></td><td style="color:var(--secondary);font-weight:bold;">${navire}</td><td>${dateText}</td></tr>`;
-                        }
-                    }
-                }
-            });
-            html += `</table>`;
-            if(!found) html = `<p style="text-align:center;font-style:italic;">Aucun navire attendu pour le moment (86/87).</p>`;
-
-            body.innerHTML = html;
-
-        } catch (e) {
-            body.innerHTML = `<p class="txt-red" style="text-align:center;">Erreur: Impossible de charger les navires.<br><span style="font-size:0.7em">${e.message}</span></p>`;
-        }
-    }
-
-    document.getElementById('refresh-vessels').addEventListener('click', fetchVessels);
-    fetchVessels();
 
 </script>
 </body>
