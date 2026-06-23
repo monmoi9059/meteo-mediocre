@@ -11,11 +11,12 @@
             --secondary: #007a99;
             --bg-color: transparent; 
             --text-color: #0f172a;
-            --card-bg: rgba(255, 255, 255, 0.45); 
-            --tooltip-bg: rgba(255, 255, 255, 0.95);
-            --border-color: rgba(255, 255, 255, 0.6);
+            --text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8), 0 0 5px rgba(255, 255, 255, 0.5);
+            --card-bg: rgba(255, 255, 255, 0.25);
+            --tooltip-bg: rgba(255, 255, 255, 0.85);
+            --border-color: rgba(255, 255, 255, 0.4);
             --th-bg: rgba(0, 122, 153, 0.08);
-            --tr-hover: rgba(0,0,0,0.03);
+            --tr-hover: rgba(0,0,0,0.05);
             --chart-grid: rgba(0,0,0,0.05);
             --red-alert: #dc2626;
             --green-ok: #16a34a;
@@ -28,11 +29,12 @@
             --secondary: #6ee7b7;
             --bg-color: transparent;
             --text-color: #f8fafc;
-            --card-bg: rgba(15, 23, 42, 0.55); 
-            --tooltip-bg: rgba(15, 23, 42, 0.95);
+            --text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9), 0 0 5px rgba(0, 0, 0, 0.7);
+            --card-bg: rgba(15, 23, 42, 0.35);
+            --tooltip-bg: rgba(15, 23, 42, 0.85);
             --border-color: rgba(255, 255, 255, 0.1);
             --th-bg: rgba(255, 255, 255, 0.05);
-            --tr-hover: rgba(255,255,255,0.03);
+            --tr-hover: rgba(255,255,255,0.05);
             --chart-grid: rgba(255,255,255,0.05);
             --red-alert: #ef4444;
             --green-ok: #22c55e;
@@ -43,13 +45,38 @@
         /* --- FOND DYNAMIQUE --- */
         .dynamic-bg {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 0; 
-            background:
-                linear-gradient(to top, var(--water-c) 0%, var(--water-c) calc(var(--water-h) - 3vh), transparent var(--water-h)),
-                linear-gradient(135deg, var(--c1, #eef2f5), var(--c2, #cbd5e1), var(--c1, #eef2f5));
-            background-size: 100% 100%, 300% 300%; 
+            background: linear-gradient(135deg, var(--c1, #eef2f5), var(--c2, #cbd5e1), var(--c1, #eef2f5));
+            background-size: 300% 300%;
             animation: bgShift var(--anim-speed, 15s) ease infinite;
         }
-        @keyframes bgShift { 0% { background-position: 0% 100%, 0% 50%; } 50% { background-position: 0% 100%, 100% 50%; } 100% { background-position: 0% 100%, 0% 50%; } }
+        @keyframes bgShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+
+        /* --- WATER LAYER --- */
+        .water-layer {
+            position: fixed; left: -100vw; right: -100vw; bottom: 0; height: var(--water-h); z-index: 1;
+            background: var(--water-c);
+            mask: radial-gradient(40px at 40px 0px, transparent 100%, black 100%) -40px 15px / 80px 100% repeat-x,
+                  radial-gradient(40px at 40px 30px, black 100%, transparent 100%) 0px -15px / 80px 100% repeat-x;
+            -webkit-mask: radial-gradient(40px at 40px 0px, transparent 100%, black 100%) -40px 15px / 80px 100% repeat-x,
+                          radial-gradient(40px at 40px 30px, black 100%, transparent 100%) 0px -15px / 80px 100% repeat-x;
+            mask-composite: exclude;
+            -webkit-mask-composite: destination-out;
+            transition: height 0.5s ease-in-out;
+        }
+
+        .water-layer.flow-left { animation: waterFlowLeft 4s linear infinite; }
+        .water-layer.flow-right { animation: waterFlowRight 4s linear infinite; }
+
+        @keyframes waterFlowLeft { 0% { transform: translateX(0); } 100% { transform: translateX(-80px); } }
+        @keyframes waterFlowRight { 0% { transform: translateX(0); } 100% { transform: translateX(80px); } }
+
+        /* --- BOAT LAYER --- */
+        .boat-container {
+            position: fixed; left: 50vw; bottom: calc(var(--water-h) - 15px); z-index: 1;
+            transform: translateX(-50%); transition: bottom 0.5s ease-in-out;
+            animation: boatBobbing 4s ease-in-out infinite; pointer-events: none;
+        }
+        @keyframes boatBobbing { 0%, 100% { transform: translate(-50%, 0) rotate(-1deg); } 50% { transform: translate(-50%, -10px) rotate(1deg); } }
 
         /* --- CANVAS EFFETS --- */
         .sky-fx, .weather-fx { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 0; }
@@ -59,6 +86,7 @@
             margin: 0; padding: 0; min-height: 100vh; overflow-y: auto; overflow-x: hidden; 
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             color: var(--text-color); display: flex; flex-direction: column; background-color: transparent; 
+            text-shadow: var(--text-shadow);
         }
         script#theme-init { display: none; }
 
@@ -198,6 +226,19 @@
 <div id="dynamic-bg" class="dynamic-bg"></div>
 <canvas id="sky-fx" class="sky-fx"></canvas>
 <canvas id="weather-fx" class="weather-fx"></canvas>
+<div id="boat-container" class="boat-container">
+    <svg width="180" height="70" viewBox="0 0 180 70" xmlns="http://www.w3.org/2000/svg">
+        <path d="M 10 50 L 30 20 L 150 20 L 170 50 Z" fill="#333" stroke="#111" stroke-width="2"/>
+        <rect x="40" y="5" width="20" height="15" fill="#555" />
+        <rect x="70" y="10" width="10" height="10" fill="#777" />
+        <rect x="90" y="10" width="10" height="10" fill="#777" />
+        <rect x="110" y="10" width="10" height="10" fill="#777" />
+        <rect x="130" y="10" width="10" height="10" fill="#777" />
+        <rect x="45" y="-10" width="5" height="15" fill="#111" />
+        <path d="M 0 50 L 180 50 L 160 70 L 20 70 Z" fill="#222" stroke="#111" stroke-width="2"/>
+    </svg>
+</div>
+<div id="water-layer" class="water-layer"></div>
 
 <!-- MODAL CALCULATRICE ETA -->
 <div id="calc-modal" class="modal-overlay">
@@ -283,13 +324,20 @@
             </div>
         </div>
 
-        <!-- Carte AIS -->
+        <!-- Carte AIS & Meteo Map -->
         <div class="card">
-            <div class="card-header"><h2>🚢 Carte AIS en direct</h2></div>
-            <div class="card-body" style="padding: 0; overflow: hidden; width: 100%; aspect-ratio: 1 / 1;">
-                <iframe 
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <h2 id="map-title">🚢 Carte AIS en direct</h2>
+                <button id="map-toggle" class="theme-toggle" style="padding: 2px 10px; font-size: 0.75rem;">🗺️ Météo</button>
+            </div>
+            <div class="card-body" style="padding: 0; overflow: hidden; width: 100%; aspect-ratio: 1 / 1; position: relative;">
+                <iframe id="ais-map"
                     src="https://www.marinetraffic.com/en/ais/embed/zoom:13/centery:46.785/centerx:-71.20/maptype:1/shownames:true/mmsi:0/shipid:0/fleet:/fleet_id:/vtypes:/showmenu:false/remember:false" 
                     width="100%" height="100%" frameborder="0" scrolling="no" style="border: 0; width: 100%; height: 100%; display: block;">
+                </iframe>
+                <iframe id="meteo-map"
+                    src="https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=mm&metricTemp=°C&metricWind=kt&zoom=10&overlay=wind&product=ecmwf&level=surface&lat=46.76&lon=-71.26"
+                    width="100%" height="100%" frameborder="0" style="border: 0; width: 100%; height: 100%; display: none;">
                 </iframe>
             </div>
         </div>
@@ -360,8 +408,21 @@
         bgDiv.style.setProperty('--c1', color1);
         bgDiv.style.setProperty('--c2', color2);
         bgDiv.style.setProperty('--water-c', waterColor);
-        bgDiv.style.setProperty('--water-h', c.tideHeight + 'vh');
+
+        // Use document root for water variables so that boat and water-layer can pick them up
+        document.documentElement.style.setProperty('--water-c', waterColor);
+        document.documentElement.style.setProperty('--water-h', c.tideHeight + 'vh');
         bgDiv.style.setProperty('--anim-speed', animSpeed + 's');
+
+        const waterLayer = document.getElementById('water-layer');
+        if (waterLayer) {
+            waterLayer.classList.remove('flow-left', 'flow-right');
+            if (c.tideTrend.includes('Montante')) {
+                waterLayer.classList.add('flow-right');
+            } else if (c.tideTrend.includes('Descendante')) {
+                waterLayer.classList.add('flow-left');
+            }
+        }
     }
 
     // --- CANVAS : CIEL ---
@@ -481,7 +542,7 @@
     // --- API MÉTÉO ---
     async function fetchWeather() {
         try {
-            const url = `https://api.open-meteo.com/v1/forecast?latitude=46.76&longitude=-71.26&current=temperature_2m,precipitation,snowfall,cloud_cover,weather_code,windspeed_10m,winddirection_10m,wind_gusts_10m,visibility,surface_pressure,relative_humidity_2m&hourly=temperature_2m,precipitation,snowfall,weather_code,windspeed_10m,winddirection_10m,wind_gusts_10m,visibility&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,windspeed_10m_max,windgusts_10m_max,winddirection_10m_dominant,precipitation_sum,snowfall_sum&forecast_days=7&timezone=America%2FToronto&timeformat=unixtime&wind_speed_unit=kn`;
+            const url = `https://api.open-meteo.com/v1/forecast?latitude=46.76&longitude=-71.26&current=temperature_2m,precipitation,snowfall,cloud_cover,weather_code,windspeed_10m,winddirection_10m,wind_gusts_10m,visibility,surface_pressure,relative_humidity_2m&hourly=temperature_2m,precipitation,snowfall,weather_code,windspeed_10m,winddirection_10m,wind_gusts_10m,visibility&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,windspeed_10m_max,windgusts_10m_max,winddirection_10m_dominant,precipitation_sum,snowfall_sum&forecast_days=7&timezone=America%2FToronto&timeformat=unixtime&wind_speed_unit=kn&models=best_match`;
             const res = await fetch(url);
             if (!res.ok) throw new Error("Erreur API Météo");
             weatherDataCache = await res.json();
@@ -785,6 +846,25 @@
         currentWeatherView = currentWeatherView === '24h' ? '7d' : '24h';
         e.target.innerHTML = currentWeatherView === '24h' ? '📅 7 Jours' : '⏱️ 24 Heures';
         if (weatherDataCache) renderWeatherUI();
+    });
+
+    // --- TOGGLE CARTE AIS/METEO ---
+    document.getElementById('map-toggle').addEventListener('click', (e) => {
+        const aisMap = document.getElementById('ais-map');
+        const meteoMap = document.getElementById('meteo-map');
+        const mapTitle = document.getElementById('map-title');
+
+        if (aisMap.style.display !== 'none') {
+            aisMap.style.display = 'none';
+            meteoMap.style.display = 'block';
+            mapTitle.innerHTML = '🗺️ Carte Météo';
+            e.target.innerHTML = '🚢 AIS';
+        } else {
+            aisMap.style.display = 'block';
+            meteoMap.style.display = 'none';
+            mapTitle.innerHTML = '🚢 Carte AIS en direct';
+            e.target.innerHTML = '🗺️ Météo';
+        }
     });
 
     // --- THEME ---
