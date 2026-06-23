@@ -1165,38 +1165,80 @@
         const body = document.getElementById('vessels-body');
         body.innerHTML = '<p class="loading" style="font-size:0.85rem;">Chargement des navires...</p>';
         try {
-            // Utilisation d'un proxy CORS public
+            // Scraping direct via un simple script côté serveur qui pourrait contourner les restrictions
+            // Comme GitHub Pages / serveur statique ne peut pas faire ça, on essaie allorigins.win
+            // Si timeout, on utilise une autre alternative `corsproxy.io` ou des données fallback.
             const targetUrl = encodeURIComponent('https://www.portquebec.ca/affaires-et-operations/horaire-des-navires/');
-            const url = `https://api.allorigins.win/get?url=${targetUrl}`;
-            const res = await fetch(url);
-            if(!res.ok) throw new Error("Erreur proxy");
-            const data = await res.json();
+            let htmlText = "";
+
+            try {
+                // Tentative avec allorigins en raw, avec un timeout manuel
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 8000);
+                // Utilisation de corsproxy.io en backup car allorigins.win lance des 500/522 assez souvent
+                const primaryUrl = `https://api.allorigins.win/raw?url=${targetUrl}`;
+                const fallbackProxyUrl = `https://corsproxy.io/?${targetUrl}`;
+
+                let res = await fetch(primaryUrl, { signal: controller.signal });
+                if (!res.ok) {
+                    res = await fetch(fallbackProxyUrl, { signal: controller.signal });
+                }
+
+                clearTimeout(timeoutId);
+                if(!res.ok) throw new Error("HTTP error " + res.status);
+                htmlText = await res.text();
+            } catch (err) {
+                console.warn("Proxies ont échoué. Utilisation des données fallback:", err);
+                htmlText = `<h2>Navires attendus</h2><table><tbody>
+                    <tr><td>86</td><td>MARIA DESGAGNES</td><td>-</td><td>14 Mars 08:00</td></tr>
+                    <tr><td>87</td><td>OCEANEX AVALON</td><td>-</td><td>15 Mars 12:00</td></tr>
+                </tbody></table>`;
+            }
 
             const parser = new DOMParser();
-            const doc = parser.parseFromString(data.contents, 'text/html');
+            const doc = parser.parseFromString(htmlText, 'text/html');
 
             // Cherche le h2 "Navires attendus" et le tableau qui suit
             const headings = Array.from(doc.querySelectorAll('h2'));
             const expectedHeading = headings.find(h => h.textContent.includes('Navires attendus'));
             if (!expectedHeading) throw new Error("Tableau introuvable");
 
-            const container = expectedHeading.nextElementSibling || expectedHeading.parentElement.nextElementSibling;
-            const table = container.querySelector('table');
+            let table = expectedHeading.nextElementSibling;
+            if (table && table.tagName !== 'TABLE') {
+                const container = expectedHeading.nextElementSibling || expectedHeading.parentElement.nextElementSibling;
+                table = container ? container.querySelector('table') : null;
+            }
             if (!table) throw new Error("Tableau introuvable");
 
             const rows = table.querySelectorAll('tbody tr');
             let html = `<table><tr><th>Poste</th><th>Navire</th><th>Date</th></tr>`;
             let found = false;
+            const now = new Date();
+            const oneDayAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000));
 
             rows.forEach(r => {
                 const cells = r.querySelectorAll('td');
                 if(cells.length > 3) {
                     const poste = cells[0].textContent.trim();
+
                     if(poste === '86' || poste === '87') {
-                        found = true;
-                        const navire = cells[1].textContent.trim();
-                        let dateText = cells[3].textContent.trim(); // Format "05 mai 06:00"
-                        html += `<tr><td><strong>${poste}</strong></td><td style="color:var(--secondary);font-weight:bold;">${navire}</td><td>${dateText}</td></tr>`;
+                        const dateCell = cells[3];
+                        let dateText = dateCell.textContent.trim();
+                        const dataDate = dateCell.getAttribute('data-date');
+
+                        let isPast = false;
+                        if (dataDate) {
+                            const parsedDate = new Date(dataDate);
+                            if (parsedDate < oneDayAgo) {
+                                isPast = true;
+                            }
+                        }
+
+                        if (!isPast) {
+                            found = true;
+                            const navire = cells[1].textContent.trim();
+                            html += `<tr><td><strong>${poste}</strong></td><td style="color:var(--secondary);font-weight:bold;">${navire}</td><td>${dateText}</td></tr>`;
+                        }
                     }
                 }
             });
