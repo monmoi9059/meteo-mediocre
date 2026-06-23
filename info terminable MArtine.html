@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitoring Terminal Maritime St-Romuald (Lévis)</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #004b6b;
+            --secondary: #007a99;
+            --bg-color: transparent; 
+            --text-color: #0f172a;
+            --card-bg: rgba(255, 255, 255, 0.45); 
+            --tooltip-bg: rgba(255, 255, 255, 0.95);
+            --border-color: rgba(255, 255, 255, 0.6);
+            --th-bg: rgba(0, 122, 153, 0.08);
+            --tr-hover: rgba(0,0,0,0.03);
+            --chart-grid: rgba(0,0,0,0.05);
+            --red-alert: #dc2626;
+            --green-ok: #16a34a;
+            --scrollbar-bg: rgba(255,255,255,0.2);
+            --scrollbar-thumb: rgba(0,0,0,0.2);
+        }
+
+        body.dark-mode {
+            --primary: #93c5fd;
+            --secondary: #6ee7b7;
+            --bg-color: transparent;
+            --text-color: #f8fafc;
+            --card-bg: rgba(15, 23, 42, 0.55); 
+            --tooltip-bg: rgba(15, 23, 42, 0.95);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --th-bg: rgba(255, 255, 255, 0.05);
+            --tr-hover: rgba(255,255,255,0.03);
+            --chart-grid: rgba(255,255,255,0.05);
+            --red-alert: #ef4444;
+            --green-ok: #22c55e;
+            --scrollbar-bg: rgba(0,0,0,0.3);
+            --scrollbar-thumb: rgba(255,255,255,0.2);
+        }
+
+        /* --- FOND DYNAMIQUE --- */
+        .dynamic-bg {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 0; 
+            background:
+                linear-gradient(to top, var(--water-c) 0%, var(--water-c) calc(var(--water-h) - 3vh), transparent var(--water-h)),
+                linear-gradient(135deg, var(--c1, #eef2f5), var(--c2, #cbd5e1), var(--c1, #eef2f5));
+            background-size: 100% 100%, 300% 300%; 
+            animation: bgShift var(--anim-speed, 15s) ease infinite;
+        }
+        @keyframes bgShift { 0% { background-position: 0% 100%, 0% 50%; } 50% { background-position: 0% 100%, 100% 50%; } 100% { background-position: 0% 100%, 0% 50%; } }
+
+        /* --- CANVAS EFFETS --- */
+        .sky-fx, .weather-fx { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 0; }
+        .sky-fx { opacity: 0.9; } .weather-fx { opacity: 0.85; }
+
+        html, body {
+            margin: 0; padding: 0; min-height: 100vh; overflow-y: auto; overflow-x: hidden; 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: var(--text-color); display: flex; flex-direction: column; background-color: transparent; 
+        }
+        script#theme-init { display: none; }
+
+        /* Scrollbars */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: var(--scrollbar-bg); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--secondary); }
+
+        /* En-tête */
+        .header {
+            height: 60px; min-height: 60px; display: flex; justify-content: space-between; align-items: center;
+            padding: 0 20px; background: var(--card-bg); border-bottom: 1px solid var(--border-color);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            position: relative; z-index: 10; 
+        }
+        .header h1 { font-size: 1.4rem; color: var(--primary); margin: 0; text-shadow: 0 1px 2px rgba(255,255,255,0.3); }
+        .dark-mode .header h1 { text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
+        
+        .header-actions { display: flex; gap: 10px; }
+        .theme-toggle {
+            background: transparent; color: var(--text-color); border: 1px solid var(--border-color);
+            padding: 6px 15px; border-radius: 20px; cursor: pointer; font-weight: bold; font-size: 0.85rem;
+            transition: all 0.2s; backdrop-filter: blur(5px);
+        }
+        .theme-toggle:hover { background: var(--th-bg); }
+
+        /* Conteneur Principal */
+        .main-dashboard { display: flex; flex: 1; padding: 10px; gap: 10px; position: relative; z-index: 1; }
+        .col-left { width: 22%; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+        .col-mid { width: 28%; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+        .col-right { width: 50%; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+
+        .card {
+            background: var(--card-bg); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            border: 1px solid var(--border-color); border-radius: 8px;
+            display: flex; flex-direction: column; overflow: hidden;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1); max-height: calc(100vh - 85px);
+        }
+        .card-header { background: var(--th-bg); padding: 8px 15px; border-bottom: 1px solid var(--border-color); }
+        .card-header h2 { margin: 0; font-size: 1.1rem; color: var(--secondary); display: flex; align-items: center; gap: 6px;}
+        .card-body { flex: 1; padding: 10px; overflow-y: auto; }
+
+        .chart-wrapper { height: 180px; min-height: 180px; width: 100%; margin-bottom: 10px; position: relative;}
+
+        table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+        th { 
+            position: sticky; top: -10px; background: var(--tooltip-bg); backdrop-filter: blur(20px); 
+            color: var(--primary); font-weight: 600; padding: 8px 5px; border-bottom: 2px solid var(--secondary);
+            text-align: left; z-index: 5;
+        }
+        td { padding: 8px 5px; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
+        tr:hover { background-color: var(--tr-hover); }
+
+        .badge { padding: 3px 6px; border-radius: 4px; font-weight: bold; font-size: 0.75rem;}
+        .badge-pm { background: #004b6b; color: white; }
+        .badge-bm { background: #88c9d4; color: #003344; }
+        .txt-red { color: var(--red-alert); font-weight: bold; }
+        .txt-green { color: var(--green-ok); font-weight: bold; }
+        
+        .live-bar { display: flex; justify-content: space-between; align-items: center; background: var(--th-bg); padding: 8px; border-radius: 6px; font-size: 0.9rem; }
+        .live-item { display: flex; flex-direction: column; align-items: center; line-height: 1.2; text-align: center; }
+        .live-item span { font-size: 0.75rem; color: var(--primary); font-weight: bold;}
+        .live-item strong { font-size: 1.1rem; }
+
+        /* --- STATUTS FEUX CIRCULATION --- */
+        .ocean-banner { background: rgba(0, 122, 153, 0.15); border: 1px solid var(--secondary); border-radius: 6px; padding: 8px; margin-bottom: 10px; text-align: center; font-size: 0.85rem;}
+        .ocean-banner strong { color: var(--primary); font-size: 1rem;}
+        .dark-mode .ocean-banner strong { color: #93c5fd; }
+        .status-block { margin-bottom: 12px; padding: 10px; background: rgba(0,0,0,0.03); border-radius: 6px; border: 1px solid var(--border-color);}
+        .dark-mode .status-block { background: rgba(255,255,255,0.03); }
+        .status-header { margin: 0 0 8px 0; font-size:1.05rem; color: var(--primary); border-bottom: 1px dashed var(--border-color); padding-bottom: 4px; font-weight: bold;}
+        .status-row { display: flex; align-items: flex-start; gap: 8px; font-size: 0.8rem; margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px solid rgba(0,0,0,0.05); }
+        .dark-mode .status-row { border-bottom-color: rgba(255,255,255,0.05); }
+        .status-row:last-child { border: none; margin: 0; padding: 0; }
+        .status-icon { font-size: 1.1rem; line-height: 1; }
+        .status-info { flex: 1; line-height: 1.3; }
+
+        .loading { text-align: center; color: var(--primary); padding: 15px; font-style: italic; font-weight: bold; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
+
+        /* --- MODALS (Règles & Calculatrice) --- */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.5); z-index: 2000; justify-content: center; align-items: center;
+            backdrop-filter: blur(8px); opacity: 0; transition: opacity 0.3s;
+        }
+        .modal-overlay.active { display: flex; opacity: 1; }
+        .modal-content {
+            background: var(--tooltip-bg); backdrop-filter: blur(25px) saturate(150%);
+            border: 1px solid var(--border-color); border-radius: 12px;
+            width: 500px; max-width: 90%; max-height: 90vh; overflow-y: auto;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.4); transform: translateY(20px); transition: transform 0.3s;
+        }
+        .modal-overlay.active .modal-content { transform: translateY(0); }
+        .modal-header {
+            padding: 15px 20px; border-bottom: 1px solid var(--border-color);
+            display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: inherit; z-index: 10;
+        }
+        .modal-header h3 { margin: 0; color: var(--primary); font-size: 1.2rem; }
+        .btn-close { background: transparent; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-color); }
+        .modal-body { padding: 20px; }
+        
+        /* Contenu Règles */
+        .rule-section { margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed var(--border-color); }
+        .rule-section:last-child { border: none; margin: 0; padding: 0;}
+        .rule-section h3 { margin: 0 0 8px 0; background: #f1c40f; color: #000; padding: 4px; text-align: center; border-radius: 4px; font-size: 1rem;}
+        .rule-section h4 { margin: 0 0 5px 0; font-size: 0.9rem; color: var(--primary); }
+        .rule-section p { margin: 4px 0; font-size: 0.85rem;}
+
+        /* Contenu Calc */
+        .input-group { margin-bottom: 15px; }
+        .input-group label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 0.9rem; color: var(--primary); }
+        .calc-input { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); background: rgba(255,255,255,0.5); color: var(--text-color); font-size: 1.05rem; box-sizing: border-box; outline: none; }
+        .dark-mode .calc-input { background: rgba(0,0,0,0.3); color: white; border-color: rgba(255,255,255,0.2); }
+        .calc-result { margin-top: 20px; padding: 15px; background: var(--th-bg); border-radius: 8px; border-left: 4px solid var(--secondary); }
+        .calc-result p { margin: 8px 0; font-size: 1.05rem; }
+
+        @media (max-width: 1024px) {
+            .header { height: auto; padding: 12px 10px; flex-direction: column; gap: 10px; text-align: center; }
+            .main-dashboard { flex-direction: column; padding: 8px; }
+            .col-left, .col-mid, .col-right { width: 100%; height: auto; }
+            .card { max-height: none; }
+            .chart-wrapper { height: 220px; min-height: 220px; }
+            .card-body { overflow-x: auto; }
+            th { position: static; }
+        }
+    </style>
+</head>
+<body>
+
+<script id="theme-init">
+    try { if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode'); } catch(e) {}
+</script>
+
+<!-- FOND ET EFFETS -->
+<div id="dynamic-bg" class="dynamic-bg"></div>
+<canvas id="sky-fx" class="sky-fx"></canvas>
+<canvas id="weather-fx" class="weather-fx"></canvas>
+
+<!-- MODAL CALCULATRICE ETA -->
+<div id="calc-modal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>🧮 ETA Transferts</h3>
+            <button id="close-calc" class="btn-close">✖</button>
+        </div>
+        <div class="modal-body">
+            <div class="input-group">
+                <label>Quantité Totale (m³)</label>
+                <input type="number" id="calc-total" class="calc-input" placeholder="ex: 25000" min="0">
+            </div>
+            <div class="input-group">
+                <label>Quantité Transférée (m³)</label>
+                <input type="number" id="calc-done" class="calc-input" value="0" min="0">
+            </div>
+            <div class="input-group">
+                <label>Débit actuel (m³/h)</label>
+                <input type="number" id="calc-rate" class="calc-input" placeholder="ex: 1500" min="1">
+            </div>
+            <div class="calc-result" id="calc-result">
+                <p>Volume restant: <strong id="res-vol">-- m³</strong></p>
+                <p>Temps requis: <strong id="res-time">--</strong></p>
+                <p style="border-top: 1px dashed var(--border-color); padding-top: 8px; margin-top: 8px;">
+                    Fin estimée: <strong id="res-eta" style="color: var(--secondary);">--:--</strong>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL RÈGLES OFFICIELLES -->
+<div id="rules-modal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>📖 Règles Officielles de Manœuvre</h3>
+            <button id="close-rules" class="btn-close">✖</button>
+        </div>
+        <div class="modal-body">
+            <div class="rule-section">
+                <h3>Section 86</h3>
+                <h4>≤ 25 000T DWT</h4>
+                <p><strong>Arrivée :</strong> 1.5h apr. PM à 1h apr. BM</p>
+                <p><strong>Départ :</strong> 1.5h apr. PM à 1.5h apr. BM</p>
+                <h4 style="margin-top:10px;">> 25 000T DWT <span class="txt-red">(TE MAX 12M)</span></h4>
+                <p><strong>Arrivée / Départ :</strong> 1.5h apr. PM à 30m av. BM</p>
+            </div>
+            <div class="rule-section">
+                <h3>Section 87</h3>
+                <h4>≤ 40 000T DWT</h4>
+                <p><strong>Arrivée :</strong> Bâbord si Courant Descendant (Jusant). Tribord si Courant Montant (Flot).</p>
+                <p><strong>Départ :</strong> Aucune restriction</p>
+                <h4 style="margin-top:10px;">> 40 000T DWT</h4>
+                <p><strong>Arrivée :</strong> 1.5h apr. PM à 0.5h av. BM <span class="txt-red">(TE MAX 15.5m)</span></p>
+                <p><strong>Départ (TE < 13m) :</strong> Aucune restriction</p>
+                <p><strong>Départ (TE > 13m) :</strong> Pilote requis. 1h apr. PM à 1h apr. BM</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- EN-TÊTE -->
+<div class="header">
+    <h1>⚓ Terminal St-Romuald - Monitoring Avancé</h1>
+    <div class="header-actions">
+        <button id="rules-toggle" class="theme-toggle">📖 Règles</button>
+        <button id="calc-toggle" class="theme-toggle">🧮 Calc ETA</button>
+        <button id="theme-toggle" class="theme-toggle">🌙 Mode Nuit</button>
+    </div>
+</div>
+
+<!-- CONTENU PRINCIPAL -->
+<div class="main-dashboard">
+    
+    <!-- COLONNE 1 : Statuts & AIS -->
+    <div class="col-left">
+        <!-- Feux de Circulation Opérationnels -->
+        <div class="card">
+            <div class="card-header"><h2>🚥 Opérations (Temps Réel)</h2></div>
+            <div class="card-body" id="traffic-light-body" style="padding: 10px;">
+                <p class="loading" style="font-size:0.85rem;">Calcul des courants et fenêtres...</p>
+            </div>
+        </div>
+
+        <!-- Carte AIS -->
+        <div class="card">
+            <div class="card-header"><h2>🚢 Carte AIS en direct</h2></div>
+            <div class="card-body" style="padding: 0; overflow: hidden; width: 100%; aspect-ratio: 1 / 1;">
+                <iframe 
+                    src="https://www.marinetraffic.com/en/ais/embed/zoom:13/centery:46.785/centerx:-71.20/maptype:1/shownames:true/mmsi:0/shipid:0/fleet:/fleet_id:/vtypes:/showmenu:false/remember:false" 
+                    width="100%" height="100%" frameborder="0" scrolling="no" style="border: 0; width: 100%; height: 100%; display: block;">
+                </iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- COLONNE 2 : Météo -->
+    <div class="col-mid">
+        <div class="card" style="flex: 1;">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <h2>☁️ Météo (HRDPS)</h2>
+                <button id="btn-weather-view" class="theme-toggle" style="padding: 2px 10px; font-size: 0.75rem;">📅 7 Jours</button>
+            </div>
+            <div class="card-body" id="weather-body">
+                <p class="loading">Chargement météo...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- COLONNE 3 : Marées & Tableaux -->
+    <div class="col-right">
+        <div class="card" style="flex: 1;">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <h2>🌊 Marées & Fenêtres (Lauzon 3250)</h2>
+            </div>
+            <div class="card-body" id="tides-body">
+                <p class="loading">Chargement marées...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const timeOptions = { hour: '2-digit', minute: '2-digit', timeZone: 'America/Toronto' };
+    const dateOptions = { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'America/Toronto' };
+    let weatherChart = null, tidesChart = null;
+    let weatherDataCache = null;
+    let currentWeatherView = '24h'; 
+
+    // --- VARIABLES GLOBALES ET FOND DYNAMIQUE ---
+    let currentConditions = {
+        temp: 0, wind: 0, rain: 0, snow: 0, cloudCover: 0,
+        pressure: 0, humidity: 0, 
+        isNight: false, isGoldenHour: false,
+        sunriseTime: 0, sunsetTime: 0, nowSec: 0,
+        tideHeight: 10, tideTrend: '' // Trend : ⬆️ ou ⬇️
+    };
+
+    function updateDynamicBackground() {
+        const isDark = document.body.classList.contains('dark-mode');
+        const c = currentConditions;
+        const bgDiv = document.getElementById('dynamic-bg');
+
+        let color1, color2, waterColor;
+        if (isDark || c.isNight) {
+            if (c.temp < -5) { color1 = '#020617'; color2 = '#0ea5e9'; } 
+            else if (c.temp > 20) { color1 = '#2e0219'; color2 = '#be123c'; } 
+            else { color1 = '#0f172a'; color2 = '#4338ca'; } 
+            waterColor = 'rgba(2, 132, 199, 0.75)'; 
+        } else {
+            if (c.isGoldenHour) { color1 = '#fde047'; color2 = '#f43f5e'; } 
+            else if (c.temp < -5) { color1 = '#e0f2fe'; color2 = '#0ea5e9'; } 
+            else if (c.temp > 20) { color1 = '#fef08a'; color2 = '#ea580c'; } 
+            else { color1 = '#bae6fd'; color2 = '#2563eb'; } 
+            waterColor = 'rgba(14, 165, 233, 0.65)'; 
+        }
+
+        let animSpeed = Math.max(2, 20 - (c.wind * 0.6));
+        bgDiv.style.setProperty('--c1', color1);
+        bgDiv.style.setProperty('--c2', color2);
+        bgDiv.style.setProperty('--water-c', waterColor);
+        bgDiv.style.setProperty('--water-h', c.tideHeight + 'vh');
+        bgDiv.style.setProperty('--anim-speed', animSpeed + 's');
+    }
+
+    // --- CANVAS : CIEL ---
+    const skyCanvas = document.getElementById('sky-fx');
+    const sCtx = skyCanvas.getContext('2d');
+    let W = skyCanvas.width = window.innerWidth;
+    let H = skyCanvas.height = window.innerHeight;
+    
+    let clouds = [], stars = [];
+    for(let i=0; i<150; i++) stars.push({x: Math.random()*W, y: Math.random()*(H/2), s: Math.random()*2, a: Math.random()});
+    for(let i=0; i<15; i++) clouds.push({x: Math.random()*W, y: Math.random()*150, s: Math.random()*2+1, op: Math.random()*0.5+0.1});
+
+    function drawSkyFX() {
+        sCtx.clearRect(0, 0, W, H);
+        const c = currentConditions;
+        
+        if (c.sunriseTime && c.sunsetTime) {
+            let astX = -100, astY = -100, isSun = false;
+            let totalDay = c.sunsetTime - c.sunriseTime;
+            
+            if (!c.isNight) {
+                isSun = true;
+                let prog = (c.nowSec - c.sunriseTime) / totalDay; 
+                astX = prog * W; astY = H * 0.4 - Math.sin(prog * Math.PI) * (H * 0.3); 
+            } else {
+                let totalNight = 86400 - totalDay;
+                let progNight = ((c.nowSec > c.sunsetTime ? c.nowSec - c.sunsetTime : (c.nowSec + 86400) - c.sunsetTime)) / totalNight;
+                astX = progNight * W; astY = H * 0.4 - Math.sin(progNight * Math.PI) * (H * 0.3);
+            }
+
+            if (isSun) {
+                sCtx.beginPath(); sCtx.arc(astX, astY, 40, 0, Math.PI*2);
+                sCtx.fillStyle = c.isGoldenHour ? 'rgba(253, 186, 116, 0.8)' : 'rgba(253, 224, 71, 0.8)';
+                sCtx.shadowBlur = 40; sCtx.shadowColor = sCtx.fillStyle; sCtx.fill(); sCtx.shadowBlur = 0;
+            } else {
+                sCtx.beginPath(); sCtx.arc(astX, astY, 30, 0, Math.PI*2);
+                sCtx.fillStyle = 'rgba(241, 245, 249, 0.9)';
+                sCtx.shadowBlur = 20; sCtx.shadowColor = 'rgba(255,255,255,0.5)'; sCtx.fill(); sCtx.shadowBlur = 0;
+
+                if (c.cloudCover < 50) {
+                    stars.forEach(st => {
+                        sCtx.fillStyle = `rgba(255,255,255,${st.a})`;
+                        sCtx.beginPath(); sCtx.arc(st.x, st.y, st.s, 0, Math.PI*2); sCtx.fill();
+                        st.a += (Math.random() - 0.5) * 0.1;
+                        if(st.a < 0) st.a = 0; if(st.a > 1) st.a = 1;
+                    });
+                }
+            }
+        }
+
+        let numCloudsActive = Math.min(Math.floor((c.cloudCover / 100) * clouds.length), clouds.length);
+        if (numCloudsActive < 2 && c.cloudCover > 0) numCloudsActive = 2; 
+        let windSpeedPx = c.wind * 0.05; 
+        
+        for(let i=0; i<numCloudsActive; i++) {
+            let cl = clouds[i];
+            sCtx.fillStyle = c.isNight ? `rgba(50,50,60,${cl.op})` : `rgba(255,255,255,${cl.op})`;
+            sCtx.beginPath();
+            sCtx.arc(cl.x, cl.y, 30 * cl.s, 0, Math.PI*2);
+            sCtx.arc(cl.x+40*cl.s, cl.y-10*cl.s, 40*cl.s, 0, Math.PI*2);
+            sCtx.arc(cl.x+80*cl.s, cl.y, 30*cl.s, 0, Math.PI*2); sCtx.fill();
+            cl.x += windSpeedPx + 0.1;
+            if(cl.x > W + 200) { cl.x = -200; cl.y = Math.random()*150; }
+        }
+        requestAnimationFrame(drawSkyFX);
+    }
+
+    // --- CANVAS : MÉTÉO BD ---
+    const fxCanvas = document.getElementById('weather-fx');
+    const ctx = fxCanvas.getContext('2d');
+    
+    window.addEventListener('resize', () => { 
+        W = fxCanvas.width = skyCanvas.width = window.innerWidth; 
+        H = fxCanvas.height = skyCanvas.height = window.innerHeight; 
+    });
+
+    let fxParticles = [];
+    function initWeatherFX() {
+        fxParticles = [];
+        let numRain = Math.min(currentConditions.rain * 150, 400); 
+        let numSnow = Math.min(currentConditions.snow * 100, 300); 
+        let numWind = currentConditions.wind > 5 ? Math.min((currentConditions.wind - 5) * 10, 150) : 0;
+
+        for(let i=0; i<numRain; i++) fxParticles.push(createParticle('rain'));
+        for(let i=0; i<numSnow; i++) fxParticles.push(createParticle('snow'));
+        for(let i=0; i<numWind; i++) fxParticles.push(createParticle('wind'));
+    }
+
+    function createParticle(type) {
+        let p = { type: type, x: Math.random() * W, y: Math.random() * H };
+        if (type === 'rain') { p.l = Math.random()*40+30; p.xs = Math.random()*8+4; p.ys = Math.random()*20+25; p.color = Math.random()>0.5?'#22d3ee':'#67e8f9'; } 
+        else if (type === 'snow') { p.r = Math.random()*5+3; p.xs = Math.random()*4-2; p.ys = Math.random()*5+4; } 
+        else if (type === 'wind') { p.l = Math.random()*300+50; p.xs = Math.random()*40+20+(currentConditions.wind); p.ys = 0; p.alpha = Math.random()*0.3+0.1; p.thick = Math.random()>0.8?4:1; }
+        return p;
+    }
+
+    function drawWeatherFX() {
+        ctx.clearRect(0, 0, W, H);
+        fxParticles.forEach(p => {
+            if (p.type === 'rain') { ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x + p.xs, p.y + p.ys); ctx.strokeStyle = p.color; ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.stroke(); } 
+            else if (p.type === 'snow') { ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fillStyle = '#ffffff'; ctx.fill(); ctx.strokeStyle = '#0f172a'; ctx.lineWidth = 1; ctx.stroke(); } 
+            else if (p.type === 'wind') { ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x + p.l, p.y); ctx.strokeStyle = `rgba(255, 255, 255, ${p.alpha})`; ctx.lineWidth = p.thick; ctx.lineCap = 'butt'; ctx.stroke(); }
+            p.x += p.xs; p.y += p.ys;
+            if (p.x > W || p.y > H) { if (p.type === 'wind') { p.x = -p.l; p.y = Math.random() * H; } else { p.x = Math.random() * W - 200; p.y = -50; } }
+        });
+        requestAnimationFrame(drawWeatherFX);
+    }
+    
+    drawSkyFX(); drawWeatherFX();
+
+    // --- UTILS ---
+    function getWDesc(c) { const t={0:'☀️',1:'🌤️',2:'⛅',3:'☁️',45:'🌫️',48:'🌫️',51:'🌧️',53:'🌧️',55:'🌧️',61:'☔',63:'☔',65:'🌧️',71:'🌨️',73:'❄️',75:'❄️',80:'🌦️',81:'🌧️',82:'⛈️',85:'🌨️',95:'⛈️'}; return t[c]||'--'; }
+    function getWindDir(d) { const dirs = ['N','NE','E','SE','S','SO','O','NO']; return dirs[Math.round(d/45)%8]; }
+    function getChartCols() { const isD = document.body.classList.contains('dark-mode'); return { txt: isD?'#e2e8f0':'#1a252f', gr: isD?'rgba(255,255,255,0.1)':'rgba(0,0,0,0.1)', tL: isD?'#f87171':'#e74c3c', pB: isD?'#60a5fa':'#3498db', wL: isD?'#34d399':'#007a99', wF: isD?'rgba(52,211,153,0.2)':'rgba(0,122,153,0.2)' }; }
+    function getMoonPhaseIcon(phase) { if(phase<0.05||phase>0.95)return'🌑'; if(phase<0.25)return'🌒'; if(phase<0.3)return'🌓'; if(phase<0.5)return'🌔'; if(phase<0.55)return'🌕'; if(phase<0.75)return'🌖'; if(phase<0.8)return'🌗'; return'🌘'; }
+
+    // --- API MÉTÉO ---
+    async function fetchWeather() {
+        try {
+            const url = `https://api.open-meteo.com/v1/forecast?latitude=46.76&longitude=-71.26&current=temperature_2m,precipitation,snowfall,cloud_cover,weather_code,windspeed_10m,winddirection_10m,wind_gusts_10m,visibility,surface_pressure,relative_humidity_2m&hourly=temperature_2m,precipitation,snowfall,weather_code,windspeed_10m,winddirection_10m,wind_gusts_10m,visibility&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,windspeed_10m_max,windgusts_10m_max,winddirection_10m_dominant,precipitation_sum,snowfall_sum&forecast_days=7&timezone=America%2FToronto&timeformat=unixtime&wind_speed_unit=kn`;
+            const res = await fetch(url);
+            if (!res.ok) throw new Error("Erreur API Météo");
+            weatherDataCache = await res.json();
+            renderWeatherUI();
+        } catch (e) { document.getElementById('weather-body').innerHTML = `<p class="txt-red">${e.message}</p>`; }
+    }
+
+    function renderWeatherUI() {
+        if (!weatherDataCache) return;
+        const data = weatherDataCache; const cur = data.current; const nowSec = Math.floor(Date.now() / 1000);
+        
+        currentConditions.temp = cur.temperature_2m; currentConditions.wind = cur.windspeed_10m;
+        currentConditions.rain = cur.precipitation || 0; currentConditions.snow = cur.snowfall || 0;
+        currentConditions.cloudCover = cur.cloud_cover || 50; currentConditions.pressure = cur.surface_pressure;
+        currentConditions.humidity = cur.relative_humidity_2m;
+        currentConditions.nowSec = nowSec; currentConditions.sunriseTime = data.daily.sunrise[0]; currentConditions.sunsetTime = data.daily.sunset[0];
+        currentConditions.isNight = (nowSec < currentConditions.sunriseTime || nowSec > currentConditions.sunsetTime);
+        currentConditions.isGoldenHour = (!currentConditions.isNight && (Math.abs(nowSec - currentConditions.sunriseTime) < 3600 || Math.abs(nowSec - currentConditions.sunsetTime) < 3600));
+        
+        updateDynamicBackground(); initWeatherFX(); 
+
+        const sunriseStr = new Date(currentConditions.sunriseTime * 1000).toLocaleTimeString('fr-CA', timeOptions).replace(' h', 'h');
+        const sunsetStr = new Date(currentConditions.sunsetTime * 1000).toLocaleTimeString('fr-CA', timeOptions).replace(' h', 'h');
+        const phaseVal = ((Date.now() - new Date("2024-01-11T11:57:00Z").getTime()) % (29.53058867 * 24 * 60 * 60 * 1000)) / (29.53058867 * 24 * 60 * 60 * 1000);
+        
+        const visKm = cur.visibility !== null ? (cur.visibility / 1000).toFixed(1) : '--';
+        const visHtml = visKm < 2 ? `<span class="txt-red">${visKm}km</span>` : `${visKm}km`;
+        const precipInfo = cur.snowfall > 0 ? ` <span style="color:#3498db;font-size:0.8em">(${cur.snowfall}cm ❄️)</span>` : (cur.precipitation > 0 ? ` <span style="color:#3498db;font-size:0.8em">(${cur.precipitation}mm)</span>` : '');
+
+        let html = '';
+        if (cur.wind_gusts_10m > 25) { html += '<div style="background:var(--red-alert);color:white;padding:5px;text-align:center;font-weight:bold;border-radius:4px;margin-bottom:8px;animation: pulse 2s infinite;">⚠️ ALERTE VENT FORT (>25 nds)</div>'; }
+
+        html += `
+            <div class="live-bar" style="margin-bottom:8px;">
+                <div class="live-item"><span>Temp</span><strong>${Math.round(cur.temperature_2m)}°C${precipInfo}</strong></div>
+                <div class="live-item"><span>Vent (${getWindDir(cur.winddirection_10m)})</span><strong>${Math.round(cur.windspeed_10m)} <span style="font-size:0.7em;color:var(--red-alert)">Raf ${Math.round(cur.wind_gusts_10m)}</span></strong></div>
+                <div class="live-item"><span>Visib.</span><strong>${visHtml}</strong></div>
+            </div>
+            <div class="live-bar" style="margin-bottom:10px; display:flex; justify-content:space-around;">
+                <span>🌅 ${sunriseStr}</span> 
+                <span title="Pression & Humidité">⏱️ ${Math.round(cur.surface_pressure)}hPa / 💧 ${cur.relative_humidity_2m}%</span> 
+                <span>${getMoonPhaseIcon(phaseVal)} ${sunsetStr}</span>
+            </div>
+            <div class="chart-wrapper"><canvas id="wChart"></canvas></div>
+        `;
+
+        let cTime = [], cTempMax = [], cTempMin = [], cPrec = [];
+
+        if (currentWeatherView === '24h') {
+            const h = data.hourly; let sIdx = h.time.findIndex(t => t >= nowSec - 3600); if (sIdx === -1) sIdx = 0;
+            html += '<table><tr><th>Hre</th><th>Cond</th><th>°C</th><th>Vent</th><th>Précip.</th><th>Vis.</th></tr>';
+
+            for (let i = sIdx; i < sIdx + 24 && i < h.time.length; i++) {
+                cTime.push(new Date(h.time[i]*1000).getHours()+'h'); 
+                cTempMax.push(h.temperature_2m[i]); cPrec.push(h.precipitation[i] + h.snowfall[i]);
+                const tStr = new Date(h.time[i]*1000).toLocaleTimeString('fr-CA', timeOptions).replace(' h', 'h');
+                const pStr = h.snowfall[i] > 0 ? `<strong>${h.snowfall[i]}cm❄️</strong>` : (h.precipitation[i] > 0 ? `<strong>${h.precipitation[i]}mm</strong>` : '-');
+                const vKm = h.visibility[i]!==null ? (h.visibility[i]/1000).toFixed(1) : '-';
+                html += `<tr><td>${tStr}</td><td>${getWDesc(h.weather_code[i])}</td><td><strong>${Math.round(h.temperature_2m[i])}</strong></td><td style="font-size:0.85em">${Math.round(h.windspeed_10m[i])} <span class="txt-red">${Math.round(h.wind_gusts_10m[i])}</span> ${getWindDir(h.winddirection_10m[i])}</td><td>${pStr}</td><td style="font-weight:bold">${vKm}</td></tr>`;
+            }
+        } else {
+            const d = data.daily;
+            html += '<table><tr><th>Jour</th><th>Cond</th><th>Min/Max</th><th>Vent Max</th><th>Précip.</th></tr>';
+            for (let i = 0; i < d.time.length; i++) {
+                const dayStr = new Date(d.time[i]*1000).toLocaleDateString('fr-CA', { weekday: 'short', day: 'numeric' });
+                cTime.push(dayStr); cTempMax.push(d.temperature_2m_max[i]); cTempMin.push(d.temperature_2m_min[i]); cPrec.push(d.precipitation_sum[i] + d.snowfall_sum[i]);
+                const pStr = d.snowfall_sum[i] > 0 ? `<strong>${Math.round(d.snowfall_sum[i])}cm❄️</strong>` : (d.precipitation_sum[i] > 0 ? `<strong>${Math.round(d.precipitation_sum[i])}mm</strong>` : '-');
+                html += `<tr><td style="text-transform: capitalize;">${dayStr}</td><td>${getWDesc(d.weather_code[i])}</td><td>${Math.round(d.temperature_2m_min[i])}° / <strong>${Math.round(d.temperature_2m_max[i])}°</strong></td><td style="font-size:0.85em">${Math.round(d.windspeed_10m_max[i])} <span class="txt-red">${Math.round(d.windgusts_10m_max[i])}</span> ${getWindDir(d.winddirection_10m_dominant[i])}</td><td>${pStr}</td></tr>`;
+            }
+        }
+
+        html += '</table>';
+        document.getElementById('weather-body').innerHTML = html;
+
+        const ctx = document.getElementById('wChart').getContext('2d');
+        const c = getChartCols();
+        if(weatherChart) weatherChart.destroy();
+        const datasets = [
+            { label: currentWeatherView === '24h' ? '°C' : 'Max °C', data:cTempMax, borderColor:c.tL, backgroundColor:c.tL, yAxisID:'y', tension:0.4, borderWidth:2, pointRadius:2 },
+            { label:'Précip', data:cPrec, type:'bar', backgroundColor:c.pB, yAxisID:'y1', borderWidth:0, borderRadius:2 }
+        ];
+        if (currentWeatherView === '7d') datasets.push({ label: 'Min °C', data:cTempMin, borderColor:'#3b82f6', backgroundColor:'#3b82f6', yAxisID:'y', tension:0.4, borderWidth:2, pointRadius:2, borderDash: [5, 5] });
+
+        weatherChart = new Chart(ctx, { type: 'line', data: { labels: cTime, datasets: datasets }, options: { responsive:true, maintainAspectRatio:false, interaction:{mode:'index',intersect:false}, plugins:{legend:{display:false}}, scales: { x: { ticks:{color:c.txt}, grid:{color:c.gr} }, y: { type:'linear', position:'left', ticks:{color:c.txt}, grid:{color:c.gr} }, y1: { type:'linear', position:'right', min:0, suggestedMax:5, ticks:{color:c.txt}, grid:{drawOnChartArea:false} } } } });
+    }
+
+    // --- API MARÉES & FEUX ---
+    function addTime(iso, hrs) { let d = new Date(iso); d.setMinutes(d.getMinutes() + (hrs * 60)); return d.getTime(); }
+    function formatT(ms) { return new Date(ms).toLocaleTimeString('fr-CA', timeOptions).replace(' h', 'h'); }
+
+    async function fetchTides() {
+        try {
+            const stationRes = await fetch(`https://api-iwls.dfo-mpo.gc.ca/api/v1/stations`);
+            const stations = await stationRes.json();
+            const station = stations.find(s => s.code === '3250' || s.code === '03250');
+            
+            const now = new Date();
+            const fromIso = new Date(now.getTime() - 14*60*60*1000).toISOString().split('.')[0] + 'Z';
+            const toIso = new Date(now.getTime() + 48*60*60*1000).toISOString().split('.')[0] + 'Z';
+
+            const tidesRes = await fetch(`https://api-iwls.dfo-mpo.gc.ca/api/v1/stations/${station.id}/data?time-series-code=wlp-hilo&from=${encodeURIComponent(fromIso)}&to=${encodeURIComponent(toIso)}`);
+            const tidesData = await tidesRes.json();
+            tidesData.sort((a, b) => new Date(a.eventDate) - new Date(b.eventDate));
+
+            const nowTime = Date.now();
+            let prevTide = null, nextTide = null;
+            let minTide = Math.min(...tidesData.map(t=>t.value)); let maxTide = Math.max(...tidesData.map(t=>t.value));
+            let currentWaterLevel = 0;
+
+            for (let i = 0; i < tidesData.length - 1; i++) {
+                if (nowTime >= new Date(tidesData[i].eventDate).getTime() && nowTime <= new Date(tidesData[i+1].eventDate).getTime()) {
+                    prevTide = tidesData[i]; nextTide = tidesData[i+1]; break;
+                }
+            }
+            if (prevTide && nextTide) {
+                const t1 = new Date(prevTide.eventDate).getTime(); const t2 = new Date(nextTide.eventDate).getTime();
+                const prog = (nowTime - t1) / (t2 - t1);
+                currentWaterLevel = prevTide.value + (nextTide.value - prevTide.value) * ((1 - Math.cos(prog * Math.PI)) / 2);
+                currentConditions.tideHeight = 10 + (((currentWaterLevel - minTide) / (maxTide - minTide)) * 100 * 0.35); 
+                currentConditions.tideTrend = nextTide.value > prevTide.value ? '⬆️ Montante' : '⬇️ Descendante';
+                updateDynamicBackground();
+            }
+
+            updateTrafficLights(tidesData, nowTime);
+
+            let futureTides = tidesData.filter(t => new Date(t.eventDate).getTime() > nowTime - 4*3600*1000);
+            
+            let html = `
+                <div style="text-align:center; font-weight:bold; color:var(--primary); margin-bottom:5px;">
+                    Niveau actuel estimé : <span style="font-size:1.2rem;">${currentWaterLevel.toFixed(2)}m</span> ${currentConditions.tideTrend}
+                </div>
+                <div class="chart-wrapper"><canvas id="tChart"></canvas></div>
+            `;
+            html += `<table><tr><th style="width:20%">Date/Heure</th><th style="width:12%">Niveau</th><th>ARRIVÉES</th><th>DÉPARTS</th></tr>`;
+
+            let cTime = [], cVal = [];
+            for(let i=0; i<futureTides.length; i++) {
+                const t = futureTides[i]; cTime.push(t.eventDate); cVal.push(t.value);
+                let isHigh = false;
+                if(i===0 && futureTides.length>1) isHigh = t.value > futureTides[1].value; else if(i>0) isHigh = t.value > futureTides[i-1].value;
+                const dStr = new Date(t.eventDate).toLocaleString('fr-CA', dateOptions).replace(/,/g, '');
+                const bClass = isHigh ? 'badge-pm' : 'badge-bm'; const bTxt = isHigh ? 'PM' : 'BM';
+                let nextT = i+1 < futureTides.length ? futureTides[i+1] : null;
+                
+                let arrHtml = '-', depHtml = '-';
+                if(isHigh && nextT) {
+                    const pmP15 = formatT(addTime(t.eventDate, 1.5)); const bmP10 = formatT(addTime(nextT.eventDate, 1.0)); const bmM05 = formatT(addTime(nextT.eventDate, -0.5));
+                    arrHtml = `<div style="margin-bottom:4px"><strong>Sec.86</strong> (≤25k): ${pmP15} à ${bmP10}</div><div style="margin-bottom:4px"><strong>Sec.86</strong> (>25k): ${pmP15} à ${bmM05}</div><div><strong>Sec.87</strong> (>40k): ${pmP15} à ${bmM05}</div>`;
+                    depHtml = `<div style="margin-bottom:4px"><strong>Sec.86</strong>: ${pmP15} à ${bmP10}</div><div><strong>Sec.87</strong> (>40k, TE>13m): ${formatT(addTime(t.eventDate, 1.0))} à ${formatT(addTime(nextT.eventDate, 1.0))}</div>`;
+                } else if (!isHigh) { arrHtml = `<span style="font-style:italic; opacity:0.7">Attendre la PM</span>`; depHtml = arrHtml; }
+                html += `<tr><td><strong>${dStr.charAt(0).toUpperCase() + dStr.slice(1)}</strong></td><td><span class="badge ${bClass}">${bTxt}</span><br><strong>${t.value.toFixed(1)}m</strong></td><td style="font-size:0.8em; line-height:1.2">${arrHtml}</td><td style="font-size:0.8em; line-height:1.2">${depHtml}</td></tr>`;
+            }
+            html += '</table>';
+            document.getElementById('tides-body').innerHTML = html;
+
+            const ctx = document.getElementById('tChart').getContext('2d');
+            const c = getChartCols();
+            if(tidesChart) tidesChart.destroy();
+            tidesChart = new Chart(ctx, { type: 'line', data: { labels: cTime.map(t => new Date(t).toLocaleTimeString('fr-CA',{hour:'2-digit',minute:'2-digit'}).replace(' h','h')), datasets: [{ label:'m', data:cVal, borderColor:c.wL, backgroundColor:c.wF, fill:true, tension:0.4, borderWidth:2, pointRadius:3 }] }, options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales: { x: { ticks:{color:c.txt}, grid:{color:c.gr} }, y: { ticks:{color:c.txt}, grid:{color:c.gr} } } } });
+        } catch (e) { document.getElementById('tides-body').innerHTML = `<p class="txt-red">${e.message}</p>`; }
+    }
+
+    function updateTrafficLights(tidesData, nowTime) {
+        let lastPM = null, nextPM = null, nextBMafterPM = null, lastBMafterPM = null;
+        let prevTideForFlow = null, nextTideForFlow = null;
+        
+        for (let i = 0; i < tidesData.length; i++) {
+            let t = tidesData[i]; let time = new Date(t.eventDate).getTime();
+            if (nowTime >= time && i < tidesData.length - 1) { prevTideForFlow = t; nextTideForFlow = tidesData[i+1]; }
+            let isPM = false;
+            if(i>0 && i<tidesData.length-1) { isPM = (t.value > tidesData[i-1].value && t.value > tidesData[i+1].value); }
+            else if (i===0) { isPM = t.value > tidesData[i+1].value; }
+            
+            if (isPM) {
+                if (time <= nowTime) { lastPM = t; lastBMafterPM = tidesData[i+1]; }
+                else if (!nextPM) { nextPM = t; nextBMafterPM = tidesData[i+1]; }
+            }
+        }
+
+        // Évaluation du Courant (Flot, Jusant, Étale)
+        let flowText = "Inconnu", dockSide = "N/A";
+        if (prevTideForFlow && nextTideForFlow) {
+            let tPrev = new Date(prevTideForFlow.eventDate).getTime();
+            let tNext = new Date(nextTideForFlow.eventDate).getTime();
+            let isRising = nextTideForFlow.value > prevTideForFlow.value;
+            
+            if (Math.abs(nowTime - tPrev) < 1800000 || Math.abs(nowTime - tNext) < 1800000) { flowText = "Étale (Renverse)"; dockSide = "Au choix"; }
+            else if (isRising) { flowText = "Montant (Flot) ⬆️"; dockSide = "Tribord"; }
+            else { flowText = "Descendant (Jusant) ⬇️"; dockSide = "Bâbord"; }
+        }
+
+        // Section 86
+        let s86_small = { state: "FERMÉ", color: "var(--red-alert)", txt: "" };
+        let s86_big = { state: "FERMÉ", color: "var(--red-alert)", txt: "" };
+        
+        if (lastPM && lastBMafterPM) {
+            let wStart = addTime(lastPM.eventDate, 1.5); let wEndSmall = addTime(lastBMafterPM.eventDate, 1.0); let wEndBig = addTime(lastBMafterPM.eventDate, -0.5);
+            if (nowTime >= wStart) {
+                if (nowTime <= wEndSmall) { s86_small.state = "OUVERT"; s86_small.color = "var(--green-ok)"; s86_small.txt = `Ferme à ${formatT(wEndSmall)}`; }
+                if (nowTime <= wEndBig) { s86_big.state = "OUVERT"; s86_big.color = "var(--green-ok)"; s86_big.txt = `Ferme à ${formatT(wEndBig)}`; }
+            }
+        }
+        if (s86_small.state === "FERMÉ" && nextPM) { s86_small.txt = `Ouvre à ${formatT(addTime(nextPM.eventDate, 1.5))}`; s86_big.txt = s86_small.txt; }
+
+        // Section 87
+        let s87_small = { state: "OUVERT", color: "var(--green-ok)", txt: `Accostage ${dockSide}` }; // Tjs ouvert, juste le bord change
+        let s87_big_arr = { state: "FERMÉ", color: "var(--red-alert)", txt: "" };
+        let s87_big_dep = { state: "FERMÉ", color: "var(--red-alert)", txt: "" };
+
+        if (lastPM && lastBMafterPM) {
+            let wStart = addTime(lastPM.eventDate, 1.5); let wEndBigArr = addTime(lastBMafterPM.eventDate, -0.5);
+            let wStartDepP = addTime(lastPM.eventDate, 1.0); let wEndDepP = addTime(lastBMafterPM.eventDate, 1.0);
+            if (nowTime >= wStart && nowTime <= wEndBigArr) { s87_big_arr.state = "OUVERT"; s87_big_arr.color = "var(--green-ok)"; s87_big_arr.txt = `Ferme à ${formatT(wEndBigArr)}`; }
+            if (nowTime >= wStartDepP && nowTime <= wEndDepP) { s87_big_dep.state = "OUVERT"; s87_big_dep.color = "var(--green-ok)"; s87_big_dep.txt = `Ferme à ${formatT(wEndDepP)}`; }
+        }
+        if (s87_big_arr.state === "FERMÉ" && nextPM) s87_big_arr.txt = `Ouvre à ${formatT(addTime(nextPM.eventDate, 1.5))}`;
+        if (s87_big_dep.state === "FERMÉ" && nextPM) s87_big_dep.txt = `Ouvre à ${formatT(addTime(nextPM.eventDate, 1.0))}`;
+
+        document.getElementById('traffic-light-body').innerHTML = `
+            <div class="ocean-banner">
+                Courant du fleuve : <strong>${flowText}</strong><br>
+                Recommandation Sec 87 (≤40k) : Accostage <strong>${dockSide}</strong>
+            </div>
+
+            <!-- SECTION 86 -->
+            <div class="status-block">
+                <div class="status-header">Section 86</div>
+                <div class="status-row">
+                    <div class="status-icon">🚢</div>
+                    <div class="status-info">
+                        <strong>Navires ≤ 25k DWT</strong><br>
+                        <span style="color:${s86_small.color}; font-weight:bold;">${s86_small.state}</span> : ${s86_small.txt}
+                    </div>
+                </div>
+                <div class="status-row">
+                    <div class="status-icon">🛳️</div>
+                    <div class="status-info">
+                        <strong>Navires > 25k DWT (TE max 12m)</strong><br>
+                        <span style="color:${s86_big.color}; font-weight:bold;">${s86_big.state}</span> : ${s86_big.txt}
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 87 -->
+            <div class="status-block" style="margin-bottom:0;">
+                <div class="status-header">Section 87</div>
+                <div class="status-row">
+                    <div class="status-icon">🚢</div>
+                    <div class="status-info">
+                        <strong>Navires ≤ 40k DWT</strong><br>
+                        <span style="color:${s87_small.color}; font-weight:bold;">${s87_small.state}</span> : ${s87_small.txt}
+                    </div>
+                </div>
+                <div class="status-row" style="border:none;">
+                    <div class="status-icon">🛳️</div>
+                    <div class="status-info">
+                        <strong>Navires > 40k DWT</strong><br>
+                        🛬 Arr. (<span style="color:${s87_big_arr.color}; font-weight:bold;">${s87_big_arr.state}</span>) : ${s87_big_arr.txt}<br>
+                        🛫 Dép. TE>13m (<span style="color:${s87_big_dep.color}; font-weight:bold;">${s87_big_dep.state}</span>) : ${s87_big_dep.txt}<br>
+                        <span style="font-size:0.7rem; font-style:italic; color:#666;">Dép. TE<13m : Aucune restriction</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // --- MODALS : CALCULATRICE ET RÈGLES ---
+    const modalCalc = document.getElementById('calc-modal');
+    const modalRules = document.getElementById('rules-modal');
+    
+    // Toggle Calculatrice
+    document.getElementById('calc-toggle').addEventListener('click', () => { modalCalc.classList.add('active'); document.getElementById('calc-total').focus(); });
+    document.getElementById('close-calc').addEventListener('click', () => modalCalc.classList.remove('active'));
+    modalCalc.addEventListener('click', (e) => { if(e.target === modalCalc) modalCalc.classList.remove('active'); });
+
+    // Toggle Règles
+    document.getElementById('rules-toggle').addEventListener('click', () => modalRules.classList.add('active'));
+    document.getElementById('close-rules').addEventListener('click', () => modalRules.classList.remove('active'));
+    modalRules.addEventListener('click', (e) => { if(e.target === modalRules) modalRules.classList.remove('active'); });
+
+    // Logique Calculatrice
+    const inTotal = document.getElementById('calc-total'), inDone = document.getElementById('calc-done'), inRate = document.getElementById('calc-rate');
+    const resVol = document.getElementById('res-vol'), resTime = document.getElementById('res-time'), resEta = document.getElementById('res-eta');
+
+    function updateCalculator() {
+        const total = parseFloat(inTotal.value) || 0, done = parseFloat(inDone.value) || 0, rate = parseFloat(inRate.value) || 0;
+        if (total > 0 && rate > 0 && total >= done) {
+            const rem = total - done, hrsRem = rem / rate;
+            resVol.textContent = `${rem.toLocaleString('fr-CA')} m³`;
+            resTime.textContent = `${Math.floor(hrsRem)}h ${Math.round((hrsRem - Math.floor(hrsRem)) * 60).toString().padStart(2, '0')}m`;
+            resEta.textContent = new Date(Date.now() + hrsRem * 3600 * 1000).toLocaleTimeString('fr-CA', {hour: '2-digit', minute:'2-digit', weekday: 'short', day: 'numeric', month: 'short'}).replace(' h', 'h');
+            resEta.style.color = "var(--green-ok)";
+        } else {
+            resVol.textContent = "-- m³"; resTime.textContent = "--"; resEta.textContent = "--:--"; resEta.style.color = "var(--secondary)";
+        }
+    }
+    inTotal.addEventListener('input', updateCalculator); inDone.addEventListener('input', updateCalculator); inRate.addEventListener('input', updateCalculator);
+
+    // --- VUES METEO 24H/7J ---
+    document.getElementById('btn-weather-view').addEventListener('click', (e) => {
+        currentWeatherView = currentWeatherView === '24h' ? '7d' : '24h';
+        e.target.innerHTML = currentWeatherView === '24h' ? '📅 7 Jours' : '⏱️ 24 Heures';
+        if (weatherDataCache) renderWeatherUI();
+    });
+
+    // --- THEME ---
+    const themeBtn = document.getElementById('theme-toggle');
+    if (document.body.classList.contains('dark-mode')) themeBtn.innerHTML = '☀️ Mode Jour';
+    themeBtn.addEventListener('click', () => {
+        document.body.classList.toggle('dark-mode');
+        try {
+            if (document.body.classList.contains('dark-mode')) { themeBtn.innerHTML = '☀️ Mode Jour'; localStorage.setItem('theme', 'dark'); } 
+            else { themeBtn.innerHTML = '🌙 Mode Nuit'; localStorage.setItem('theme', 'light'); }
+        } catch(e) {}
+        updateDynamicBackground();
+        if(weatherChart) renderWeatherUI(); if(tidesChart) fetchTides();
+    });
+
+    // INIT
+    updateDynamicBackground(); fetchWeather(); fetchTides();
+</script>
+</body>
+</html>
