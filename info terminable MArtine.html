@@ -1213,15 +1213,16 @@
             return;
         }
 
-        // Otherwise Geocoding API
+        // Otherwise Geocoding API (Nominatim for better small village coverage)
         try {
             document.getElementById('btn-loc-search').innerHTML = '⏳';
-            const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(input)}&count=1&language=fr&format=json`);
+            const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(input)}&format=json&limit=1`);
             const data = await res.json();
-            if (data.results && data.results.length > 0) {
-                currentLat = data.results[0].latitude;
-                currentLon = data.results[0].longitude;
-                currentLocationName = data.results[0].name;
+            if (data && data.length > 0) {
+                currentLat = parseFloat(data[0].lat);
+                currentLon = parseFloat(data[0].lon);
+                // Extract just the first part of the display name for brevity
+                currentLocationName = data[0].display_name.split(',')[0];
                 fetchWeather();
             } else {
                 alert('Localisation introuvable.');
