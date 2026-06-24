@@ -319,6 +319,17 @@
         <path d="M 850 175 L 850 130 L 820 120" fill="none" stroke="#e74c3c" stroke-width="4" />
         <circle cx="800" cy="130" r="4" fill="#2c3e50" />
         <circle cx="850" cy="130" r="4" fill="#2c3e50" />
+
+        <!-- Dynamic Low Tide Rocks -->
+        <g id="tide-rocks" style="opacity: 0; transform: translateY(20px); transition: opacity 2s, transform 2s;">
+            <!-- Foreground rocks exposed at low tide -->
+            <path d="M 10 240 Q 30 220 50 240 Q 60 210 90 235 Q 110 225 120 240 Z" fill="#2c3e50" />
+            <path d="M 150 245 Q 170 215 200 240 Q 220 230 240 245 Z" fill="#34495e" />
+            <path d="M 300 240 Q 330 220 350 235 Q 380 210 400 240 Z" fill="#2c3e50" />
+            <path d="M 450 245 Q 470 225 500 240 Q 520 215 550 245 Z" fill="#34495e" />
+            <path d="M 600 240 Q 620 210 650 235 Z" fill="#2c3e50" />
+            <path d="M 900 240 Q 920 215 950 235 Q 970 220 980 240 Z" fill="#34495e" />
+        </g>
     </svg>
 </div>
 
@@ -540,6 +551,18 @@
 </div>
 
 <script>
+    function getMoonPhase() {
+        const LUNAR_MONTH = 29.53058867;
+        const msPerDay = 24 * 60 * 60 * 1000;
+        // Known FULL moon instead, since phase=0 draws a full moon in the current rendering math
+        const knownFullMoon = new Date("2024-01-25T17:54:00Z").getTime();
+        const now = Date.now();
+        const diff = now - knownFullMoon;
+        let phase = (diff / (LUNAR_MONTH * msPerDay)) % 1;
+        if (phase < 0) phase += 1;
+        return phase;
+    }
+
     const timeOptions = { hour: '2-digit', minute: '2-digit', timeZone: 'America/Toronto' };
     const dateOptions = { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'America/Toronto' };
     let weatherChart = null, tidesChart = null;
@@ -628,9 +651,61 @@
                 sCtx.fillStyle = c.isGoldenHour ? 'rgba(253, 186, 116, 0.8)' : 'rgba(253, 224, 71, 0.8)';
                 sCtx.shadowBlur = 40; sCtx.shadowColor = sCtx.fillStyle; sCtx.fill(); sCtx.shadowBlur = 0;
             } else {
-                sCtx.beginPath(); sCtx.arc(astX, astY, 30, 0, Math.PI*2);
-                sCtx.fillStyle = 'rgba(241, 245, 249, 0.9)';
-                sCtx.shadowBlur = 20; sCtx.shadowColor = 'rgba(255,255,255,0.5)'; sCtx.fill(); sCtx.shadowBlur = 0;
+                let r = 30;
+                let phase = getMoonPhase();
+
+                sCtx.save();
+
+                // Glow
+                sCtx.shadowBlur = 40;
+                sCtx.shadowColor = 'rgba(241, 245, 249, 0.6)';
+
+                // Base moon circle (dark or dim)
+                sCtx.beginPath();
+                sCtx.arc(astX, astY, r, 0, Math.PI * 2);
+                sCtx.fillStyle = 'rgba(30, 41, 59, 0.8)'; // Dark moon body
+                sCtx.fill();
+
+                sCtx.clip();
+
+                // Calculate the illuminated part
+                // Phase 0-0.5 is waning (left side lit initially), 0.5-1.0 is waxing
+                // We draw the light overlay
+                sCtx.beginPath();
+                sCtx.arc(astX, astY, r, -Math.PI/2, Math.PI/2, phase > 0.5); // Outer semi-circle
+
+                // Inner curve to make crescent or gibbous
+                let normPhase = phase > 0.5 ? (phase - 0.5) * 2 : phase * 2; // 0 to 1
+
+                // Custom ellipse bezier approximation
+                sCtx.save();
+                sCtx.translate(astX, astY);
+                sCtx.scale(Math.cos(normPhase * Math.PI), 1);
+                sCtx.arc(0, 0, r, Math.PI/2, -Math.PI/2, phase > 0.5);
+                sCtx.restore();
+
+                // Fill lit area
+                let moonGrad = sCtx.createRadialGradient(astX - r/3, astY - r/3, 0, astX, astY, r);
+                moonGrad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+                moonGrad.addColorStop(1, 'rgba(200, 210, 220, 0.9)');
+
+                sCtx.fillStyle = moonGrad;
+                sCtx.fill();
+
+                // Textured surface (craters) over the whole circle, visible over the light gradient
+                for(let i=0; i<15; i++) {
+                    sCtx.beginPath();
+                    // deterministic random based on i to keep craters still
+                    let cx = astX - r + (Math.sin(i * 123) * 0.5 + 0.5) * r * 2;
+                    let cy = astY - r + (Math.cos(i * 321) * 0.5 + 0.5) * r * 2;
+                    let cr = (Math.sin(i * 456) * 0.5 + 0.5) * 6 + 2;
+                    sCtx.arc(cx, cy, cr, 0, Math.PI * 2);
+                    sCtx.fillStyle = 'rgba(0, 0, 0, 0.08)'; // Darker craters to show up on the lit part
+                    sCtx.fill();
+                }
+
+                sCtx.restore();
+                sCtx.shadowBlur = 0; // reset
 
                 if (c.cloudCover < 50) {
                     stars.forEach(st => {
@@ -710,12 +785,12 @@
         if (type === 'rain') { p.l = Math.random()*40+30; p.xs = Math.random()*8+4; p.ys = Math.random()*20+25; p.color = Math.random()>0.5?'#22d3ee':'#67e8f9'; } 
         else if (type === 'snow') { p.r = Math.random()*5+3; p.xs = Math.random()*4-2; p.ys = Math.random()*5+4; } 
         else if (type === 'wind') {
-            p.l = Math.random()*150+100;
+            p.l = Math.random()*50+30;
             p.xs = Math.random()*20+10+(currentConditions.wind * 0.5);
             p.ys = 0;
             p.alpha = Math.random()*0.5+0.2;
-            p.thick = Math.random()>0.5?3:1.5;
-            p.amplitude = Math.random() * 15 + 5;
+            p.thick = Math.random()>0.5?1.5:1;
+            p.amplitude = Math.random() * 5 + 2;
             p.frequency = Math.random() * 0.02 + 0.01;
             p.phase = Math.random() * Math.PI * 2;
         }
@@ -892,6 +967,21 @@
                 currentWaterLevel = prevTide.value + (nextTide.value - prevTide.value) * ((1 - Math.cos(prog * Math.PI)) / 2);
                 currentConditions.tideHeight = 10 + (((currentWaterLevel - minTide) / (maxTide - minTide)) * 100 * 0.35); 
                 currentConditions.tideTrend = nextTide.value > prevTide.value ? '⬆️ Montante' : '⬇️ Descendante';
+
+                // Show rocks dynamically at low tide
+                // tideHeight goes from 10 to 45ish
+                const tideRocks = document.getElementById('tide-rocks');
+                if (tideRocks) {
+                    // Let's say rocks start showing when tideHeight is below 25
+                    let rockOpacity = 0;
+                    let rockTransform = 20;
+                    if (currentConditions.tideHeight < 25) {
+                        rockOpacity = Math.min(1, (25 - currentConditions.tideHeight) / 10);
+                        rockTransform = Math.max(0, 20 - ((25 - currentConditions.tideHeight) * 2));
+                    }
+                    tideRocks.style.opacity = rockOpacity;
+                    tideRocks.style.transform = `translateY(${rockTransform}px)`;
+                }
                 updateDynamicBackground();
             }
 
