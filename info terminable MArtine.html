@@ -82,6 +82,12 @@
         @keyframes move-forever-left { 0% { transform: translate3d(85px,0,0); } 100% { transform: translate3d(-90px,0,0); } }
         @keyframes move-forever-right { 0% { transform: translate3d(-90px,0,0); } 100% { transform: translate3d(85px,0,0); } }
 
+        /* --- SHORE LAYER --- */
+        .shore-layer {
+            position: fixed; left: 0; right: 0; bottom: calc(var(--water-h) - 30px); height: 250px; z-index: 0; pointer-events: none;
+            transition: bottom 0.5s ease-in-out;
+        }
+
         /* --- BOAT LAYER --- */
         .boat-container {
             position: fixed; left: 50vw; bottom: calc(var(--water-h) - 35px); z-index: 1;
@@ -249,6 +255,84 @@
 <!-- FOND ET EFFETS -->
 <div id="dynamic-bg" class="dynamic-bg"></div>
 <canvas id="sky-fx" class="sky-fx"></canvas>
+
+<!-- SHORE LAYER (LEVIS BACKGROUND) -->
+<div id="shore-layer" class="shore-layer">
+    <svg width="100%" height="250" viewBox="0 0 1000 250" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Shore / Ground -->
+        <path d="M 0 250 L 1000 250 L 1000 180 Q 800 160 500 170 Q 200 180 0 170 Z" fill="#2c3e50" />
+        <path d="M 0 250 L 1000 250 L 1000 185 Q 800 170 500 178 Q 200 185 0 178 Z" fill="#34495e" />
+
+        <!-- Church (Left side) -->
+        <!-- Main building -->
+        <rect x="150" y="140" width="40" height="40" fill="#95a5a6" />
+        <polygon points="140,140 170,110 200,140" fill="#7f8c8d" />
+        <!-- Steeple -->
+        <rect x="160" y="100" width="20" height="40" fill="#bdc3c7" />
+        <polygon points="160,100 170,60 180,100" fill="#c0392b" />
+        <line x1="170" y1="50" x2="170" y2="70" stroke="#f1c40f" stroke-width="2" />
+        <line x1="165" y1="60" x2="175" y2="60" stroke="#f1c40f" stroke-width="2" />
+
+        <!-- Trees -->
+        <circle cx="50" cy="170" r="15" fill="#27ae60" />
+        <circle cx="70" cy="165" r="20" fill="#2ecc71" />
+        <circle cx="90" cy="172" r="12" fill="#27ae60" />
+        <circle cx="230" cy="175" r="18" fill="#27ae60" />
+        <circle cx="260" cy="168" r="22" fill="#2ecc71" />
+
+        <!-- Refinery (Mid-to-Right 500-750) -->
+        <rect x="520" y="150" width="10" height="30" fill="#7f8c8d" />
+        <rect x="540" y="140" width="8" height="40" fill="#95a5a6" />
+        <rect x="560" y="130" width="12" height="50" fill="#7f8c8d" />
+        <!-- Tall Flare Stack -->
+        <rect x="600" y="90" width="4" height="90" fill="#bdc3c7" />
+        <!-- Flare flame -->
+        <path d="M 598 85 Q 602 75 600 70 Q 604 80 604 85 Z" fill="#e67e22" />
+
+        <!-- Pipe structures -->
+        <path d="M 520 160 L 600 160" stroke="#bdc3c7" stroke-width="3" />
+        <path d="M 560 145 L 600 145" stroke="#95a5a6" stroke-width="2" />
+
+        <!-- Oil Reservoirs (behind trees) -->
+        <path d="M 700 175 L 700 140 Q 720 130 740 140 L 740 175 Z" fill="#ecf0f1" />
+        <path d="M 760 175 L 760 145 Q 775 135 790 145 L 790 175 Z" fill="#bdc3c7" />
+
+        <!-- Trees hiding reservoirs -->
+        <circle cx="680" cy="170" r="25" fill="#2ecc71" />
+        <circle cx="720" cy="175" r="20" fill="#27ae60" />
+        <circle cx="760" cy="170" r="30" fill="#2ecc71" />
+        <circle cx="800" cy="175" r="25" fill="#27ae60" />
+
+        <!-- Valero Dock (Right side extending to water) -->
+        <!-- Piling/supports -->
+        <rect x="650" y="180" width="5" height="70" fill="#34495e" />
+        <rect x="700" y="180" width="5" height="70" fill="#34495e" />
+        <rect x="750" y="180" width="5" height="70" fill="#34495e" />
+        <rect x="800" y="180" width="5" height="70" fill="#34495e" />
+        <rect x="850" y="180" width="5" height="70" fill="#34495e" />
+        <rect x="900" y="180" width="5" height="70" fill="#34495e" />
+        <rect x="950" y="180" width="5" height="70" fill="#34495e" />
+        <!-- Dock surface -->
+        <rect x="630" y="175" width="370" height="10" fill="#7f8c8d" />
+        <!-- Loading arms / cranes -->
+        <path d="M 800 175 L 800 130 L 830 110" fill="none" stroke="#e74c3c" stroke-width="4" />
+        <path d="M 850 175 L 850 130 L 820 120" fill="none" stroke="#e74c3c" stroke-width="4" />
+        <circle cx="800" cy="130" r="4" fill="#2c3e50" />
+        <circle cx="850" cy="130" r="4" fill="#2c3e50" />
+
+        <!-- Dynamic Low Tide Rocks -->
+        <g id="tide-rocks" style="opacity: 0; transform: translateY(20px); transition: opacity 2s, transform 2s;">
+            <!-- Foreground rocks exposed at low tide -->
+            <path d="M 10 240 Q 30 220 50 240 Q 60 210 90 235 Q 110 225 120 240 Z" fill="#2c3e50" />
+            <path d="M 150 245 Q 170 215 200 240 Q 220 230 240 245 Z" fill="#34495e" />
+            <path d="M 300 240 Q 330 220 350 235 Q 380 210 400 240 Z" fill="#2c3e50" />
+            <path d="M 450 245 Q 470 225 500 240 Q 520 215 550 245 Z" fill="#34495e" />
+            <path d="M 600 240 Q 620 210 650 235 Z" fill="#2c3e50" />
+            <path d="M 900 240 Q 920 215 950 235 Q 970 220 980 240 Z" fill="#34495e" />
+        </g>
+    </svg>
+</div>
+
 <canvas id="weather-fx" class="weather-fx"></canvas>
 <div id="boat-container" class="boat-container">
     <!-- Cap Quebec Suezmax Tanker -->
@@ -443,9 +527,15 @@
     <!-- COLONNE 2 : Météo -->
     <div class="col-mid">
         <div class="card" style="flex: 1;">
-            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
-                <h2>☁️ Météo (HRDPS)</h2>
-                <button id="btn-weather-view" class="theme-toggle" style="padding: 2px 10px; font-size: 0.75rem;">📅 7 Jours</button>
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <h2>☁️ Météo (Best Match)</h2>
+                </div>
+                <div style="display: flex; gap: 5px; align-items: center; background: rgba(0,0,0,0.1); padding: 4px; border-radius: 4px;">
+                    <input type="text" id="loc-search-input" placeholder="Lévis ou 46.7,-71.2" style="width: 130px; font-size: 0.75rem; padding: 4px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-color); color: var(--text-color);">
+                    <button id="btn-loc-search" class="theme-toggle" style="padding: 4px 8px; font-size: 0.75rem;">🔍</button>
+                </div>
+                <button id="btn-weather-view" class="theme-toggle" style="padding: 2px 10px; font-size: 0.75rem; margin-left: auto;">📅 7 Jours</button>
             </div>
             <div class="card-body" id="weather-body">
                 <p class="loading">Chargement météo...</p>
@@ -467,20 +557,37 @@
 </div>
 
 <script>
+    const KNOWN_FULL_MOON = new Date("2024-01-25T17:54:00Z").getTime();
+    function getMoonPhase() {
+        const LUNAR_MONTH = 29.53058867;
+        const msPerDay = 24 * 60 * 60 * 1000;
+        const now = Date.now();
+        const diff = now - KNOWN_FULL_MOON;
+        let phase = (diff / (LUNAR_MONTH * msPerDay)) % 1;
+        if (phase < 0) phase += 1;
+        return phase;
+    }
+
     const timeOptions = { hour: '2-digit', minute: '2-digit', timeZone: 'America/Toronto' };
     const dateOptions = { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'America/Toronto' };
     let weatherChart = null, tidesChart = null;
     let weatherDataCache = null;
     let currentWeatherView = '24h'; 
 
+    // --- VARIABLES GLOBALES DE POSITION ---
+    let currentLat = 46.76;
+    let currentLon = -71.26;
+    let currentLocationName = "Lévis";
+
     // --- VARIABLES GLOBALES ET FOND DYNAMIQUE ---
     let currentConditions = {
         temp: 0, wind: 0, rain: 0, snow: 0, cloudCover: 0,
-        pressure: 0, humidity: 0, 
+        pressure: 0, humidity: 0, weatherCode: 0,
         isNight: false, isGoldenHour: false,
         sunriseTime: 0, sunsetTime: 0, nowSec: 0,
         tideHeight: 10, tideTrend: '' // Trend : ⬆️ ou ⬇️
     };
+    let lightningFlashAlpha = 0;
 
     function updateDynamicBackground() {
         const isDark = document.body.classList.contains('dark-mode');
@@ -555,9 +662,61 @@
                 sCtx.fillStyle = c.isGoldenHour ? 'rgba(253, 186, 116, 0.8)' : 'rgba(253, 224, 71, 0.8)';
                 sCtx.shadowBlur = 40; sCtx.shadowColor = sCtx.fillStyle; sCtx.fill(); sCtx.shadowBlur = 0;
             } else {
-                sCtx.beginPath(); sCtx.arc(astX, astY, 30, 0, Math.PI*2);
-                sCtx.fillStyle = 'rgba(241, 245, 249, 0.9)';
-                sCtx.shadowBlur = 20; sCtx.shadowColor = 'rgba(255,255,255,0.5)'; sCtx.fill(); sCtx.shadowBlur = 0;
+                let r = 30;
+                let phase = getMoonPhase();
+
+                sCtx.save();
+
+                // Glow
+                sCtx.shadowBlur = 40;
+                sCtx.shadowColor = 'rgba(241, 245, 249, 0.6)';
+
+                // Base moon circle (dark or dim)
+                sCtx.beginPath();
+                sCtx.arc(astX, astY, r, 0, Math.PI * 2);
+                sCtx.fillStyle = 'rgba(30, 41, 59, 0.8)'; // Dark moon body
+                sCtx.fill();
+
+                sCtx.clip();
+
+                // Calculate the illuminated part
+                // Phase 0-0.5 is waning (left side lit initially), 0.5-1.0 is waxing
+                // We draw the light overlay
+                sCtx.beginPath();
+                sCtx.arc(astX, astY, r, -Math.PI/2, Math.PI/2, phase > 0.5); // Outer semi-circle
+
+                // Inner curve to make crescent or gibbous
+                let normPhase = phase > 0.5 ? (phase - 0.5) * 2 : phase * 2; // 0 to 1
+
+                // Custom ellipse bezier approximation
+                sCtx.save();
+                sCtx.translate(astX, astY);
+                sCtx.scale(Math.cos(normPhase * Math.PI), 1);
+                sCtx.arc(0, 0, r, Math.PI/2, -Math.PI/2, phase > 0.5);
+                sCtx.restore();
+
+                // Fill lit area
+                let moonGrad = sCtx.createRadialGradient(astX - r/3, astY - r/3, 0, astX, astY, r);
+                moonGrad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+                moonGrad.addColorStop(1, 'rgba(200, 210, 220, 0.9)');
+
+                sCtx.fillStyle = moonGrad;
+                sCtx.fill();
+
+                // Textured surface (craters) over the whole circle, visible over the light gradient
+                for(let i=0; i<15; i++) {
+                    sCtx.beginPath();
+                    // deterministic random based on i to keep craters still
+                    let cx = astX - r + (Math.sin(i * 123) * 0.5 + 0.5) * r * 2;
+                    let cy = astY - r + (Math.cos(i * 321) * 0.5 + 0.5) * r * 2;
+                    let cr = (Math.sin(i * 456) * 0.5 + 0.5) * 6 + 2;
+                    sCtx.arc(cx, cy, cr, 0, Math.PI * 2);
+                    sCtx.fillStyle = 'rgba(0, 0, 0, 0.08)'; // Darker craters to show up on the lit part
+                    sCtx.fill();
+                }
+
+                sCtx.restore();
+                sCtx.shadowBlur = 0; // reset
 
                 if (c.cloudCover < 50) {
                     stars.forEach(st => {
@@ -573,14 +732,55 @@
         let numCloudsActive = Math.min(Math.floor((c.cloudCover / 100) * clouds.length), clouds.length);
         if (numCloudsActive < 2 && c.cloudCover > 0) numCloudsActive = 2; 
         let windSpeedPx = c.wind * 0.05; 
+
+        // Fog check
+        const isFoggy = c.weatherCode === 45 || c.weatherCode === 48;
+        if (isFoggy) {
+            sCtx.fillStyle = c.isNight ? 'rgba(50, 50, 60, 0.6)' : 'rgba(255, 255, 255, 0.5)';
+            sCtx.fillRect(0, 0, W, H);
+        }
+
+        // Lightning effect
+        const isThunderstorm = c.weatherCode === 95 || c.weatherCode === 96 || c.weatherCode === 99;
+        if (isThunderstorm) {
+            // Randomly trigger a flash
+            if (Math.random() < 0.01) { // roughly every few seconds at 60fps
+                lightningFlashAlpha = 0.8 + Math.random() * 0.2; // intense flash
+            }
+        }
+
+        if (lightningFlashAlpha > 0) {
+            sCtx.fillStyle = `rgba(255, 255, 255, ${lightningFlashAlpha})`;
+            sCtx.fillRect(0, 0, W, H);
+            // Decay the flash quickly
+            lightningFlashAlpha -= 0.05;
+            if (lightningFlashAlpha < 0) lightningFlashAlpha = 0;
+        }
         
         for(let i=0; i<numCloudsActive; i++) {
             let cl = clouds[i];
-            sCtx.fillStyle = c.isNight ? `rgba(50,50,60,${cl.op})` : `rgba(255,255,255,${cl.op})`;
+            // Darker clouds for rain/snow, fluffier for clear
+            const isStormy = c.weatherCode >= 51 && c.weatherCode <= 99;
+            if (isStormy) {
+                sCtx.fillStyle = c.isNight ? `rgba(30, 30, 40, ${cl.op + 0.2})` : `rgba(100, 110, 120, ${cl.op + 0.3})`;
+            } else {
+                sCtx.fillStyle = c.isNight ? `rgba(60, 60, 70, ${cl.op})` : `rgba(255, 255, 255, ${cl.op})`;
+            }
+
             sCtx.beginPath();
-            sCtx.arc(cl.x, cl.y, 30 * cl.s, 0, Math.PI*2);
-            sCtx.arc(cl.x+40*cl.s, cl.y-10*cl.s, 40*cl.s, 0, Math.PI*2);
-            sCtx.arc(cl.x+80*cl.s, cl.y, 30*cl.s, 0, Math.PI*2); sCtx.fill();
+            if (isStormy) {
+                // Dense, flatter clouds
+                sCtx.arc(cl.x, cl.y, 25 * cl.s, 0, Math.PI*2);
+                sCtx.arc(cl.x+50*cl.s, cl.y-5*cl.s, 30*cl.s, 0, Math.PI*2);
+                sCtx.arc(cl.x+100*cl.s, cl.y, 25*cl.s, 0, Math.PI*2);
+            } else {
+                // Fluffy clouds
+                sCtx.arc(cl.x, cl.y, 30 * cl.s, 0, Math.PI*2);
+                sCtx.arc(cl.x+40*cl.s, cl.y-20*cl.s, 40*cl.s, 0, Math.PI*2);
+                sCtx.arc(cl.x+80*cl.s, cl.y, 30*cl.s, 0, Math.PI*2);
+            }
+            sCtx.fill();
+
             cl.x += windSpeedPx + 0.1;
             if(cl.x > W + 200) { cl.x = -200; cl.y = Math.random()*150; }
         }
@@ -612,18 +812,53 @@
         let p = { type: type, x: Math.random() * W, y: Math.random() * H };
         if (type === 'rain') { p.l = Math.random()*40+30; p.xs = Math.random()*8+4; p.ys = Math.random()*20+25; p.color = Math.random()>0.5?'#22d3ee':'#67e8f9'; } 
         else if (type === 'snow') { p.r = Math.random()*5+3; p.xs = Math.random()*4-2; p.ys = Math.random()*5+4; } 
-        else if (type === 'wind') { p.l = Math.random()*300+50; p.xs = Math.random()*40+20+(currentConditions.wind); p.ys = 0; p.alpha = Math.random()*0.3+0.1; p.thick = Math.random()>0.8?4:1; }
+        else if (type === 'wind') {
+            p.l = Math.random()*50+30;
+            p.xs = Math.random()*20+10+(currentConditions.wind * 0.5);
+            p.ys = 0;
+            p.alpha = Math.random()*0.5+0.2;
+            p.thick = Math.random()>0.5?1.5:1;
+            p.amplitude = Math.random() * 5 + 2;
+            p.frequency = Math.random() * 0.02 + 0.01;
+            p.phase = Math.random() * Math.PI * 2;
+        }
         return p;
     }
 
     function drawWeatherFX() {
         ctx.clearRect(0, 0, W, H);
         fxParticles.forEach(p => {
-            if (p.type === 'rain') { ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x + p.xs, p.y + p.ys); ctx.strokeStyle = p.color; ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.stroke(); } 
-            else if (p.type === 'snow') { ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fillStyle = '#ffffff'; ctx.fill(); ctx.strokeStyle = '#0f172a'; ctx.lineWidth = 1; ctx.stroke(); } 
-            else if (p.type === 'wind') { ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x + p.l, p.y); ctx.strokeStyle = `rgba(255, 255, 255, ${p.alpha})`; ctx.lineWidth = p.thick; ctx.lineCap = 'butt'; ctx.stroke(); }
+            if (p.type === 'rain') {
+                ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x + p.xs, p.y + p.ys); ctx.strokeStyle = p.color; ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.stroke();
+            } else if (p.type === 'snow') {
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fillStyle = '#ffffff'; ctx.fill(); ctx.strokeStyle = '#0f172a'; ctx.lineWidth = 1; ctx.stroke();
+            } else if (p.type === 'wind') {
+                ctx.beginPath();
+                // Cartoony wavy wind line
+                for (let i = 0; i < p.l; i+=5) {
+                    let waveY = p.y + Math.sin((p.x + i) * p.frequency + p.phase) * p.amplitude;
+                    if (i === 0) ctx.moveTo(p.x + i, waveY);
+                    else ctx.lineTo(p.x + i, waveY);
+                }
+                // Cute curl at the end
+                let endX = p.x + p.l;
+                let endY = p.y + Math.sin(endX * p.frequency + p.phase) * p.amplitude;
+                ctx.bezierCurveTo(endX + 15, endY - 15, endX + 5, endY - 25, endX - 5, endY - 10);
+
+                ctx.strokeStyle = `rgba(255, 255, 255, ${p.alpha})`;
+                ctx.lineWidth = p.thick;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.stroke();
+            }
             p.x += p.xs; p.y += p.ys;
-            if (p.x > W || p.y > H) { if (p.type === 'wind') { p.x = -p.l; p.y = Math.random() * H; } else { p.x = Math.random() * W - 200; p.y = -50; } }
+            if (p.x > W || p.y > H) {
+                if (p.type === 'wind') {
+                    p.x = -p.l - 50; p.y = Math.random() * H;
+                } else {
+                    p.x = Math.random() * W - 200; p.y = -50;
+                }
+            }
         });
         requestAnimationFrame(drawWeatherFX);
     }
@@ -639,7 +874,11 @@
     // --- API MÉTÉO ---
     async function fetchWeather() {
         try {
-            const url = `https://api.open-meteo.com/v1/forecast?latitude=46.76&longitude=-71.26&current=temperature_2m,precipitation,snowfall,cloud_cover,weather_code,windspeed_10m,winddirection_10m,wind_gusts_10m,visibility,surface_pressure,relative_humidity_2m&hourly=temperature_2m,precipitation,snowfall,weather_code,windspeed_10m,winddirection_10m,wind_gusts_10m,visibility&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,windspeed_10m_max,windgusts_10m_max,winddirection_10m_dominant,precipitation_sum,snowfall_sum&forecast_days=7&timezone=America%2FToronto&timeformat=unixtime&wind_speed_unit=kn&models=gem_hrdps_continental`;
+            document.getElementById('weather-body').innerHTML = '<p class="loading">Chargement météo...</p>';
+            // Show location in the title
+            document.querySelector('#btn-weather-view').parentElement.querySelector('h2').innerText = `☁️ Météo (${currentLocationName})`;
+
+            const url = `https://api.open-meteo.com/v1/forecast?latitude=${currentLat}&longitude=${currentLon}&current=temperature_2m,precipitation,snowfall,cloud_cover,weather_code,windspeed_10m,winddirection_10m,wind_gusts_10m,visibility,surface_pressure,relative_humidity_2m&hourly=temperature_2m,precipitation,snowfall,weather_code,windspeed_10m,winddirection_10m,wind_gusts_10m,visibility&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,windspeed_10m_max,windgusts_10m_max,winddirection_10m_dominant,precipitation_sum,snowfall_sum&forecast_days=7&timezone=America%2FToronto&timeformat=unixtime&wind_speed_unit=kn`;
             const res = await fetch(url);
             if (!res.ok) throw new Error("Erreur API Météo");
             weatherDataCache = await res.json();
@@ -654,7 +893,7 @@
         currentConditions.temp = cur.temperature_2m; currentConditions.wind = cur.windspeed_10m;
         currentConditions.rain = cur.precipitation || 0; currentConditions.snow = cur.snowfall || 0;
         currentConditions.cloudCover = cur.cloud_cover || 50; currentConditions.pressure = cur.surface_pressure;
-        currentConditions.humidity = cur.relative_humidity_2m;
+        currentConditions.humidity = cur.relative_humidity_2m; currentConditions.weatherCode = cur.weather_code;
         currentConditions.nowSec = nowSec; currentConditions.sunriseTime = data.daily.sunrise[0]; currentConditions.sunsetTime = data.daily.sunset[0];
         currentConditions.isNight = (nowSec < currentConditions.sunriseTime || nowSec > currentConditions.sunsetTime);
         currentConditions.isGoldenHour = (!currentConditions.isNight && (Math.abs(nowSec - currentConditions.sunriseTime) < 3600 || Math.abs(nowSec - currentConditions.sunsetTime) < 3600));
@@ -760,6 +999,21 @@
                 currentWaterLevel = prevTide.value + (nextTide.value - prevTide.value) * ((1 - Math.cos(prog * Math.PI)) / 2);
                 currentConditions.tideHeight = 10 + (((currentWaterLevel - minTide) / (maxTide - minTide)) * 100 * 0.35); 
                 currentConditions.tideTrend = nextTide.value > prevTide.value ? '⬆️ Montante' : '⬇️ Descendante';
+
+                // Show rocks dynamically at low tide
+                // tideHeight goes from 10 to 45ish
+                const tideRocks = document.getElementById('tide-rocks');
+                if (tideRocks) {
+                    // Let's say rocks start showing when tideHeight is below 25
+                    let rockOpacity = 0;
+                    let rockTransform = 20;
+                    if (currentConditions.tideHeight < 25) {
+                        rockOpacity = Math.min(1, (25 - currentConditions.tideHeight) / 10);
+                        rockTransform = Math.max(0, 20 - ((25 - currentConditions.tideHeight) * 2));
+                    }
+                    tideRocks.style.opacity = rockOpacity;
+                    tideRocks.style.transform = `translateY(${rockTransform}px)`;
+                }
                 updateDynamicBackground();
             }
 
@@ -943,6 +1197,46 @@
         }
     }
     inTotal.addEventListener('input', updateCalculator); inDone.addEventListener('input', updateCalculator); inRate.addEventListener('input', updateCalculator);
+
+    // --- LOCATION SEARCH ---
+    document.getElementById('btn-loc-search').addEventListener('click', async () => {
+        const input = document.getElementById('loc-search-input').value.trim();
+        if (!input) return;
+
+        // Check if coordinates (e.g. 46.7, -71.2)
+        const coordsMatch = input.match(/^(-?\d+(\.\d+)?)\s*,\s*(-?\d+(\.\d+)?)$/);
+        if (coordsMatch) {
+            currentLat = parseFloat(coordsMatch[1]);
+            currentLon = parseFloat(coordsMatch[3]);
+            currentLocationName = `${currentLat}, ${currentLon}`;
+            fetchWeather();
+            return;
+        }
+
+        // Otherwise Geocoding API (Nominatim for better small village coverage)
+        try {
+            document.getElementById('btn-loc-search').innerHTML = '⏳';
+            const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(input)}&format=json&limit=1`);
+            const data = await res.json();
+            if (data && data.length > 0) {
+                currentLat = parseFloat(data[0].lat);
+                currentLon = parseFloat(data[0].lon);
+                // Extract just the first part of the display name for brevity
+                currentLocationName = data[0].display_name.split(',')[0];
+                fetchWeather();
+            } else {
+                alert('Localisation introuvable.');
+            }
+        } catch (e) {
+            alert('Erreur de recherche.');
+        } finally {
+            document.getElementById('btn-loc-search').innerHTML = '🔍';
+        }
+    });
+
+    document.getElementById('loc-search-input').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') document.getElementById('btn-loc-search').click();
+    });
 
     // --- VUES METEO 24H/7J ---
     document.getElementById('btn-weather-view').addEventListener('click', (e) => {
