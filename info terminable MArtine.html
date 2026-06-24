@@ -527,9 +527,15 @@
     <!-- COLONNE 2 : Météo -->
     <div class="col-mid">
         <div class="card" style="flex: 1;">
-            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
-                <h2>☁️ Météo (HRDPS)</h2>
-                <button id="btn-weather-view" class="theme-toggle" style="padding: 2px 10px; font-size: 0.75rem;">📅 7 Jours</button>
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <h2>☁️ Météo (HRDPS)</h2>
+                </div>
+                <div style="display: flex; gap: 5px; align-items: center; background: rgba(0,0,0,0.1); padding: 4px; border-radius: 4px;">
+                    <input type="text" id="loc-search-input" placeholder="Lévis ou 46.7,-71.2" style="width: 130px; font-size: 0.75rem; padding: 4px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-color); color: var(--text-color);">
+                    <button id="btn-loc-search" class="theme-toggle" style="padding: 4px 8px; font-size: 0.75rem;">🔍</button>
+                </div>
+                <button id="btn-weather-view" class="theme-toggle" style="padding: 2px 10px; font-size: 0.75rem; margin-left: auto;">📅 7 Jours</button>
             </div>
             <div class="card-body" id="weather-body">
                 <p class="loading">Chargement météo...</p>
@@ -551,13 +557,12 @@
 </div>
 
 <script>
+    const KNOWN_FULL_MOON = new Date("2024-01-25T17:54:00Z").getTime();
     function getMoonPhase() {
         const LUNAR_MONTH = 29.53058867;
         const msPerDay = 24 * 60 * 60 * 1000;
-        // Known FULL moon instead, since phase=0 draws a full moon in the current rendering math
-        const knownFullMoon = new Date("2024-01-25T17:54:00Z").getTime();
         const now = Date.now();
-        const diff = now - knownFullMoon;
+        const diff = now - KNOWN_FULL_MOON;
         let phase = (diff / (LUNAR_MONTH * msPerDay)) % 1;
         if (phase < 0) phase += 1;
         return phase;
@@ -569,6 +574,11 @@
     let weatherDataCache = null;
     let currentWeatherView = '24h'; 
 
+    // --- VARIABLES GLOBALES DE POSITION ---
+    let currentLat = 46.76;
+    let currentLon = -71.26;
+    let currentLocationName = "Lévis";
+
     // --- VARIABLES GLOBALES ET FOND DYNAMIQUE ---
     let currentConditions = {
         temp: 0, wind: 0, rain: 0, snow: 0, cloudCover: 0,
@@ -577,6 +587,7 @@
         sunriseTime: 0, sunsetTime: 0, nowSec: 0,
         tideHeight: 10, tideTrend: '' // Trend : ⬆️ ou ⬇️
     };
+    let lightningFlashAlpha = 0;
 
     function updateDynamicBackground() {
         const isDark = document.body.classList.contains('dark-mode');
@@ -728,11 +739,28 @@
             sCtx.fillStyle = c.isNight ? 'rgba(50, 50, 60, 0.6)' : 'rgba(255, 255, 255, 0.5)';
             sCtx.fillRect(0, 0, W, H);
         }
+
+        // Lightning effect
+        const isThunderstorm = c.weatherCode === 95 || c.weatherCode === 96 || c.weatherCode === 99;
+        if (isThunderstorm) {
+            // Randomly trigger a flash
+            if (Math.random() < 0.01) { // roughly every few seconds at 60fps
+                lightningFlashAlpha = 0.8 + Math.random() * 0.2; // intense flash
+            }
+        }
+
+        if (lightningFlashAlpha > 0) {
+            sCtx.fillStyle = `rgba(255, 255, 255, ${lightningFlashAlpha})`;
+            sCtx.fillRect(0, 0, W, H);
+            // Decay the flash quickly
+            lightningFlashAlpha -= 0.05;
+            if (lightningFlashAlpha < 0) lightningFlashAlpha = 0;
+        }
         
         for(let i=0; i<numCloudsActive; i++) {
             let cl = clouds[i];
             // Darker clouds for rain/snow, fluffier for clear
-            const isStormy = c.weatherCode >= 51 && c.weatherCode <= 95;
+            const isStormy = c.weatherCode >= 51 && c.weatherCode <= 99;
             if (isStormy) {
                 sCtx.fillStyle = c.isNight ? `rgba(30, 30, 40, ${cl.op + 0.2})` : `rgba(100, 110, 120, ${cl.op + 0.3})`;
             } else {
@@ -846,7 +874,11 @@
     // --- API MÉTÉO ---
     async function fetchWeather() {
         try {
-            const url = `https://api.open-meteo.com/v1/forecast?latitude=46.76&longitude=-71.26&current=temperature_2m,precipitation,snowfall,cloud_cover,weather_code,windspeed_10m,winddirection_10m,wind_gusts_10m,visibility,surface_pressure,relative_humidity_2m&hourly=temperature_2m,precipitation,snowfall,weather_code,windspeed_10m,winddirection_10m,wind_gusts_10m,visibility&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,windspeed_10m_max,windgusts_10m_max,winddirection_10m_dominant,precipitation_sum,snowfall_sum&forecast_days=7&timezone=America%2FToronto&timeformat=unixtime&wind_speed_unit=kn&models=gem_hrdps_continental`;
+            document.getElementById('weather-body').innerHTML = '<p class="loading">Chargement météo...</p>';
+            // Show location in the title
+            document.querySelector('#btn-weather-view').parentElement.querySelector('h2').innerText = `☁️ Météo (${currentLocationName})`;
+
+            const url = `https://api.open-meteo.com/v1/forecast?latitude=${currentLat}&longitude=${currentLon}&current=temperature_2m,precipitation,snowfall,cloud_cover,weather_code,windspeed_10m,winddirection_10m,wind_gusts_10m,visibility,surface_pressure,relative_humidity_2m&hourly=temperature_2m,precipitation,snowfall,weather_code,windspeed_10m,winddirection_10m,wind_gusts_10m,visibility&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,windspeed_10m_max,windgusts_10m_max,winddirection_10m_dominant,precipitation_sum,snowfall_sum&forecast_days=7&timezone=America%2FToronto&timeformat=unixtime&wind_speed_unit=kn&models=gem_hrdps_continental`;
             const res = await fetch(url);
             if (!res.ok) throw new Error("Erreur API Météo");
             weatherDataCache = await res.json();
@@ -1165,6 +1197,45 @@
         }
     }
     inTotal.addEventListener('input', updateCalculator); inDone.addEventListener('input', updateCalculator); inRate.addEventListener('input', updateCalculator);
+
+    // --- LOCATION SEARCH ---
+    document.getElementById('btn-loc-search').addEventListener('click', async () => {
+        const input = document.getElementById('loc-search-input').value.trim();
+        if (!input) return;
+
+        // Check if coordinates (e.g. 46.7, -71.2)
+        const coordsMatch = input.match(/^(-?\d+(\.\d+)?)\s*,\s*(-?\d+(\.\d+)?)$/);
+        if (coordsMatch) {
+            currentLat = parseFloat(coordsMatch[1]);
+            currentLon = parseFloat(coordsMatch[3]);
+            currentLocationName = `${currentLat}, ${currentLon}`;
+            fetchWeather();
+            return;
+        }
+
+        // Otherwise Geocoding API
+        try {
+            document.getElementById('btn-loc-search').innerHTML = '⏳';
+            const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(input)}&count=1&language=fr&format=json`);
+            const data = await res.json();
+            if (data.results && data.results.length > 0) {
+                currentLat = data.results[0].latitude;
+                currentLon = data.results[0].longitude;
+                currentLocationName = data.results[0].name;
+                fetchWeather();
+            } else {
+                alert('Localisation introuvable.');
+            }
+        } catch (e) {
+            alert('Erreur de recherche.');
+        } finally {
+            document.getElementById('btn-loc-search').innerHTML = '🔍';
+        }
+    });
+
+    document.getElementById('loc-search-input').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') document.getElementById('btn-loc-search').click();
+    });
 
     // --- VUES METEO 24H/7J ---
     document.getElementById('btn-weather-view').addEventListener('click', (e) => {
