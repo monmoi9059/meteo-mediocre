@@ -616,23 +616,173 @@
     };
     let lightningFlashAlpha = 0;
 
+
+    function lerpColor(a, b, amount) {
+        var ah = parseInt(a.replace(/#/g, ''), 16),
+            ar = ah >> 16, ag = ah >> 8 & 0xff, ab = ah & 0xff,
+            bh = parseInt(b.replace(/#/g, ''), 16),
+            br = bh >> 16, bg = bh >> 8 & 0xff, bb = bh & 0xff,
+            rr = ar + amount * (br - ar),
+            rg = ag + amount * (bg - ag),
+            rb = ab + amount * (bb - ab);
+        return '#' + ((1 << 24) + (rr << 16) + (rg << 8) + rb | 0).toString(16).slice(1);
+    }
+
+    function mapRange(value, inMin, inMax, outMin, outMax) {
+        let mapped = (value - inMin) * (outMax - outMin) / (inMax - inMin) + outMin;
+        return Math.max(outMin, Math.min(outMax, mapped));
+    }
+
+    function getColorFromStops(stops, factor) {
+        factor = Math.max(0, Math.min(1, factor));
+        if (factor <= stops[0].p) return stops[0].c;
+        if (factor >= stops[stops.length - 1].p) return stops[stops.length - 1].c;
+
+        for (let i = 0; i < stops.length - 1; i++) {
+            if (factor >= stops[i].p && factor <= stops[i+1].p) {
+                let amount = (factor - stops[i].p) / (stops[i+1].p - stops[i].p);
+                return lerpColor(stops[i].c, stops[i+1].c, amount);
+            }
+        }
+        return stops[0].c;
+    }
+
     function updateDynamicBackground() {
         const isDark = document.body.classList.contains('dark-mode');
         const c = currentConditions;
         const bgDiv = document.getElementById('dynamic-bg');
 
         let color1, color2, color3, waterColor;
-        if (isDark || c.isNight) {
-            if (c.temp < -5) { color1 = '#020617'; color2 = '#0ea5e9'; color3 = '#000000'; }
-            else if (c.temp > 20) { color1 = '#2e0219'; color2 = '#be123c'; color3 = '#1a000d'; }
-            else { color1 = '#0f172a'; color2 = '#4338ca'; color3 = '#060913'; }
-            waterColor = 'rgba(2, 132, 199, 0.75)'; 
+
+        // Time of day factor [0, 1]
+        // 0 = midnight, 0.25 = sunrise, 0.5 = noon, 0.75 = sunset, 1 = midnight
+        let timeFactor = 0;
+
+        if (c.sunriseTime && c.sunsetTime) {
+            let totalDay = c.sunsetTime - c.sunriseTime;
+            let totalNight = 86400 - totalDay;
+
+            if (c.nowSec >= c.sunriseTime && c.nowSec <= c.sunsetTime) {
+                // Day time (0.25 to 0.75)
+                let progDay = (c.nowSec - c.sunriseTime) / totalDay;
+                timeFactor = 0.25 + (progDay * 0.5);
+            } else {
+                // Night time (0.75 to 1.0, or 0.0 to 0.25)
+                let timeSinceSunset = c.nowSec > c.sunsetTime ? (c.nowSec - c.sunsetTime) : (c.nowSec + 86400 - c.sunsetTime);
+                let progNight = timeSinceSunset / totalNight;
+
+                timeFactor = 0.75 + (progNight * 0.5);
+                if (timeFactor > 1.0) timeFactor -= 1.0;
+            }
         } else {
-            if (c.isGoldenHour) { color1 = '#fde047'; color2 = '#f43f5e'; color3 = '#fbbf24'; }
-            else if (c.temp < -5) { color1 = '#e0f2fe'; color2 = '#0ea5e9'; color3 = '#bfdbfe'; }
-            else if (c.temp > 20) { color1 = '#fef08a'; color2 = '#ea580c'; color3 = '#fed7aa'; }
-            else { color1 = '#bae6fd'; color2 = '#2563eb'; color3 = '#93c5fd'; }
-            waterColor = 'rgba(14, 165, 233, 0.65)'; 
+            // Fallback to simple hour math if no sunset/sunrise data
+            let d = new Date();
+            timeFactor = (d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds()) / 86400;
+        }
+
+        // Base Sky Palettes (top, mid, bottom)
+        let palTop = [
+            {p: 0.0, c: '#020617'}, // Midnight
+            {p: 0.2, c: '#0f172a'}, // Pre-dawn
+            {p: 0.25, c: '#fde047'}, // Sunrise Golden Hour
+            {p: 0.35, c: '#bae6fd'}, // Morning
+            {p: 0.5, c: '#38bdf8'}, // Noon
+            {p: 0.65, c: '#bae6fd'}, // Afternoon
+            {p: 0.75, c: '#fde047'}, // Sunset Golden Hour
+            {p: 0.8, c: '#1e1b4b'}, // Post-sunset
+            {p: 1.0, c: '#020617'}  // Midnight
+        ];
+        let palMid = [
+            {p: 0.0, c: '#000000'},
+            {p: 0.2, c: '#4338ca'},
+            {p: 0.25, c: '#f43f5e'},
+            {p: 0.35, c: '#2563eb'},
+            {p: 0.5, c: '#0284c7'},
+            {p: 0.65, c: '#2563eb'},
+            {p: 0.75, c: '#ea580c'},
+            {p: 0.8, c: '#312e81'},
+            {p: 1.0, c: '#000000'}
+        ];
+        let palBot = [
+            {p: 0.0, c: '#000000'},
+            {p: 0.2, c: '#060913'},
+            {p: 0.25, c: '#fbbf24'},
+            {p: 0.35, c: '#93c5fd'},
+            {p: 0.5, c: '#e0f2fe'},
+            {p: 0.65, c: '#93c5fd'},
+            {p: 0.75, c: '#fed7aa'},
+            {p: 0.8, c: '#0f0518'},
+            {p: 1.0, c: '#000000'}
+        ];
+
+        color1 = getColorFromStops(palTop, timeFactor);
+        color2 = getColorFromStops(palMid, timeFactor);
+        color3 = getColorFromStops(palBot, timeFactor);
+
+        // Water base color
+        let waterPal = [
+            {p: 0.0, c: '#0284c7'}, {p: 0.25, c: '#0284c7'}, {p: 0.35, c: '#0ea5e9'},
+            {p: 0.5, c: '#38bdf8'}, {p: 0.65, c: '#0ea5e9'}, {p: 0.75, c: '#0284c7'}, {p: 1.0, c: '#0284c7'}
+        ];
+        let baseWaterColor = getColorFromStops(waterPal, timeFactor);
+
+        // Moon Phase Effect on night sky (brightens the sky slightly around full moon)
+        let phase = getMoonPhase();
+        // 0.5 is full moon. Calculate a multiplier [0, 1] where 1 is full moon.
+        let moonIntensity = 1.0 - Math.abs(0.5 - phase) * 2;
+
+        if (c.isNight) {
+            // Blend base sky with slightly brighter blue/white based on moon phase
+            let moonGlow = '#1e293b';
+            color1 = lerpColor(color1, moonGlow, moonIntensity * 0.3);
+            color2 = lerpColor(color2, moonGlow, moonIntensity * 0.2);
+            color3 = lerpColor(color3, moonGlow, moonIntensity * 0.1);
+        }
+
+        // Weather Effect on Sky (Clouds / Storm)
+        let isStormy = c.weatherCode >= 51 && c.weatherCode <= 99;
+        let isFoggy = c.weatherCode === 45 || c.weatherCode === 48;
+
+        let stormCloudCover = c.cloudCover / 100.0; // 0 to 1
+
+        if (stormCloudCover > 0) {
+            // Target cloudy/stormy colors
+            let stormColorTop = c.isNight ? '#111827' : '#64748b';
+            let stormColorMid = c.isNight ? '#1f2937' : '#94a3b8';
+            let stormColorBot = c.isNight ? '#374151' : '#cbd5e1';
+
+            if (isStormy) {
+                stormColorTop = c.isNight ? '#030712' : '#334155';
+                stormColorMid = c.isNight ? '#111827' : '#475569';
+                stormColorBot = c.isNight ? '#1f2937' : '#64748b';
+            }
+            if (isFoggy) {
+                stormColorTop = c.isNight ? '#374151' : '#e2e8f0';
+                stormColorMid = c.isNight ? '#4b5563' : '#f1f5f9';
+                stormColorBot = c.isNight ? '#6b7280' : '#ffffff';
+            }
+
+            color1 = lerpColor(color1, stormColorTop, stormCloudCover * 0.8);
+            color2 = lerpColor(color2, stormColorMid, stormCloudCover * 0.8);
+            color3 = lerpColor(color3, stormColorBot, stormCloudCover * 0.8);
+        }
+
+        // Convert baseWaterColor hex to rgba
+        function hexToRgba(hex, alpha) {
+            var r = parseInt(hex.slice(1, 3), 16),
+                g = parseInt(hex.slice(3, 5), 16),
+                b = parseInt(hex.slice(5, 7), 16);
+            return 'rgba(' + r + ', ' + g + ', ' + b + ', ' + alpha + ')';
+        }
+
+        waterColor = hexToRgba(baseWaterColor, c.isNight ? 0.75 : 0.65);
+
+        // Dark mode override if strictly enforced (optional, user preference if needed)
+        if (isDark && !c.isNight) {
+            color1 = lerpColor(color1, '#0f172a', 0.8);
+            color2 = lerpColor(color2, '#1e293b', 0.8);
+            color3 = lerpColor(color3, '#334155', 0.8);
+            waterColor = hexToRgba(baseWaterColor, 0.75);
         }
 
         let animSpeed = Math.max(2, 20 - (c.wind * 0.6));
@@ -1471,9 +1621,9 @@
 
     // --- PRESETS ---
     const presetBtns = document.querySelectorAll('.preset-btn');
-    let pressTimer;
     presetBtns.forEach(btn => {
         const slot = btn.getAttribute('data-slot');
+        let pressTimer;
 
         // Initialiser le style si un preset existe
         if (localStorage.getItem(`preset_${slot}`)) {
