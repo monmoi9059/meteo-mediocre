@@ -267,7 +267,7 @@
 
 <!-- SHORE LAYER (LEVIS BACKGROUND) -->
 <div id="shore-layer" class="shore-layer">
-    <svg width="100%" height="250" viewBox="0 0 1000 250" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <svg width="100%" height="250" viewBox="0 0 1000 250" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" style="overflow: visible;">
         <!-- Mountain Background (Heavily wooded) -->
         <path d="M 0 250 L 0 60 Q 150 10 300 70 T 700 30 T 1000 80 L 1000 250 Z" fill="#1b4d24" />
         <path d="M 0 250 L 0 90 Q 200 30 400 100 T 800 60 L 1000 110 L 1000 250 Z" fill="#266330" />
@@ -294,87 +294,177 @@
 
         <!-- Valero Dock - Mooring Dolphins (Ducs d'albe) and Catwalks -->
         <!-- Catwalks (Yellow) -->
-        <line x1="50" y1="200" x2="950" y2="200" stroke="#facc15" stroke-width="6" />
-        <line x1="50" y1="205" x2="950" y2="205" stroke="#ca8a04" stroke-width="2" />
-        <!-- Catwalk railings -->
-        <line x1="50" y1="190" x2="950" y2="190" stroke="#facc15" stroke-width="2" />
-        <path d="M 50 200 L 50 190 M 150 200 L 150 190 M 250 200 L 250 190 M 350 200 L 350 190 M 650 200 L 650 190 M 750 200 L 750 190 M 850 200 L 850 190 M 950 200 L 950 190" stroke="#ca8a04" stroke-width="2" />
+        <line x1="0" y1="230" x2="1000" y2="230" stroke="#facc15" stroke-width="8" />
+        <line x1="0" y1="238" x2="1000" y2="238" stroke="#ca8a04" stroke-width="3" />
 
-        <!-- Dolphins (Concrete / Steel bases in the water) -->
-        <g fill="#64748b" stroke="#475569" stroke-width="2">
+        <!-- Catwalk railings (taller and more detailed) -->
+        <line x1="0" y1="210" x2="1000" y2="210" stroke="#facc15" stroke-width="3" />
+        <path d="M 20 230 L 20 210 M 80 230 L 80 210 M 140 230 L 140 210 M 200 230 L 200 210 M 800 230 L 800 210 M 860 230 L 860 210 M 920 230 L 920 210 M 980 230 L 980 210" stroke="#ca8a04" stroke-width="3" />
+        <path d="M 20 210 L 80 230 M 80 210 L 140 230 M 140 210 L 200 230 M 800 210 L 860 230 M 860 210 L 920 230 M 920 210 L 980 230" stroke="#fef08a" stroke-width="1" opacity="0.6"/> <!-- Cross braces -->
+
+        <!-- Dolphins (Concrete / Steel bases in the water going deep) -->
+        <!-- Extended down to y=800 so they stay in water even at lowest tide -->
+        <g fill="#64748b" stroke="#475569" stroke-width="3">
             <!-- Left dolphins -->
-            <polygon points="40,250 60,250 55,190 45,190" />
-            <polygon points="140,250 160,250 155,190 145,190" />
-            <polygon points="240,250 260,250 255,190 245,190" />
+            <polygon points="15,800 65,800 55,200 25,200" />
+            <polygon points="125,800 175,800 165,200 135,200" />
             <!-- Right dolphins -->
-            <polygon points="740,250 760,250 755,190 745,190" />
-            <polygon points="840,250 860,250 855,190 845,190" />
-            <polygon points="940,250 960,250 955,190 945,190" />
-        </g>
-        <!-- Dolphin tops (Yellow mooring hooks area) -->
-        <g fill="#facc15">
-            <rect x="42" y="185" width="16" height="6" rx="2" />
-            <rect x="142" y="185" width="16" height="6" rx="2" />
-            <rect x="242" y="185" width="16" height="6" rx="2" />
-            <rect x="742" y="185" width="16" height="6" rx="2" />
-            <rect x="842" y="185" width="16" height="6" rx="2" />
-            <rect x="942" y="185" width="16" height="6" rx="2" />
+            <polygon points="825,800 875,800 865,200 835,200" />
+            <polygon points="935,800 985,800 975,200 945,200" />
         </g>
 
-        <!-- Main Loading Platform (Center 350-650) -->
-        <!-- Platform Pilings -->
-        <rect x="360" y="200" width="10" height="50" fill="#475569" />
-        <rect x="410" y="200" width="10" height="50" fill="#475569" />
-        <rect x="460" y="200" width="10" height="50" fill="#475569" />
-        <rect x="530" y="200" width="10" height="50" fill="#475569" />
-        <rect x="580" y="200" width="10" height="50" fill="#475569" />
-        <rect x="630" y="200" width="10" height="50" fill="#475569" />
+        <!-- Cross bracing on dolphin pillars -->
+        <g stroke="#334155" stroke-width="4" opacity="0.8">
+            <line x1="25" y1="250" x2="60" y2="280" />
+            <line x1="60" y1="250" x2="25" y2="280" />
+            <line x1="135" y1="250" x2="170" y2="280" />
+            <line x1="170" y1="250" x2="135" y2="280" />
+            <line x1="835" y1="250" x2="870" y2="280" />
+            <line x1="870" y1="250" x2="835" y2="280" />
+            <line x1="945" y1="250" x2="980" y2="280" />
+            <line x1="980" y1="250" x2="945" y2="280" />
+
+            <line x1="20" y1="310" x2="55" y2="340" />
+            <line x1="55" y1="310" x2="20" y2="340" />
+            <line x1="130" y1="310" x2="165" y2="340" />
+            <line x1="165" y1="310" x2="130" y2="340" />
+            <line x1="830" y1="310" x2="865" y2="340" />
+            <line x1="865" y1="310" x2="830" y2="340" />
+            <line x1="940" y1="310" x2="975" y2="340" />
+            <line x1="975" y1="310" x2="940" y2="340" />
+        </g>
+
+        <!-- Dolphin tops (Yellow mooring hooks area, larger) -->
+        <g fill="#facc15">
+            <rect x="20" y="190" width="40" height="10" rx="3" />
+            <rect x="130" y="190" width="40" height="10" rx="3" />
+            <rect x="830" y="190" width="40" height="10" rx="3" />
+            <rect x="940" y="190" width="40" height="10" rx="3" />
+        </g>
+
+        <!-- Large Mooring Hooks -->
+        <g fill="#1e293b">
+            <circle cx="30" cy="185" r="4" />
+            <circle cx="50" cy="185" r="4" />
+            <circle cx="140" cy="185" r="4" />
+            <circle cx="160" cy="185" r="4" />
+            <circle cx="840" cy="185" r="4" />
+            <circle cx="860" cy="185" r="4" />
+            <circle cx="950" cy="185" r="4" />
+            <circle cx="970" cy="185" r="4" />
+        </g>
+
+        <!-- Main Loading Platform (Center 220-780 to make it much bigger) -->
+        <!-- Deep Platform Pilings -->
+        <g fill="#475569">
+            <rect x="260" y="240" width="20" height="600" />
+            <rect x="340" y="240" width="20" height="600" />
+            <rect x="420" y="240" width="20" height="600" />
+            <rect x="560" y="240" width="20" height="600" />
+            <rect x="640" y="240" width="20" height="600" />
+            <rect x="720" y="240" width="20" height="600" />
+        </g>
+        <!-- Platform Cross Bracing -->
+        <g stroke="#334155" stroke-width="5" opacity="0.8">
+            <line x1="280" y1="260" x2="340" y2="300" />
+            <line x1="340" y1="260" x2="280" y2="300" />
+            <line x1="360" y1="260" x2="420" y2="300" />
+            <line x1="420" y1="260" x2="360" y2="300" />
+            <line x1="580" y1="260" x2="640" y2="300" />
+            <line x1="640" y1="260" x2="580" y2="300" />
+            <line x1="660" y1="260" x2="720" y2="300" />
+            <line x1="720" y1="260" x2="660" y2="300" />
+            <!-- Lower cross braces -->
+            <line x1="280" y1="320" x2="340" y2="360" />
+            <line x1="340" y1="320" x2="280" y2="360" />
+            <line x1="360" y1="320" x2="420" y2="360" />
+            <line x1="420" y1="320" x2="360" y2="360" />
+            <line x1="580" y1="320" x2="640" y2="360" />
+            <line x1="640" y1="320" x2="580" y2="360" />
+            <line x1="660" y1="320" x2="720" y2="360" />
+            <line x1="720" y1="320" x2="660" y2="360" />
+        </g>
 
         <!-- Platform Base -->
-        <rect x="350" y="195" width="300" height="15" fill="#cbd5e1" stroke="#94a3b8" stroke-width="2" />
-        <rect x="350" y="210" width="300" height="5" fill="#64748b" />
+        <rect x="230" y="220" width="540" height="20" fill="#cbd5e1" stroke="#94a3b8" stroke-width="3" />
+        <rect x="230" y="240" width="540" height="10" fill="#64748b" />
 
-        <!-- Industrial Structures / Control Building -->
-        <rect x="480" y="160" width="40" height="35" fill="#e2e8f0" stroke="#94a3b8" stroke-width="2" />
+        <!-- Safety Caged Ladders extending into water -->
+        <g stroke="#1e293b" stroke-width="2">
+            <line x1="240" y1="250" x2="240" y2="500" />
+            <line x1="250" y1="250" x2="250" y2="500" />
+            <path d="M 235 260 Q 245 270 255 260 M 235 280 Q 245 290 255 280 M 235 300 Q 245 310 255 300 M 235 320 Q 245 330 255 320 M 235 340 Q 245 350 255 340 M 235 360 Q 245 370 255 360 M 235 380 Q 245 390 255 380 M 235 400 Q 245 410 255 400 M 235 420 Q 245 430 255 420 M 235 440 Q 245 450 255 440" fill="none" stroke="#475569" stroke-width="2"/>
+            <path d="M 240 250 L 250 250 M 240 260 L 250 260 M 240 270 L 250 270 M 240 280 L 250 280 M 240 290 L 250 290" fill="none" stroke="#1e293b"/>
+        </g>
+        <g stroke="#1e293b" stroke-width="2">
+            <line x1="750" y1="250" x2="750" y2="500" />
+            <line x1="760" y1="250" x2="760" y2="500" />
+            <path d="M 745 260 Q 755 270 765 260 M 745 280 Q 755 290 765 280 M 745 300 Q 755 310 765 300 M 745 320 Q 755 330 765 320 M 745 340 Q 755 350 765 340 M 745 360 Q 755 370 765 360 M 745 380 Q 755 390 765 380 M 745 400 Q 755 410 765 400 M 745 420 Q 755 430 765 420 M 745 440 Q 755 450 765 440" fill="none" stroke="#475569" stroke-width="2"/>
+        </g>
+
+        <!-- Industrial Structures / Control Building (Scaled up) -->
+        <rect x="440" y="150" width="100" height="70" fill="#e2e8f0" stroke="#94a3b8" stroke-width="3" />
+        <rect x="440" y="140" width="100" height="10" fill="#94a3b8" /> <!-- Roof -->
+        <rect x="490" y="120" width="6" height="20" fill="#cbd5e1" /> <!-- Antenna -->
         <!-- Windows -->
-        <rect x="485" y="165" width="8" height="10" fill="#38bdf8" />
-        <rect x="495" y="165" width="8" height="10" fill="#38bdf8" />
-        <rect x="505" y="165" width="8" height="10" fill="#38bdf8" />
+        <rect x="450" y="160" width="20" height="25" fill="#38bdf8" />
+        <rect x="480" y="160" width="20" height="25" fill="#38bdf8" />
+        <rect x="510" y="160" width="20" height="25" fill="#38bdf8" />
 
-        <!-- Loading Arms (Chiksans) & Cranes -->
+        <!-- Stairs to control building -->
+        <path d="M 540 220 L 550 200 L 580 200 L 590 220" fill="none" stroke="#475569" stroke-width="4" />
+
+        <!-- Piping Manifold on Platform (More dense) -->
+        <rect x="320" y="195" width="360" height="25" fill="#94a3b8" />
+        <line x1="320" y1="200" x2="680" y2="200" stroke="#475569" stroke-width="4" />
+        <line x1="320" y1="210" x2="680" y2="210" stroke="#475569" stroke-width="4" />
+        <!-- Large Valves -->
+        <rect x="360" y="180" width="15" height="15" fill="#3b82f6" />
+        <rect x="380" y="180" width="15" height="15" fill="#ef4444" />
+        <circle cx="367.5" cy="170" r="8" fill="#1e293b" />
+        <circle cx="387.5" cy="170" r="8" fill="#1e293b" />
+
+        <rect x="600" y="180" width="15" height="15" fill="#3b82f6" />
+        <rect x="620" y="180" width="15" height="15" fill="#ef4444" />
+        <circle cx="607.5" cy="170" r="8" fill="#1e293b" />
+        <circle cx="627.5" cy="170" r="8" fill="#1e293b" />
+
+        <!-- Loading Arms (Chiksans) & Cranes (Huge and closer) -->
         <!-- Base stands -->
-        <rect x="420" y="165" width="12" height="30" fill="#64748b" />
-        <rect x="560" y="165" width="12" height="30" fill="#64748b" />
+        <rect x="330" y="150" width="25" height="70" fill="#64748b" />
+        <rect x="640" y="150" width="25" height="70" fill="#64748b" />
         <!-- Articulated Arms (White/Grey with joints) -->
-        <path d="M 426 165 L 426 120 L 450 100 L 450 140" fill="none" stroke="#e2e8f0" stroke-width="6" stroke-linejoin="round" />
-        <path d="M 426 165 L 426 120 L 450 100 L 450 140" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linejoin="round" />
-        <circle cx="426" cy="120" r="5" fill="#ef4444" />
-        <circle cx="450" cy="100" r="5" fill="#ef4444" />
+        <!-- Arm 1 (Left) -->
+        <path d="M 342.5 150 L 342.5 60 L 390 20 L 390 100" fill="none" stroke="#e2e8f0" stroke-width="12" stroke-linejoin="round" />
+        <path d="M 342.5 150 L 342.5 60 L 390 20 L 390 100" fill="none" stroke="#94a3b8" stroke-width="4" stroke-linejoin="round" />
+        <circle cx="342.5" cy="60" r="10" fill="#ef4444" />
+        <circle cx="390" cy="20" r="10" fill="#ef4444" />
 
-        <path d="M 566 165 L 566 110 L 530 90 L 530 140" fill="none" stroke="#e2e8f0" stroke-width="6" stroke-linejoin="round" />
-        <path d="M 566 165 L 566 110 L 530 90 L 530 140" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linejoin="round" />
-        <circle cx="566" cy="110" r="5" fill="#ef4444" />
-        <circle cx="530" cy="90" r="5" fill="#ef4444" />
+        <!-- Arm 2 (Right) -->
+        <path d="M 652.5 150 L 652.5 40 L 590 -10 L 590 90" fill="none" stroke="#e2e8f0" stroke-width="12" stroke-linejoin="round" />
+        <path d="M 652.5 150 L 652.5 40 L 590 -10 L 590 90" fill="none" stroke="#94a3b8" stroke-width="4" stroke-linejoin="round" />
+        <circle cx="652.5" cy="40" r="10" fill="#ef4444" />
+        <circle cx="590" cy="-10" r="10" fill="#ef4444" />
 
-        <!-- High Mast Lighting -->
-        <line x1="380" y1="195" x2="380" y2="80" stroke="#94a3b8" stroke-width="3" />
-        <line x1="370" y1="80" x2="390" y2="80" stroke="#cbd5e1" stroke-width="4" />
-        <circle cx="372" cy="82" r="3" fill="#fef08a" />
-        <circle cx="388" cy="82" r="3" fill="#fef08a" />
+        <!-- Secondary smaller arm on left -->
+        <path d="M 360 170 L 360 100 L 410 70 L 410 120" fill="none" stroke="#cbd5e1" stroke-width="8" stroke-linejoin="round" />
+        <circle cx="360" cy="100" r="6" fill="#3b82f6" />
+        <circle cx="410" cy="70" r="6" fill="#3b82f6" />
 
-        <line x1="610" y1="195" x2="610" y2="80" stroke="#94a3b8" stroke-width="3" />
-        <line x1="600" y1="80" x2="620" y2="80" stroke="#cbd5e1" stroke-width="4" />
-        <circle cx="602" cy="82" r="3" fill="#fef08a" />
-        <circle cx="618" cy="82" r="3" fill="#fef08a" />
+        <!-- High Mast Lighting (Taller and beefier) -->
+        <line x1="280" y1="220" x2="280" y2="0" stroke="#94a3b8" stroke-width="6" />
+        <line x1="260" y1="0" x2="300" y2="0" stroke="#cbd5e1" stroke-width="8" />
+        <path d="M 260 0 L 250 15 L 270 15 Z" fill="#fef08a" />
+        <path d="M 290 0 L 280 15 L 300 15 Z" fill="#fef08a" />
 
-        <!-- Piping Manifold on Platform -->
-        <rect x="400" y="180" width="190" height="15" fill="#94a3b8" />
-        <line x1="400" y1="185" x2="590" y2="185" stroke="#475569" stroke-width="2" />
-        <line x1="400" y1="190" x2="590" y2="190" stroke="#475569" stroke-width="2" />
-        <rect x="440" y="170" width="8" height="10" fill="#3b82f6" />
-        <rect x="450" y="170" width="8" height="10" fill="#ef4444" />
-        <rect x="530" y="170" width="8" height="10" fill="#3b82f6" />
-        <rect x="540" y="170" width="8" height="10" fill="#ef4444" />
+        <line x1="710" y1="220" x2="710" y2="-20" stroke="#94a3b8" stroke-width="6" />
+        <line x1="690" y1="-20" x2="730" y2="-20" stroke="#cbd5e1" stroke-width="8" />
+        <path d="M 690 -20 L 680 -5 L 700 -5 Z" fill="#fef08a" />
+        <path d="M 720 -20 L 710 -5 L 730 -5 Z" fill="#fef08a" />
+
+        <!-- Safety Rails on main platform edge -->
+        <line x1="230" y1="200" x2="770" y2="200" stroke="#facc15" stroke-width="3" />
+        <path d="M 230 220 L 230 200 M 270 220 L 270 200 M 310 220 L 310 200 M 690 220 L 690 200 M 730 220 L 730 200 M 770 220 L 770 200" stroke="#ca8a04" stroke-width="3" />
     </svg>
 </div>
 
