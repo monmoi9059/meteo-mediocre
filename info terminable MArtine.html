@@ -72,6 +72,7 @@
         /* Animation for parallax waves */
         .water-layer.flow-left .parallax > use { animation-name: move-forever-left; animation-timing-function: cubic-bezier(.55,.5,.45,.5); animation-iteration-count: infinite; }
         .water-layer.flow-right .parallax > use { animation-name: move-forever-right; animation-timing-function: cubic-bezier(.55,.5,.45,.5); animation-iteration-count: infinite; }
+        .water-layer.flow-slack .parallax > use { animation-name: move-forever-slack; animation-timing-function: ease-in-out; animation-iteration-count: infinite; }
 
         /* Staggered animation delays for the different layers */
         .parallax > use:nth-child(1) { animation-delay: -1s; animation-duration: 6s; }
@@ -84,6 +85,7 @@
 
         @keyframes move-forever-left { 0% { transform: translate3d(85px,0,0); } 100% { transform: translate3d(-90px,0,0); } }
         @keyframes move-forever-right { 0% { transform: translate3d(-90px,0,0); } 100% { transform: translate3d(85px,0,0); } }
+        @keyframes move-forever-slack { 0% { transform: translate3d(0px,0,0); } 50% { transform: translate3d(-20px,0,0); } 100% { transform: translate3d(0px,0,0); } }
 
         /* --- SHORE LAYER --- */
         .shore-layer {
@@ -423,6 +425,9 @@
         <div style="width: 8px; height: 8px; background: #f1c40f; border-radius: 4px 4px 1px 1px;"></div>
         <div style="width: 8px; height: 4px; background: #34495e; border-radius: 0 0 4px 4px;"></div>
     </div>
+
+    <!-- Debris Container -->
+    <div id="debris-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; overflow: hidden;"></div>
 </div>
 
 <!-- MODAL CALCULATRICE ETA -->
@@ -620,7 +625,8 @@
         pressure: 0, humidity: 0, weatherCode: 0,
         isNight: false, isGoldenHour: false,
         sunriseTime: 0, sunsetTime: 0, nowSec: 0,
-        tideHeight: 10, tideTrend: '' // Trend : ⬆️ ou ⬇️
+        tideHeight: 10, tideTrend: '', // Trend : ⬆️ ou ⬇️
+        flowDirection: 'none' // 'right', 'left', 'slack'
     };
     let lightningFlashAlpha = 0;
 
@@ -727,10 +733,10 @@
         color2 = getColorFromStops(palMid, timeFactor);
         color3 = getColorFromStops(palBot, timeFactor);
 
-        // Water base color
+        // Water base color (Fleuve Saint-Laurent: gris/brun/olive)
         let waterPal = [
-            {p: 0.0, c: '#0284c7'}, {p: 0.25, c: '#0284c7'}, {p: 0.35, c: '#0ea5e9'},
-            {p: 0.5, c: '#38bdf8'}, {p: 0.65, c: '#0ea5e9'}, {p: 0.75, c: '#0284c7'}, {p: 1.0, c: '#0284c7'}
+            {p: 0.0, c: '#111820'}, {p: 0.25, c: '#233036'}, {p: 0.35, c: '#424a40'},
+            {p: 0.5, c: '#505a49'}, {p: 0.65, c: '#424a40'}, {p: 0.75, c: '#233036'}, {p: 1.0, c: '#111820'}
         ];
         let baseWaterColor = getColorFromStops(waterPal, timeFactor);
 
@@ -806,11 +812,13 @@
 
         const waterLayer = document.getElementById('water-layer');
         if (waterLayer) {
-            waterLayer.classList.remove('flow-left', 'flow-right');
-            if (c.tideTrend.includes('Montante')) {
+            waterLayer.classList.remove('flow-left', 'flow-right', 'flow-slack');
+            if (c.flowDirection === 'right') {
                 waterLayer.classList.add('flow-right');
-            } else if (c.tideTrend.includes('Descendante')) {
+            } else if (c.flowDirection === 'left') {
                 waterLayer.classList.add('flow-left');
+            } else if (c.flowDirection === 'slack') {
+                waterLayer.classList.add('flow-slack');
             }
         }
     }
@@ -1471,14 +1479,28 @@
 
         // Évaluation du Courant (Flot, Jusant, Étale)
         let flowText = "Inconnu", dockSide = "N/A";
+        currentConditions.flowDirection = 'none';
+
         if (prevTideForFlow && nextTideForFlow) {
             let tPrev = new Date(prevTideForFlow.eventDate).getTime();
             let tNext = new Date(nextTideForFlow.eventDate).getTime();
             let isRising = nextTideForFlow.value > prevTideForFlow.value;
             
-            if (Math.abs(nowTime - tPrev) < 1800000 || Math.abs(nowTime - tNext) < 1800000) { flowText = "Étale (Renverse)"; dockSide = "Au choix"; }
-            else if (isRising) { flowText = "Montant (Flot) ⬆️"; dockSide = "Tribord"; }
-            else { flowText = "Descendant (Jusant) ⬇️"; dockSide = "Bâbord"; }
+            if (Math.abs(nowTime - tPrev) < 1800000 || Math.abs(nowTime - tNext) < 1800000) {
+                flowText = "Étale (Renverse)";
+                dockSide = "Au choix";
+                currentConditions.flowDirection = 'slack';
+            }
+            else if (isRising) {
+                flowText = "Montant (Flot) ⬆️";
+                dockSide = "Tribord";
+                currentConditions.flowDirection = 'right';
+            }
+            else {
+                flowText = "Descendant (Jusant) ⬇️";
+                dockSide = "Bâbord";
+                currentConditions.flowDirection = 'left';
+            }
         }
 
         // Section 86
@@ -1774,6 +1796,137 @@
         updateDynamicBackground();
         if(weatherChart) renderWeatherUI(); if(tidesChart) fetchTides();
     });
+
+    // --- DÉBRIS ET EFFETS DE RIVIÈRE ---
+    let debrisList = [];
+    const debrisContainer = document.getElementById('debris-container');
+
+    function getSeasonalDebris() {
+        const month = new Date().getMonth(); // 0 = Janvier, 11 = Décembre
+
+        // Base debris: beaucoup de bois et trucs communs
+        let debris = ['🪵', '🪵', '🪵', '🪵', '🪵', '🛢️', '📦', '🌲'];
+
+        // Saisonniers
+        if (month === 9) { // Octobre
+            debris.push('🎃', '🦇');
+        } else if (month === 11) { // Décembre
+            debris.push('🎁', '🎅', '🧊');
+        } else if (month === 2) { // Mars
+            debris.push('☘️');
+        } else if (month === 0 || month === 1) { // Jan-Fev
+            debris.push('🧊', '🧊', '🧊');
+        } else if (month >= 8 && month <= 10) { // Automne
+            debris.push('🍂', '🍁');
+        } else if (month >= 5 && month <= 7) { // Été
+            debris.push('🏖️', '🕶️', '🛶');
+        }
+
+        return debris;
+    }
+
+    function spawnDebris() {
+        if (!debrisContainer) return;
+
+        const types = getSeasonalDebris();
+        const type = types[Math.floor(Math.random() * types.length)];
+
+        const el = document.createElement('div');
+        el.innerText = type;
+        el.style.position = 'absolute';
+
+        // Random Y position in the top 30px of the water layer
+        const y = Math.random() * 30 + 5;
+        el.style.top = y + 'px';
+
+        // Size and base styles
+        const size = Math.random() * 0.8 + 0.7; // Scale 0.7 to 1.5
+        el.style.fontSize = (20 * size) + 'px';
+        el.style.opacity = Math.random() * 0.4 + 0.6; // Opacity 0.6 to 1.0
+
+        // Random spin direction
+        const spinSpeed = (Math.random() - 0.5) * 2;
+
+        // Start offscreen depending on current flow
+        let x = -50;
+        let speed = Math.random() * 0.5 + 0.2;
+
+        if (currentConditions.flowDirection === 'left') {
+            x = window.innerWidth + 50;
+        } else if (currentConditions.flowDirection === 'slack') {
+            // If slack, spawn offscreen randomly on the left or right side
+            x = Math.random() > 0.5 ? -50 : window.innerWidth + 50;
+            speed = Math.random() * 0.1; // Very slow
+        }
+
+        const debrisObj = {
+            el: el,
+            x: x,
+            y: y,
+            speed: speed,
+            rotation: Math.random() * 360,
+            spinSpeed: spinSpeed,
+            baseSpeed: speed,
+            bobOffset: Math.random() * Math.PI * 2
+        };
+
+        debrisList.push(debrisObj);
+        debrisContainer.appendChild(el);
+    }
+
+    function updateDebrisFX() {
+        // Spawn new debris randomly (approx every few seconds)
+        if (Math.random() < 0.003) {
+            spawnDebris();
+        }
+
+        for (let i = debrisList.length - 1; i >= 0; i--) {
+            let d = debrisList[i];
+
+            // Adjust speed based on flow
+            let currentSpeed = d.baseSpeed;
+            if (currentConditions.flowDirection === 'slack') {
+                currentSpeed *= 0.1; // Slow down significantly
+                d.spinSpeed = d.spinSpeed > 0 ? 0.2 : -0.2; // Slow spin
+            } else {
+                // Return to normal speed/spin gradually or instantly
+                d.spinSpeed = d.spinSpeed > 0 ? Math.max(0.5, d.spinSpeed) : Math.min(-0.5, d.spinSpeed);
+            }
+
+            // Move X
+            if (currentConditions.flowDirection === 'right') {
+                d.x += currentSpeed;
+            } else if (currentConditions.flowDirection === 'left') {
+                d.x -= currentSpeed;
+            } else {
+                // Slack: drift randomly very slowly
+                d.x += (Math.random() - 0.5) * 0.2;
+            }
+
+            // Bob Y
+            d.bobOffset += 0.05;
+            let currentY = d.y + Math.sin(d.bobOffset) * 3;
+
+            // Spin
+            d.rotation += d.spinSpeed;
+
+            // Apply transforms
+            d.el.style.transform = `translate3d(${d.x}px, ${currentY}px, 0) rotate(${d.rotation}deg)`;
+
+            // Remove if offscreen
+            if ((currentConditions.flowDirection === 'right' && d.x > window.innerWidth + 50) ||
+                (currentConditions.flowDirection === 'left' && d.x < -50) ||
+                (currentConditions.flowDirection === 'slack' && (d.x < -100 || d.x > window.innerWidth + 100))) {
+                d.el.remove();
+                debrisList.splice(i, 1);
+            }
+        }
+
+        requestAnimationFrame(updateDebrisFX);
+    }
+
+    // Start debris animation
+    requestAnimationFrame(updateDebrisFX);
 
     // INIT
     updateDynamicBackground(); fetchWeather(); fetchTides();
