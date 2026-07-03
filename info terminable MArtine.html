@@ -525,9 +525,13 @@
 
         <!-- Carte AIS & Meteo Map -->
         <div class="card">
-            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
-                <h2 id="map-title">🚢 Carte AIS en direct</h2>
-                <button id="map-toggle" class="theme-toggle" style="padding: 2px 10px; font-size: 0.75rem;">🗺️ Météo</button>
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; gap: 5px;">
+                <h2 id="map-title" style="flex:1;">🚢 Carte AIS</h2>
+                <div style="display: flex; gap: 5px;">
+                    <button id="map-toggle-ais" class="theme-toggle active-map-btn" style="padding: 2px 6px; font-size: 0.75rem; background: var(--th-bg);">🚢 AIS</button>
+                    <button id="map-toggle-meteo" class="theme-toggle" style="padding: 2px 6px; font-size: 0.75rem;">🗺️ Météo</button>
+                    <button id="map-toggle-foudre" class="theme-toggle" style="padding: 2px 6px; font-size: 0.75rem;">⚡ Foudre</button>
+                </div>
             </div>
             <div class="card-body" style="padding: 0; overflow: hidden; width: 100%; aspect-ratio: 1 / 1; position: relative;">
                 <iframe id="ais-map"
@@ -537,6 +541,10 @@
                 <iframe id="meteo-map"
                     src="https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=mm&metricTemp=°C&metricWind=kt&zoom=10&overlay=meteo&product=ecmwf&level=surface&lat=46.76&lon=-71.26"
                     width="100%" height="100%" frameborder="0" style="border: 0; width: 100%; height: 100%; display: none;">
+                </iframe>
+                <iframe id="foudre-map"
+                    src="https://map.blitzortung.org/#10/46.76/-71.26"
+                    width="100%" height="100%" frameborder="0" style="border: 0; width: 100%; height: 100%; display: none; pointer-events: auto;">
                 </iframe>
             </div>
         </div>
@@ -1186,7 +1194,7 @@
             // Show location in the title
             document.querySelector('#btn-weather-view').parentElement.querySelector('h2').innerText = `☁️ Météo (${currentLocationName})`;
 
-            const url = `https://api.open-meteo.com/v1/forecast?latitude=${currentLat}&longitude=${currentLon}&current=temperature_2m,precipitation,snowfall,cloud_cover,weather_code,windspeed_10m,winddirection_10m,wind_gusts_10m,visibility,surface_pressure,relative_humidity_2m&hourly=temperature_2m,precipitation,snowfall,weather_code,windspeed_10m,winddirection_10m,wind_gusts_10m,visibility&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,windspeed_10m_max,windgusts_10m_max,winddirection_10m_dominant,precipitation_sum,snowfall_sum&forecast_days=7&timezone=America%2FToronto&timeformat=unixtime&wind_speed_unit=kn`;
+            const url = `https://api.open-meteo.com/v1/forecast?latitude=${currentLat}&longitude=${currentLon}&current=temperature_2m,precipitation,snowfall,cloud_cover,weather_code,windspeed_10m,winddirection_10m,wind_gusts_10m,visibility,surface_pressure,relative_humidity_2m,cape&hourly=temperature_2m,precipitation,snowfall,weather_code,windspeed_10m,winddirection_10m,wind_gusts_10m,visibility,cape&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,windspeed_10m_max,windgusts_10m_max,winddirection_10m_dominant,precipitation_sum,snowfall_sum&forecast_days=7&timezone=America%2FToronto&timeformat=unixtime&wind_speed_unit=kn`;
             const res = await fetch(url);
             if (!res.ok) throw new Error("Erreur API Météo");
             weatherDataCache = await res.json();
@@ -1218,6 +1226,13 @@
 
         let html = '';
         if (cur.wind_gusts_10m > 25) { html += '<div style="background:var(--red-alert);color:white;padding:5px;text-align:center;font-weight:bold;border-radius:4px;margin-bottom:8px;animation: pulse 2s infinite;">⚠️ ALERTE VENT FORT (>25 nds)</div>'; }
+
+        // Alerte Foudre
+        const isThunderstormCurrent = cur.weather_code === 95 || cur.weather_code === 96 || cur.weather_code === 99;
+        const highCape = cur.cape > 1000;
+        if (isThunderstormCurrent || highCape) {
+            html += '<div style="background:var(--red-alert);color:white;padding:5px;text-align:center;font-weight:bold;border-radius:4px;margin-bottom:8px;animation: pulse 1.5s infinite;">⚡⚠️ ALERTE FOUDRE (< 10km)</div>';
+        }
 
         html += `
             <div class="live-bar" style="margin-bottom:8px;">
@@ -1708,23 +1723,43 @@
         if (weatherDataCache) renderWeatherUI();
     });
 
-    // --- TOGGLE CARTE AIS/METEO ---
-    document.getElementById('map-toggle').addEventListener('click', (e) => {
-        const aisMap = document.getElementById('ais-map');
-        const meteoMap = document.getElementById('meteo-map');
-        const mapTitle = document.getElementById('map-title');
+    // --- TOGGLE CARTE AIS/METEO/FOUDRE ---
+    const btnAis = document.getElementById('map-toggle-ais');
+    const btnMeteo = document.getElementById('map-toggle-meteo');
+    const btnFoudre = document.getElementById('map-toggle-foudre');
+    const aisMap = document.getElementById('ais-map');
+    const meteoMap = document.getElementById('meteo-map');
+    const foudreMap = document.getElementById('foudre-map');
+    const mapTitle = document.getElementById('map-title');
 
-        if (aisMap.style.display !== 'none') {
-            aisMap.style.display = 'none';
-            meteoMap.style.display = 'block';
-            mapTitle.innerHTML = '🗺️ Carte Météo';
-            e.target.innerHTML = '🚢 AIS';
-        } else {
-            aisMap.style.display = 'block';
-            meteoMap.style.display = 'none';
-            mapTitle.innerHTML = '🚢 Carte AIS en direct';
-            e.target.innerHTML = '🗺️ Météo';
-        }
+    function resetMapBtns() {
+        btnAis.style.background = 'transparent';
+        btnMeteo.style.background = 'transparent';
+        btnFoudre.style.background = 'transparent';
+        aisMap.style.display = 'none';
+        meteoMap.style.display = 'none';
+        foudreMap.style.display = 'none';
+    }
+
+    btnAis.addEventListener('click', () => {
+        resetMapBtns();
+        btnAis.style.background = 'var(--th-bg)';
+        aisMap.style.display = 'block';
+        mapTitle.innerHTML = '🚢 Carte AIS';
+    });
+
+    btnMeteo.addEventListener('click', () => {
+        resetMapBtns();
+        btnMeteo.style.background = 'var(--th-bg)';
+        meteoMap.style.display = 'block';
+        mapTitle.innerHTML = '🗺️ Carte Météo';
+    });
+
+    btnFoudre.addEventListener('click', () => {
+        resetMapBtns();
+        btnFoudre.style.background = 'var(--th-bg)';
+        foudreMap.style.display = 'block';
+        mapTitle.innerHTML = '⚡ Foudre / Orages';
     });
 
     // --- THEME ---

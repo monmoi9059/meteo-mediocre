@@ -1,0 +1,10 @@
+node_modules/
+package.json
+package-lock.json
+screenshot.js
+frontend_screenshot.png
+ws_test.js
+test.html
+test_lightning.py
+test_rest.py
+get_env.js
