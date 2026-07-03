@@ -1361,60 +1361,117 @@
                 console.warn("Open-Meteo failed, trying wttr.in backup API:", err);
 
                 try {
-                    // Try backup API wttr.in
-                    const backupUrl = `https://wttr.in/${currentLat},${currentLon}?format=j1`;
+                    // Try backup API api.met.no
+                    const backupUrl = `https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${currentLat}&lon=${currentLon}`;
                     const backupController = new AbortController();
                     const backupTimeoutId = setTimeout(() => backupController.abort(), 10000);
 
-                    const backupRes = await fetch(backupUrl, { signal: backupController.signal });
+                    const backupRes = await fetch(backupUrl, {
+                        headers: { "User-Agent": "InfoTerminableMartine/1.0" },
+                        signal: backupController.signal
+                    });
                     clearTimeout(backupTimeoutId);
 
-                    if (!backupRes.ok) throw new Error("Erreur API de secours Wttr.in");
-                    const wttrData = await backupRes.json();
+                    if (!backupRes.ok) throw new Error("Erreur API de secours met.no");
+                    const metData = await backupRes.json();
 
-                    // Transform wttr.in data to match expected open-meteo structure (minimal needed for app)
-                    const cc = wttrData.current_condition[0];
-                    const curWeatherCode = parseInt(cc.weatherCode);
+                    const ts = metData.properties.timeseries;
+                    const hourly = {
+                        time: [], temperature_2m: [], precipitation: [], snowfall: [],
+                        weather_code: [], windspeed_10m: [], winddirection_10m: [],
+                        wind_gusts_10m: [], visibility: []
+                    };
+                    const dailyMap = {};
 
-                    // Basic map from WMO code to our expected weatherCode is needed, wttr.in uses WMO internally but exposes a different weatherCode
-                    // Wttr uses worldweatheronline codes (e.g. 113 = clear, 116 = partly cloudy, 119 = cloudy)
-                    let mappedCode = 0;
-                    if (curWeatherCode == 113) mappedCode = 0;
-                    else if (curWeatherCode == 116) mappedCode = 2;
-                    else if (curWeatherCode == 119) mappedCode = 3;
-                    else if (curWeatherCode == 122) mappedCode = 3; // overcast
-                    else if (curWeatherCode == 143) mappedCode = 45; // fog
-                    else if (curWeatherCode == 176 || curWeatherCode == 293 || curWeatherCode == 296) mappedCode = 61; // light rain
-                    else if (curWeatherCode >= 299 && curWeatherCode <= 308) mappedCode = 63; // rain
-                    else if (curWeatherCode == 386 || curWeatherCode == 389) mappedCode = 95; // storm
-                    else if (curWeatherCode == 392 || curWeatherCode == 395) mappedCode = 99; // heavy storm
-                    else if (curWeatherCode >= 323 && curWeatherCode <= 338) mappedCode = 71; // snow
+                    ts.forEach(t => {
+                        const dateObj = new Date(t.time);
+                        const dayStr = dateObj.toISOString().split('T')[0];
+                        const nowSec = Math.floor(dateObj.getTime() / 1000);
 
-                    const now = Math.floor(Date.now()/1000);
+                        const details = t.data.instant.details;
+                        const next1 = t.data.next_1_hours ? t.data.next_1_hours.details : null;
+                        const next6 = t.data.next_6_hours ? t.data.next_6_hours.details : null;
+                        const sumCode = t.data.next_1_hours ? t.data.next_1_hours.summary.symbol_code :
+                                        (t.data.next_6_hours ? t.data.next_6_hours.summary.symbol_code :
+                                        (t.data.next_12_hours ? t.data.next_12_hours.summary.symbol_code : "clearsky_day"));
+
+                        let wmo = 0;
+                        if (sumCode.includes('cloud')) wmo = 3;
+                        if (sumCode.includes('partlycloud')) wmo = 2;
+                        if (sumCode.includes('rain')) wmo = 63;
+                        if (sumCode.includes('snow')) wmo = 71;
+                        if (sumCode.includes('sleet')) wmo = 69;
+                        if (sumCode.includes('thunder')) wmo = 95;
+                        if (sumCode.includes('fog')) wmo = 45;
+
+                        hourly.time.push(nowSec);
+                        hourly.temperature_2m.push(details.air_temperature);
+                        hourly.precipitation.push(next1 ? (next1.precipitation_amount || 0) : (next6 ? (next6.precipitation_amount || 0) : 0));
+                        hourly.snowfall.push(details.air_temperature < 0 && wmo === 71 ? 1 : 0);
+                        hourly.weather_code.push(wmo);
+                        hourly.windspeed_10m.push(details.wind_speed * 1.94384);
+                        hourly.winddirection_10m.push(details.wind_from_direction);
+                        hourly.wind_gusts_10m.push(details.wind_speed_of_gust ? details.wind_speed_of_gust * 1.94384 : details.wind_speed * 1.94384);
+                        hourly.visibility.push(10000);
+
+                        if (!dailyMap[dayStr]) {
+                            dailyMap[dayStr] = { min: details.air_temperature, max: details.air_temperature, wind: 0, gust: 0, codes: [], psum: 0, ssum: 0 };
+                        }
+                        dailyMap[dayStr].min = Math.min(dailyMap[dayStr].min, details.air_temperature);
+                        dailyMap[dayStr].max = Math.max(dailyMap[dayStr].max, details.air_temperature);
+                        dailyMap[dayStr].codes.push(wmo);
+                        dailyMap[dayStr].wind = Math.max(dailyMap[dayStr].wind, details.wind_speed * 1.94384);
+                        dailyMap[dayStr].gust = Math.max(dailyMap[dayStr].gust, (details.wind_speed_of_gust || details.wind_speed) * 1.94384);
+                        dailyMap[dayStr].psum += (next1 ? (next1.precipitation_amount || 0) : 0);
+                        if(wmo===71 && details.air_temperature < 0) dailyMap[dayStr].ssum += (next1 ? (next1.precipitation_amount || 0) : 0);
+                    });
+
+                    const daily = {
+                        time: [], weather_code: [], temperature_2m_max: [], temperature_2m_min: [],
+                        sunrise: [], sunset: [], windspeed_10m_max: [], windgusts_10m_max: [],
+                        winddirection_10m_dominant: [], precipitation_sum: [], snowfall_sum: []
+                    };
+
+                    Object.keys(dailyMap).forEach(day => {
+                        const now = new Date(day + "T12:00:00Z").getTime()/1000;
+                        daily.time.push(now);
+                        daily.temperature_2m_max.push(dailyMap[day].max);
+                        daily.temperature_2m_min.push(dailyMap[day].min);
+                        daily.windspeed_10m_max.push(dailyMap[day].wind);
+                        daily.windgusts_10m_max.push(dailyMap[day].gust);
+                        daily.precipitation_sum.push(dailyMap[day].psum);
+                        daily.snowfall_sum.push(dailyMap[day].ssum);
+                        // Approximate most common weather code
+                        const codes = dailyMap[day].codes;
+                        daily.weather_code.push(codes.sort((a,b) => codes.filter(v => v===a).length - codes.filter(v => v===b).length).pop());
+                        daily.winddirection_10m_dominant.push(hourly.winddirection_10m[0]); // approx
+
+                        // Fake sunrise/sunset for backup API
+                        const fakeSunrise = new Date(day + "T06:00:00-04:00").getTime()/1000;
+                        const fakeSunset = new Date(day + "T20:00:00-04:00").getTime()/1000;
+                        daily.sunrise.push(fakeSunrise);
+                        daily.sunset.push(fakeSunset);
+                    });
 
                     weatherDataCache = {
                         current: {
-                            temperature_2m: parseFloat(cc.temp_C),
-                            windspeed_10m: parseFloat(cc.windspeedKmph) / 1.852, // kn
-                            winddirection_10m: parseFloat(cc.winddirDegree), wind_gusts_10m: parseFloat(cc.WindGustKmph || cc.windspeedKmph) / 1.852, visibility: parseFloat(cc.visibility) * 1000,
-                            precipitation: parseFloat(cc.precipMM),
-                            snowfall: 0,
-                            cloud_cover: parseFloat(cc.cloudcover),
-                            surface_pressure: parseFloat(cc.pressure),
-                            relative_humidity_2m: parseFloat(cc.humidity),
-                            weather_code: mappedCode
+                            temperature_2m: hourly.temperature_2m[0],
+                            windspeed_10m: hourly.windspeed_10m[0],
+                            winddirection_10m: hourly.winddirection_10m[0],
+                            wind_gusts_10m: hourly.wind_gusts_10m[0],
+                            visibility: hourly.visibility[0],
+                            precipitation: hourly.precipitation[0],
+                            snowfall: hourly.snowfall[0],
+                            cloud_cover: ts[0].data.instant.details.cloud_area_fraction * 10, // scale 0-100
+                            surface_pressure: ts[0].data.instant.details.air_pressure_at_sea_level,
+                            relative_humidity_2m: ts[0].data.instant.details.relative_humidity,
+                            weather_code: hourly.weather_code[0]
                         },
-                        hourly: { time: [now], temperature_2m: [parseFloat(cc.temp_C)] },
-                        daily: {
-                            time: [now],
-                            temperature_2m_max: [parseFloat(wttrData.weather[0].maxtempC)],
-                            temperature_2m_min: [parseFloat(wttrData.weather[0].mintempC)],
-                            sunrise: [now - 12*3600], // Fake sunrise/set to avoid crash
-                            sunset: [now + 12*3600]
-                        }
+                        hourly: hourly,
+                        daily: daily
                     };
 
-                    console.log("Successfully loaded data from wttr.in backup API");
+                    console.log("Successfully loaded data from api.met.no backup API");
 
                 } catch (backupErr) {
                     console.warn("Backup API also failed:", backupErr);
@@ -1519,7 +1576,7 @@
         }
 
         html += '</table>';
-        const wb = document.getElementById('weather-body'); const offlineMsg = wb.querySelector('.txt-red') ? wb.querySelector('.txt-red').outerHTML : ''; wb.innerHTML = offlineMsg + html;
+        const wb = document.getElementById('weather-body'); let offlineMsg = ''; wb.querySelectorAll('.txt-red').forEach(el => { if(el.innerText.includes('Mode hors ligne') || el.innerText.includes('Échec de la connexion')) offlineMsg = el.outerHTML; }); wb.innerHTML = offlineMsg + html;
 
         const ctx = document.getElementById('wChart').getContext('2d');
         const c = getChartCols();
