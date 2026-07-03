@@ -268,67 +268,113 @@
 <!-- SHORE LAYER (LEVIS BACKGROUND) -->
 <div id="shore-layer" class="shore-layer">
     <svg width="100%" height="250" viewBox="0 0 1000 250" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-        <!-- Shore / Ground -->
-        <path d="M 0 250 L 1000 250 L 1000 180 Q 800 160 500 170 Q 200 180 0 170 Z" fill="#2c3e50" />
-        <path d="M 0 250 L 1000 250 L 1000 185 Q 800 170 500 178 Q 200 185 0 178 Z" fill="#34495e" />
+        <!-- Mountain Background (Heavily wooded) -->
+        <path d="M 0 250 L 0 60 Q 150 10 300 70 T 700 30 T 1000 80 L 1000 250 Z" fill="#1b4d24" />
+        <path d="M 0 250 L 0 90 Q 200 30 400 100 T 800 60 L 1000 110 L 1000 250 Z" fill="#266330" />
+        <path d="M 0 250 L 0 130 Q 250 80 500 140 T 1000 150 L 1000 250 Z" fill="#327a3d" />
 
-        <!-- Church (Left side) -->
-        <!-- Main building -->
-        <rect x="150" y="140" width="40" height="40" fill="#95a5a6" />
-        <polygon points="140,140 170,110 200,140" fill="#7f8c8d" />
-        <!-- Steeple -->
-        <rect x="160" y="100" width="20" height="40" fill="#bdc3c7" />
-        <polygon points="160,100 170,60 180,100" fill="#c0392b" />
-        <line x1="170" y1="50" x2="170" y2="70" stroke="#f1c40f" stroke-width="2" />
-        <line x1="165" y1="60" x2="175" y2="60" stroke="#f1c40f" stroke-width="2" />
+        <!-- Mountain Trees Silhouette -->
+        <path d="M 0 130 Q 30 110 60 135 Q 90 105 120 130 Q 150 115 180 140 Q 210 110 240 135 Q 270 120 300 145" fill="#1b4d24" opacity="0.6"/>
+        <path d="M 700 120 Q 730 90 760 125 Q 790 105 820 130 Q 850 100 880 125 Q 910 110 940 135 Q 970 105 1000 130" fill="#1b4d24" opacity="0.6"/>
 
-        <!-- Trees -->
-        <circle cx="50" cy="170" r="15" fill="#27ae60" />
-        <circle cx="70" cy="165" r="20" fill="#2ecc71" />
-        <circle cx="90" cy="172" r="12" fill="#27ae60" />
-        <circle cx="230" cy="175" r="18" fill="#27ae60" />
-        <circle cx="260" cy="168" r="22" fill="#2ecc71" />
+        <!-- Oil Reservoirs on the hill -->
+        <g fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2">
+            <rect x="200" y="80" width="60" height="40" rx="4" />
+            <rect x="280" y="95" width="50" height="35" rx="4" />
+            <rect x="700" y="70" width="70" height="45" rx="4" />
+            <rect x="790" y="85" width="55" height="35" rx="4" />
+            <rect x="860" y="100" width="45" height="30" rx="4" />
+        </g>
 
-        <!-- Refinery (Mid-to-Right 500-750) -->
-        <rect x="520" y="150" width="10" height="30" fill="#7f8c8d" />
-        <rect x="540" y="140" width="8" height="40" fill="#95a5a6" />
-        <rect x="560" y="130" width="12" height="50" fill="#7f8c8d" />
-        <!-- Tall Flare Stack -->
-        <rect x="600" y="90" width="4" height="90" fill="#bdc3c7" />
-        <!-- Flare flame -->
-        <path d="M 598 85 Q 602 75 600 70 Q 604 80 604 85 Z" fill="#e67e22" />
+        <!-- Pipelines coming down the mountain -->
+        <path d="M 230 120 L 450 190" fill="none" stroke="#cbd5e1" stroke-width="5" />
+        <path d="M 240 120 L 460 190" fill="none" stroke="#94a3b8" stroke-width="5" />
+        <path d="M 735 115 L 550 190" fill="none" stroke="#cbd5e1" stroke-width="5" />
+        <path d="M 725 115 L 540 190" fill="none" stroke="#94a3b8" stroke-width="5" />
 
-        <!-- Pipe structures -->
-        <path d="M 520 160 L 600 160" stroke="#bdc3c7" stroke-width="3" />
-        <path d="M 560 145 L 600 145" stroke="#95a5a6" stroke-width="2" />
+        <!-- Valero Dock - Mooring Dolphins (Ducs d'albe) and Catwalks -->
+        <!-- Catwalks (Yellow) -->
+        <line x1="50" y1="200" x2="950" y2="200" stroke="#facc15" stroke-width="6" />
+        <line x1="50" y1="205" x2="950" y2="205" stroke="#ca8a04" stroke-width="2" />
+        <!-- Catwalk railings -->
+        <line x1="50" y1="190" x2="950" y2="190" stroke="#facc15" stroke-width="2" />
+        <path d="M 50 200 L 50 190 M 150 200 L 150 190 M 250 200 L 250 190 M 350 200 L 350 190 M 650 200 L 650 190 M 750 200 L 750 190 M 850 200 L 850 190 M 950 200 L 950 190" stroke="#ca8a04" stroke-width="2" />
 
-        <!-- Oil Reservoirs (behind trees) -->
-        <path d="M 700 175 L 700 140 Q 720 130 740 140 L 740 175 Z" fill="#ecf0f1" />
-        <path d="M 760 175 L 760 145 Q 775 135 790 145 L 790 175 Z" fill="#bdc3c7" />
+        <!-- Dolphins (Concrete / Steel bases in the water) -->
+        <g fill="#64748b" stroke="#475569" stroke-width="2">
+            <!-- Left dolphins -->
+            <polygon points="40,250 60,250 55,190 45,190" />
+            <polygon points="140,250 160,250 155,190 145,190" />
+            <polygon points="240,250 260,250 255,190 245,190" />
+            <!-- Right dolphins -->
+            <polygon points="740,250 760,250 755,190 745,190" />
+            <polygon points="840,250 860,250 855,190 845,190" />
+            <polygon points="940,250 960,250 955,190 945,190" />
+        </g>
+        <!-- Dolphin tops (Yellow mooring hooks area) -->
+        <g fill="#facc15">
+            <rect x="42" y="185" width="16" height="6" rx="2" />
+            <rect x="142" y="185" width="16" height="6" rx="2" />
+            <rect x="242" y="185" width="16" height="6" rx="2" />
+            <rect x="742" y="185" width="16" height="6" rx="2" />
+            <rect x="842" y="185" width="16" height="6" rx="2" />
+            <rect x="942" y="185" width="16" height="6" rx="2" />
+        </g>
 
-        <!-- Trees hiding reservoirs -->
-        <circle cx="680" cy="170" r="25" fill="#2ecc71" />
-        <circle cx="720" cy="175" r="20" fill="#27ae60" />
-        <circle cx="760" cy="170" r="30" fill="#2ecc71" />
-        <circle cx="800" cy="175" r="25" fill="#27ae60" />
+        <!-- Main Loading Platform (Center 350-650) -->
+        <!-- Platform Pilings -->
+        <rect x="360" y="200" width="10" height="50" fill="#475569" />
+        <rect x="410" y="200" width="10" height="50" fill="#475569" />
+        <rect x="460" y="200" width="10" height="50" fill="#475569" />
+        <rect x="530" y="200" width="10" height="50" fill="#475569" />
+        <rect x="580" y="200" width="10" height="50" fill="#475569" />
+        <rect x="630" y="200" width="10" height="50" fill="#475569" />
 
-        <!-- Valero Dock (Right side extending to water) -->
-        <!-- Piling/supports -->
-        <rect x="650" y="180" width="5" height="70" fill="#34495e" />
-        <rect x="700" y="180" width="5" height="70" fill="#34495e" />
-        <rect x="750" y="180" width="5" height="70" fill="#34495e" />
-        <rect x="800" y="180" width="5" height="70" fill="#34495e" />
-        <rect x="850" y="180" width="5" height="70" fill="#34495e" />
-        <rect x="900" y="180" width="5" height="70" fill="#34495e" />
-        <rect x="950" y="180" width="5" height="70" fill="#34495e" />
-        <!-- Dock surface -->
-        <rect x="630" y="175" width="370" height="10" fill="#7f8c8d" />
-        <!-- Loading arms / cranes -->
-        <path d="M 800 175 L 800 130 L 830 110" fill="none" stroke="#e74c3c" stroke-width="4" />
-        <path d="M 850 175 L 850 130 L 820 120" fill="none" stroke="#e74c3c" stroke-width="4" />
-        <circle cx="800" cy="130" r="4" fill="#2c3e50" />
-        <circle cx="850" cy="130" r="4" fill="#2c3e50" />
+        <!-- Platform Base -->
+        <rect x="350" y="195" width="300" height="15" fill="#cbd5e1" stroke="#94a3b8" stroke-width="2" />
+        <rect x="350" y="210" width="300" height="5" fill="#64748b" />
 
+        <!-- Industrial Structures / Control Building -->
+        <rect x="480" y="160" width="40" height="35" fill="#e2e8f0" stroke="#94a3b8" stroke-width="2" />
+        <!-- Windows -->
+        <rect x="485" y="165" width="8" height="10" fill="#38bdf8" />
+        <rect x="495" y="165" width="8" height="10" fill="#38bdf8" />
+        <rect x="505" y="165" width="8" height="10" fill="#38bdf8" />
+
+        <!-- Loading Arms (Chiksans) & Cranes -->
+        <!-- Base stands -->
+        <rect x="420" y="165" width="12" height="30" fill="#64748b" />
+        <rect x="560" y="165" width="12" height="30" fill="#64748b" />
+        <!-- Articulated Arms (White/Grey with joints) -->
+        <path d="M 426 165 L 426 120 L 450 100 L 450 140" fill="none" stroke="#e2e8f0" stroke-width="6" stroke-linejoin="round" />
+        <path d="M 426 165 L 426 120 L 450 100 L 450 140" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linejoin="round" />
+        <circle cx="426" cy="120" r="5" fill="#ef4444" />
+        <circle cx="450" cy="100" r="5" fill="#ef4444" />
+
+        <path d="M 566 165 L 566 110 L 530 90 L 530 140" fill="none" stroke="#e2e8f0" stroke-width="6" stroke-linejoin="round" />
+        <path d="M 566 165 L 566 110 L 530 90 L 530 140" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linejoin="round" />
+        <circle cx="566" cy="110" r="5" fill="#ef4444" />
+        <circle cx="530" cy="90" r="5" fill="#ef4444" />
+
+        <!-- High Mast Lighting -->
+        <line x1="380" y1="195" x2="380" y2="80" stroke="#94a3b8" stroke-width="3" />
+        <line x1="370" y1="80" x2="390" y2="80" stroke="#cbd5e1" stroke-width="4" />
+        <circle cx="372" cy="82" r="3" fill="#fef08a" />
+        <circle cx="388" cy="82" r="3" fill="#fef08a" />
+
+        <line x1="610" y1="195" x2="610" y2="80" stroke="#94a3b8" stroke-width="3" />
+        <line x1="600" y1="80" x2="620" y2="80" stroke="#cbd5e1" stroke-width="4" />
+        <circle cx="602" cy="82" r="3" fill="#fef08a" />
+        <circle cx="618" cy="82" r="3" fill="#fef08a" />
+
+        <!-- Piping Manifold on Platform -->
+        <rect x="400" y="180" width="190" height="15" fill="#94a3b8" />
+        <line x1="400" y1="185" x2="590" y2="185" stroke="#475569" stroke-width="2" />
+        <line x1="400" y1="190" x2="590" y2="190" stroke="#475569" stroke-width="2" />
+        <rect x="440" y="170" width="8" height="10" fill="#3b82f6" />
+        <rect x="450" y="170" width="8" height="10" fill="#ef4444" />
+        <rect x="530" y="170" width="8" height="10" fill="#3b82f6" />
+        <rect x="540" y="170" width="8" height="10" fill="#ef4444" />
     </svg>
 </div>
 
