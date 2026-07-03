@@ -829,17 +829,33 @@
     let W = skyCanvas.width = window.innerWidth;
     let H = skyCanvas.height = window.innerHeight;
     
-    let clouds = [], stars = [], birds = [], shootingStars = [];
+    let clouds = [], stars = [], birds = [], shootingStars = [], fireworks = [], auroras = [];
     for(let i=0; i<150; i++) stars.push({x: Math.random()*W, y: Math.random()*(H/2), s: Math.random()*2, a: Math.random()});
-    for(let i=0; i<60; i++) clouds.push({x: Math.random()*W, y: Math.random()*150, s: Math.random()*2+1, op: Math.random()*0.5+0.1, type: Math.floor(Math.random()*3)});
+    for(let i=0; i<60; i++) clouds.push({x: Math.random()*W, y: Math.random()*(H*0.5), s: Math.random()*2+1, op: Math.random()*0.5+0.1, type: Math.floor(Math.random()*3)});
     for(let i=0; i<8; i++) birds.push({x: Math.random()*W, y: Math.random()*H*0.4, s: Math.random()*0.5+0.5, speed: Math.random()*1+0.5, flap: Math.random()*Math.PI*2});
+    for(let i=0; i<3; i++) auroras.push({x: Math.random()*W, y: Math.random()*H*0.3, phase: Math.random()*Math.PI*2, speed: Math.random()*0.02 + 0.01});
+
+    function getCloudType(weatherCode) {
+        if (weatherCode === 1) return 'cirrus';
+        if (weatherCode === 2) return 'cumulus';
+        if (weatherCode === 3) return 'stratus';
+        if (weatherCode >= 51 && weatherCode <= 57) return 'low_stratus';
+        if (weatherCode >= 61 && weatherCode <= 67) return 'thick_nimbostratus';
+        if (weatherCode >= 71 && weatherCode <= 77) return 'altostratus';
+        if (weatherCode >= 80 && weatherCode <= 86) return 'cumulus_congestus';
+        if (weatherCode >= 95 && weatherCode <= 99) return 'cumulonimbus';
+        return 'cumulus'; // default
+    }
 
     function drawSkyFX() {
         sCtx.clearRect(0, 0, W, H);
         const c = currentConditions;
+        let dDate = new Date();
+        let month = dDate.getMonth();
+        let date = dDate.getDate();
         
+        let astX = -100, astY = -100, isSun = false;
         if (c.sunriseTime && c.sunsetTime) {
-            let astX = -100, astY = -100, isSun = false;
             let totalDay = c.sunsetTime - c.sunriseTime;
             
             if (!c.isNight) {
@@ -852,7 +868,34 @@
                 astX = progNight * W; astY = H * 0.4 - Math.sin(progNight * Math.PI) * (H * 0.3);
             }
 
+            // Draw Halo
+            let drawHalo = false;
+            if (c.temp < -10 || c.weatherCode === 1) drawHalo = true;
+            if (drawHalo) {
+                sCtx.beginPath();
+                sCtx.arc(astX, astY, 100, 0, Math.PI*2);
+                sCtx.strokeStyle = isSun ? 'rgba(255, 255, 255, 0.15)' : 'rgba(200, 220, 255, 0.1)';
+                sCtx.lineWidth = 15;
+                sCtx.stroke();
+            }
+
             if (isSun) {
+                // Crepuscular rays (god rays) during golden hour and partly cloudy
+                if (c.isGoldenHour && c.weatherCode === 2) {
+                    sCtx.save();
+                    sCtx.globalCompositeOperation = 'screen';
+                    let rayGrad = sCtx.createRadialGradient(astX, astY, 20, astX, astY, Math.max(W, H));
+                    rayGrad.addColorStop(0, 'rgba(253, 224, 71, 0.2)');
+                    rayGrad.addColorStop(1, 'rgba(253, 224, 71, 0)');
+                    sCtx.fillStyle = rayGrad;
+                    sCtx.beginPath();
+                    sCtx.moveTo(astX, astY);
+                    sCtx.lineTo(astX - W, H);
+                    sCtx.lineTo(astX + W, H);
+                    sCtx.fill();
+                    sCtx.restore();
+                }
+
                 sCtx.beginPath(); sCtx.arc(astX, astY, 40, 0, Math.PI*2);
                 sCtx.fillStyle = c.isGoldenHour ? 'rgba(253, 186, 116, 0.8)' : 'rgba(253, 224, 71, 0.8)';
                 sCtx.shadowBlur = 40; sCtx.shadowColor = sCtx.fillStyle; sCtx.fill(); sCtx.shadowBlur = 0;
@@ -924,6 +967,86 @@
             }
         }
 
+        // Rainbows
+        if (!c.isNight && c.rain > 0 && c.cloudCover < 80) {
+            sCtx.save();
+            sCtx.globalAlpha = 0.3;
+            // The arc is drawn at radius W/2, with width 40.
+            // So the stroke spans from (W/2 - 20) to (W/2 + 20).
+            let rInner = W/2 - 20;
+            let rOuter = W/2 + 20;
+            let rbwGrad = sCtx.createRadialGradient(W/2, H, rInner, W/2, H, rOuter);
+            rbwGrad.addColorStop(0, 'rgba(255,0,0,0)');
+            rbwGrad.addColorStop(0.1, 'violet');
+            rbwGrad.addColorStop(0.2, 'indigo');
+            rbwGrad.addColorStop(0.3, 'blue');
+            rbwGrad.addColorStop(0.4, 'green');
+            rbwGrad.addColorStop(0.5, 'yellow');
+            rbwGrad.addColorStop(0.6, 'orange');
+            rbwGrad.addColorStop(0.7, 'red');
+            rbwGrad.addColorStop(0.8, 'rgba(255,0,0,0)');
+            sCtx.beginPath();
+            sCtx.arc(W/2, H, W/2, Math.PI, 0);
+            sCtx.lineWidth = 40;
+            sCtx.strokeStyle = rbwGrad;
+            sCtx.stroke();
+            sCtx.restore();
+        }
+
+        // Northern Lights (Aurora Borealis) - winter clear nights
+        let isWinter = (month === 11 || month === 0 || month === 1);
+        if (c.isNight && c.cloudCover < 30 && isWinter) {
+            sCtx.save();
+            sCtx.globalCompositeOperation = 'screen';
+            auroras.forEach((aurora, idx) => {
+                sCtx.beginPath();
+                for (let x = 0; x < W; x += 20) {
+                    let y = aurora.y + Math.sin(x * 0.005 + aurora.phase) * 50;
+                    if (x === 0) sCtx.moveTo(x, y);
+                    else sCtx.lineTo(x, y);
+                }
+                sCtx.lineWidth = 60 + Math.sin(aurora.phase)*20;
+                let colorBase = idx % 2 === 0 ? 'rgba(52, 211, 153,' : 'rgba(167, 139, 250,';
+                sCtx.strokeStyle = colorBase + ' 0.15)';
+                sCtx.shadowBlur = 40;
+                sCtx.shadowColor = idx % 2 === 0 ? '#34d399' : '#a78bfa';
+                sCtx.stroke();
+                aurora.phase += aurora.speed;
+            });
+            sCtx.restore();
+        }
+
+        // Fireworks (NYE, Saint-Jean, Canada Day)
+        let isHoliday = (month === 11 && date === 31) || (month === 0 && date === 1) || (month === 5 && date === 24) || (month === 6 && date === 1);
+        if (isHoliday && c.isNight) {
+            if (Math.random() < 0.02) {
+                fireworks.push({x: Math.random()*W, y: Math.random()*(H/2), age: 0, maxAge: 50, particles: []});
+                for(let k=0; k<30; k++) {
+                    let ang = Math.random()*Math.PI*2;
+                    let spd = Math.random()*4 + 1;
+                    fireworks[fireworks.length-1].particles.push({
+                        vx: Math.cos(ang)*spd, vy: Math.sin(ang)*spd,
+                        color: `hsl(${Math.random()*360}, 100%, 60%)`
+                    });
+                }
+            }
+            for (let i = fireworks.length - 1; i >= 0; i--) {
+                let fw = fireworks[i];
+                fw.age++;
+                sCtx.save();
+                sCtx.globalCompositeOperation = 'lighter';
+                fw.particles.forEach(p => {
+                    let px = fw.x + p.vx * fw.age;
+                    let py = fw.y + p.vy * fw.age + (fw.age*fw.age)*0.05; // gravity
+                    sCtx.fillStyle = p.color;
+                    sCtx.globalAlpha = 1 - (fw.age/fw.maxAge);
+                    sCtx.beginPath(); sCtx.arc(px, py, 2, 0, Math.PI*2); sCtx.fill();
+                });
+                sCtx.restore();
+                if (fw.age >= fw.maxAge) fireworks.splice(i, 1);
+            }
+        }
+
         let numCloudsActive = Math.min(Math.floor((c.cloudCover / 100) * clouds.length), clouds.length);
         if (numCloudsActive < 2 && c.cloudCover > 0) numCloudsActive = 2; 
         let windSpeedPx = c.wind * 0.05; 
@@ -951,44 +1074,54 @@
             lightningFlashAlpha -= 0.05;
             if (lightningFlashAlpha < 0) lightningFlashAlpha = 0;
         }
-        
+
+        let currentCloudType = getCloudType(c.weatherCode);
+
         for(let i=0; i<numCloudsActive; i++) {
             let cl = clouds[i];
-            // Darker clouds for rain/snow, fluffier for clear
-            const isStormy = c.weatherCode >= 51 && c.weatherCode <= 99;
-            if (isStormy) {
-                sCtx.fillStyle = c.isNight ? `rgba(30, 30, 40, ${cl.op + 0.2})` : `rgba(100, 110, 120, ${cl.op + 0.3})`;
-            } else {
-                sCtx.fillStyle = c.isNight ? `rgba(60, 60, 70, ${cl.op})` : `rgba(255, 255, 255, ${cl.op})`;
-            }
 
             sCtx.beginPath();
-            if (isStormy) {
-                // Dense, flatter clouds
-                sCtx.arc(cl.x, cl.y, 25 * cl.s, 0, Math.PI*2);
-                sCtx.arc(cl.x+50*cl.s, cl.y-5*cl.s, 30*cl.s, 0, Math.PI*2);
-                sCtx.arc(cl.x+100*cl.s, cl.y, 25*cl.s, 0, Math.PI*2);
+
+            if (currentCloudType === 'cirrus') {
+                sCtx.fillStyle = c.isNight ? `rgba(80, 80, 90, ${cl.op * 0.5})` : `rgba(255, 255, 255, ${cl.op * 0.5})`;
+                sCtx.ellipse(cl.x, cl.y, 80 * cl.s, 10 * cl.s, -Math.PI/8, 0, Math.PI*2);
+            } else if (currentCloudType === 'cumulus') {
+                sCtx.fillStyle = c.isNight ? `rgba(60, 60, 70, ${cl.op})` : `rgba(255, 255, 255, ${cl.op})`;
+                sCtx.arc(cl.x, cl.y, 30 * cl.s, 0, Math.PI*2);
+                sCtx.arc(cl.x+40*cl.s, cl.y-20*cl.s, 40*cl.s, 0, Math.PI*2);
+                sCtx.arc(cl.x+80*cl.s, cl.y, 30*cl.s, 0, Math.PI*2);
+            } else if (currentCloudType === 'stratus') {
+                sCtx.fillStyle = c.isNight ? `rgba(50, 50, 60, ${cl.op + 0.1})` : `rgba(200, 200, 210, ${cl.op + 0.2})`;
+                sCtx.rect(cl.x - 100, cl.y - 10, 200 * cl.s, 20 * cl.s);
+            } else if (currentCloudType === 'low_stratus') {
+                sCtx.fillStyle = c.isNight ? `rgba(40, 40, 50, ${cl.op + 0.2})` : `rgba(150, 160, 170, ${cl.op + 0.3})`;
+                sCtx.rect(cl.x - 150, cl.y, 300 * cl.s, 30 * cl.s);
+            } else if (currentCloudType === 'thick_nimbostratus') {
+                sCtx.fillStyle = c.isNight ? `rgba(20, 20, 30, ${cl.op + 0.3})` : `rgba(80, 90, 100, ${cl.op + 0.4})`;
+                sCtx.rect(cl.x - 150, cl.y - 20, 300 * cl.s, 50 * cl.s);
+                sCtx.arc(cl.x, cl.y, 50 * cl.s, 0, Math.PI*2);
+            } else if (currentCloudType === 'altostratus') {
+                sCtx.fillStyle = c.isNight ? `rgba(60, 60, 70, ${cl.op + 0.1})` : `rgba(220, 230, 240, ${cl.op + 0.2})`;
+                sCtx.rect(cl.x - 100, cl.y - 30, 200 * cl.s, 40 * cl.s);
+            } else if (currentCloudType === 'cumulus_congestus') {
+                sCtx.fillStyle = c.isNight ? `rgba(40, 40, 50, ${cl.op + 0.2})` : `rgba(120, 130, 140, ${cl.op + 0.2})`;
+                sCtx.arc(cl.x, cl.y, 40 * cl.s, 0, Math.PI*2);
+                sCtx.arc(cl.x+50*cl.s, cl.y-40*cl.s, 50*cl.s, 0, Math.PI*2);
+                sCtx.arc(cl.x+100*cl.s, cl.y-20*cl.s, 40*cl.s, 0, Math.PI*2);
+            } else if (currentCloudType === 'cumulonimbus') {
+                sCtx.fillStyle = c.isNight ? `rgba(10, 10, 20, ${cl.op + 0.4})` : `rgba(50, 60, 70, ${cl.op + 0.5})`;
+                sCtx.arc(cl.x, cl.y, 50 * cl.s, 0, Math.PI*2);
+                sCtx.arc(cl.x+50*cl.s, cl.y-80*cl.s, 60*cl.s, 0, Math.PI*2); // tall
+                sCtx.arc(cl.x+100*cl.s, cl.y, 50*cl.s, 0, Math.PI*2);
+                sCtx.rect(cl.x-20, cl.y, 140*cl.s, 30*cl.s); // flat base
             } else {
-                // Fluffy varied clouds
-                if (cl.type === 0) {
-                    sCtx.arc(cl.x, cl.y, 30 * cl.s, 0, Math.PI*2);
-                    sCtx.arc(cl.x+40*cl.s, cl.y-20*cl.s, 40*cl.s, 0, Math.PI*2);
-                    sCtx.arc(cl.x+80*cl.s, cl.y, 30*cl.s, 0, Math.PI*2);
-                } else if (cl.type === 1) {
-                    sCtx.arc(cl.x, cl.y, 20 * cl.s, 0, Math.PI*2);
-                    sCtx.arc(cl.x+30*cl.s, cl.y-10*cl.s, 35*cl.s, 0, Math.PI*2);
-                    sCtx.arc(cl.x+60*cl.s, cl.y+5*cl.s, 25*cl.s, 0, Math.PI*2);
-                    sCtx.arc(cl.x+90*cl.s, cl.y-5*cl.s, 20*cl.s, 0, Math.PI*2);
-                } else {
-                    sCtx.arc(cl.x, cl.y, 35 * cl.s, 0, Math.PI*2);
-                    sCtx.arc(cl.x+45*cl.s, cl.y-15*cl.s, 25*cl.s, 0, Math.PI*2);
-                    sCtx.arc(cl.x+70*cl.s, cl.y-5*cl.s, 35*cl.s, 0, Math.PI*2);
-                }
+                sCtx.fillStyle = c.isNight ? `rgba(60, 60, 70, ${cl.op})` : `rgba(255, 255, 255, ${cl.op})`;
+                sCtx.arc(cl.x, cl.y, 30 * cl.s, 0, Math.PI*2);
             }
             sCtx.fill();
 
             cl.x += windSpeedPx + 0.1;
-            if(cl.x > W + 200) { cl.x = -200; cl.y = Math.random()*150; cl.type = Math.floor(Math.random()*3); }
+            if(cl.x > W + 200) { cl.x = -200; cl.y = Math.random()*(H*0.5); cl.type = Math.floor(Math.random()*3); }
         }
 
         // Birds (daytime and not storming)
@@ -1017,8 +1150,10 @@
         }
 
         // Shooting Stars (night and clear)
+        let meteorMultiplier = 1;
+        if (month === 7 || month === 11) meteorMultiplier = 5; // August is 7, December is 11 (0-indexed)
         if (c.isNight && c.cloudCover < 50) {
-            if (Math.random() < 0.005) {
+            if (Math.random() < (0.005 * meteorMultiplier)) {
                 shootingStars.push({x: Math.random()*W, y: -10, len: Math.random()*50+50, speed: Math.random()*10+15, angle: Math.PI/4 + (Math.random()-0.5)*0.2, alpha: 1});
             }
             for (let i=shootingStars.length-1; i>=0; i--) {
