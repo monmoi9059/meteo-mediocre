@@ -1877,7 +1877,7 @@
     function updateDebrisFX() {
         if (debrisList.length === 0) {
             // Initial spawn
-            for(let i=0; i<15; i++) {
+            for(let i=0; i<4; i++) {
                 spawnDebris();
                 // Randomize initial positions across screen
                 debrisList[debrisList.length-1].x = Math.random() * window.innerWidth;
@@ -1885,7 +1885,7 @@
         }
 
         // Spawn new debris randomly (approx every few seconds)
-        if (Math.random() < 0.02) {
+        if (Math.random() < 0.003) {
             spawnDebris();
         }
 
