@@ -13,36 +13,36 @@
             --primary: #004b6b;
             --secondary: #007a99;
             --bg-color: transparent; 
-      --text-color: #c9d1d9;
-      --text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
-            --card-bg: transparent;
-            --tooltip-bg: rgba(255, 255, 255, 0.85);
-            --border-color: rgba(255, 255, 255, 0.4);
-            --th-bg: rgba(0, 122, 153, 0.08);
-            --tr-hover: rgba(0,0,0,0.05);
-            --chart-grid: rgba(0,0,0,0.05);
+            --text-color: #1e293b;
+            --text-shadow: 1px 1px 1px rgba(255,255,255,0.8);
+            --card-bg: rgba(255, 255, 255, 0.65);
+            --tooltip-bg: rgba(255, 255, 255, 0.95);
+            --border-color: rgba(0, 0, 0, 0.1);
+            --th-bg: rgba(0, 122, 153, 0.15);
+            --tr-hover: rgba(0, 0, 0, 0.05);
+            --chart-grid: rgba(0, 0, 0, 0.05);
             --red-alert: #dc2626;
             --green-ok: #16a34a;
-            --scrollbar-bg: rgba(255,255,255,0.2);
-            --scrollbar-thumb: rgba(0,0,0,0.2);
+            --scrollbar-bg: rgba(0, 0, 0, 0.05);
+            --scrollbar-thumb: rgba(0, 0, 0, 0.2);
         }
 
         body.dark-mode {
             --primary: #93c5fd;
             --secondary: #6ee7b7;
             --bg-color: transparent;
-            --text-color: #c9d1d9;
-            --text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
-            --card-bg: transparent;
-            --tooltip-bg: rgba(15, 23, 42, 0.85);
-            --border-color: rgba(255, 255, 255, 0.1);
-            --th-bg: rgba(255, 255, 255, 0.05);
-            --tr-hover: rgba(255,255,255,0.05);
-            --chart-grid: rgba(255,255,255,0.05);
+            --text-color: #f1f5f9;
+            --text-shadow: 1px 1px 2px rgba(0,0,0,0.9);
+            --card-bg: rgba(15, 23, 42, 0.75);
+            --tooltip-bg: rgba(15, 23, 42, 0.95);
+            --border-color: rgba(255, 255, 255, 0.15);
+            --th-bg: rgba(255, 255, 255, 0.15);
+            --tr-hover: rgba(255, 255, 255, 0.05);
+            --chart-grid: rgba(255, 255, 255, 0.1);
             --red-alert: #ef4444;
             --green-ok: #22c55e;
-            --scrollbar-bg: rgba(0,0,0,0.3);
-            --scrollbar-thumb: rgba(255,255,255,0.2);
+            --scrollbar-bg: rgba(0, 0, 0, 0.3);
+            --scrollbar-thumb: rgba(255, 255, 255, 0.25);
         }
 
         /* --- FOND DYNAMIQUE --- */
@@ -142,7 +142,17 @@
         .theme-toggle:hover { background: var(--th-bg); }
 
         /* Conteneur Principal */
-        .main-dashboard { display: flex; flex: 1; padding: 10px; gap: 10px; position: relative; z-index: 10; pointer-events: none; }
+        /* HIDE UI CLASS */
+        body.hide-ui .main-dashboard {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .main-dashboard {
+            display: flex; flex: 1; padding: 10px; gap: 10px; position: relative; z-index: 10; pointer-events: none;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
         .main-dashboard > * { pointer-events: auto; }
         .col-left { width: 33.333%; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
         .col-mid { width: 33.333%; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
@@ -159,16 +169,14 @@
         .card-body { flex: 1; padding: 10px; overflow-y: auto; }
 
         .card-body p, .card-body table, .card-body .live-bar, .card-body .ocean-banner, .card-body .status-block {
-
-
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.5);
             border-radius: 6px;
         }
         .dark-mode .card-body p, .dark-mode .card-body table, .dark-mode .card-body .live-bar, .dark-mode .card-body .ocean-banner, .dark-mode .card-body .status-block {
-            background: rgba(15, 23, 42, 0.05);
+            background: rgba(15, 23, 42, 0.3);
         }
-        .card-body table { background: rgba(255,255,255, 0.1); }
-        .dark-mode .card-body table { background: rgba(15, 23, 42, 0.1); }
+        .card-body table { background: rgba(255, 255, 255, 0.7); }
+        .dark-mode .card-body table { background: rgba(15, 23, 42, 0.5); }
 
         .chart-wrapper { height: 180px; min-height: 180px; width: 100%; margin-bottom: 10px; position: relative;}
 
@@ -671,6 +679,7 @@
 <div class="header">
     <h1>⚓ Terminal St-Romuald - Monitoring Avancé</h1>
     <div class="header-actions">
+        <button id="hide-ui-toggle" class="theme-toggle">👁️ Cacher UI</button>
         <button id="image-toggle" class="theme-toggle">🖼️ petit Langlois ilustrée</button>
         <button id="rules-toggle" class="theme-toggle">📖 Règles</button>
         <button id="calc-toggle" class="theme-toggle">🧮 Calc ETA</button>
@@ -2241,6 +2250,16 @@
         updateDynamicBackground();
         if(weatherChart) renderWeatherUI(); if(tidesChart) fetchTides();
     });
+
+    // Toggle Hide UI
+    const hideUiBtn = document.getElementById('hide-ui-toggle');
+    if (hideUiBtn) {
+        hideUiBtn.addEventListener('click', () => {
+            document.body.classList.toggle('hide-ui');
+            const isHidden = document.body.classList.contains('hide-ui');
+            hideUiBtn.innerHTML = isHidden ? '👁️ Afficher UI' : '👁️ Cacher UI';
+        });
+    }
 
     // --- DÉBRIS ET EFFETS DE RIVIÈRE ---
     let debrisList = [];
