@@ -1508,7 +1508,7 @@
             document.getElementById('weather-body').innerHTML = '<p class="loading">Chargement météo...</p>';
             document.querySelector('#btn-weather-view').parentElement.querySelector('h2').innerText = `☁️ Météo (${currentLocationName})`;
 
-            const url = `https://api.open-meteo.com/v1/forecast?latitude=${currentLat}&longitude=${currentLon}&current=temperature_2m,precipitation,snowfall,cloud_cover,weather_code,windspeed_10m,winddirection_10m,wind_gusts_10m,visibility,surface_pressure,relative_humidity_2m,cape&hourly=temperature_2m,precipitation,snowfall,weather_code,windspeed_10m,winddirection_10m,wind_gusts_10m,visibility,cape&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,windspeed_10m_max,windgusts_10m_max,winddirection_10m_dominant,precipitation_sum,snowfall_sum&forecast_days=7&timezone=America%2FToronto&timeformat=unixtime&wind_speed_unit=kn`;
+            const url = `https://api.open-meteo.com/v1/forecast?latitude=${currentLat}&longitude=${currentLon}&current=temperature_2m,apparent_temperature,precipitation,snowfall,cloud_cover,weather_code,windspeed_10m,winddirection_10m,wind_gusts_10m,visibility,surface_pressure,relative_humidity_2m,cape&hourly=temperature_2m,apparent_temperature,precipitation,snowfall,weather_code,windspeed_10m,winddirection_10m,wind_gusts_10m,visibility,cape&daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,sunrise,sunset,windspeed_10m_max,windgusts_10m_max,winddirection_10m_dominant,precipitation_sum,snowfall_sum&forecast_days=7&timezone=America%2FToronto&timeformat=unixtime&wind_speed_unit=kn`;
 
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 10000);
@@ -1549,7 +1549,7 @@
 
                     const ts = metData.properties.timeseries;
                     const hourly = {
-                        time: [], temperature_2m: [], precipitation: [], snowfall: [],
+                        time: [], temperature_2m: [], apparent_temperature: [], precipitation: [], snowfall: [],
                         weather_code: [], windspeed_10m: [], winddirection_10m: [],
                         wind_gusts_10m: [], visibility: []
                     };
@@ -1578,6 +1578,7 @@
 
                         hourly.time.push(nowSec);
                         hourly.temperature_2m.push(details.air_temperature);
+                        hourly.apparent_temperature.push(details.air_temperature);
                         hourly.precipitation.push(next1 ? (next1.precipitation_amount || 0) : (next6 ? (next6.precipitation_amount || 0) : 0));
                         hourly.snowfall.push(details.air_temperature < 0 && wmo === 71 ? 1 : 0);
                         hourly.weather_code.push(wmo);
@@ -1587,10 +1588,12 @@
                         hourly.visibility.push(10000);
 
                         if (!dailyMap[dayStr]) {
-                            dailyMap[dayStr] = { min: details.air_temperature, max: details.air_temperature, wind: 0, gust: 0, codes: [], psum: 0, ssum: 0 };
+                            dailyMap[dayStr] = { min: details.air_temperature, max: details.air_temperature, app_min: details.air_temperature, app_max: details.air_temperature, wind: 0, gust: 0, codes: [], psum: 0, ssum: 0 };
                         }
                         dailyMap[dayStr].min = Math.min(dailyMap[dayStr].min, details.air_temperature);
                         dailyMap[dayStr].max = Math.max(dailyMap[dayStr].max, details.air_temperature);
+                        dailyMap[dayStr].app_min = Math.min(dailyMap[dayStr].app_min, details.air_temperature);
+                        dailyMap[dayStr].app_max = Math.max(dailyMap[dayStr].app_max, details.air_temperature);
                         dailyMap[dayStr].codes.push(wmo);
                         dailyMap[dayStr].wind = Math.max(dailyMap[dayStr].wind, details.wind_speed * 1.94384);
                         dailyMap[dayStr].gust = Math.max(dailyMap[dayStr].gust, (details.wind_speed_of_gust || details.wind_speed) * 1.94384);
@@ -1600,6 +1603,7 @@
 
                     const daily = {
                         time: [], weather_code: [], temperature_2m_max: [], temperature_2m_min: [],
+                        apparent_temperature_max: [], apparent_temperature_min: [],
                         sunrise: [], sunset: [], windspeed_10m_max: [], windgusts_10m_max: [],
                         winddirection_10m_dominant: [], precipitation_sum: [], snowfall_sum: []
                     };
@@ -1609,6 +1613,8 @@
                         daily.time.push(now);
                         daily.temperature_2m_max.push(dailyMap[day].max);
                         daily.temperature_2m_min.push(dailyMap[day].min);
+                        daily.apparent_temperature_max.push(dailyMap[day].app_max);
+                        daily.apparent_temperature_min.push(dailyMap[day].app_min);
                         daily.windspeed_10m_max.push(dailyMap[day].wind);
                         daily.windgusts_10m_max.push(dailyMap[day].gust);
                         daily.precipitation_sum.push(dailyMap[day].psum);
@@ -1628,6 +1634,7 @@
                     weatherDataCache = {
                         current: {
                             temperature_2m: hourly.temperature_2m[0],
+                            apparent_temperature: hourly.apparent_temperature[0],
                             windspeed_10m: hourly.windspeed_10m[0],
                             winddirection_10m: hourly.winddirection_10m[0],
                             wind_gusts_10m: hourly.wind_gusts_10m[0],
@@ -1710,7 +1717,7 @@
 
         html += `
             <div class="live-bar" style="margin-bottom:8px;">
-                <div class="live-item"><span>Temp</span><strong>${Math.round(cur.temperature_2m)}°C${precipInfo}</strong></div>
+                <div class="live-item"><span>Temp</span><strong>${Math.round(cur.temperature_2m)}°C <span style="font-size:0.7em;font-weight:normal;">(Ressenti ${Math.round(cur.apparent_temperature)}°C)</span>${precipInfo}</strong></div>
                 <div class="live-item"><span>Vent (${getWindDir(cur.winddirection_10m)})</span><strong>${Math.round(cur.windspeed_10m)} <span style="font-size:0.7em;color:var(--red-alert)">Raf ${Math.round(cur.wind_gusts_10m)}</span></strong></div>
                 <div class="live-item"><span>Visib.</span><strong>${visHtml}</strong></div>
             </div>
@@ -1726,7 +1733,7 @@
 
         if (currentWeatherView === '24h') {
             const h = data.hourly; let sIdx = h.time.findIndex(t => t >= nowSec - 3600); if (sIdx === -1) sIdx = 0;
-            html += '<table><tr><th>Hre</th><th>Cond</th><th>°C</th><th>Vent</th><th>Précip.</th><th>Vis.</th></tr>';
+            html += '<table><tr><th>Hre</th><th>Cond</th><th>°C (Ress.)</th><th>Vent</th><th>Précip.</th><th>Vis.</th></tr>';
 
             for (let i = sIdx; i < sIdx + 24 && i < h.time.length; i++) { if(h.temperature_2m[i] === undefined) continue;
                 cTime.push(new Date(h.time[i]*1000).getHours()+'h'); 
@@ -1734,16 +1741,19 @@
                 const tStr = new Date(h.time[i]*1000).toLocaleTimeString('fr-CA', timeOptions).replace(' h', 'h');
                 const pStr = h.snowfall && h.snowfall[i] > 0 ? `<strong>${h.snowfall[i]}cm❄️</strong>` : ((h.precipitation && h.precipitation[i] > 0) ? `<strong>${h.precipitation[i]}mm</strong>` : '-');
                 const vKm = (h.visibility && h.visibility[i]!==null) ? (h.visibility[i]/1000).toFixed(1) : '-'; const wCode = h.weather_code ? h.weather_code[i] : currentConditions.weatherCode; const wSpd = h.windspeed_10m ? Math.round(h.windspeed_10m[i]) : '--'; const wGst = h.wind_gusts_10m ? Math.round(h.wind_gusts_10m[i]) : '--'; const wDir = h.winddirection_10m ? getWindDir(h.winddirection_10m[i]) : '--';
-                html += `<tr><td>${tStr}</td><td>${getWDesc(wCode)}</td><td><strong>${Math.round(h.temperature_2m[i])}</strong></td><td style="font-size:0.85em">${wSpd} <span class="txt-red">${wGst}</span> ${wDir}</td><td>${pStr}</td><td style="font-weight:bold">${vKm}</td></tr>`;
+                const appTemp = h.apparent_temperature && h.apparent_temperature[i] !== undefined ? `<br><span style="font-size:0.8em;color:#aaa">(${Math.round(h.apparent_temperature[i])}°)</span>` : '';
+                html += `<tr><td>${tStr}</td><td>${getWDesc(wCode)}</td><td><strong>${Math.round(h.temperature_2m[i])}°</strong>${appTemp}</td><td style="font-size:0.85em">${wSpd} <span class="txt-red">${wGst}</span> ${wDir}</td><td>${pStr}</td><td style="font-weight:bold">${vKm}</td></tr>`;
             }
         } else {
             const d = data.daily;
-            html += '<table><tr><th>Jour</th><th>Cond</th><th>Min/Max</th><th>Vent Max</th><th>Précip.</th></tr>';
+            html += '<table><tr><th>Jour</th><th>Cond</th><th>Min/Max (Ress.)</th><th>Vent Max</th><th>Précip.</th></tr>';
             for (let i = 0; i < d.time.length; i++) {
                 const dayStr = new Date(d.time[i]*1000).toLocaleDateString('fr-CA', { weekday: 'short', day: 'numeric' });
                 cTime.push(dayStr); cTempMax.push(d.temperature_2m_max[i]); cTempMin.push(d.temperature_2m_min[i]); cPrec.push(d.precipitation_sum[i] + d.snowfall_sum[i]);
                 const pStr = d.snowfall_sum[i] > 0 ? `<strong>${Math.round(d.snowfall_sum[i])}cm❄️</strong>` : (d.precipitation_sum[i] > 0 ? `<strong>${Math.round(d.precipitation_sum[i])}mm</strong>` : '-');
-                html += `<tr><td style="text-transform: capitalize;">${dayStr}</td><td>${getWDesc(d.weather_code[i])}</td><td>${Math.round(d.temperature_2m_min[i])}° / <strong>${Math.round(d.temperature_2m_max[i])}°</strong></td><td style="font-size:0.85em">${Math.round(d.windspeed_10m_max[i])} <span class="txt-red">${Math.round(d.windgusts_10m_max[i])}</span> ${getWindDir(d.winddirection_10m_dominant[i])}</td><td>${pStr}</td></tr>`;
+                const appMin = d.apparent_temperature_min && d.apparent_temperature_min[i] !== undefined ? Math.round(d.apparent_temperature_min[i]) : Math.round(d.temperature_2m_min[i]);
+                const appMax = d.apparent_temperature_max && d.apparent_temperature_max[i] !== undefined ? Math.round(d.apparent_temperature_max[i]) : Math.round(d.temperature_2m_max[i]);
+                html += `<tr><td style="text-transform: capitalize;">${dayStr}</td><td>${getWDesc(d.weather_code[i])}</td><td>${Math.round(d.temperature_2m_min[i])}° / <strong>${Math.round(d.temperature_2m_max[i])}°</strong><br><span style="font-size:0.8em;color:#aaa">(${appMin}° / ${appMax}°)</span></td><td style="font-size:0.85em">${Math.round(d.windspeed_10m_max[i])} <span class="txt-red">${Math.round(d.windgusts_10m_max[i])}</span> ${getWindDir(d.winddirection_10m_dominant[i])}</td><td>${pStr}</td></tr>`;
             }
         }
 
