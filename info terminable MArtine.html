@@ -1334,18 +1334,120 @@
     async function fetchWeather() {
         try {
             document.getElementById('weather-body').innerHTML = '<p class="loading">Chargement météo...</p>';
-            // Show location in the title
             document.querySelector('#btn-weather-view').parentElement.querySelector('h2').innerText = `☁️ Météo (${currentLocationName})`;
 
             const url = `https://api.open-meteo.com/v1/forecast?latitude=${currentLat}&longitude=${currentLon}&current=temperature_2m,precipitation,snowfall,cloud_cover,weather_code,windspeed_10m,winddirection_10m,wind_gusts_10m,visibility,surface_pressure,relative_humidity_2m,cape&hourly=temperature_2m,precipitation,snowfall,weather_code,windspeed_10m,winddirection_10m,wind_gusts_10m,visibility,cape&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,windspeed_10m_max,windgusts_10m_max,winddirection_10m_dominant,precipitation_sum,snowfall_sum&forecast_days=7&timezone=America%2FToronto&timeformat=unixtime&wind_speed_unit=kn`;
-            const res = await fetch(url);
-            if (!res.ok) throw new Error("Erreur API Météo");
-            weatherDataCache = await res.json();
-            renderWeatherUI();
-        } catch (e) { document.getElementById('weather-body').innerHTML = `<p class="txt-red">${e.message}</p>`; }
-    }
 
-    function renderWeatherUI() {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+            try {
+                const res = await fetch(url, { signal: controller.signal });
+                clearTimeout(timeoutId);
+
+                if (!res.ok) throw new Error("Erreur API Météo Open-Meteo");
+                weatherDataCache = await res.json();
+
+                // Save to cache
+                try {
+                    localStorage.setItem('weatherCache_v1', JSON.stringify({
+                        timestamp: Date.now(),
+                        data: weatherDataCache
+                    }));
+                } catch(e) {}
+
+            } catch (err) {
+                clearTimeout(timeoutId);
+                console.warn("Open-Meteo failed, trying wttr.in backup API:", err);
+
+                try {
+                    // Try backup API wttr.in
+                    const backupUrl = `https://wttr.in/${currentLat},${currentLon}?format=j1`;
+                    const backupController = new AbortController();
+                    const backupTimeoutId = setTimeout(() => backupController.abort(), 10000);
+
+                    const backupRes = await fetch(backupUrl, { signal: backupController.signal });
+                    clearTimeout(backupTimeoutId);
+
+                    if (!backupRes.ok) throw new Error("Erreur API de secours Wttr.in");
+                    const wttrData = await backupRes.json();
+
+                    // Transform wttr.in data to match expected open-meteo structure (minimal needed for app)
+                    const cc = wttrData.current_condition[0];
+                    const curWeatherCode = parseInt(cc.weatherCode);
+
+                    // Basic map from WMO code to our expected weatherCode is needed, wttr.in uses WMO internally but exposes a different weatherCode
+                    // Wttr uses worldweatheronline codes (e.g. 113 = clear, 116 = partly cloudy, 119 = cloudy)
+                    let mappedCode = 0;
+                    if (curWeatherCode == 113) mappedCode = 0;
+                    else if (curWeatherCode == 116) mappedCode = 2;
+                    else if (curWeatherCode == 119) mappedCode = 3;
+                    else if (curWeatherCode == 122) mappedCode = 3; // overcast
+                    else if (curWeatherCode == 143) mappedCode = 45; // fog
+                    else if (curWeatherCode == 176 || curWeatherCode == 293 || curWeatherCode == 296) mappedCode = 61; // light rain
+                    else if (curWeatherCode >= 299 && curWeatherCode <= 308) mappedCode = 63; // rain
+                    else if (curWeatherCode == 386 || curWeatherCode == 389) mappedCode = 95; // storm
+                    else if (curWeatherCode == 392 || curWeatherCode == 395) mappedCode = 99; // heavy storm
+                    else if (curWeatherCode >= 323 && curWeatherCode <= 338) mappedCode = 71; // snow
+
+                    const now = Math.floor(Date.now()/1000);
+
+                    weatherDataCache = {
+                        current: {
+                            temperature_2m: parseFloat(cc.temp_C),
+                            windspeed_10m: parseFloat(cc.windspeedKmph) / 1.852, // kn
+                            winddirection_10m: parseFloat(cc.winddirDegree), wind_gusts_10m: parseFloat(cc.WindGustKmph || cc.windspeedKmph) / 1.852, visibility: parseFloat(cc.visibility) * 1000,
+                            precipitation: parseFloat(cc.precipMM),
+                            snowfall: 0,
+                            cloud_cover: parseFloat(cc.cloudcover),
+                            surface_pressure: parseFloat(cc.pressure),
+                            relative_humidity_2m: parseFloat(cc.humidity),
+                            weather_code: mappedCode
+                        },
+                        hourly: { time: [now], temperature_2m: [parseFloat(cc.temp_C)] },
+                        daily: {
+                            time: [now],
+                            temperature_2m_max: [parseFloat(wttrData.weather[0].maxtempC)],
+                            temperature_2m_min: [parseFloat(wttrData.weather[0].mintempC)],
+                            sunrise: [now - 12*3600], // Fake sunrise/set to avoid crash
+                            sunset: [now + 12*3600]
+                        }
+                    };
+
+                    console.log("Successfully loaded data from wttr.in backup API");
+
+                } catch (backupErr) {
+                    console.warn("Backup API also failed:", backupErr);
+                    // Fallback to cache if both APIs fail
+                    const cachedRaw = localStorage.getItem('weatherCache_v1');
+                    if (cachedRaw) {
+                        const parsed = JSON.parse(cachedRaw);
+                        const ageHours = (Date.now() - parsed.timestamp) / (1000 * 60 * 60);
+                        console.log(`Using cached weather data (${ageHours.toFixed(1)} hours old)`);
+                        weatherDataCache = parsed.data;
+                        document.getElementById('weather-body').innerHTML = `<p class="txt-red" style="margin-bottom: 10px;">⚠️ Mode hors ligne. Données d'il y a ${ageHours.toFixed(1)} heures.</p>`;
+                    } else {
+                        throw new Error("Toutes les API et le cache ont échoué.");
+                    }
+                }
+            }
+
+            const loadingMsg = document.querySelector('#weather-body .loading'); if (loadingMsg) loadingMsg.remove(); renderWeatherUI();
+        } catch (e) {
+            console.error(e);
+            document.getElementById('weather-body').innerHTML = `<p class="txt-red">Échec de la connexion. Les effets visuels utilisent des valeurs par défaut.</p>`;
+            // Initialize sensible defaults so canvas doesn't crash if renderWeatherUI is skipped
+            if (!weatherDataCache) {
+                currentConditions.temp = 15;
+                currentConditions.weatherCode = 0; // Clear
+                currentConditions.cloudCover = 0;
+                currentConditions.nowSec = Math.floor(Date.now() / 1000);
+                currentConditions.sunriseTime = currentConditions.nowSec - 10000;
+                currentConditions.sunsetTime = currentConditions.nowSec + 10000;
+                currentConditions.isNight = false;
+            }
+        }
+    }    function renderWeatherUI() {
         if (!weatherDataCache) return;
         const data = weatherDataCache; const cur = data.current; const nowSec = Math.floor(Date.now() / 1000);
         
@@ -1397,13 +1499,13 @@
             const h = data.hourly; let sIdx = h.time.findIndex(t => t >= nowSec - 3600); if (sIdx === -1) sIdx = 0;
             html += '<table><tr><th>Hre</th><th>Cond</th><th>°C</th><th>Vent</th><th>Précip.</th><th>Vis.</th></tr>';
 
-            for (let i = sIdx; i < sIdx + 24 && i < h.time.length; i++) {
+            for (let i = sIdx; i < sIdx + 24 && i < h.time.length; i++) { if(h.temperature_2m[i] === undefined) continue;
                 cTime.push(new Date(h.time[i]*1000).getHours()+'h'); 
-                cTempMax.push(h.temperature_2m[i]); cPrec.push(h.precipitation[i] + h.snowfall[i]);
+                cTempMax.push(h.temperature_2m[i]); cPrec.push((h.precipitation && h.precipitation[i]) ? (h.precipitation[i] + (h.snowfall ? h.snowfall[i] : 0)) : 0);
                 const tStr = new Date(h.time[i]*1000).toLocaleTimeString('fr-CA', timeOptions).replace(' h', 'h');
-                const pStr = h.snowfall[i] > 0 ? `<strong>${h.snowfall[i]}cm❄️</strong>` : (h.precipitation[i] > 0 ? `<strong>${h.precipitation[i]}mm</strong>` : '-');
-                const vKm = h.visibility[i]!==null ? (h.visibility[i]/1000).toFixed(1) : '-';
-                html += `<tr><td>${tStr}</td><td>${getWDesc(h.weather_code[i])}</td><td><strong>${Math.round(h.temperature_2m[i])}</strong></td><td style="font-size:0.85em">${Math.round(h.windspeed_10m[i])} <span class="txt-red">${Math.round(h.wind_gusts_10m[i])}</span> ${getWindDir(h.winddirection_10m[i])}</td><td>${pStr}</td><td style="font-weight:bold">${vKm}</td></tr>`;
+                const pStr = h.snowfall && h.snowfall[i] > 0 ? `<strong>${h.snowfall[i]}cm❄️</strong>` : ((h.precipitation && h.precipitation[i] > 0) ? `<strong>${h.precipitation[i]}mm</strong>` : '-');
+                const vKm = (h.visibility && h.visibility[i]!==null) ? (h.visibility[i]/1000).toFixed(1) : '-'; const wCode = h.weather_code ? h.weather_code[i] : currentConditions.weatherCode; const wSpd = h.windspeed_10m ? Math.round(h.windspeed_10m[i]) : '--'; const wGst = h.wind_gusts_10m ? Math.round(h.wind_gusts_10m[i]) : '--'; const wDir = h.winddirection_10m ? getWindDir(h.winddirection_10m[i]) : '--';
+                html += `<tr><td>${tStr}</td><td>${getWDesc(wCode)}</td><td><strong>${Math.round(h.temperature_2m[i])}</strong></td><td style="font-size:0.85em">${wSpd} <span class="txt-red">${wGst}</span> ${wDir}</td><td>${pStr}</td><td style="font-weight:bold">${vKm}</td></tr>`;
             }
         } else {
             const d = data.daily;
@@ -1417,7 +1519,7 @@
         }
 
         html += '</table>';
-        document.getElementById('weather-body').innerHTML = html;
+        const wb = document.getElementById('weather-body'); const offlineMsg = wb.querySelector('.txt-red') ? wb.querySelector('.txt-red').outerHTML : ''; wb.innerHTML = offlineMsg + html;
 
         const ctx = document.getElementById('wChart').getContext('2d');
         const c = getChartCols();
