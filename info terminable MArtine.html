@@ -89,8 +89,12 @@
 
         /* --- SHORE LAYER --- */
         .shore-layer {
-            position: fixed; left: 0; right: 0; bottom: calc(var(--water-h) - 30px); height: 250px; z-index: 0; pointer-events: none;
-            transition: bottom 0.5s ease-in-out;
+            position: fixed; left: 0; right: 0; bottom: calc(45vh - 30px); height: 250px; z-index: 0; pointer-events: none;
+        }
+
+        /* --- BEACH LAYER --- */
+        .beach-layer {
+            position: fixed; left: 0; right: 0; bottom: 0; height: calc(45vh - 30px); z-index: 0; pointer-events: none;
         }
 
         /* --- BOAT LAYER --- */
@@ -325,16 +329,32 @@
         <circle cx="800" cy="130" r="4" fill="#2c3e50" />
         <circle cx="850" cy="130" r="4" fill="#2c3e50" />
 
-        <!-- Dynamic Low Tide Rocks -->
-        <g id="tide-rocks" style="opacity: 0; transform: translateY(20px); transition: opacity 2s, transform 2s;">
-            <!-- Foreground rocks exposed at low tide -->
-            <path d="M 10 240 Q 30 220 50 240 Q 60 210 90 235 Q 110 225 120 240 Z" fill="#2c3e50" />
-            <path d="M 150 245 Q 170 215 200 240 Q 220 230 240 245 Z" fill="#34495e" />
-            <path d="M 300 240 Q 330 220 350 235 Q 380 210 400 240 Z" fill="#2c3e50" />
-            <path d="M 450 245 Q 470 225 500 240 Q 520 215 550 245 Z" fill="#34495e" />
-            <path d="M 600 240 Q 620 210 650 235 Z" fill="#2c3e50" />
-            <path d="M 900 240 Q 920 215 950 235 Q 970 220 980 240 Z" fill="#34495e" />
-        </g>
+    </svg>
+</div>
+
+<!-- BEACH LAYER (SAND AND ROCKS) -->
+<div id="beach-layer" class="beach-layer">
+    <svg width="100%" height="100%" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Sand/Mud base filling the gap -->
+        <rect x="0" y="0" width="100%" height="100%" fill="#715c44" />
+
+        <!-- Exposed rocks at different heights so they appear as tide drops -->
+        <!-- Top layer rocks (exposed first) -->
+        <path d="M 50 0 Q 70 -20 100 10 Q 130 -10 150 10 Q 180 -15 200 5 L 200 100 L 50 100 Z" fill="#3d3328" />
+        <path d="M 400 -5 Q 420 -25 450 5 Q 480 -15 500 5 Q 530 -20 550 0 L 550 100 L 400 100 Z" fill="#3d3328" />
+        <path d="M 800 0 Q 820 -20 850 10 Q 880 -10 900 5 Q 930 -15 950 5 L 950 100 L 800 100 Z" fill="#3d3328" />
+
+        <!-- Middle layer rocks -->
+        <path d="M 200 30 Q 230 10 260 40 Q 290 20 320 40 L 320 100 L 200 100 Z" fill="#2d251d" />
+        <path d="M 600 25 Q 630 5 660 35 Q 690 15 720 35 L 720 100 L 600 100 Z" fill="#2d251d" />
+
+        <!-- Bottom layer rocks (exposed last) -->
+        <path d="M 10 70 Q 30 50 50 70 Q 60 40 90 65 Q 110 55 120 70 Z" fill="#2c3e50" />
+        <path d="M 150 75 Q 170 45 200 70 Q 220 60 240 75 Z" fill="#34495e" />
+        <path d="M 300 70 Q 330 50 350 65 Q 380 40 400 70 Z" fill="#2c3e50" />
+        <path d="M 450 75 Q 470 55 500 70 Q 520 45 550 75 Z" fill="#34495e" />
+        <path d="M 600 70 Q 620 40 650 65 Z" fill="#2c3e50" />
+        <path d="M 900 70 Q 920 45 950 65 Q 970 50 980 70 Z" fill="#34495e" />
     </svg>
 </div>
 
@@ -1625,20 +1645,8 @@
                 currentConditions.tideHeight = 10 + (((currentWaterLevel - minTide) / (maxTide - minTide)) * 100 * 0.35); 
                 currentConditions.tideTrend = nextTide.value > prevTide.value ? '⬆️ Montante' : '⬇️ Descendante';
 
-                // Show rocks dynamically at low tide
-                // tideHeight goes from 10 to 45ish
-                const tideRocks = document.getElementById('tide-rocks');
-                if (tideRocks) {
-                    // Let's say rocks start showing when tideHeight is below 25
-                    let rockOpacity = 0;
-                    let rockTransform = 20;
-                    if (currentConditions.tideHeight < 25) {
-                        rockOpacity = Math.min(1, (25 - currentConditions.tideHeight) / 10);
-                        rockTransform = Math.max(0, 20 - ((25 - currentConditions.tideHeight) * 2));
-                    }
-                    tideRocks.style.opacity = rockOpacity;
-                    tideRocks.style.transform = `translateY(${rockTransform}px)`;
-                }
+                // Rocks are naturally exposed now because beach-layer is below shore-layer
+                // and the water level decreases to reveal it.
                 updateDynamicBackground();
             }
 
