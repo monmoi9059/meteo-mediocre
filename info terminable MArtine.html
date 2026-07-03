@@ -829,17 +829,33 @@
     let W = skyCanvas.width = window.innerWidth;
     let H = skyCanvas.height = window.innerHeight;
     
-    let clouds = [], stars = [], birds = [], shootingStars = [];
+    let clouds = [], stars = [], birds = [], shootingStars = [], fireworks = [], auroras = [];
     for(let i=0; i<150; i++) stars.push({x: Math.random()*W, y: Math.random()*(H/2), s: Math.random()*2, a: Math.random()});
-    for(let i=0; i<60; i++) clouds.push({x: Math.random()*W, y: Math.random()*150, s: Math.random()*2+1, op: Math.random()*0.5+0.1, type: Math.floor(Math.random()*3)});
+    for(let i=0; i<60; i++) clouds.push({x: Math.random()*W, y: Math.random()*(H*0.5), s: Math.random()*2+1, op: Math.random()*0.5+0.1, type: Math.floor(Math.random()*3)});
     for(let i=0; i<8; i++) birds.push({x: Math.random()*W, y: Math.random()*H*0.4, s: Math.random()*0.5+0.5, speed: Math.random()*1+0.5, flap: Math.random()*Math.PI*2});
+    for(let i=0; i<3; i++) auroras.push({x: Math.random()*W, y: Math.random()*H*0.3, phase: Math.random()*Math.PI*2, speed: Math.random()*0.02 + 0.01});
+
+    function getCloudType(weatherCode) {
+        if (weatherCode === 1) return 'cirrus';
+        if (weatherCode === 2) return 'cumulus';
+        if (weatherCode === 3) return 'stratus';
+        if (weatherCode >= 51 && weatherCode <= 57) return 'low_stratus';
+        if (weatherCode >= 61 && weatherCode <= 67) return 'thick_nimbostratus';
+        if (weatherCode >= 71 && weatherCode <= 77) return 'altostratus';
+        if (weatherCode >= 80 && weatherCode <= 86) return 'cumulus_congestus';
+        if (weatherCode >= 95 && weatherCode <= 99) return 'cumulonimbus';
+        return 'cumulus'; // default
+    }
 
     function drawSkyFX() {
         sCtx.clearRect(0, 0, W, H);
         const c = currentConditions;
+        let dDate = new Date();
+        let month = dDate.getMonth();
+        let date = dDate.getDate();
         
+        let astX = -100, astY = -100, isSun = false;
         if (c.sunriseTime && c.sunsetTime) {
-            let astX = -100, astY = -100, isSun = false;
             let totalDay = c.sunsetTime - c.sunriseTime;
             
             if (!c.isNight) {
@@ -852,7 +868,34 @@
                 astX = progNight * W; astY = H * 0.4 - Math.sin(progNight * Math.PI) * (H * 0.3);
             }
 
+            // Draw Halo
+            let drawHalo = false;
+            if (c.temp < -10 || c.weatherCode === 1) drawHalo = true;
+            if (drawHalo) {
+                sCtx.beginPath();
+                sCtx.arc(astX, astY, 100, 0, Math.PI*2);
+                sCtx.strokeStyle = isSun ? 'rgba(255, 255, 255, 0.15)' : 'rgba(200, 220, 255, 0.1)';
+                sCtx.lineWidth = 15;
+                sCtx.stroke();
+            }
+
             if (isSun) {
+                // Crepuscular rays (god rays) during golden hour and partly cloudy
+                if (c.isGoldenHour && c.weatherCode === 2) {
+                    sCtx.save();
+                    sCtx.globalCompositeOperation = 'screen';
+                    let rayGrad = sCtx.createRadialGradient(astX, astY, 20, astX, astY, Math.max(W, H));
+                    rayGrad.addColorStop(0, 'rgba(253, 224, 71, 0.2)');
+                    rayGrad.addColorStop(1, 'rgba(253, 224, 71, 0)');
+                    sCtx.fillStyle = rayGrad;
+                    sCtx.beginPath();
+                    sCtx.moveTo(astX, astY);
+                    sCtx.lineTo(astX - W, H);
+                    sCtx.lineTo(astX + W, H);
+                    sCtx.fill();
+                    sCtx.restore();
+                }
+
                 sCtx.beginPath(); sCtx.arc(astX, astY, 40, 0, Math.PI*2);
                 sCtx.fillStyle = c.isGoldenHour ? 'rgba(253, 186, 116, 0.8)' : 'rgba(253, 224, 71, 0.8)';
                 sCtx.shadowBlur = 40; sCtx.shadowColor = sCtx.fillStyle; sCtx.fill(); sCtx.shadowBlur = 0;
@@ -924,6 +967,86 @@
             }
         }
 
+        // Rainbows
+        if (!c.isNight && c.rain > 0 && c.cloudCover < 80) {
+            sCtx.save();
+            sCtx.globalAlpha = 0.3;
+            // The arc is drawn at radius W/2, with width 40.
+            // So the stroke spans from (W/2 - 20) to (W/2 + 20).
+            let rInner = W/2 - 20;
+            let rOuter = W/2 + 20;
+            let rbwGrad = sCtx.createRadialGradient(W/2, H, rInner, W/2, H, rOuter);
+            rbwGrad.addColorStop(0, 'rgba(255,0,0,0)');
+            rbwGrad.addColorStop(0.1, 'violet');
+            rbwGrad.addColorStop(0.2, 'indigo');
+            rbwGrad.addColorStop(0.3, 'blue');
+            rbwGrad.addColorStop(0.4, 'green');
+            rbwGrad.addColorStop(0.5, 'yellow');
+            rbwGrad.addColorStop(0.6, 'orange');
+            rbwGrad.addColorStop(0.7, 'red');
+            rbwGrad.addColorStop(0.8, 'rgba(255,0,0,0)');
+            sCtx.beginPath();
+            sCtx.arc(W/2, H, W/2, Math.PI, 0);
+            sCtx.lineWidth = 40;
+            sCtx.strokeStyle = rbwGrad;
+            sCtx.stroke();
+            sCtx.restore();
+        }
+
+        // Northern Lights (Aurora Borealis) - winter clear nights
+        let isWinter = (month === 11 || month === 0 || month === 1);
+        if (c.isNight && c.cloudCover < 30 && isWinter) {
+            sCtx.save();
+            sCtx.globalCompositeOperation = 'screen';
+            auroras.forEach((aurora, idx) => {
+                sCtx.beginPath();
+                for (let x = 0; x < W; x += 20) {
+                    let y = aurora.y + Math.sin(x * 0.005 + aurora.phase) * 50;
+                    if (x === 0) sCtx.moveTo(x, y);
+                    else sCtx.lineTo(x, y);
+                }
+                sCtx.lineWidth = 60 + Math.sin(aurora.phase)*20;
+                let colorBase = idx % 2 === 0 ? 'rgba(52, 211, 153,' : 'rgba(167, 139, 250,';
+                sCtx.strokeStyle = colorBase + ' 0.15)';
+                sCtx.shadowBlur = 40;
+                sCtx.shadowColor = idx % 2 === 0 ? '#34d399' : '#a78bfa';
+                sCtx.stroke();
+                aurora.phase += aurora.speed;
+            });
+            sCtx.restore();
+        }
+
+        // Fireworks (NYE, Saint-Jean, Canada Day)
+        let isHoliday = (month === 11 && date === 31) || (month === 0 && date === 1) || (month === 5 && date === 24) || (month === 6 && date === 1);
+        if (isHoliday && c.isNight) {
+            if (Math.random() < 0.02) {
+                fireworks.push({x: Math.random()*W, y: Math.random()*(H/2), age: 0, maxAge: 50, particles: []});
+                for(let k=0; k<30; k++) {
+                    let ang = Math.random()*Math.PI*2;
+                    let spd = Math.random()*4 + 1;
+                    fireworks[fireworks.length-1].particles.push({
+                        vx: Math.cos(ang)*spd, vy: Math.sin(ang)*spd,
+                        color: `hsl(${Math.random()*360}, 100%, 60%)`
+                    });
+                }
+            }
+            for (let i = fireworks.length - 1; i >= 0; i--) {
+                let fw = fireworks[i];
+                fw.age++;
+                sCtx.save();
+                sCtx.globalCompositeOperation = 'lighter';
+                fw.particles.forEach(p => {
+                    let px = fw.x + p.vx * fw.age;
+                    let py = fw.y + p.vy * fw.age + (fw.age*fw.age)*0.05; // gravity
+                    sCtx.fillStyle = p.color;
+                    sCtx.globalAlpha = 1 - (fw.age/fw.maxAge);
+                    sCtx.beginPath(); sCtx.arc(px, py, 2, 0, Math.PI*2); sCtx.fill();
+                });
+                sCtx.restore();
+                if (fw.age >= fw.maxAge) fireworks.splice(i, 1);
+            }
+        }
+
         let numCloudsActive = Math.min(Math.floor((c.cloudCover / 100) * clouds.length), clouds.length);
         if (numCloudsActive < 2 && c.cloudCover > 0) numCloudsActive = 2; 
         let windSpeedPx = c.wind * 0.05; 
@@ -951,44 +1074,54 @@
             lightningFlashAlpha -= 0.05;
             if (lightningFlashAlpha < 0) lightningFlashAlpha = 0;
         }
-        
+
+        let currentCloudType = getCloudType(c.weatherCode);
+
         for(let i=0; i<numCloudsActive; i++) {
             let cl = clouds[i];
-            // Darker clouds for rain/snow, fluffier for clear
-            const isStormy = c.weatherCode >= 51 && c.weatherCode <= 99;
-            if (isStormy) {
-                sCtx.fillStyle = c.isNight ? `rgba(30, 30, 40, ${cl.op + 0.2})` : `rgba(100, 110, 120, ${cl.op + 0.3})`;
-            } else {
-                sCtx.fillStyle = c.isNight ? `rgba(60, 60, 70, ${cl.op})` : `rgba(255, 255, 255, ${cl.op})`;
-            }
 
             sCtx.beginPath();
-            if (isStormy) {
-                // Dense, flatter clouds
-                sCtx.arc(cl.x, cl.y, 25 * cl.s, 0, Math.PI*2);
-                sCtx.arc(cl.x+50*cl.s, cl.y-5*cl.s, 30*cl.s, 0, Math.PI*2);
-                sCtx.arc(cl.x+100*cl.s, cl.y, 25*cl.s, 0, Math.PI*2);
+
+            if (currentCloudType === 'cirrus') {
+                sCtx.fillStyle = c.isNight ? `rgba(80, 80, 90, ${cl.op * 0.5})` : `rgba(255, 255, 255, ${cl.op * 0.5})`;
+                sCtx.ellipse(cl.x, cl.y, 80 * cl.s, 10 * cl.s, -Math.PI/8, 0, Math.PI*2);
+            } else if (currentCloudType === 'cumulus') {
+                sCtx.fillStyle = c.isNight ? `rgba(60, 60, 70, ${cl.op})` : `rgba(255, 255, 255, ${cl.op})`;
+                sCtx.arc(cl.x, cl.y, 30 * cl.s, 0, Math.PI*2);
+                sCtx.arc(cl.x+40*cl.s, cl.y-20*cl.s, 40*cl.s, 0, Math.PI*2);
+                sCtx.arc(cl.x+80*cl.s, cl.y, 30*cl.s, 0, Math.PI*2);
+            } else if (currentCloudType === 'stratus') {
+                sCtx.fillStyle = c.isNight ? `rgba(50, 50, 60, ${cl.op + 0.1})` : `rgba(200, 200, 210, ${cl.op + 0.2})`;
+                sCtx.rect(cl.x - 100, cl.y - 10, 200 * cl.s, 20 * cl.s);
+            } else if (currentCloudType === 'low_stratus') {
+                sCtx.fillStyle = c.isNight ? `rgba(40, 40, 50, ${cl.op + 0.2})` : `rgba(150, 160, 170, ${cl.op + 0.3})`;
+                sCtx.rect(cl.x - 150, cl.y, 300 * cl.s, 30 * cl.s);
+            } else if (currentCloudType === 'thick_nimbostratus') {
+                sCtx.fillStyle = c.isNight ? `rgba(20, 20, 30, ${cl.op + 0.3})` : `rgba(80, 90, 100, ${cl.op + 0.4})`;
+                sCtx.rect(cl.x - 150, cl.y - 20, 300 * cl.s, 50 * cl.s);
+                sCtx.arc(cl.x, cl.y, 50 * cl.s, 0, Math.PI*2);
+            } else if (currentCloudType === 'altostratus') {
+                sCtx.fillStyle = c.isNight ? `rgba(60, 60, 70, ${cl.op + 0.1})` : `rgba(220, 230, 240, ${cl.op + 0.2})`;
+                sCtx.rect(cl.x - 100, cl.y - 30, 200 * cl.s, 40 * cl.s);
+            } else if (currentCloudType === 'cumulus_congestus') {
+                sCtx.fillStyle = c.isNight ? `rgba(40, 40, 50, ${cl.op + 0.2})` : `rgba(120, 130, 140, ${cl.op + 0.2})`;
+                sCtx.arc(cl.x, cl.y, 40 * cl.s, 0, Math.PI*2);
+                sCtx.arc(cl.x+50*cl.s, cl.y-40*cl.s, 50*cl.s, 0, Math.PI*2);
+                sCtx.arc(cl.x+100*cl.s, cl.y-20*cl.s, 40*cl.s, 0, Math.PI*2);
+            } else if (currentCloudType === 'cumulonimbus') {
+                sCtx.fillStyle = c.isNight ? `rgba(10, 10, 20, ${cl.op + 0.4})` : `rgba(50, 60, 70, ${cl.op + 0.5})`;
+                sCtx.arc(cl.x, cl.y, 50 * cl.s, 0, Math.PI*2);
+                sCtx.arc(cl.x+50*cl.s, cl.y-80*cl.s, 60*cl.s, 0, Math.PI*2); // tall
+                sCtx.arc(cl.x+100*cl.s, cl.y, 50*cl.s, 0, Math.PI*2);
+                sCtx.rect(cl.x-20, cl.y, 140*cl.s, 30*cl.s); // flat base
             } else {
-                // Fluffy varied clouds
-                if (cl.type === 0) {
-                    sCtx.arc(cl.x, cl.y, 30 * cl.s, 0, Math.PI*2);
-                    sCtx.arc(cl.x+40*cl.s, cl.y-20*cl.s, 40*cl.s, 0, Math.PI*2);
-                    sCtx.arc(cl.x+80*cl.s, cl.y, 30*cl.s, 0, Math.PI*2);
-                } else if (cl.type === 1) {
-                    sCtx.arc(cl.x, cl.y, 20 * cl.s, 0, Math.PI*2);
-                    sCtx.arc(cl.x+30*cl.s, cl.y-10*cl.s, 35*cl.s, 0, Math.PI*2);
-                    sCtx.arc(cl.x+60*cl.s, cl.y+5*cl.s, 25*cl.s, 0, Math.PI*2);
-                    sCtx.arc(cl.x+90*cl.s, cl.y-5*cl.s, 20*cl.s, 0, Math.PI*2);
-                } else {
-                    sCtx.arc(cl.x, cl.y, 35 * cl.s, 0, Math.PI*2);
-                    sCtx.arc(cl.x+45*cl.s, cl.y-15*cl.s, 25*cl.s, 0, Math.PI*2);
-                    sCtx.arc(cl.x+70*cl.s, cl.y-5*cl.s, 35*cl.s, 0, Math.PI*2);
-                }
+                sCtx.fillStyle = c.isNight ? `rgba(60, 60, 70, ${cl.op})` : `rgba(255, 255, 255, ${cl.op})`;
+                sCtx.arc(cl.x, cl.y, 30 * cl.s, 0, Math.PI*2);
             }
             sCtx.fill();
 
             cl.x += windSpeedPx + 0.1;
-            if(cl.x > W + 200) { cl.x = -200; cl.y = Math.random()*150; cl.type = Math.floor(Math.random()*3); }
+            if(cl.x > W + 200) { cl.x = -200; cl.y = Math.random()*(H*0.5); cl.type = Math.floor(Math.random()*3); }
         }
 
         // Birds (daytime and not storming)
@@ -1017,8 +1150,10 @@
         }
 
         // Shooting Stars (night and clear)
+        let meteorMultiplier = 1;
+        if (month === 7 || month === 11) meteorMultiplier = 5; // August is 7, December is 11 (0-indexed)
         if (c.isNight && c.cloudCover < 50) {
-            if (Math.random() < 0.005) {
+            if (Math.random() < (0.005 * meteorMultiplier)) {
                 shootingStars.push({x: Math.random()*W, y: -10, len: Math.random()*50+50, speed: Math.random()*10+15, angle: Math.PI/4 + (Math.random()-0.5)*0.2, alpha: 1});
             }
             for (let i=shootingStars.length-1; i>=0; i--) {
@@ -1199,18 +1334,177 @@
     async function fetchWeather() {
         try {
             document.getElementById('weather-body').innerHTML = '<p class="loading">Chargement météo...</p>';
-            // Show location in the title
             document.querySelector('#btn-weather-view').parentElement.querySelector('h2').innerText = `☁️ Météo (${currentLocationName})`;
 
             const url = `https://api.open-meteo.com/v1/forecast?latitude=${currentLat}&longitude=${currentLon}&current=temperature_2m,precipitation,snowfall,cloud_cover,weather_code,windspeed_10m,winddirection_10m,wind_gusts_10m,visibility,surface_pressure,relative_humidity_2m,cape&hourly=temperature_2m,precipitation,snowfall,weather_code,windspeed_10m,winddirection_10m,wind_gusts_10m,visibility,cape&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,windspeed_10m_max,windgusts_10m_max,winddirection_10m_dominant,precipitation_sum,snowfall_sum&forecast_days=7&timezone=America%2FToronto&timeformat=unixtime&wind_speed_unit=kn`;
-            const res = await fetch(url);
-            if (!res.ok) throw new Error("Erreur API Météo");
-            weatherDataCache = await res.json();
-            renderWeatherUI();
-        } catch (e) { document.getElementById('weather-body').innerHTML = `<p class="txt-red">${e.message}</p>`; }
-    }
 
-    function renderWeatherUI() {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+            try {
+                const res = await fetch(url, { signal: controller.signal });
+                clearTimeout(timeoutId);
+
+                if (!res.ok) throw new Error("Erreur API Météo Open-Meteo");
+                weatherDataCache = await res.json();
+
+                // Save to cache
+                try {
+                    localStorage.setItem('weatherCache_v1', JSON.stringify({
+                        timestamp: Date.now(),
+                        data: weatherDataCache
+                    }));
+                } catch(e) {}
+
+            } catch (err) {
+                clearTimeout(timeoutId);
+                console.warn("Open-Meteo failed, trying wttr.in backup API:", err);
+
+                try {
+                    // Try backup API api.met.no
+                    const backupUrl = `https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${currentLat}&lon=${currentLon}`;
+                    const backupController = new AbortController();
+                    const backupTimeoutId = setTimeout(() => backupController.abort(), 10000);
+
+                    const backupRes = await fetch(backupUrl, {
+                        headers: { "User-Agent": "InfoTerminableMartine/1.0" },
+                        signal: backupController.signal
+                    });
+                    clearTimeout(backupTimeoutId);
+
+                    if (!backupRes.ok) throw new Error("Erreur API de secours met.no");
+                    const metData = await backupRes.json();
+
+                    const ts = metData.properties.timeseries;
+                    const hourly = {
+                        time: [], temperature_2m: [], precipitation: [], snowfall: [],
+                        weather_code: [], windspeed_10m: [], winddirection_10m: [],
+                        wind_gusts_10m: [], visibility: []
+                    };
+                    const dailyMap = {};
+
+                    ts.forEach(t => {
+                        const dateObj = new Date(t.time);
+                        const dayStr = dateObj.toISOString().split('T')[0];
+                        const nowSec = Math.floor(dateObj.getTime() / 1000);
+
+                        const details = t.data.instant.details;
+                        const next1 = t.data.next_1_hours ? t.data.next_1_hours.details : null;
+                        const next6 = t.data.next_6_hours ? t.data.next_6_hours.details : null;
+                        const sumCode = t.data.next_1_hours ? t.data.next_1_hours.summary.symbol_code :
+                                        (t.data.next_6_hours ? t.data.next_6_hours.summary.symbol_code :
+                                        (t.data.next_12_hours ? t.data.next_12_hours.summary.symbol_code : "clearsky_day"));
+
+                        let wmo = 0;
+                        if (sumCode.includes('cloud')) wmo = 3;
+                        if (sumCode.includes('partlycloud')) wmo = 2;
+                        if (sumCode.includes('rain')) wmo = 63;
+                        if (sumCode.includes('snow')) wmo = 71;
+                        if (sumCode.includes('sleet')) wmo = 69;
+                        if (sumCode.includes('thunder')) wmo = 95;
+                        if (sumCode.includes('fog')) wmo = 45;
+
+                        hourly.time.push(nowSec);
+                        hourly.temperature_2m.push(details.air_temperature);
+                        hourly.precipitation.push(next1 ? (next1.precipitation_amount || 0) : (next6 ? (next6.precipitation_amount || 0) : 0));
+                        hourly.snowfall.push(details.air_temperature < 0 && wmo === 71 ? 1 : 0);
+                        hourly.weather_code.push(wmo);
+                        hourly.windspeed_10m.push(details.wind_speed * 1.94384);
+                        hourly.winddirection_10m.push(details.wind_from_direction);
+                        hourly.wind_gusts_10m.push(details.wind_speed_of_gust ? details.wind_speed_of_gust * 1.94384 : details.wind_speed * 1.94384);
+                        hourly.visibility.push(10000);
+
+                        if (!dailyMap[dayStr]) {
+                            dailyMap[dayStr] = { min: details.air_temperature, max: details.air_temperature, wind: 0, gust: 0, codes: [], psum: 0, ssum: 0 };
+                        }
+                        dailyMap[dayStr].min = Math.min(dailyMap[dayStr].min, details.air_temperature);
+                        dailyMap[dayStr].max = Math.max(dailyMap[dayStr].max, details.air_temperature);
+                        dailyMap[dayStr].codes.push(wmo);
+                        dailyMap[dayStr].wind = Math.max(dailyMap[dayStr].wind, details.wind_speed * 1.94384);
+                        dailyMap[dayStr].gust = Math.max(dailyMap[dayStr].gust, (details.wind_speed_of_gust || details.wind_speed) * 1.94384);
+                        dailyMap[dayStr].psum += (next1 ? (next1.precipitation_amount || 0) : 0);
+                        if(wmo===71 && details.air_temperature < 0) dailyMap[dayStr].ssum += (next1 ? (next1.precipitation_amount || 0) : 0);
+                    });
+
+                    const daily = {
+                        time: [], weather_code: [], temperature_2m_max: [], temperature_2m_min: [],
+                        sunrise: [], sunset: [], windspeed_10m_max: [], windgusts_10m_max: [],
+                        winddirection_10m_dominant: [], precipitation_sum: [], snowfall_sum: []
+                    };
+
+                    Object.keys(dailyMap).forEach(day => {
+                        const now = new Date(day + "T12:00:00Z").getTime()/1000;
+                        daily.time.push(now);
+                        daily.temperature_2m_max.push(dailyMap[day].max);
+                        daily.temperature_2m_min.push(dailyMap[day].min);
+                        daily.windspeed_10m_max.push(dailyMap[day].wind);
+                        daily.windgusts_10m_max.push(dailyMap[day].gust);
+                        daily.precipitation_sum.push(dailyMap[day].psum);
+                        daily.snowfall_sum.push(dailyMap[day].ssum);
+                        // Approximate most common weather code
+                        const codes = dailyMap[day].codes;
+                        daily.weather_code.push(codes.sort((a,b) => codes.filter(v => v===a).length - codes.filter(v => v===b).length).pop());
+                        daily.winddirection_10m_dominant.push(hourly.winddirection_10m[0]); // approx
+
+                        // Fake sunrise/sunset for backup API
+                        const fakeSunrise = new Date(day + "T06:00:00-04:00").getTime()/1000;
+                        const fakeSunset = new Date(day + "T20:00:00-04:00").getTime()/1000;
+                        daily.sunrise.push(fakeSunrise);
+                        daily.sunset.push(fakeSunset);
+                    });
+
+                    weatherDataCache = {
+                        current: {
+                            temperature_2m: hourly.temperature_2m[0],
+                            windspeed_10m: hourly.windspeed_10m[0],
+                            winddirection_10m: hourly.winddirection_10m[0],
+                            wind_gusts_10m: hourly.wind_gusts_10m[0],
+                            visibility: hourly.visibility[0],
+                            precipitation: hourly.precipitation[0],
+                            snowfall: hourly.snowfall[0],
+                            cloud_cover: ts[0].data.instant.details.cloud_area_fraction * 10, // scale 0-100
+                            surface_pressure: ts[0].data.instant.details.air_pressure_at_sea_level,
+                            relative_humidity_2m: ts[0].data.instant.details.relative_humidity,
+                            weather_code: hourly.weather_code[0]
+                        },
+                        hourly: hourly,
+                        daily: daily
+                    };
+
+                    console.log("Successfully loaded data from api.met.no backup API");
+
+                } catch (backupErr) {
+                    console.warn("Backup API also failed:", backupErr);
+                    // Fallback to cache if both APIs fail
+                    const cachedRaw = localStorage.getItem('weatherCache_v1');
+                    if (cachedRaw) {
+                        const parsed = JSON.parse(cachedRaw);
+                        const ageHours = (Date.now() - parsed.timestamp) / (1000 * 60 * 60);
+                        console.log(`Using cached weather data (${ageHours.toFixed(1)} hours old)`);
+                        weatherDataCache = parsed.data;
+                        document.getElementById('weather-body').innerHTML = `<p class="txt-red" style="margin-bottom: 10px;">⚠️ Mode hors ligne. Données d'il y a ${ageHours.toFixed(1)} heures.</p>`;
+                    } else {
+                        throw new Error("Toutes les API et le cache ont échoué.");
+                    }
+                }
+            }
+
+            const loadingMsg = document.querySelector('#weather-body .loading'); if (loadingMsg) loadingMsg.remove(); renderWeatherUI();
+        } catch (e) {
+            console.error(e);
+            document.getElementById('weather-body').innerHTML = `<p class="txt-red">Échec de la connexion. Les effets visuels utilisent des valeurs par défaut.</p>`;
+            // Initialize sensible defaults so canvas doesn't crash if renderWeatherUI is skipped
+            if (!weatherDataCache) {
+                currentConditions.temp = 15;
+                currentConditions.weatherCode = 0; // Clear
+                currentConditions.cloudCover = 0;
+                currentConditions.nowSec = Math.floor(Date.now() / 1000);
+                currentConditions.sunriseTime = currentConditions.nowSec - 10000;
+                currentConditions.sunsetTime = currentConditions.nowSec + 10000;
+                currentConditions.isNight = false;
+            }
+        }
+    }    function renderWeatherUI() {
         if (!weatherDataCache) return;
         const data = weatherDataCache; const cur = data.current; const nowSec = Math.floor(Date.now() / 1000);
         
@@ -1262,13 +1556,13 @@
             const h = data.hourly; let sIdx = h.time.findIndex(t => t >= nowSec - 3600); if (sIdx === -1) sIdx = 0;
             html += '<table><tr><th>Hre</th><th>Cond</th><th>°C</th><th>Vent</th><th>Précip.</th><th>Vis.</th></tr>';
 
-            for (let i = sIdx; i < sIdx + 24 && i < h.time.length; i++) {
+            for (let i = sIdx; i < sIdx + 24 && i < h.time.length; i++) { if(h.temperature_2m[i] === undefined) continue;
                 cTime.push(new Date(h.time[i]*1000).getHours()+'h'); 
-                cTempMax.push(h.temperature_2m[i]); cPrec.push(h.precipitation[i] + h.snowfall[i]);
+                cTempMax.push(h.temperature_2m[i]); cPrec.push((h.precipitation && h.precipitation[i]) ? (h.precipitation[i] + (h.snowfall ? h.snowfall[i] : 0)) : 0);
                 const tStr = new Date(h.time[i]*1000).toLocaleTimeString('fr-CA', timeOptions).replace(' h', 'h');
-                const pStr = h.snowfall[i] > 0 ? `<strong>${h.snowfall[i]}cm❄️</strong>` : (h.precipitation[i] > 0 ? `<strong>${h.precipitation[i]}mm</strong>` : '-');
-                const vKm = h.visibility[i]!==null ? (h.visibility[i]/1000).toFixed(1) : '-';
-                html += `<tr><td>${tStr}</td><td>${getWDesc(h.weather_code[i])}</td><td><strong>${Math.round(h.temperature_2m[i])}</strong></td><td style="font-size:0.85em">${Math.round(h.windspeed_10m[i])} <span class="txt-red">${Math.round(h.wind_gusts_10m[i])}</span> ${getWindDir(h.winddirection_10m[i])}</td><td>${pStr}</td><td style="font-weight:bold">${vKm}</td></tr>`;
+                const pStr = h.snowfall && h.snowfall[i] > 0 ? `<strong>${h.snowfall[i]}cm❄️</strong>` : ((h.precipitation && h.precipitation[i] > 0) ? `<strong>${h.precipitation[i]}mm</strong>` : '-');
+                const vKm = (h.visibility && h.visibility[i]!==null) ? (h.visibility[i]/1000).toFixed(1) : '-'; const wCode = h.weather_code ? h.weather_code[i] : currentConditions.weatherCode; const wSpd = h.windspeed_10m ? Math.round(h.windspeed_10m[i]) : '--'; const wGst = h.wind_gusts_10m ? Math.round(h.wind_gusts_10m[i]) : '--'; const wDir = h.winddirection_10m ? getWindDir(h.winddirection_10m[i]) : '--';
+                html += `<tr><td>${tStr}</td><td>${getWDesc(wCode)}</td><td><strong>${Math.round(h.temperature_2m[i])}</strong></td><td style="font-size:0.85em">${wSpd} <span class="txt-red">${wGst}</span> ${wDir}</td><td>${pStr}</td><td style="font-weight:bold">${vKm}</td></tr>`;
             }
         } else {
             const d = data.daily;
@@ -1282,7 +1576,7 @@
         }
 
         html += '</table>';
-        document.getElementById('weather-body').innerHTML = html;
+        const wb = document.getElementById('weather-body'); let offlineMsg = ''; wb.querySelectorAll('.txt-red').forEach(el => { if(el.innerText.includes('Mode hors ligne') || el.innerText.includes('Échec de la connexion')) offlineMsg = el.outerHTML; }); wb.innerHTML = offlineMsg + html;
 
         const ctx = document.getElementById('wChart').getContext('2d');
         const c = getChartCols();
