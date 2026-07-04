@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data: blob:; img-src * data: blob:; media-src * data: blob:; font-src * data:; style-src * 'unsafe-inline'; script-src * 'unsafe-inline' 'unsafe-eval'; frame-src *;">
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Monitoring Terminal Maritime St-Romuald (Lévis)</title>
@@ -738,6 +740,10 @@
                     <div style="display: flex; gap: 5px; align-items: center; background: rgba(0,0,0,0.1); padding: 4px; border-radius: 4px;">
                         <input type="text" id="loc-search-input" placeholder="Lévis ou 46.7,-71.2" style="width: 130px; font-size: 0.75rem; padding: 4px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-color); color: var(--text-color);">
                         <button id="btn-loc-search" class="theme-toggle" style="padding: 4px 8px; font-size: 0.75rem;">🔍</button>
+                        <select id="api-selector" style="font-size: 0.75rem; padding: 4px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-color); color: var(--text-color); cursor: pointer;">
+                            <option value="metno">met.no (Défaut)</option>
+                            <option value="wttr">wttr.in (Secours)</option>
+                        </select>
                     </div>
                     <div style="display: flex; gap: 4px; justify-content: center;">
                         <button class="preset-btn theme-toggle" data-slot="1" title="Maintenir pour sauver" style="padding: 2px 6px; font-size: 0.65rem; min-width: 24px;">1</button>
@@ -1506,106 +1512,175 @@
     async function fetchWeather() {
         try {
             document.getElementById('weather-body').innerHTML = '<p class="loading">Chargement météo...</p>';
-            document.querySelector('#btn-weather-view').parentElement.querySelector('h2').innerText = `☁️ Météo (${currentLocationName})`;
 
-            const url = `https://api.open-meteo.com/v1/forecast?latitude=${currentLat}&longitude=${currentLon}&current=temperature_2m,apparent_temperature,precipitation,snowfall,cloud_cover,weather_code,windspeed_10m,winddirection_10m,wind_gusts_10m,visibility,surface_pressure,relative_humidity_2m,cape&hourly=temperature_2m,apparent_temperature,precipitation,snowfall,weather_code,windspeed_10m,winddirection_10m,wind_gusts_10m,visibility,cape&daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,sunrise,sunset,windspeed_10m_max,windgusts_10m_max,winddirection_10m_dominant,precipitation_sum,snowfall_sum&forecast_days=7&timezone=America%2FToronto&timeformat=unixtime&wind_speed_unit=kn`;
+            const btnHeader = document.querySelector('#btn-weather-view');
+            if (btnHeader && btnHeader.parentElement) {
+                const h2 = btnHeader.parentElement.querySelector('h2');
+                if (h2) h2.innerText = `☁️ Météo (${currentLocationName})`;
+            }
 
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 10000);
+            const selectedApi = document.getElementById('api-selector').value;
+            const primaryApi = selectedApi;
+
+            let usedMetNo = false;
+            let usedWttr = false;
 
             try {
-                const res = await fetch(url, { signal: controller.signal });
+                if (primaryApi !== 'metno' && primaryApi !== '') {
+                    throw new Error(`Skipping met.no, ${primaryApi} selected manually.`);
+                }
+
+                const url = `https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${currentLat}&lon=${currentLon}`;
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+                const res = await fetch(url, {
+                    headers: { "User-Agent": "InfoTerminableMartine/1.0" },
+                    signal: controller.signal
+                });
                 clearTimeout(timeoutId);
 
-                if (!res.ok) throw new Error("Erreur API Météo Open-Meteo");
-                weatherDataCache = await res.json();
+                if (!res.ok) throw new Error("Erreur API Météo met.no");
+                const metData = await res.json();
 
-                // Save to cache
-                try {
-                    localStorage.setItem('weatherCache_v1', JSON.stringify({
-                        timestamp: Date.now(),
-                        data: weatherDataCache
-                    }));
-                } catch(e) {}
+                const btnHeader = document.querySelector('#btn-weather-view');
+                if (btnHeader && btnHeader.parentElement) {
+                    const h2 = btnHeader.parentElement.querySelector('h2');
+                    if (h2) h2.innerHTML = `☁️ Météo (<span class="loc-name"></span>) <span style="font-size:0.7em;font-weight:normal;opacity:0.7">(met.no)</span>`; h2.querySelector('.loc-name').innerText = currentLocationName;
+                }
+
+                const ts = metData.properties.timeseries;
+                const hourly = {
+                    time: [], temperature_2m: [], apparent_temperature: [], precipitation: [], snowfall: [],
+                    weather_code: [], windspeed_10m: [], winddirection_10m: [],
+                    wind_gusts_10m: [], visibility: []
+                };
+                const dailyMap = {};
+
+                ts.forEach(t => {
+                    const dateObj = new Date(t.time);
+                    const dayStr = dateObj.toISOString().split('T')[0];
+                    const nowSec = Math.floor(dateObj.getTime() / 1000);
+
+                    const details = t.data.instant.details;
+                    const next1 = t.data.next_1_hours ? t.data.next_1_hours.details : null;
+                    const next6 = t.data.next_6_hours ? t.data.next_6_hours.details : null;
+                    const sumCode = t.data.next_1_hours ? t.data.next_1_hours.summary.symbol_code :
+                                    (t.data.next_6_hours ? t.data.next_6_hours.summary.symbol_code :
+                                    (t.data.next_12_hours ? t.data.next_12_hours.summary.symbol_code : "clearsky_day"));
+
+                    let wmo = 0;
+                    if (sumCode.includes('cloud')) wmo = 3;
+                    if (sumCode.includes('partlycloud')) wmo = 2;
+                    if (sumCode.includes('rain')) wmo = 63;
+                    if (sumCode.includes('snow')) wmo = 71;
+                    if (sumCode.includes('sleet')) wmo = 69;
+                    if (sumCode.includes('thunder')) wmo = 95;
+                    if (sumCode.includes('fog')) wmo = 45;
+
+                    const Ta = details.air_temperature;
+                    const ws = details.wind_speed || 0;
+                    const rh = details.relative_humidity || 0;
+                    const e = (rh / 100) * 6.105 * Math.exp((17.27 * Ta) / (237.7 + Ta));
+                    const appTemp = Ta + 0.33 * e - 0.70 * ws - 4.00;
+
+                    hourly.time.push(nowSec);
+                    hourly.temperature_2m.push(details.air_temperature);
+                    hourly.apparent_temperature.push(appTemp);
+                    hourly.precipitation.push(next1 ? (next1.precipitation_amount || 0) : (next6 ? (next6.precipitation_amount || 0) : 0));
+                    hourly.snowfall.push(details.air_temperature < 0 && wmo === 71 ? 1 : 0);
+                    hourly.weather_code.push(wmo);
+                    hourly.windspeed_10m.push(details.wind_speed * 1.94384);
+                    hourly.winddirection_10m.push(details.wind_from_direction);
+                    hourly.wind_gusts_10m.push(details.wind_speed_of_gust ? details.wind_speed_of_gust * 1.94384 : details.wind_speed * 1.94384);
+                    hourly.visibility.push(10000);
+
+                    if (!dailyMap[dayStr]) {
+                        dailyMap[dayStr] = { min: details.air_temperature, max: details.air_temperature, app_min: appTemp, app_max: appTemp, wind: 0, gust: 0, codes: [], psum: 0, ssum: 0 };
+                    }
+                    dailyMap[dayStr].min = Math.min(dailyMap[dayStr].min, details.air_temperature);
+                    dailyMap[dayStr].max = Math.max(dailyMap[dayStr].max, details.air_temperature);
+                    dailyMap[dayStr].app_min = Math.min(dailyMap[dayStr].app_min, appTemp);
+                    dailyMap[dayStr].app_max = Math.max(dailyMap[dayStr].app_max, appTemp);
+                    dailyMap[dayStr].codes.push(wmo);
+                    dailyMap[dayStr].wind = Math.max(dailyMap[dayStr].wind, details.wind_speed * 1.94384);
+                    dailyMap[dayStr].gust = Math.max(dailyMap[dayStr].gust, (details.wind_speed_of_gust || details.wind_speed) * 1.94384);
+                    dailyMap[dayStr].psum += (next1 ? (next1.precipitation_amount || 0) : 0);
+                    if(wmo===71 && details.air_temperature < 0) dailyMap[dayStr].ssum += (next1 ? (next1.precipitation_amount || 0) : 0);
+                });
+
+                const daily = {
+                    time: [], weather_code: [], temperature_2m_max: [], temperature_2m_min: [],
+                    apparent_temperature_max: [], apparent_temperature_min: [],
+                    sunrise: [], sunset: [], windspeed_10m_max: [], windgusts_10m_max: [],
+                    winddirection_10m_dominant: [], precipitation_sum: [], snowfall_sum: []
+                };
+
+                Object.keys(dailyMap).forEach(day => {
+                    const now = new Date(day + "T12:00:00Z").getTime()/1000;
+                    daily.time.push(now);
+                    daily.temperature_2m_max.push(dailyMap[day].max);
+                    daily.temperature_2m_min.push(dailyMap[day].min);
+                    daily.apparent_temperature_max.push(dailyMap[day].app_max);
+                    daily.apparent_temperature_min.push(dailyMap[day].app_min);
+                    daily.windspeed_10m_max.push(dailyMap[day].wind);
+                    daily.windgusts_10m_max.push(dailyMap[day].gust);
+                    daily.precipitation_sum.push(dailyMap[day].psum);
+                    daily.snowfall_sum.push(dailyMap[day].ssum);
+                    const codes = dailyMap[day].codes;
+                    daily.weather_code.push(codes.sort((a,b) => codes.filter(v => v===a).length - codes.filter(v => v===b).length).pop());
+                    daily.winddirection_10m_dominant.push(hourly.winddirection_10m[0]);
+
+                    const fakeSunrise = new Date(day + "T06:00:00-04:00").getTime()/1000;
+                    const fakeSunset = new Date(day + "T20:00:00-04:00").getTime()/1000;
+                    daily.sunrise.push(fakeSunrise);
+                    daily.sunset.push(fakeSunset);
+                });
+
+                weatherDataCache = {
+                    current: {
+                        temperature_2m: hourly.temperature_2m[0],
+                        apparent_temperature: hourly.apparent_temperature[0],
+                        windspeed_10m: hourly.windspeed_10m[0],
+                        winddirection_10m: hourly.winddirection_10m[0],
+                        wind_gusts_10m: hourly.wind_gusts_10m[0],
+                        visibility: hourly.visibility[0],
+                        precipitation: hourly.precipitation[0],
+                        snowfall: hourly.snowfall[0],
+                        cloud_cover: ts[0].data.instant.details.cloud_area_fraction * 10,
+                        surface_pressure: ts[0].data.instant.details.air_pressure_at_sea_level,
+                        relative_humidity_2m: ts[0].data.instant.details.relative_humidity,
+                        weather_code: hourly.weather_code[0]
+                    },
+                    hourly: hourly,
+                    daily: daily
+                };
+                usedMetNo = true;
 
             } catch (err) {
-                clearTimeout(timeoutId);
-                console.warn("Open-Meteo failed, trying wttr.in backup API:", err);
+                if (primaryApi !== 'wttr') {
+                    console.warn("met.no failed, trying wttr.in backup API:", err);
+                }
 
                 try {
-                    // Try backup API api.met.no
-                    const backupUrl = `https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${currentLat}&lon=${currentLon}`;
+                    const wttrUrl = `https://wttr.in/${currentLat},${currentLon}?format=j1`;
                     const backupController = new AbortController();
-                    const backupTimeoutId = setTimeout(() => backupController.abort(), 10000);
+                    const backupTimeoutId = setTimeout(() => backupController.abort(), 4000);
 
-                    const backupRes = await fetch(backupUrl, {
-                        headers: { "User-Agent": "InfoTerminableMartine/1.0" },
-                        signal: backupController.signal
-                    });
+                    const backupRes = await fetch(wttrUrl, { signal: backupController.signal });
                     clearTimeout(backupTimeoutId);
 
-                    if (!backupRes.ok) throw new Error("Erreur API de secours met.no");
-                    const metData = await backupRes.json();
+                    if (!backupRes.ok) throw new Error("Erreur API de secours wttr.in");
+                    const wttrData = await backupRes.json();
 
-                    const ts = metData.properties.timeseries;
-                    const hourly = {
-                        time: [], temperature_2m: [], apparent_temperature: [], precipitation: [], snowfall: [],
-                        weather_code: [], windspeed_10m: [], winddirection_10m: [],
-                        wind_gusts_10m: [], visibility: []
-                    };
-                    const dailyMap = {};
+                    const btnHeader = document.querySelector('#btn-weather-view');
+                    if (btnHeader && btnHeader.parentElement) {
+                        const h2 = btnHeader.parentElement.querySelector('h2');
+                        if (h2) h2.innerHTML = `☁️ Météo (<span class="loc-name"></span>) <span style="font-size:0.7em;font-weight:normal;opacity:0.7">(wttr.in)</span>`; h2.querySelector('.loc-name').innerText = currentLocationName;
+                    }
 
-                    ts.forEach(t => {
-                        const dateObj = new Date(t.time);
-                        const dayStr = dateObj.toISOString().split('T')[0];
-                        const nowSec = Math.floor(dateObj.getTime() / 1000);
-
-                        const details = t.data.instant.details;
-                        const next1 = t.data.next_1_hours ? t.data.next_1_hours.details : null;
-                        const next6 = t.data.next_6_hours ? t.data.next_6_hours.details : null;
-                        const sumCode = t.data.next_1_hours ? t.data.next_1_hours.summary.symbol_code :
-                                        (t.data.next_6_hours ? t.data.next_6_hours.summary.symbol_code :
-                                        (t.data.next_12_hours ? t.data.next_12_hours.summary.symbol_code : "clearsky_day"));
-
-                        let wmo = 0;
-                        if (sumCode.includes('cloud')) wmo = 3;
-                        if (sumCode.includes('partlycloud')) wmo = 2;
-                        if (sumCode.includes('rain')) wmo = 63;
-                        if (sumCode.includes('snow')) wmo = 71;
-                        if (sumCode.includes('sleet')) wmo = 69;
-                        if (sumCode.includes('thunder')) wmo = 95;
-                        if (sumCode.includes('fog')) wmo = 45;
-
-                        const Ta = details.air_temperature;
-                        const ws = details.wind_speed || 0;
-                        const rh = details.relative_humidity || 0;
-                        const e = (rh / 100) * 6.105 * Math.exp((17.27 * Ta) / (237.7 + Ta));
-                        const appTemp = Ta + 0.33 * e - 0.70 * ws - 4.00;
-
-                        hourly.time.push(nowSec);
-                        hourly.temperature_2m.push(details.air_temperature);
-                        hourly.apparent_temperature.push(appTemp);
-                        hourly.precipitation.push(next1 ? (next1.precipitation_amount || 0) : (next6 ? (next6.precipitation_amount || 0) : 0));
-                        hourly.snowfall.push(details.air_temperature < 0 && wmo === 71 ? 1 : 0);
-                        hourly.weather_code.push(wmo);
-                        hourly.windspeed_10m.push(details.wind_speed * 1.94384);
-                        hourly.winddirection_10m.push(details.wind_from_direction);
-                        hourly.wind_gusts_10m.push(details.wind_speed_of_gust ? details.wind_speed_of_gust * 1.94384 : details.wind_speed * 1.94384);
-                        hourly.visibility.push(10000);
-
-                        if (!dailyMap[dayStr]) {
-                            dailyMap[dayStr] = { min: details.air_temperature, max: details.air_temperature, app_min: appTemp, app_max: appTemp, wind: 0, gust: 0, codes: [], psum: 0, ssum: 0 };
-                        }
-                        dailyMap[dayStr].min = Math.min(dailyMap[dayStr].min, details.air_temperature);
-                        dailyMap[dayStr].max = Math.max(dailyMap[dayStr].max, details.air_temperature);
-                        dailyMap[dayStr].app_min = Math.min(dailyMap[dayStr].app_min, appTemp);
-                        dailyMap[dayStr].app_max = Math.max(dailyMap[dayStr].app_max, appTemp);
-                        dailyMap[dayStr].codes.push(wmo);
-                        dailyMap[dayStr].wind = Math.max(dailyMap[dayStr].wind, details.wind_speed * 1.94384);
-                        dailyMap[dayStr].gust = Math.max(dailyMap[dayStr].gust, (details.wind_speed_of_gust || details.wind_speed) * 1.94384);
-                        dailyMap[dayStr].psum += (next1 ? (next1.precipitation_amount || 0) : 0);
-                        if(wmo===71 && details.air_temperature < 0) dailyMap[dayStr].ssum += (next1 ? (next1.precipitation_amount || 0) : 0);
-                    });
+                    const curr = wttrData.current_condition[0];
+                    const weathers = wttrData.weather;
 
                     const daily = {
                         time: [], weather_code: [], temperature_2m_max: [], temperature_2m_min: [],
@@ -1613,83 +1688,157 @@
                         sunrise: [], sunset: [], windspeed_10m_max: [], windgusts_10m_max: [],
                         winddirection_10m_dominant: [], precipitation_sum: [], snowfall_sum: []
                     };
+                    const hourly = {
+                        time: [], temperature_2m: [], apparent_temperature: [], precipitation: [], snowfall: [],
+                        weather_code: [], windspeed_10m: [], winddirection_10m: [],
+                        wind_gusts_10m: [], visibility: []
+                    };
 
-                    Object.keys(dailyMap).forEach(day => {
-                        const now = new Date(day + "T12:00:00Z").getTime()/1000;
-                        daily.time.push(now);
-                        daily.temperature_2m_max.push(dailyMap[day].max);
-                        daily.temperature_2m_min.push(dailyMap[day].min);
-                        daily.apparent_temperature_max.push(dailyMap[day].app_max);
-                        daily.apparent_temperature_min.push(dailyMap[day].app_min);
-                        daily.windspeed_10m_max.push(dailyMap[day].wind);
-                        daily.windgusts_10m_max.push(dailyMap[day].gust);
-                        daily.precipitation_sum.push(dailyMap[day].psum);
-                        daily.snowfall_sum.push(dailyMap[day].ssum);
-                        // Approximate most common weather code
-                        const codes = dailyMap[day].codes;
+                    const wmoCodeMap = {
+                        "113": 0, "116": 2, "119": 3, "122": 3, "143": 45, "176": 61,
+                        "200": 95, "227": 71, "230": 71, "248": 48, "260": 48,
+                        "263": 51, "266": 51, "281": 55, "284": 55, "293": 61,
+                        "296": 61, "299": 63, "302": 63, "305": 65, "308": 65,
+                        "311": 69, "314": 69, "317": 69, "320": 71, "323": 71,
+                        "326": 71, "329": 71, "332": 73, "335": 73, "338": 75,
+                        "350": 69, "353": 61, "356": 63, "359": 65, "362": 69,
+                        "365": 69, "368": 71, "371": 73, "374": 75, "377": 75,
+                        "386": 95, "389": 95, "392": 95, "395": 95
+                    };
+
+                    const parseTime = (dateStr, hStr) => {
+                        let d = new Date(dateStr + "T00:00:00Z");
+                        if (hStr && hStr.length > 0) {
+                            let hr = parseInt(hStr)/100;
+                            d.setUTCHours(hr + 4); // Approximate UTC-4 offset for Quebec to prevent backward shift
+                        }
+                        return Math.floor(d.getTime() / 1000);
+                    };
+
+                    weathers.forEach(day => {
+                        const nowSec = parseTime(day.date, "1200");
+                        daily.time.push(nowSec);
+                        daily.temperature_2m_max.push(parseFloat(day.maxtempC));
+                        daily.temperature_2m_min.push(parseFloat(day.mintempC));
+                        daily.apparent_temperature_max.push(parseFloat(day.maxtempC));
+                        daily.apparent_temperature_min.push(parseFloat(day.mintempC));
+
+                        let maxWind = 0;
+                        let maxGust = 0;
+                        let pSum = 0;
+                        let sSum = 0;
+                        let domDir = 0;
+                        let codes = [];
+
+                        day.hourly.forEach(hr => {
+                            const hrSec = parseTime(day.date, hr.time);
+                            hourly.time.push(hrSec);
+                            hourly.temperature_2m.push(parseFloat(hr.tempC));
+                            hourly.apparent_temperature.push(parseFloat(hr.FeelsLikeC));
+                            const p = parseFloat(hr.precipMM);
+                            hourly.precipitation.push(p);
+                            pSum += p;
+                            const wmo = wmoCodeMap[hr.weatherCode] || 0;
+                            codes.push(wmo);
+                            if (wmo === 71 || wmo === 73 || wmo === 75) {
+                                hourly.snowfall.push(1);
+                                sSum += p;
+                            } else {
+                                hourly.snowfall.push(0);
+                            }
+                            hourly.weather_code.push(wmo);
+
+                            const spd = parseFloat(hr.windspeedMiles) * 0.868976;
+                            const gst = parseFloat(hr.WindGustMiles) * 0.868976;
+                            hourly.windspeed_10m.push(spd);
+                            hourly.wind_gusts_10m.push(gst);
+                            hourly.winddirection_10m.push(parseFloat(hr.winddirDegree));
+                            hourly.visibility.push(parseFloat(hr.visibility)*1000);
+
+                            maxWind = Math.max(maxWind, spd);
+                            maxGust = Math.max(maxGust, gst);
+                            domDir = parseFloat(hr.winddirDegree);
+                        });
+
+                        daily.windspeed_10m_max.push(maxWind);
+                        daily.windgusts_10m_max.push(maxGust);
+                        daily.precipitation_sum.push(pSum);
+                        daily.snowfall_sum.push(sSum);
                         daily.weather_code.push(codes.sort((a,b) => codes.filter(v => v===a).length - codes.filter(v => v===b).length).pop());
-                        daily.winddirection_10m_dominant.push(hourly.winddirection_10m[0]); // approx
+                        daily.winddirection_10m_dominant.push(domDir);
 
-                        // Fake sunrise/sunset for backup API
-                        const fakeSunrise = new Date(day + "T06:00:00-04:00").getTime()/1000;
-                        const fakeSunset = new Date(day + "T20:00:00-04:00").getTime()/1000;
+                        const fakeSunrise = parseTime(day.date, "0600");
+                        const fakeSunset = parseTime(day.date, "2000");
                         daily.sunrise.push(fakeSunrise);
                         daily.sunset.push(fakeSunset);
                     });
 
                     weatherDataCache = {
                         current: {
-                            temperature_2m: hourly.temperature_2m[0],
-                            apparent_temperature: hourly.apparent_temperature[0],
-                            windspeed_10m: hourly.windspeed_10m[0],
-                            winddirection_10m: hourly.winddirection_10m[0],
-                            wind_gusts_10m: hourly.wind_gusts_10m[0],
-                            visibility: hourly.visibility[0],
-                            precipitation: hourly.precipitation[0],
-                            snowfall: hourly.snowfall[0],
-                            cloud_cover: ts[0].data.instant.details.cloud_area_fraction * 10, // scale 0-100
-                            surface_pressure: ts[0].data.instant.details.air_pressure_at_sea_level,
-                            relative_humidity_2m: ts[0].data.instant.details.relative_humidity,
-                            weather_code: hourly.weather_code[0]
+                            temperature_2m: parseFloat(curr.tempC),
+                            apparent_temperature: parseFloat(curr.FeelsLikeC),
+                            windspeed_10m: parseFloat(curr.windspeedMiles) * 0.868976,
+                            winddirection_10m: parseFloat(curr.winddirDegree),
+                            wind_gusts_10m: parseFloat(curr.windspeedMiles) * 0.868976,
+                            visibility: parseFloat(curr.visibility) * 1000,
+                            precipitation: parseFloat(curr.precipMM),
+                            snowfall: 0,
+                            cloud_cover: parseFloat(curr.cloudcover),
+                            surface_pressure: parseFloat(curr.pressure),
+                            relative_humidity_2m: parseFloat(curr.humidity),
+                            weather_code: wmoCodeMap[curr.weatherCode] || 0
                         },
                         hourly: hourly,
                         daily: daily
                     };
-
-                    console.log("Successfully loaded data from api.met.no backup API");
+                    usedWttr = true;
 
                 } catch (backupErr) {
-                    console.warn("Backup API also failed:", backupErr);
-                    // Fallback to cache if both APIs fail
+                    console.warn("wttr.in API also failed, checking cache:", backupErr);
                     const cachedRaw = localStorage.getItem('weatherCache_v1');
                     if (cachedRaw) {
                         const parsed = JSON.parse(cachedRaw);
                         const ageHours = (Date.now() - parsed.timestamp) / (1000 * 60 * 60);
-                        console.log(`Using cached weather data (${ageHours.toFixed(1)} hours old)`);
-                        weatherDataCache = parsed.data;
-                        document.getElementById('weather-body').innerHTML = `<p class="txt-red" style="margin-bottom: 10px;">⚠️ Mode hors ligne. Données d'il y a ${ageHours.toFixed(1)} heures.</p>`;
+                        if (ageHours < 24) {
+                            weatherDataCache = parsed.data;
+
+                            const btnHeader = document.querySelector('#btn-weather-view');
+                            if (btnHeader && btnHeader.parentElement) {
+                                const h2 = btnHeader.parentElement.querySelector('h2');
+                                if (h2) h2.innerHTML = `☁️ Météo (<span class="loc-name"></span>) <span style="font-size:0.7em;color:#e74c3c">(Cache)</span>`; h2.querySelector('.loc-name').innerText = currentLocationName;
+                            }
+                            console.log(`Loaded weather from cache (${ageHours.toFixed(1)}h old)`);
+                        } else {
+                            throw new Error("Cache expiré");
+                        }
                     } else {
-                        throw new Error("Toutes les API et le cache ont échoué.");
+                        throw new Error("Toutes les API météo ont échoué et aucun cache.");
                     }
                 }
             }
 
-            const loadingMsg = document.querySelector('#weather-body .loading'); if (loadingMsg) loadingMsg.remove(); renderWeatherUI();
-        } catch (e) {
-            console.error(e);
-            document.getElementById('weather-body').innerHTML = `<p class="txt-red">Échec de la connexion. Les effets visuels utilisent des valeurs par défaut.</p>`;
-            // Initialize sensible defaults so canvas doesn't crash if renderWeatherUI is skipped
-            if (!weatherDataCache) {
-                currentConditions.temp = 15;
-                currentConditions.weatherCode = 0; // Clear
-                currentConditions.cloudCover = 0;
-                currentConditions.nowSec = Math.floor(Date.now() / 1000);
-                currentConditions.sunriseTime = currentConditions.nowSec - 10000;
-                currentConditions.sunsetTime = currentConditions.nowSec + 10000;
-                currentConditions.isNight = false;
+            // Save to cache if successful
+            if (usedMetNo || usedWttr) {
+                try {
+                    localStorage.setItem('weatherCache_v1', JSON.stringify({
+                        timestamp: Date.now(),
+                        data: weatherDataCache
+                    }));
+                } catch(e) {}
             }
+
+            renderWeatherUI();
+
+        } catch (err) {
+            console.error("Fetch weather ultimate fail:", err);
+            document.getElementById('weather-body').innerHTML = `<p class="error" style="color:#e74c3c; padding: 10px;">Impossible de charger la météo.<br><span style="font-size:0.8em;opacity:0.8">${err.message}</span></p>`;
+            // Fallback values so canvas doesn't crash
+            currentConditions.temp = 15; currentConditions.wind = 5; currentConditions.rain = 0; currentConditions.snow = 0;
+            currentConditions.cloudCover = 50; currentConditions.weatherCode = 0;
+            initWeatherFX();
         }
-    }    function renderWeatherUI() {
+    }
+function renderWeatherUI() {
         if (!weatherDataCache) return;
         const data = weatherDataCache; const cur = data.current; const nowSec = Math.floor(Date.now() / 1000);
         
@@ -2124,6 +2273,10 @@
 
     document.getElementById('loc-search-input').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') document.getElementById('btn-loc-search').click();
+    });
+
+    document.getElementById('api-selector').addEventListener('change', () => {
+        fetchWeather();
     });
 
     // --- PRESETS ---
