@@ -738,6 +738,12 @@
                     <div style="display: flex; gap: 5px; align-items: center; background: rgba(0,0,0,0.1); padding: 4px; border-radius: 4px;">
                         <input type="text" id="loc-search-input" placeholder="Lévis ou 46.7,-71.2" style="width: 130px; font-size: 0.75rem; padding: 4px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-color); color: var(--text-color);">
                         <button id="btn-loc-search" class="theme-toggle" style="padding: 4px 8px; font-size: 0.75rem;">🔍</button>
+                        <select id="api-selector" style="font-size: 0.75rem; padding: 4px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-color); color: var(--text-color); cursor: pointer;">
+                            <option value="best_match">OM (Auto)</option>
+                            <option value="gem_seamless">OM (GEM-Ca)</option>
+                            <option value="gfs_seamless">OM (GFS-Gl)</option>
+                            <option value="metno">met.no</option>
+                        </select>
                     </div>
                     <div style="display: flex; gap: 4px; justify-content: center;">
                         <button class="preset-btn theme-toggle" data-slot="1" title="Maintenir pour sauver" style="padding: 2px 6px; font-size: 0.65rem; min-width: 24px;">1</button>
@@ -1508,17 +1514,35 @@
             document.getElementById('weather-body').innerHTML = '<p class="loading">Chargement météo...</p>';
             document.querySelector('#btn-weather-view').parentElement.querySelector('h2').innerText = `☁️ Météo (${currentLocationName})`;
 
-            const url = `https://api.open-meteo.com/v1/forecast?latitude=${currentLat}&longitude=${currentLon}&current=temperature_2m,apparent_temperature,precipitation,snowfall,cloud_cover,weather_code,windspeed_10m,winddirection_10m,wind_gusts_10m,visibility,surface_pressure,relative_humidity_2m,cape&hourly=temperature_2m,apparent_temperature,precipitation,snowfall,weather_code,windspeed_10m,winddirection_10m,wind_gusts_10m,visibility,cape&daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,sunrise,sunset,windspeed_10m_max,windgusts_10m_max,winddirection_10m_dominant,precipitation_sum,snowfall_sum&forecast_days=7&timezone=America%2FToronto&timeformat=unixtime&wind_speed_unit=kn`;
+            const selectedApi = document.getElementById('api-selector').value;
+
+            let url = `https://api.open-meteo.com/v1/forecast?latitude=${currentLat}&longitude=${currentLon}&current=temperature_2m,apparent_temperature,precipitation,snowfall,cloud_cover,weather_code,windspeed_10m,winddirection_10m,wind_gusts_10m,visibility,surface_pressure,relative_humidity_2m,cape&hourly=temperature_2m,apparent_temperature,precipitation,snowfall,weather_code,windspeed_10m,winddirection_10m,wind_gusts_10m,visibility,cape&daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,sunrise,sunset,windspeed_10m_max,windgusts_10m_max,winddirection_10m_dominant,precipitation_sum,snowfall_sum&forecast_days=7&timezone=America%2FToronto&timeformat=unixtime&wind_speed_unit=kn`;
+
+            if (selectedApi !== 'best_match' && selectedApi !== 'metno') {
+                url += `&models=${selectedApi}`;
+            }
 
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 10000);
+            const timeoutId = setTimeout(() => controller.abort(), 4000);
 
             try {
-                const res = await fetch(url, { signal: controller.signal });
+                if (selectedApi === 'metno') {
+                    throw new Error("Skipping Open-Meteo (met.no selected manually)");
+                }
+                const res = await fetch(url, {
+                    headers: { "User-Agent": "InfoTerminableMartine/1.0" },
+                    signal: controller.signal
+                });
                 clearTimeout(timeoutId);
 
                 if (!res.ok) throw new Error("Erreur API Météo Open-Meteo");
                 weatherDataCache = await res.json();
+
+                let apiName = "Open-Meteo";
+                if (selectedApi === 'gem_seamless') apiName = "OM-GEM";
+                else if (selectedApi === 'gfs_seamless') apiName = "OM-GFS";
+
+                document.querySelector('#btn-weather-view').parentElement.querySelector('h2').innerHTML = `☁️ Météo (${currentLocationName}) <span style="font-size:0.7em;font-weight:normal;opacity:0.7">(${apiName})</span>`;
 
                 // Save to cache
                 try {
@@ -1530,13 +1554,15 @@
 
             } catch (err) {
                 clearTimeout(timeoutId);
-                console.warn("Open-Meteo failed, trying wttr.in backup API:", err);
+                if (selectedApi !== 'metno') {
+                    console.warn("Open-Meteo failed, trying met.no backup API:", err);
+                }
 
                 try {
                     // Try backup API api.met.no
                     const backupUrl = `https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${currentLat}&lon=${currentLon}`;
                     const backupController = new AbortController();
-                    const backupTimeoutId = setTimeout(() => backupController.abort(), 10000);
+                    const backupTimeoutId = setTimeout(() => backupController.abort(), 4000);
 
                     const backupRes = await fetch(backupUrl, {
                         headers: { "User-Agent": "InfoTerminableMartine/1.0" },
@@ -1546,6 +1572,7 @@
 
                     if (!backupRes.ok) throw new Error("Erreur API de secours met.no");
                     const metData = await backupRes.json();
+                    document.querySelector('#btn-weather-view').parentElement.querySelector('h2').innerHTML = `☁️ Météo (${currentLocationName}) <span style="font-size:0.7em;font-weight:normal;opacity:0.7">(met.no)</span>`;
 
                     const ts = metData.properties.timeseries;
                     const hourly = {
@@ -1667,6 +1694,7 @@
                         const ageHours = (Date.now() - parsed.timestamp) / (1000 * 60 * 60);
                         console.log(`Using cached weather data (${ageHours.toFixed(1)} hours old)`);
                         weatherDataCache = parsed.data;
+                        document.querySelector('#btn-weather-view').parentElement.querySelector('h2').innerHTML = `☁️ Météo (${currentLocationName}) <span style="font-size:0.7em;font-weight:normal;opacity:0.7">(Cache)</span>`;
                         document.getElementById('weather-body').innerHTML = `<p class="txt-red" style="margin-bottom: 10px;">⚠️ Mode hors ligne. Données d'il y a ${ageHours.toFixed(1)} heures.</p>`;
                     } else {
                         throw new Error("Toutes les API et le cache ont échoué.");
@@ -2124,6 +2152,10 @@
 
     document.getElementById('loc-search-input').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') document.getElementById('btn-loc-search').click();
+    });
+
+    document.getElementById('api-selector').addEventListener('change', () => {
+        fetchWeather();
     });
 
     // --- PRESETS ---
