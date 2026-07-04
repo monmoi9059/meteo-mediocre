@@ -1576,9 +1576,15 @@
                         if (sumCode.includes('thunder')) wmo = 95;
                         if (sumCode.includes('fog')) wmo = 45;
 
+                        const Ta = details.air_temperature;
+                        const ws = details.wind_speed || 0;
+                        const rh = details.relative_humidity || 0;
+                        const e = (rh / 100) * 6.105 * Math.exp((17.27 * Ta) / (237.7 + Ta));
+                        const appTemp = Ta + 0.33 * e - 0.70 * ws - 4.00;
+
                         hourly.time.push(nowSec);
                         hourly.temperature_2m.push(details.air_temperature);
-                        hourly.apparent_temperature.push(details.air_temperature);
+                        hourly.apparent_temperature.push(appTemp);
                         hourly.precipitation.push(next1 ? (next1.precipitation_amount || 0) : (next6 ? (next6.precipitation_amount || 0) : 0));
                         hourly.snowfall.push(details.air_temperature < 0 && wmo === 71 ? 1 : 0);
                         hourly.weather_code.push(wmo);
@@ -1588,12 +1594,12 @@
                         hourly.visibility.push(10000);
 
                         if (!dailyMap[dayStr]) {
-                            dailyMap[dayStr] = { min: details.air_temperature, max: details.air_temperature, app_min: details.air_temperature, app_max: details.air_temperature, wind: 0, gust: 0, codes: [], psum: 0, ssum: 0 };
+                            dailyMap[dayStr] = { min: details.air_temperature, max: details.air_temperature, app_min: appTemp, app_max: appTemp, wind: 0, gust: 0, codes: [], psum: 0, ssum: 0 };
                         }
                         dailyMap[dayStr].min = Math.min(dailyMap[dayStr].min, details.air_temperature);
                         dailyMap[dayStr].max = Math.max(dailyMap[dayStr].max, details.air_temperature);
-                        dailyMap[dayStr].app_min = Math.min(dailyMap[dayStr].app_min, details.air_temperature);
-                        dailyMap[dayStr].app_max = Math.max(dailyMap[dayStr].app_max, details.air_temperature);
+                        dailyMap[dayStr].app_min = Math.min(dailyMap[dayStr].app_min, appTemp);
+                        dailyMap[dayStr].app_max = Math.max(dailyMap[dayStr].app_max, appTemp);
                         dailyMap[dayStr].codes.push(wmo);
                         dailyMap[dayStr].wind = Math.max(dailyMap[dayStr].wind, details.wind_speed * 1.94384);
                         dailyMap[dayStr].gust = Math.max(dailyMap[dayStr].gust, (details.wind_speed_of_gust || details.wind_speed) * 1.94384);
