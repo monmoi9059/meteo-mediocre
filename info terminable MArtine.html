@@ -741,8 +741,9 @@
                         <input type="text" id="loc-search-input" placeholder="Lévis ou 46.7,-71.2" style="width: 130px; font-size: 0.75rem; padding: 4px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-color); color: var(--text-color);">
                         <button id="btn-loc-search" class="theme-toggle" style="padding: 4px 8px; font-size: 0.75rem;">🔍</button>
                         <select id="api-selector" style="font-size: 0.75rem; padding: 4px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-color); color: var(--text-color); cursor: pointer;">
-                            <option value="metno">met.no (Défaut)</option>
-                            <option value="wttr">wttr.in (Secours)</option>
+                            <option value="openmeteo">Open-Meteo (Défaut)</option>
+                            <option value="metno">met.no (Secours)</option>
+                            <option value="wttr">wttr.in (Secours 2)</option>
                         </select>
                     </div>
                     <div style="display: flex; gap: 4px; justify-content: center;">
@@ -1560,15 +1561,16 @@
             const selectedApi = document.getElementById('api-selector').value;
             const primaryApi = selectedApi;
 
+            let usedOpenMeteo = false;
             let usedMetNo = false;
             let usedWttr = false;
 
             try {
-                if (primaryApi !== 'metno' && primaryApi !== '') {
-                    throw new Error(`Skipping met.no, ${primaryApi} selected manually.`);
+                if (primaryApi !== 'openmeteo' && primaryApi !== '') {
+                    throw new Error(`Skipping Open-Meteo, ${primaryApi} selected manually.`);
                 }
 
-                const url = `https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${currentLat}&lon=${currentLon}`;
+                const url = `https://api.open-meteo.com/v1/forecast?latitude=${currentLat}&longitude=${currentLon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,snowfall,weather_code,cloud_cover,surface_pressure,wind_speed_10m,wind_direction_10m,wind_gusts_10m,cape&hourly=temperature_2m,apparent_temperature,precipitation,snowfall,weather_code,visibility,wind_speed_10m,wind_direction_10m,wind_gusts_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,sunrise,sunset,precipitation_sum,snowfall_sum,wind_speed_10m_max,wind_gusts_10m_max,wind_direction_10m_dominant&timezone=auto&wind_speed_unit=kn&timeformat=unixtime`;
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 4000);
 
@@ -1578,14 +1580,89 @@
                 });
                 clearTimeout(timeoutId);
 
-                if (!res.ok) throw new Error("Erreur API Météo met.no");
-                const metData = await res.json();
+                if (!res.ok) throw new Error("Erreur API Météo Open-Meteo");
+                const openMeteoData = await res.json();
 
                 const btnHeader = document.querySelector('#btn-weather-view');
                 if (btnHeader && btnHeader.parentElement) {
                     const h2 = btnHeader.parentElement.querySelector('h2');
-                    if (h2) h2.innerHTML = `☁️ Météo (<span class="loc-name"></span>) <span style="font-size:0.7em;font-weight:normal;opacity:0.7">(met.no)</span>`; h2.querySelector('.loc-name').innerText = currentLocationName;
+                    if (h2) h2.innerHTML = `☁️ Météo (<span class="loc-name"></span>) <span style="font-size:0.7em;font-weight:normal;opacity:0.7">(Open-Meteo)</span>`; h2.querySelector('.loc-name').innerText = currentLocationName;
                 }
+
+                weatherDataCache = {
+                    current: {
+                        temperature_2m: openMeteoData.current.temperature_2m,
+                        apparent_temperature: openMeteoData.current.apparent_temperature,
+                        windspeed_10m: openMeteoData.current.wind_speed_10m,
+                        winddirection_10m: openMeteoData.current.wind_direction_10m,
+                        wind_gusts_10m: openMeteoData.current.wind_gusts_10m,
+                        visibility: 10000,
+                        precipitation: openMeteoData.current.precipitation,
+                        snowfall: openMeteoData.current.snowfall,
+                        cloud_cover: openMeteoData.current.cloud_cover,
+                        surface_pressure: openMeteoData.current.surface_pressure,
+                        relative_humidity_2m: openMeteoData.current.relative_humidity_2m,
+                        weather_code: openMeteoData.current.weather_code,
+                        cape: openMeteoData.current.cape
+                    },
+                    hourly: {
+                        time: openMeteoData.hourly.time,
+                        temperature_2m: openMeteoData.hourly.temperature_2m,
+                        apparent_temperature: openMeteoData.hourly.apparent_temperature,
+                        precipitation: openMeteoData.hourly.precipitation,
+                        snowfall: openMeteoData.hourly.snowfall,
+                        weather_code: openMeteoData.hourly.weather_code,
+                        windspeed_10m: openMeteoData.hourly.wind_speed_10m,
+                        winddirection_10m: openMeteoData.hourly.wind_direction_10m,
+                        wind_gusts_10m: openMeteoData.hourly.wind_gusts_10m,
+                        visibility: openMeteoData.hourly.visibility
+                    },
+                    daily: {
+                        time: openMeteoData.daily.time,
+                        weather_code: openMeteoData.daily.weather_code,
+                        temperature_2m_max: openMeteoData.daily.temperature_2m_max,
+                        temperature_2m_min: openMeteoData.daily.temperature_2m_min,
+                        apparent_temperature_max: openMeteoData.daily.apparent_temperature_max,
+                        apparent_temperature_min: openMeteoData.daily.apparent_temperature_min,
+                        sunrise: openMeteoData.daily.sunrise,
+                        sunset: openMeteoData.daily.sunset,
+                        windspeed_10m_max: openMeteoData.daily.wind_speed_10m_max,
+                        windgusts_10m_max: openMeteoData.daily.wind_gusts_10m_max,
+                        winddirection_10m_dominant: openMeteoData.daily.wind_direction_10m_dominant,
+                        precipitation_sum: openMeteoData.daily.precipitation_sum,
+                        snowfall_sum: openMeteoData.daily.snowfall_sum
+                    }
+                };
+                usedOpenMeteo = true;
+
+            } catch (errOM) {
+                if (primaryApi !== 'metno' && primaryApi !== 'wttr') {
+                    console.warn("Open-Meteo failed, trying met.no backup API:", errOM);
+                }
+
+                try {
+                    if (primaryApi !== 'metno' && primaryApi !== '' && primaryApi !== 'openmeteo') {
+                        throw new Error(`Skipping met.no, ${primaryApi} selected manually.`);
+                    }
+
+                    const url = `https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${currentLat}&lon=${currentLon}`;
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+                    const res = await fetch(url, {
+                        headers: { "User-Agent": "InfoTerminableMartine/1.0" },
+                        signal: controller.signal
+                    });
+                    clearTimeout(timeoutId);
+
+                    if (!res.ok) throw new Error("Erreur API Météo met.no");
+                    const metData = await res.json();
+
+                    const btnHeader = document.querySelector('#btn-weather-view');
+                    if (btnHeader && btnHeader.parentElement) {
+                        const h2 = btnHeader.parentElement.querySelector('h2');
+                        if (h2) h2.innerHTML = `☁️ Météo (<span class="loc-name"></span>) <span style="font-size:0.7em;font-weight:normal;opacity:0.7">(met.no)</span>`; h2.querySelector('.loc-name').innerText = currentLocationName;
+                    }
 
                 const ts = metData.properties.timeseries;
                 const hourly = {
@@ -1695,168 +1772,169 @@
                 };
                 usedMetNo = true;
 
-            } catch (err) {
-                if (primaryApi !== 'wttr') {
-                    console.warn("met.no failed, trying wttr.in backup API:", err);
-                }
-
-                try {
-                    const wttrUrl = `https://wttr.in/${currentLat},${currentLon}?format=j1`;
-                    const backupController = new AbortController();
-                    const backupTimeoutId = setTimeout(() => backupController.abort(), 4000);
-
-                    const backupRes = await fetch(wttrUrl, { signal: backupController.signal });
-                    clearTimeout(backupTimeoutId);
-
-                    if (!backupRes.ok) throw new Error("Erreur API de secours wttr.in");
-                    const wttrData = await backupRes.json();
-
-                    const btnHeader = document.querySelector('#btn-weather-view');
-                    if (btnHeader && btnHeader.parentElement) {
-                        const h2 = btnHeader.parentElement.querySelector('h2');
-                        if (h2) h2.innerHTML = `☁️ Météo (<span class="loc-name"></span>) <span style="font-size:0.7em;font-weight:normal;opacity:0.7">(wttr.in)</span>`; h2.querySelector('.loc-name').innerText = currentLocationName;
+                } catch (err) {
+                    if (primaryApi !== 'wttr') {
+                        console.warn("met.no failed, trying wttr.in backup API:", err);
                     }
 
-                    const curr = wttrData.current_condition[0];
-                    const weathers = wttrData.weather;
+                    try {
+                        const wttrUrl = `https://wttr.in/${currentLat},${currentLon}?format=j1`;
+                        const backupController = new AbortController();
+                        const backupTimeoutId = setTimeout(() => backupController.abort(), 4000);
 
-                    const daily = {
-                        time: [], weather_code: [], temperature_2m_max: [], temperature_2m_min: [],
-                        apparent_temperature_max: [], apparent_temperature_min: [],
-                        sunrise: [], sunset: [], windspeed_10m_max: [], windgusts_10m_max: [],
-                        winddirection_10m_dominant: [], precipitation_sum: [], snowfall_sum: []
-                    };
-                    const hourly = {
-                        time: [], temperature_2m: [], apparent_temperature: [], precipitation: [], snowfall: [],
-                        weather_code: [], windspeed_10m: [], winddirection_10m: [],
-                        wind_gusts_10m: [], visibility: []
-                    };
+                        const backupRes = await fetch(wttrUrl, { signal: backupController.signal });
+                        clearTimeout(backupTimeoutId);
 
-                    const wmoCodeMap = {
-                        "113": 0, "116": 2, "119": 3, "122": 3, "143": 45, "176": 61,
-                        "200": 95, "227": 71, "230": 71, "248": 48, "260": 48,
-                        "263": 51, "266": 51, "281": 55, "284": 55, "293": 61,
-                        "296": 61, "299": 63, "302": 63, "305": 65, "308": 65,
-                        "311": 69, "314": 69, "317": 69, "320": 71, "323": 71,
-                        "326": 71, "329": 71, "332": 73, "335": 73, "338": 75,
-                        "350": 69, "353": 61, "356": 63, "359": 65, "362": 69,
-                        "365": 69, "368": 71, "371": 73, "374": 75, "377": 75,
-                        "386": 95, "389": 95, "392": 95, "395": 95
-                    };
+                        if (!backupRes.ok) throw new Error("Erreur API de secours wttr.in");
+                        const wttrData = await backupRes.json();
 
-                    const parseTime = (dateStr, hStr) => {
-                        let d = new Date(dateStr + "T00:00:00Z");
-                        if (hStr && hStr.length > 0) {
-                            let hr = parseInt(hStr)/100;
-                            d.setUTCHours(hr + 4); // Approximate UTC-4 offset for Quebec to prevent backward shift
+                        const btnHeader = document.querySelector('#btn-weather-view');
+                        if (btnHeader && btnHeader.parentElement) {
+                            const h2 = btnHeader.parentElement.querySelector('h2');
+                            if (h2) h2.innerHTML = `☁️ Météo (<span class="loc-name"></span>) <span style="font-size:0.7em;font-weight:normal;opacity:0.7">(wttr.in)</span>`; h2.querySelector('.loc-name').innerText = currentLocationName;
                         }
-                        return Math.floor(d.getTime() / 1000);
-                    };
 
-                    weathers.forEach(day => {
-                        const nowSec = parseTime(day.date, "1200");
-                        daily.time.push(nowSec);
-                        daily.temperature_2m_max.push(parseFloat(day.maxtempC));
-                        daily.temperature_2m_min.push(parseFloat(day.mintempC));
-                        daily.apparent_temperature_max.push(parseFloat(day.maxtempC));
-                        daily.apparent_temperature_min.push(parseFloat(day.mintempC));
+                        const curr = wttrData.current_condition[0];
+                        const weathers = wttrData.weather;
 
-                        let maxWind = 0;
-                        let maxGust = 0;
-                        let pSum = 0;
-                        let sSum = 0;
-                        let domDir = 0;
-                        let codes = [];
+                        const daily = {
+                            time: [], weather_code: [], temperature_2m_max: [], temperature_2m_min: [],
+                            apparent_temperature_max: [], apparent_temperature_min: [],
+                            sunrise: [], sunset: [], windspeed_10m_max: [], windgusts_10m_max: [],
+                            winddirection_10m_dominant: [], precipitation_sum: [], snowfall_sum: []
+                        };
+                        const hourly = {
+                            time: [], temperature_2m: [], apparent_temperature: [], precipitation: [], snowfall: [],
+                            weather_code: [], windspeed_10m: [], winddirection_10m: [],
+                            wind_gusts_10m: [], visibility: []
+                        };
 
-                        day.hourly.forEach(hr => {
-                            const hrSec = parseTime(day.date, hr.time);
-                            hourly.time.push(hrSec);
-                            hourly.temperature_2m.push(parseFloat(hr.tempC));
-                            hourly.apparent_temperature.push(parseFloat(hr.FeelsLikeC));
-                            const p = parseFloat(hr.precipMM);
-                            hourly.precipitation.push(p);
-                            pSum += p;
-                            const wmo = wmoCodeMap[hr.weatherCode] || 0;
-                            codes.push(wmo);
-                            if (wmo === 71 || wmo === 73 || wmo === 75) {
-                                hourly.snowfall.push(1);
-                                sSum += p;
-                            } else {
-                                hourly.snowfall.push(0);
+                        const wmoCodeMap = {
+                            "113": 0, "116": 2, "119": 3, "122": 3, "143": 45, "176": 61,
+                            "200": 95, "227": 71, "230": 71, "248": 48, "260": 48,
+                            "263": 51, "266": 51, "281": 55, "284": 55, "293": 61,
+                            "296": 61, "299": 63, "302": 63, "305": 65, "308": 65,
+                            "311": 69, "314": 69, "317": 69, "320": 71, "323": 71,
+                            "326": 71, "329": 71, "332": 73, "335": 73, "338": 75,
+                            "350": 69, "353": 61, "356": 63, "359": 65, "362": 69,
+                            "365": 69, "368": 71, "371": 73, "374": 75, "377": 75,
+                            "386": 95, "389": 95, "392": 95, "395": 95
+                        };
+
+                        const parseTime = (dateStr, hStr) => {
+                            let d = new Date(dateStr + "T00:00:00Z");
+                            if (hStr && hStr.length > 0) {
+                                let hr = parseInt(hStr)/100;
+                                d.setUTCHours(hr + 4); // Approximate UTC-4 offset for Quebec to prevent backward shift
                             }
-                            hourly.weather_code.push(wmo);
+                            return Math.floor(d.getTime() / 1000);
+                        };
 
-                            const spd = parseFloat(hr.windspeedMiles) * 0.868976;
-                            const gst = parseFloat(hr.WindGustMiles) * 0.868976;
-                            hourly.windspeed_10m.push(spd);
-                            hourly.wind_gusts_10m.push(gst);
-                            hourly.winddirection_10m.push(parseFloat(hr.winddirDegree));
-                            hourly.visibility.push(parseFloat(hr.visibility)*1000);
+                        weathers.forEach(day => {
+                            const nowSec = parseTime(day.date, "1200");
+                            daily.time.push(nowSec);
+                            daily.temperature_2m_max.push(parseFloat(day.maxtempC));
+                            daily.temperature_2m_min.push(parseFloat(day.mintempC));
+                            daily.apparent_temperature_max.push(parseFloat(day.maxtempC));
+                            daily.apparent_temperature_min.push(parseFloat(day.mintempC));
 
-                            maxWind = Math.max(maxWind, spd);
-                            maxGust = Math.max(maxGust, gst);
-                            domDir = parseFloat(hr.winddirDegree);
+                            let maxWind = 0;
+                            let maxGust = 0;
+                            let pSum = 0;
+                            let sSum = 0;
+                            let domDir = 0;
+                            let codes = [];
+
+                            day.hourly.forEach(hr => {
+                                const hrSec = parseTime(day.date, hr.time);
+                                hourly.time.push(hrSec);
+                                hourly.temperature_2m.push(parseFloat(hr.tempC));
+                                hourly.apparent_temperature.push(parseFloat(hr.FeelsLikeC));
+                                const p = parseFloat(hr.precipMM);
+                                hourly.precipitation.push(p);
+                                pSum += p;
+                                const wmo = wmoCodeMap[hr.weatherCode] || 0;
+                                codes.push(wmo);
+                                if (wmo === 71 || wmo === 73 || wmo === 75) {
+                                    hourly.snowfall.push(1);
+                                    sSum += p;
+                                } else {
+                                    hourly.snowfall.push(0);
+                                }
+                                hourly.weather_code.push(wmo);
+
+                                const spd = parseFloat(hr.windspeedMiles) * 0.868976;
+                                const gst = parseFloat(hr.WindGustMiles) * 0.868976;
+                                hourly.windspeed_10m.push(spd);
+                                hourly.wind_gusts_10m.push(gst);
+                                hourly.winddirection_10m.push(parseFloat(hr.winddirDegree));
+                                hourly.visibility.push(parseFloat(hr.visibility)*1000);
+
+                                maxWind = Math.max(maxWind, spd);
+                                maxGust = Math.max(maxGust, gst);
+                                domDir = parseFloat(hr.winddirDegree);
+                            });
+
+                            daily.windspeed_10m_max.push(maxWind);
+                            daily.windgusts_10m_max.push(maxGust);
+                            daily.precipitation_sum.push(pSum);
+                            daily.snowfall_sum.push(sSum);
+                            daily.weather_code.push(codes.sort((a,b) => codes.filter(v => v===a).length - codes.filter(v => v===b).length).pop());
+                            daily.winddirection_10m_dominant.push(domDir);
+
+                            const fakeSunrise = parseTime(day.date, "0600");
+                            const fakeSunset = parseTime(day.date, "2000");
+                            daily.sunrise.push(fakeSunrise);
+                            daily.sunset.push(fakeSunset);
                         });
 
-                        daily.windspeed_10m_max.push(maxWind);
-                        daily.windgusts_10m_max.push(maxGust);
-                        daily.precipitation_sum.push(pSum);
-                        daily.snowfall_sum.push(sSum);
-                        daily.weather_code.push(codes.sort((a,b) => codes.filter(v => v===a).length - codes.filter(v => v===b).length).pop());
-                        daily.winddirection_10m_dominant.push(domDir);
+                        weatherDataCache = {
+                            current: {
+                                temperature_2m: parseFloat(curr.tempC),
+                                apparent_temperature: parseFloat(curr.FeelsLikeC),
+                                windspeed_10m: parseFloat(curr.windspeedMiles) * 0.868976,
+                                winddirection_10m: parseFloat(curr.winddirDegree),
+                                wind_gusts_10m: parseFloat(curr.windspeedMiles) * 0.868976,
+                                visibility: parseFloat(curr.visibility) * 1000,
+                                precipitation: parseFloat(curr.precipMM),
+                                snowfall: 0,
+                                cloud_cover: parseFloat(curr.cloudcover),
+                                surface_pressure: parseFloat(curr.pressure),
+                                relative_humidity_2m: parseFloat(curr.humidity),
+                                weather_code: wmoCodeMap[curr.weatherCode] || 0
+                            },
+                            hourly: hourly,
+                            daily: daily
+                        };
+                        usedWttr = true;
 
-                        const fakeSunrise = parseTime(day.date, "0600");
-                        const fakeSunset = parseTime(day.date, "2000");
-                        daily.sunrise.push(fakeSunrise);
-                        daily.sunset.push(fakeSunset);
-                    });
+                    } catch (backupErr) {
+                        console.warn("wttr.in API also failed, checking cache:", backupErr);
+                        const cachedRaw = localStorage.getItem('weatherCache_v1');
+                        if (cachedRaw) {
+                            const parsed = JSON.parse(cachedRaw);
+                            const ageHours = (Date.now() - parsed.timestamp) / (1000 * 60 * 60);
+                            if (ageHours < 24) {
+                                weatherDataCache = parsed.data;
 
-                    weatherDataCache = {
-                        current: {
-                            temperature_2m: parseFloat(curr.tempC),
-                            apparent_temperature: parseFloat(curr.FeelsLikeC),
-                            windspeed_10m: parseFloat(curr.windspeedMiles) * 0.868976,
-                            winddirection_10m: parseFloat(curr.winddirDegree),
-                            wind_gusts_10m: parseFloat(curr.windspeedMiles) * 0.868976,
-                            visibility: parseFloat(curr.visibility) * 1000,
-                            precipitation: parseFloat(curr.precipMM),
-                            snowfall: 0,
-                            cloud_cover: parseFloat(curr.cloudcover),
-                            surface_pressure: parseFloat(curr.pressure),
-                            relative_humidity_2m: parseFloat(curr.humidity),
-                            weather_code: wmoCodeMap[curr.weatherCode] || 0
-                        },
-                        hourly: hourly,
-                        daily: daily
-                    };
-                    usedWttr = true;
-
-                } catch (backupErr) {
-                    console.warn("wttr.in API also failed, checking cache:", backupErr);
-                    const cachedRaw = localStorage.getItem('weatherCache_v1');
-                    if (cachedRaw) {
-                        const parsed = JSON.parse(cachedRaw);
-                        const ageHours = (Date.now() - parsed.timestamp) / (1000 * 60 * 60);
-                        if (ageHours < 24) {
-                            weatherDataCache = parsed.data;
-
-                            const btnHeader = document.querySelector('#btn-weather-view');
-                            if (btnHeader && btnHeader.parentElement) {
-                                const h2 = btnHeader.parentElement.querySelector('h2');
-                                if (h2) h2.innerHTML = `☁️ Météo (<span class="loc-name"></span>) <span style="font-size:0.7em;color:#e74c3c">(Cache)</span>`; h2.querySelector('.loc-name').innerText = currentLocationName;
+                                const btnHeader = document.querySelector('#btn-weather-view');
+                                if (btnHeader && btnHeader.parentElement) {
+                                    const h2 = btnHeader.parentElement.querySelector('h2');
+                                    if (h2) h2.innerHTML = `☁️ Météo (<span class="loc-name"></span>) <span style="font-size:0.7em;color:#e74c3c">(Cache)</span>`; h2.querySelector('.loc-name').innerText = currentLocationName;
+                                }
+                                console.log(`Loaded weather from cache (${ageHours.toFixed(1)}h old)`);
+                            } else {
+                                throw new Error("Cache expiré");
                             }
-                            console.log(`Loaded weather from cache (${ageHours.toFixed(1)}h old)`);
                         } else {
-                            throw new Error("Cache expiré");
+                            throw new Error("Toutes les API météo ont échoué et aucun cache.");
                         }
-                    } else {
-                        throw new Error("Toutes les API météo ont échoué et aucun cache.");
                     }
                 }
             }
 
             // Save to cache if successful
-            if (usedMetNo || usedWttr) {
+            if (usedOpenMeteo || usedMetNo || usedWttr) {
                 try {
                     localStorage.setItem('weatherCache_v1', JSON.stringify({
                         timestamp: Date.now(),
@@ -2288,16 +2366,24 @@ function renderWeatherUI() {
             return;
         }
 
-        // Otherwise Geocoding API (Nominatim for better small village coverage)
+        // Otherwise Geocoding API (Open-Meteo)
         try {
             document.getElementById('btn-loc-search').innerHTML = '⏳';
-            const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(input)}&format=json&limit=1`);
+
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+            const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(input)}&count=1&language=fr&format=json`, {
+                headers: { "User-Agent": "InfoTerminableMartine/1.0" },
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+
             const data = await res.json();
-            if (data && data.length > 0) {
-                currentLat = parseFloat(data[0].lat);
-                currentLon = parseFloat(data[0].lon);
-                // Extract just the first part of the display name for brevity
-                currentLocationName = data[0].display_name.split(',')[0];
+            if (data && data.results && data.results.length > 0) {
+                currentLat = parseFloat(data.results[0].latitude);
+                currentLon = parseFloat(data.results[0].longitude);
+                currentLocationName = data.results[0].name;
                 fetchWeather();
             } else {
                 alert('Localisation introuvable.');
