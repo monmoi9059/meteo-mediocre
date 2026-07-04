@@ -1332,21 +1332,59 @@
         if (month === 7 || month === 11) meteorMultiplier = 5; // August is 7, December is 11 (0-indexed)
         if (c.isNight && c.cloudCover < 50) {
             if (Math.random() < (0.005 * meteorMultiplier)) {
-                shootingStars.push({x: Math.random()*W, y: -10, len: Math.random()*50+50, speed: Math.random()*10+15, angle: Math.PI/4 + (Math.random()-0.5)*0.2, alpha: 1});
+                shootingStars.push({
+                    x: Math.random()*W,
+                    y: Math.random()*(H*0.5) - 100, // Spawn higher, sometimes on screen
+                    len: Math.random()*150+100, // Longer tail
+                    speed: Math.random()*15+15, // Faster
+                    angle: Math.PI/4 + (Math.random()-0.5)*0.2,
+                    alpha: 0,
+                    state: 'in', // 'in', 'out'
+                    thickness: Math.random()*1.5 + 0.5
+                });
             }
             for (let i=shootingStars.length-1; i>=0; i--) {
                 let ss = shootingStars[i];
+
+                let tailX = ss.x - Math.cos(ss.angle)*ss.len;
+                let tailY = ss.y - Math.sin(ss.angle)*ss.len;
+
+                let grad = sCtx.createLinearGradient(ss.x, ss.y, tailX, tailY);
+                grad.addColorStop(0, `rgba(255, 255, 255, ${ss.alpha})`);
+                grad.addColorStop(0.1, `rgba(200, 220, 255, ${ss.alpha * 0.5})`);
+                grad.addColorStop(1, `rgba(255, 255, 255, 0)`);
+
                 sCtx.beginPath();
                 sCtx.moveTo(ss.x, ss.y);
-                sCtx.lineTo(ss.x - Math.cos(ss.angle)*ss.len, ss.y - Math.sin(ss.angle)*ss.len);
-                sCtx.strokeStyle = `rgba(255, 255, 255, ${ss.alpha})`;
-                sCtx.lineWidth = 2;
+                sCtx.lineTo(tailX, tailY);
+                sCtx.strokeStyle = grad;
+                sCtx.lineWidth = ss.thickness;
+                sCtx.lineCap = 'round';
                 sCtx.stroke();
+
+                // Head glare
+                sCtx.beginPath();
+                sCtx.arc(ss.x, ss.y, ss.thickness * 1.2, 0, Math.PI*2);
+                sCtx.fillStyle = `rgba(255, 255, 255, ${ss.alpha})`;
+                sCtx.shadowBlur = 5;
+                sCtx.shadowColor = 'white';
+                sCtx.fill();
+                sCtx.shadowBlur = 0; // reset
 
                 ss.x += Math.cos(ss.angle)*ss.speed;
                 ss.y += Math.sin(ss.angle)*ss.speed;
-                ss.alpha -= 0.02;
-                if (ss.alpha <= 0 || ss.y > H || ss.x > W) {
+
+                if (ss.state === 'in') {
+                    ss.alpha += 0.1;
+                    if (ss.alpha >= 1) {
+                        ss.alpha = 1;
+                        ss.state = 'out';
+                    }
+                } else {
+                    ss.alpha -= 0.015;
+                }
+
+                if (ss.alpha <= 0 || ss.y > H + ss.len || ss.x > W + ss.len) {
                     shootingStars.splice(i, 1);
                 }
             }
