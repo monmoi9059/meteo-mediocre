@@ -152,6 +152,15 @@
         .view-dir-input { width: 60px; text-align: center; }
 
         /* Conteneur Principal */
+        /* --- BATTLE SIM --- */
+        #battle-sim-btn { display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 20; padding: 10px 20px; background: rgba(220, 53, 69, 0.8); color: white; border: 2px solid white; border-radius: 5px; font-weight: bold; cursor: pointer; pointer-events: auto; }
+        body.hide-ui:not(.game-active) #battle-sim-btn { display: block; }
+        #battle-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 5; display: none; }
+        body.game-active #battle-container { display: block; pointer-events: auto; }
+        #battle-hud { position: absolute; z-index: 100; top: 80px; left: 20px; color: #fff; text-shadow: 2px 2px 4px #000; font-family: monospace; font-size: 24px; text-shadow: 2px 2px 0 #000; pointer-events: none; }
+        #battle-fx { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        .enemy-entity { position: absolute; transform-origin: center; pointer-events: none; z-index: 5; }
+
         /* HIDE UI CLASS */
         body.hide-ui .main-dashboard {
             opacity: 0;
@@ -520,6 +529,16 @@
 </div>
 
 <canvas id="weather-fx" class="weather-fx"></canvas>
+<button id="battle-sim-btn">Start Defense</button>
+<div id="battle-container">
+    <canvas id="battle-fx"></canvas>
+    <div id="battle-enemies"></div>
+    <div id="battle-hud">
+        <div>SCORE: <span id="game-score">0</span></div>
+        <div>AMMO: <span id="game-ammo">30</span>/30</div>
+    </div>
+</div>
+
 <div id="boat-container" class="boat-container">
     <!-- Cap Quebec Suezmax Tanker -->
     <svg width="600" height="180" viewBox="0 0 600 180" xmlns="http://www.w3.org/2000/svg">
@@ -535,6 +554,16 @@
         <!-- Accommodation Block (White) - Stern -->
         <path d="M 30 95 L 30 40 L 100 40 L 110 95 Z" fill="#ecf0f1" />
         <path d="M 40 40 L 40 20 L 80 20 L 90 40 Z" fill="#ecf0f1" />
+        <!-- Defense Turret (Midship) -->
+        <g id="boat-turret" transform="translate(300, 90)">
+            <!-- Turret Base -->
+            <circle cx="0" cy="0" r="10" fill="#7f8c8d" stroke="#2c3e50" stroke-width="2"/>
+            <!-- Turret Barrel group (rotates) -->
+            <g id="turret-barrel">
+                <rect x="-3" y="-30" width="6" height="30" fill="#95a5a6" stroke="#2c3e50" stroke-width="1"/>
+            </g>
+        </g>
+
         <!-- Bridge windows -->
         <rect x="45" y="25" width="5" height="10" fill="#34495e" />
         <rect x="55" y="25" width="5" height="10" fill="#34495e" />
@@ -2885,6 +2914,275 @@ function renderWeatherUI() {
         requestAnimationFrame(animateBoatAndWaves);
     }
     requestAnimationFrame(animateBoatAndWaves);
+
+    // --- BATTLE SIM LOGIC ---
+    let battleState = {
+        active: false,
+        score: 0,
+        ammo: 30,
+        maxAmmo: 30,
+        bullets: [],
+        enemies: [],
+        lastSpawn: 0,
+        difficulty: 1,
+        mouseX: 0,
+        mouseY: 0
+    };
+    const battleBtn = document.getElementById("battle-sim-btn");
+    const battleContainer = document.getElementById("battle-container");
+    const battleFxCanvas = document.getElementById("battle-fx");
+    const battleFxCtx = battleFxCanvas.getContext("2d");
+    const battleEnemiesContainer = document.getElementById("battle-enemies");
+    const turretBarrel = document.getElementById("turret-barrel");
+
+    function resizeBattleCanvas() {
+        battleFxCanvas.width = window.innerWidth;
+        battleFxCanvas.height = window.innerHeight;
+    }
+    window.addEventListener("resize", resizeBattleCanvas);
+    resizeBattleCanvas();
+
+    battleBtn.addEventListener("click", () => {
+        battleState.active = true;
+        document.body.classList.add("game-active");
+        battleState.score = 0;
+        battleState.ammo = battleState.maxAmmo;
+        battleState.bullets = [];
+        battleState.enemies = [];
+        battleState.difficulty = 1;
+        battleEnemiesContainer.innerHTML = "";
+        updateBattleHUD();
+        requestAnimationFrame(updateBattleSim);
+    });
+
+    function updateBattleHUD() {
+        document.getElementById("game-score").textContent = battleState.score;
+        document.getElementById("game-ammo").textContent = battleState.ammo;
+    }
+
+    document.addEventListener("mousemove", (e) => {
+        if (!battleState.active) return;
+        battleState.mouseX = e.clientX;
+        battleState.mouseY = e.clientY;
+
+        // Calculate turret rotation
+        const boat = document.getElementById("boat-container");
+        const boatRect = boat.getBoundingClientRect();
+        // Turret is around midship (300 out of 600 width of SVG). Given scale(2), it is centered.
+        // We approximate turret absolute screen position.
+        const turretAbsX = boatRect.left + (boatRect.width / 2);
+        const turretAbsY = boatRect.top + (boatRect.height / 2) + 20; // Adjusted for height
+
+        let dx = battleState.mouseX - turretAbsX;
+        let dy = battleState.mouseY - turretAbsY;
+        let angle = Math.atan2(dy, dx) * (180 / Math.PI) + 90; // Add 90 because turret points up by default
+        turretBarrel.setAttribute("transform", `rotate(${angle})`);
+    });
+
+    document.addEventListener("mousedown", (e) => {
+        if (!battleState.active || battleState.ammo <= 0) return;
+        if (e.target === battleBtn) return; // Don"t fire when clicking start button
+
+        // Fire bullet
+        battleState.ammo--;
+        updateBattleHUD();
+
+        const boat = document.getElementById("boat-container");
+        const boatRect = boat.getBoundingClientRect();
+        const turretAbsX = boatRect.left + (boatRect.width / 2);
+        const turretAbsY = boatRect.top + (boatRect.height / 2) + 20;
+
+        let dx = battleState.mouseX - turretAbsX;
+        let dy = battleState.mouseY - turretAbsY;
+        let angle = Math.atan2(dy, dx);
+
+        battleState.bullets.push({
+            x: turretAbsX,
+            y: turretAbsY,
+            vx: Math.cos(angle) * 15,
+            vy: Math.sin(angle) * 15
+        });
+    });
+
+    document.addEventListener("keydown", (e) => {
+        if (!battleState.active) return;
+        if (e.key.toLowerCase() === "r") {
+            battleState.ammo = battleState.maxAmmo;
+            updateBattleHUD();
+        }
+    });
+
+    function spawnEnemy() {
+        let types = ["jetski", "boat", "ship", "heli"];
+        // Increase difficulty over time: bias towards harder enemies as difficulty goes up
+        let maxIdx = Math.min(types.length - 1, Math.floor(battleState.difficulty / 2));
+        let type = types[Math.floor(Math.random() * (maxIdx + 1))];
+
+        let enemy = {
+            id: "enemy-" + Date.now() + Math.random(),
+            type: type,
+            x: 0,
+            y: 0,
+            speed: 0,
+            hp: 1,
+            size: 20
+        };
+
+        // Spawn edges (left or right)
+        if (Math.random() > 0.5) {
+            enemy.x = -100;
+        } else {
+            enemy.x = window.innerWidth + 100;
+        }
+
+        // Y position based on type
+        let waterLevelY = window.innerHeight - (parseFloat(document.documentElement.style.getPropertyValue("--water-h") || "45") / 100 * window.innerHeight);
+
+        if (type === "heli") {
+            enemy.y = Math.random() * (waterLevelY - 200) + 50;
+            enemy.speed = 3 + Math.random() * 2;
+            enemy.hp = 3;
+            enemy.size = 40;
+        } else {
+            enemy.y = waterLevelY - 20 + Math.random() * 40;
+            if (type === "jetski") {
+                enemy.speed = 4 + Math.random() * 2;
+                enemy.hp = 1;
+                enemy.size = 20;
+            } else if (type === "boat") {
+                enemy.speed = 2 + Math.random() * 1.5;
+                enemy.hp = 3;
+                enemy.size = 50;
+            } else if (type === "ship") {
+                enemy.speed = 1 + Math.random();
+                enemy.hp = 6;
+                enemy.size = 80;
+            }
+        }
+
+        battleState.enemies.push(enemy);
+
+        let el = document.createElement("div");
+        el.className = "enemy-entity";
+        el.id = enemy.id;
+
+        // Simple inline SVGs for enemies
+        if (type === "jetski") {
+            el.innerHTML = `<svg width="30" height="15" viewBox="0 0 30 15"><path d="M0,10 L10,5 L20,5 L30,10 L30,15 L0,15 Z" fill="#e74c3c"/></svg>`;
+        } else if (type === "boat") {
+            el.innerHTML = `<svg width="60" height="25" viewBox="0 0 60 25"><rect x="10" y="0" width="20" height="10" fill="#34495e"/><path d="M0,10 L50,10 L60,20 L60,25 L0,25 Z" fill="#2980b9"/></svg>`;
+        } else if (type === "ship") {
+            el.innerHTML = `<svg width="100" height="40" viewBox="0 0 100 40"><rect x="20" y="0" width="30" height="15" fill="#7f8c8d"/><path d="M0,15 L80,15 L100,30 L100,40 L0,40 Z" fill="#2c3e50"/></svg>`;
+        } else if (type === "heli") {
+            el.innerHTML = `<svg width="50" height="30" viewBox="0 0 50 30"><ellipse cx="25" cy="15" rx="15" ry="10" fill="#8e44ad"/><path d="M5,15 L10,15" stroke="#8e44ad" stroke-width="2"/><line x1="10" y1="5" x2="40" y2="5" stroke="#333" stroke-width="2"/></svg>`;
+        }
+
+        battleEnemiesContainer.appendChild(el);
+    }
+
+    function updateBattleSim(timestamp) {
+        if (!battleState.active) return;
+
+        battleFxCtx.clearRect(0, 0, battleFxCanvas.width, battleFxCanvas.height);
+
+        // Spawning logic
+        if (timestamp - battleState.lastSpawn > Math.max(1000, 3000 - battleState.difficulty * 200)) {
+            spawnEnemy();
+            battleState.lastSpawn = timestamp;
+            battleState.difficulty += 0.1;
+        }
+
+        const boat = document.getElementById("boat-container");
+        const boatRect = boat.getBoundingClientRect();
+        const targetX = boatRect.left + boatRect.width / 2;
+
+        // Update bullets
+        battleFxCtx.fillStyle = "#f1c40f";
+        for (let i = battleState.bullets.length - 1; i >= 0; i--) {
+            let b = battleState.bullets[i];
+            b.x += b.vx;
+            b.y += b.vy;
+
+            // Draw bullet
+            battleFxCtx.beginPath();
+            battleFxCtx.arc(b.x, b.y, 3, 0, Math.PI * 2);
+            battleFxCtx.fill();
+
+            // Remove off-screen bullets
+            if (b.x < 0 || b.x > window.innerWidth || b.y < 0 || b.y > window.innerHeight) {
+                battleState.bullets.splice(i, 1);
+                continue;
+            }
+
+            // Bullet Collision with enemies
+            let hit = false;
+            for (let j = battleState.enemies.length - 1; j >= 0; j--) {
+                let e = battleState.enemies[j];
+                let dist = Math.hypot(b.x - e.x, b.y - e.y);
+                if (dist < e.size) {
+                    e.hp--;
+                    hit = true;
+                    if (e.hp <= 0) {
+                        // Destroy enemy
+                        let el = document.getElementById(e.id);
+                        if (el) el.remove();
+                        battleState.score += (e.type === "jetski" ? 10 : e.type === "boat" ? 20 : e.type === "heli" ? 30 : 50);
+                        updateBattleHUD();
+                        battleState.enemies.splice(j, 1);
+                    }
+                    break;
+                }
+            }
+            if (hit) {
+                battleState.bullets.splice(i, 1);
+            }
+        }
+
+        // Update enemies
+        for (let i = battleState.enemies.length - 1; i >= 0; i--) {
+            let e = battleState.enemies[i];
+            let dir = targetX > e.x ? 1 : -1;
+            e.x += e.speed * dir;
+
+            let el = document.getElementById(e.id);
+            if (el) {
+                el.style.left = e.x + "px";
+                el.style.top = e.y + "px";
+                el.style.transform = dir === -1 ? "scaleX(1)" : "scaleX(-1)"; // flip based on dir
+            }
+
+            // Collision with Tanker
+            if (Math.abs(e.x - targetX) < 150) {
+                gameOver();
+                return;
+            }
+        }
+
+        requestAnimationFrame(updateBattleSim);
+    }
+
+    function gameOver() {
+        battleState.active = false;
+        // Explosion effect
+        const boat = document.getElementById("boat-container");
+        const boatRect = boat.getBoundingClientRect();
+        let exX = boatRect.left + boatRect.width / 2;
+        let exY = boatRect.top + boatRect.height / 2;
+
+        battleFxCtx.fillStyle = "rgba(255, 69, 0, 0.8)";
+        battleFxCtx.beginPath();
+        battleFxCtx.arc(exX, exY, 150, 0, Math.PI * 2);
+        battleFxCtx.fill();
+
+        setTimeout(() => {
+            alert("GAME OVER! Ship destroyed.\nScore: " + battleState.score);
+            document.body.classList.remove("game-active");
+            battleEnemiesContainer.innerHTML = "";
+            battleFxCtx.clearRect(0, 0, battleFxCanvas.width, battleFxCanvas.height);
+            battleState.enemies = [];
+            battleState.bullets = [];
+        }, 100);
+    }
 
     // Start debris animation
     requestAnimationFrame(updateDebrisFX);
