@@ -1100,7 +1100,7 @@
                 // Phase 0-0.5 is waning (left side lit initially), 0.5-1.0 is waxing
                 // We draw the light overlay
                 sCtx.beginPath();
-                sCtx.arc(astX, astY, r, -Math.PI/2, Math.PI/2, phase > 0.5); // Outer semi-circle
+                sCtx.arc(astX, astY, r, -Math.PI/2, Math.PI/2, phase <= 0.5); // Outer semi-circle
 
                 // Inner curve to make crescent or gibbous
                 let normPhase = phase > 0.5 ? (phase - 0.5) * 2 : phase * 2; // 0 to 1
@@ -1109,7 +1109,7 @@
                 sCtx.save();
                 sCtx.translate(astX, astY);
                 sCtx.scale(Math.cos(normPhase * Math.PI), 1);
-                sCtx.arc(0, 0, r, Math.PI/2, -Math.PI/2, phase > 0.5);
+                sCtx.arc(0, 0, r, Math.PI/2, -Math.PI/2, phase <= 0.5);
                 sCtx.restore();
 
                 // Fill lit area
@@ -2087,11 +2087,27 @@ function renderWeatherUI() {
 
             let futureTides = tidesData.filter(t => new Date(t.eventDate).getTime() > nowTime - 4*3600*1000);
             
+            let waterTempStr = '';
+            try {
+                const wtRes = await fetch(`https://api-iwls.dfo-mpo.gc.ca/api/v1/stations/5cebf1de3d0f4a073c4bbae6/data?time-series-code=wt1&from=${encodeURIComponent(fromIso)}&to=${encodeURIComponent(toIso)}`);
+                if (wtRes.ok) {
+                    const wtData = await wtRes.json();
+                    if (wtData && wtData.length > 0) {
+                        wtData.sort((a, b) => new Date(b.eventDate) - new Date(a.eventDate));
+                        const latestTemp = wtData[0].value;
+                        waterTempStr = `<div style="font-size:0.9rem; color:var(--txt); margin-top:2px;">Temp. de l'eau (St-Laurent) : <strong>${latestTemp.toFixed(1)}°C</strong></div>`;
+                    }
+                }
+            } catch(e) {
+                console.warn("Could not fetch water temperature", e);
+            }
+
             let html = `
                 <div style="text-align:center; font-weight:bold; color:var(--primary); margin-bottom:5px;">
                     Niveau actuel estimé : <span style="font-size:1.2rem;">${currentWaterLevel.toFixed(2)}m</span> ${currentConditions.tideTrend}
                 </div>
                 <div class="chart-wrapper"><canvas id="tChart"></canvas></div>
+                ${waterTempStr ? `<div style="text-align:center; margin-bottom:10px;">${waterTempStr}</div>` : ''}
             `;
             html += `<table><tr><th style="width:20%">Date/Heure</th><th style="width:12%">Niveau</th><th>ARRIVÉES</th><th>DÉPARTS</th></tr>`;
 
