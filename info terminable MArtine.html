@@ -536,6 +536,7 @@
     <div id="battle-hud">
         <div>SCORE: <span id="game-score">0</span></div>
         <div>AMMO: <span id="game-ammo">30</span>/30</div>
+        <div>HEALTH: <span id="game-health">5.0</span>/5</div>
     </div>
 </div>
 
@@ -2921,6 +2922,8 @@ function renderWeatherUI() {
         score: 0,
         ammo: 30,
         maxAmmo: 30,
+        health: 5,
+        maxHealth: 5,
         bullets: [],
         enemies: [],
         lastSpawn: 0,
@@ -2947,6 +2950,7 @@ function renderWeatherUI() {
         document.body.classList.add("game-active");
         battleState.score = 0;
         battleState.ammo = battleState.maxAmmo;
+        battleState.health = battleState.maxHealth;
         battleState.bullets = [];
         battleState.enemies = [];
         battleState.difficulty = 1;
@@ -2958,6 +2962,7 @@ function renderWeatherUI() {
     function updateBattleHUD() {
         document.getElementById("game-score").textContent = battleState.score;
         document.getElementById("game-ammo").textContent = battleState.ammo;
+        document.getElementById("game-health").textContent = battleState.health.toFixed(1);
     }
 
     document.addEventListener("mousemove", (e) => {
@@ -3066,15 +3071,74 @@ function renderWeatherUI() {
         el.className = "enemy-entity";
         el.id = enemy.id;
 
-        // Simple inline SVGs for enemies
+        // Improved inline SVGs for enemies
         if (type === "jetski") {
-            el.innerHTML = `<svg width="30" height="15" viewBox="0 0 30 15"><path d="M0,10 L10,5 L20,5 L30,10 L30,15 L0,15 Z" fill="#e74c3c"/></svg>`;
+            el.innerHTML = `<svg width="40" height="20" viewBox="0 0 40 20">
+                <!-- Hull -->
+                <path d="M2,16 C10,12 25,12 38,16 L35,20 L5,20 Z" fill="#111" />
+                <path d="M5,14 L12,8 L20,8 L28,14 Z" fill="#c0392b" />
+                <!-- Rider -->
+                <circle cx="16" cy="5" r="3" fill="#ecf0f1" />
+                <path d="M14,8 L18,8 L16,12 Z" fill="#34495e" />
+                <!-- Wake/Water splash -->
+                <path d="M0,18 L5,18 M2,20 L8,20" stroke="#fff" stroke-width="1" fill="none" opacity="0.6"/>
+            </svg>`;
         } else if (type === "boat") {
-            el.innerHTML = `<svg width="60" height="25" viewBox="0 0 60 25"><rect x="10" y="0" width="20" height="10" fill="#34495e"/><path d="M0,10 L50,10 L60,20 L60,25 L0,25 Z" fill="#2980b9"/></svg>`;
+            el.innerHTML = `<svg width="80" height="35" viewBox="0 0 80 35">
+                <!-- Hull -->
+                <path d="M5,25 L65,25 L75,32 L5,32 Z" fill="#2c3e50" />
+                <!-- Trim -->
+                <path d="M5,23 L62,23 L72,30 L72,32 L65,25 Z" fill="#e74c3c" />
+                <!-- Cabin -->
+                <rect x="25" y="10" width="20" height="15" rx="2" fill="#7f8c8d" />
+                <!-- Window -->
+                <rect x="30" y="12" width="10" height="6" fill="#3498db" />
+                <!-- Antenna/Gun -->
+                <line x1="40" y1="10" x2="45" y2="2" stroke="#333" stroke-width="1.5" />
+                <!-- Wake -->
+                <path d="M0,30 L10,30 M0,33 L15,33" stroke="#fff" stroke-width="1.5" fill="none" opacity="0.6"/>
+            </svg>`;
         } else if (type === "ship") {
-            el.innerHTML = `<svg width="100" height="40" viewBox="0 0 100 40"><rect x="20" y="0" width="30" height="15" fill="#7f8c8d"/><path d="M0,15 L80,15 L100,30 L100,40 L0,40 Z" fill="#2c3e50"/></svg>`;
+            el.innerHTML = `<svg width="120" height="50" viewBox="0 0 120 50">
+                <!-- Main Hull -->
+                <path d="M5,35 L95,35 L115,48 L5,48 Z" fill="#1a252f" />
+                <!-- Red Line -->
+                <path d="M5,33 L93,33 L113,46 L113,48 L95,35 Z" fill="#c0392b" />
+                <!-- Superstructure Level 1 -->
+                <rect x="25" y="20" width="50" height="15" fill="#34495e" />
+                <!-- Bridge Level 2 -->
+                <rect x="35" y="8" width="30" height="12" fill="#7f8c8d" />
+                <!-- Bridge Windows -->
+                <rect x="40" y="10" width="5" height="5" fill="#3498db" />
+                <rect x="48" y="10" width="5" height="5" fill="#3498db" />
+                <rect x="56" y="10" width="5" height="5" fill="#3498db" />
+                <!-- Radar/Mast -->
+                <line x1="50" y1="8" x2="50" y2="0" stroke="#95a5a6" stroke-width="2" />
+                <line x1="45" y1="2" x2="55" y2="2" stroke="#95a5a6" stroke-width="1" />
+                <!-- Gun Turret -->
+                <circle cx="85" cy="30" r="4" fill="#7f8c8d" />
+                <line x1="85" y1="30" x2="100" y2="28" stroke="#7f8c8d" stroke-width="2" />
+            </svg>`;
         } else if (type === "heli") {
-            el.innerHTML = `<svg width="50" height="30" viewBox="0 0 50 30"><ellipse cx="25" cy="15" rx="15" ry="10" fill="#8e44ad"/><path d="M5,15 L10,15" stroke="#8e44ad" stroke-width="2"/><line x1="10" y1="5" x2="40" y2="5" stroke="#333" stroke-width="2"/></svg>`;
+            el.innerHTML = `<svg width="70" height="40" viewBox="0 0 70 40">
+                <!-- Main Rotor -->
+                <line x1="10" y1="5" x2="60" y2="5" stroke="#333" stroke-width="2" stroke-dasharray="8 4" />
+                <!-- Rotor Shaft -->
+                <rect x="33" y="5" width="4" height="8" fill="#555" />
+                <!-- Cockpit/Body -->
+                <ellipse cx="35" cy="20" rx="20" ry="12" fill="#2c3e50" />
+                <!-- Window -->
+                <path d="M40,12 C48,12 52,16 52,20 L35,20 Z" fill="#3498db" />
+                <!-- Tail Boom -->
+                <path d="M5,15 L20,18 L20,22 L5,20 Z" fill="#34495e" />
+                <!-- Tail Rotor -->
+                <circle cx="5" cy="17" r="5" stroke="#333" stroke-width="1.5" fill="none" />
+                <line x1="0" y1="17" x2="10" y2="17" stroke="#333" stroke-width="1" />
+                <!-- Skids -->
+                <line x1="20" y1="35" x2="50" y2="35" stroke="#7f8c8d" stroke-width="2" />
+                <line x1="25" y1="30" x2="25" y2="35" stroke="#7f8c8d" stroke-width="2" />
+                <line x1="45" y1="30" x2="45" y2="35" stroke="#7f8c8d" stroke-width="2" />
+            </svg>`;
         }
 
         battleEnemiesContainer.appendChild(el);
@@ -3127,6 +3191,7 @@ function renderWeatherUI() {
                         let el = document.getElementById(e.id);
                         if (el) el.remove();
                         battleState.score += (e.type === "jetski" ? 10 : e.type === "boat" ? 20 : e.type === "heli" ? 30 : 50);
+                        battleState.health = Math.min(battleState.maxHealth, battleState.health + 0.2);
                         updateBattleHUD();
                         battleState.enemies.splice(j, 1);
                     }
@@ -3148,13 +3213,27 @@ function renderWeatherUI() {
             if (el) {
                 el.style.left = e.x + "px";
                 el.style.top = e.y + "px";
-                el.style.transform = dir === -1 ? "scaleX(1)" : "scaleX(-1)"; // flip based on dir
+                el.style.transform = dir === 1 ? "scaleX(1)" : "scaleX(-1)"; // flip based on dir
             }
 
             // Collision with Tanker
             if (Math.abs(e.x - targetX) < 150) {
-                gameOver();
-                return;
+                battleState.health -= 1;
+
+                // Flash hit effect
+                battleFxCtx.fillStyle = "rgba(255, 0, 0, 0.4)";
+                battleFxCtx.fillRect(0, 0, battleFxCanvas.width, battleFxCanvas.height);
+
+                // Remove enemy
+                let el = document.getElementById(e.id);
+                if (el) el.remove();
+                battleState.enemies.splice(i, 1);
+                updateBattleHUD();
+
+                if (battleState.health <= 0) {
+                    gameOver();
+                    return;
+                }
             }
         }
 
