@@ -2089,7 +2089,7 @@ function renderWeatherUI() {
             
             let waterTempStr = '';
             try {
-                const wtRes = await fetch(`https://api-iwls.dfo-mpo.gc.ca/api/v1/stations/5cebf1df3d0f4a073c4bbb76/data?time-series-code=wt1&from=${encodeURIComponent(fromIso)}&to=${encodeURIComponent(toIso)}`);
+                const wtRes = await fetch(`https://api-iwls.dfo-mpo.gc.ca/api/v1/stations/5cebf1de3d0f4a073c4bbae6/data?time-series-code=wt1&from=${encodeURIComponent(fromIso)}&to=${encodeURIComponent(toIso)}`);
                 if (wtRes.ok) {
                     const wtData = await wtRes.json();
                     if (wtData && wtData.length > 0) {
@@ -2105,9 +2105,9 @@ function renderWeatherUI() {
             let html = `
                 <div style="text-align:center; font-weight:bold; color:var(--primary); margin-bottom:5px;">
                     Niveau actuel estimé : <span style="font-size:1.2rem;">${currentWaterLevel.toFixed(2)}m</span> ${currentConditions.tideTrend}
-                    ${waterTempStr}
                 </div>
                 <div class="chart-wrapper"><canvas id="tChart"></canvas></div>
+                ${waterTempStr ? `<div style="text-align:center; margin-bottom:10px;">${waterTempStr}</div>` : ''}
             `;
             html += `<table><tr><th style="width:20%">Date/Heure</th><th style="width:12%">Niveau</th><th>ARRIVÉES</th><th>DÉPARTS</th></tr>`;
 
