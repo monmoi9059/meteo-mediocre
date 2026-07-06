@@ -1100,7 +1100,7 @@
                 // Phase 0-0.5 is waning (left side lit initially), 0.5-1.0 is waxing
                 // We draw the light overlay
                 sCtx.beginPath();
-                sCtx.arc(astX, astY, r, -Math.PI/2, Math.PI/2, phase > 0.5); // Outer semi-circle
+                sCtx.arc(astX, astY, r, -Math.PI/2, Math.PI/2, phase <= 0.5); // Outer semi-circle
 
                 // Inner curve to make crescent or gibbous
                 let normPhase = phase > 0.5 ? (phase - 0.5) * 2 : phase * 2; // 0 to 1
@@ -1109,7 +1109,7 @@
                 sCtx.save();
                 sCtx.translate(astX, astY);
                 sCtx.scale(Math.cos(normPhase * Math.PI), 1);
-                sCtx.arc(0, 0, r, Math.PI/2, -Math.PI/2, phase > 0.5);
+                sCtx.arc(0, 0, r, Math.PI/2, -Math.PI/2, phase <= 0.5);
                 sCtx.restore();
 
                 // Fill lit area
