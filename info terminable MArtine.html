@@ -807,6 +807,7 @@
         tideHeight: 10, tideTrend: '', // Trend : ⬆️ ou ⬇️
         flowDirection: 'none' // 'right', 'left', 'slack'
     };
+    let globalTidesData = null;
     let lightningFlashAlpha = 0;
 
 
@@ -2047,28 +2048,18 @@ function renderWeatherUI() {
     function addTime(iso, hrs) { let d = new Date(iso); d.setMinutes(d.getMinutes() + (hrs * 60)); return d.getTime(); }
     function formatT(ms) { return new Date(ms).toLocaleTimeString('fr-CA', timeOptions).replace(' h', 'h'); }
 
-    async function fetchTides() {
-        try {
-            const stationRes = await fetch(`https://api-iwls.dfo-mpo.gc.ca/api/v1/stations`);
-            const stations = await stationRes.json();
-            const station = stations.find(s => s.code === '3250' || s.code === '03250');
-            
-            const now = new Date();
-            const fromIso = new Date(now.getTime() - 14*60*60*1000).toISOString().split('.')[0] + 'Z';
-            const toIso = new Date(now.getTime() + 48*60*60*1000).toISOString().split('.')[0] + 'Z';
+    function updateRealtimeState() {
+        const nowTime = Date.now();
+        currentConditions.nowSec = Math.floor(nowTime / 1000);
 
-            const tidesRes = await fetch(`https://api-iwls.dfo-mpo.gc.ca/api/v1/stations/${station.id}/data?time-series-code=wlp-hilo&from=${encodeURIComponent(fromIso)}&to=${encodeURIComponent(toIso)}`);
-            const tidesData = await tidesRes.json();
-            tidesData.sort((a, b) => new Date(a.eventDate) - new Date(b.eventDate));
-
-            const nowTime = Date.now();
+        if (globalTidesData) {
             let prevTide = null, nextTide = null;
-            let minTide = Math.min(...tidesData.map(t=>t.value)); let maxTide = Math.max(...tidesData.map(t=>t.value));
+            let minTide = Math.min(...globalTidesData.map(t=>t.value)); let maxTide = Math.max(...globalTidesData.map(t=>t.value));
             let currentWaterLevel = 0;
 
-            for (let i = 0; i < tidesData.length - 1; i++) {
-                if (nowTime >= new Date(tidesData[i].eventDate).getTime() && nowTime <= new Date(tidesData[i+1].eventDate).getTime()) {
-                    prevTide = tidesData[i]; nextTide = tidesData[i+1]; break;
+            for (let i = 0; i < globalTidesData.length - 1; i++) {
+                if (nowTime >= new Date(globalTidesData[i].eventDate).getTime() && nowTime <= new Date(globalTidesData[i+1].eventDate).getTime()) {
+                    prevTide = globalTidesData[i]; nextTide = globalTidesData[i+1]; break;
                 }
             }
             if (prevTide && nextTide) {
@@ -2078,13 +2069,33 @@ function renderWeatherUI() {
                 currentConditions.tideHeight = 10 + (((currentWaterLevel - minTide) / (maxTide - minTide)) * 100 * 0.35); 
                 currentConditions.tideTrend = nextTide.value > prevTide.value ? '⬆️ Montante' : '⬇️ Descendante';
 
-                // Rocks are naturally exposed now because beach-layer is below shore-layer
-                // and the water level decreases to reveal it.
-                updateDynamicBackground();
+                const tideTextContainer = document.getElementById('current-tide-text-container');
+                if (tideTextContainer) {
+                    tideTextContainer.innerHTML = `Niveau actuel estimé : <span style="font-size:1.2rem;">${currentWaterLevel.toFixed(2)}m</span> ${currentConditions.tideTrend}`;
+                }
             }
+            updateTrafficLights(globalTidesData, nowTime);
+            if (tidesChart) tidesChart.update('none');
+        }
+        updateDynamicBackground();
+    }
 
-            updateTrafficLights(tidesData, nowTime);
+    async function fetchTides() {
+        try {
+            const stationRes = await fetch(`https://api-iwls.dfo-mpo.gc.ca/api/v1/stations`);
+            const stations = await stationRes.json();
+            const station = stations.find(s => s.code === '3250' || s.code === '03250');
 
+            const now = new Date();
+            const fromIso = new Date(now.getTime() - 14*60*60*1000).toISOString().split('.')[0] + 'Z';
+            const toIso = new Date(now.getTime() + 48*60*60*1000).toISOString().split('.')[0] + 'Z';
+
+            const tidesRes = await fetch(`https://api-iwls.dfo-mpo.gc.ca/api/v1/stations/${station.id}/data?time-series-code=wlp-hilo&from=${encodeURIComponent(fromIso)}&to=${encodeURIComponent(toIso)}`);
+            const tidesData = await tidesRes.json();
+            tidesData.sort((a, b) => new Date(a.eventDate) - new Date(b.eventDate));
+            globalTidesData = tidesData;
+
+            const nowTime = Date.now();
             let futureTides = tidesData.filter(t => new Date(t.eventDate).getTime() > nowTime - 4*3600*1000);
             
             let waterTempStr = '';
@@ -2103,9 +2114,7 @@ function renderWeatherUI() {
             }
 
             let html = `
-                <div style="text-align:center; font-weight:bold; color:var(--primary); margin-bottom:5px;">
-                    Niveau actuel estimé : <span style="font-size:1.2rem;">${currentWaterLevel.toFixed(2)}m</span> ${currentConditions.tideTrend}
-                </div>
+                <div id="current-tide-text-container" style="text-align:center; font-weight:bold; color:var(--primary); margin-bottom:5px;"></div>
                 <div class="chart-wrapper"><canvas id="tChart"></canvas></div>
                 ${waterTempStr ? `<div style="text-align:center; margin-bottom:10px;">${waterTempStr}</div>` : ''}
             `;
@@ -2208,6 +2217,9 @@ function renderWeatherUI() {
                 },
                 plugins: [currentTimePlugin]
             });
+
+            // Call updateRealtimeState to initialize current water level text and visuals
+            updateRealtimeState();
         } catch (e) { document.getElementById('tides-body').innerHTML = `<p class="txt-red">${e.message}</p>`; }
     }
 
@@ -2700,6 +2712,8 @@ function renderWeatherUI() {
 
     // Start debris animation
     requestAnimationFrame(updateDebrisFX);
+
+    setInterval(updateRealtimeState, 60000);
 
     // INIT
     updateDynamicBackground(); fetchWeather(); fetchTides();
