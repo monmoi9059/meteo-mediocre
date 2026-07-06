@@ -156,6 +156,7 @@
         #battle-sim-btn { display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 20; padding: 10px 20px; background: rgba(220, 53, 69, 0.8); color: white; border: 2px solid white; border-radius: 5px; font-weight: bold; cursor: pointer; pointer-events: auto; }
         body.hide-ui:not(.game-active) #battle-sim-btn { display: block; }
         #battle-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 5; display: none; }
+        body.game-active { user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; }
         body.game-active #battle-container { display: block; pointer-events: auto; }
         #battle-hud { position: absolute; z-index: 100; top: 80px; left: 20px; color: #fff; text-shadow: 2px 2px 4px #000; font-family: monospace; font-size: 24px; text-shadow: 2px 2px 0 #000; pointer-events: none; }
         #battle-fx { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
@@ -3004,8 +3005,8 @@ function renderWeatherUI() {
         battleState.bullets.push({
             x: turretAbsX,
             y: turretAbsY,
-            vx: Math.cos(angle) * 15,
-            vy: Math.sin(angle) * 15
+            vx: Math.cos(angle) * 30,
+            vy: Math.sin(angle) * 30
         });
     });
 
@@ -3047,21 +3048,21 @@ function renderWeatherUI() {
             enemy.y = Math.random() * (waterLevelY - 200) + 50;
             enemy.speed = 3 + Math.random() * 2;
             enemy.hp = 3;
-            enemy.size = 40;
+            enemy.size = 80;
         } else {
             enemy.y = waterLevelY - 20 + Math.random() * 40;
             if (type === "jetski") {
                 enemy.speed = 4 + Math.random() * 2;
                 enemy.hp = 1;
-                enemy.size = 20;
+                enemy.size = 40;
             } else if (type === "boat") {
                 enemy.speed = 2 + Math.random() * 1.5;
                 enemy.hp = 3;
-                enemy.size = 50;
+                enemy.size = 100;
             } else if (type === "ship") {
                 enemy.speed = 1 + Math.random();
                 enemy.hp = 6;
-                enemy.size = 80;
+                enemy.size = 160;
             }
         }
 
@@ -3073,7 +3074,7 @@ function renderWeatherUI() {
 
         // Improved inline SVGs for enemies
         if (type === "jetski") {
-            el.innerHTML = `<svg width="40" height="20" viewBox="0 0 40 20">
+            el.innerHTML = `<svg width="80" height="40" viewBox="0 0 40 20">
                 <!-- Hull -->
                 <path d="M2,16 C10,12 25,12 38,16 L35,20 L5,20 Z" fill="#111" />
                 <path d="M5,14 L12,8 L20,8 L28,14 Z" fill="#c0392b" />
@@ -3084,7 +3085,7 @@ function renderWeatherUI() {
                 <path d="M0,18 L5,18 M2,20 L8,20" stroke="#fff" stroke-width="1" fill="none" opacity="0.6"/>
             </svg>`;
         } else if (type === "boat") {
-            el.innerHTML = `<svg width="80" height="35" viewBox="0 0 80 35">
+            el.innerHTML = `<svg width="160" height="70" viewBox="0 0 80 35">
                 <!-- Hull -->
                 <path d="M5,25 L65,25 L75,32 L5,32 Z" fill="#2c3e50" />
                 <!-- Trim -->
@@ -3099,7 +3100,7 @@ function renderWeatherUI() {
                 <path d="M0,30 L10,30 M0,33 L15,33" stroke="#fff" stroke-width="1.5" fill="none" opacity="0.6"/>
             </svg>`;
         } else if (type === "ship") {
-            el.innerHTML = `<svg width="120" height="50" viewBox="0 0 120 50">
+            el.innerHTML = `<svg width="240" height="100" viewBox="0 0 120 50">
                 <!-- Main Hull -->
                 <path d="M5,35 L95,35 L115,48 L5,48 Z" fill="#1a252f" />
                 <!-- Red Line -->
@@ -3120,7 +3121,7 @@ function renderWeatherUI() {
                 <line x1="85" y1="30" x2="100" y2="28" stroke="#7f8c8d" stroke-width="2" />
             </svg>`;
         } else if (type === "heli") {
-            el.innerHTML = `<svg width="70" height="40" viewBox="0 0 70 40">
+            el.innerHTML = `<svg width="140" height="80" viewBox="0 0 70 40">
                 <!-- Main Rotor -->
                 <line x1="10" y1="5" x2="60" y2="5" stroke="#333" stroke-width="2" stroke-dasharray="8 4" />
                 <!-- Rotor Shaft -->
@@ -3169,7 +3170,7 @@ function renderWeatherUI() {
 
             // Draw bullet
             battleFxCtx.beginPath();
-            battleFxCtx.arc(b.x, b.y, 3, 0, Math.PI * 2);
+            battleFxCtx.arc(b.x, b.y, 5, 0, Math.PI * 2);
             battleFxCtx.fill();
 
             // Remove off-screen bullets
