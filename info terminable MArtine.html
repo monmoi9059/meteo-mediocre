@@ -303,116 +303,109 @@
 <!-- SHORE LAYER (360 ENVIRONMENT PANORAMA) -->
 <div id="shore-layer" class="shore-layer">
 
-    <!-- QUEBEC CITY (Azimuth 0) -->
-    <div class="landmark" data-azimuth="0" data-width="60" style="width: 60vw; height: 350px;">
+    <!-- NORTH SHORE (QUEBEC SIDE) - spans West (270) to East (90), centered at North (0) -->
+    <div class="landmark" data-azimuth="0" data-width="180" style="width: 180vw; height: 350px; z-index: 1;">
         <svg width="100%" height="100%" viewBox="0 0 1000 350" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-            <!-- Cap Diamant (Cliffs) -->
-            <path d="M 0 350 L 0 200 Q 200 150 400 120 L 1000 250 L 1000 350 Z" fill="#475569" />
-            <path d="M 50 350 L 50 220 Q 250 170 450 140 L 950 260 L 950 350 Z" fill="#334155" opacity="0.5"/>
-            <!-- Château Frontenac -->
-            <g fill="#7f8c8d" stroke="#2c3e50" stroke-width="2">
-                <!-- Main Building -->
-                <rect x="350" y="70" width="100" height="50" />
-                <!-- Center Tower -->
-                <rect x="380" y="20" width="40" height="50" />
+            <!-- Distant Mountains -->
+            <path d="M 0 350 L 0 250 Q 250 200 500 220 T 1000 240 L 1000 350 Z" fill="#2d3748" opacity="0.6"/>
+            <!-- Cap Diamant (Massive Cliffs) Center is x=500 -->
+            <path d="M 0 350 L 0 280 Q 200 260 350 220 L 450 120 Q 550 100 650 130 L 800 250 Q 900 280 1000 290 L 1000 350 Z" fill="#475569" />
+            <path d="M 100 350 L 100 300 Q 300 270 420 180 L 520 150 Q 620 160 750 230 L 950 320 L 950 350 Z" fill="#334155" opacity="0.7"/>
+
+            <!-- Château Frontenac (Center x=500) -->
+            <g fill="#7f8c8d" stroke="#2c3e50" stroke-width="1.5">
+                <rect x="470" y="70" width="60" height="50" />
+                <rect x="490" y="30" width="20" height="40" />
             </g>
-            <!-- Roofs (Copper Green) -->
             <g fill="#3a7a6b">
-                <polygon points="380,20 400,0 420,20" />
-                <polygon points="350,70 360,50 380,70" />
-                <polygon points="420,70 440,50 450,70" />
+                <polygon points="490,30 500,10 510,30" />
+                <polygon points="470,70 480,50 490,70" />
+                <polygon points="510,70 520,50 530,70" />
             </g>
-            <rect x="390" y="30" width="20" height="10" fill="#f1c40f" opacity="0.6" />
-            <!-- Other buildings silhouette -->
-            <rect x="250" y="110" width="60" height="60" fill="#64748b" />
-            <polygon points="250,110 280,90 310,110" fill="#475569" />
-            <rect x="470" y="100" width="80" height="40" fill="#64748b" />
-            <!-- Parliament building roughly -->
-            <rect x="580" y="180" width="120" height="40" fill="#94a3b8" />
-            <rect x="630" y="150" width="20" height="30" fill="#94a3b8" />
-            <polygon points="630,150 640,130 650,150" fill="#718096" />
+            <rect x="495" y="40" width="10" height="5" fill="#f1c40f" opacity="0.6" />
+
+            <!-- Parliament building and upper town -->
+            <rect x="380" y="170" width="40" height="30" fill="#64748b" />
+            <rect x="430" y="150" width="30" height="40" fill="#64748b" />
+            <rect x="540" y="120" width="50" height="30" fill="#94a3b8" />
+            <rect x="560" y="90" width="10" height="30" fill="#94a3b8" />
+            <polygon points="560,90 565,70 570,90" fill="#718096" />
+            <rect x="600" y="160" width="40" height="40" fill="#475569" />
+            <rect x="650" y="180" width="60" height="30" fill="#64748b" />
+        </svg>
+    </div>
+
+    <!-- SOUTH SHORE (LÉVIS SIDE) - spans East (90) to West (270), centered at South (180) -->
+    <div class="landmark" data-azimuth="180" data-width="180" style="width: 180vw; height: 280px; z-index: 1;">
+        <svg width="100%" height="100%" viewBox="0 0 1000 280" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Massive rolling wooded hills -->
+            <path d="M 0 280 L 0 150 Q 150 100 300 130 T 700 80 T 1000 140 L 1000 280 Z" fill="#1b4d24" />
+            <path d="M 0 280 L 0 180 Q 200 120 400 160 T 800 110 L 1000 160 L 1000 280 Z" fill="#266330" />
+            <path d="M 0 280 L 0 220 Q 250 160 500 200 T 1000 190 L 1000 280 Z" fill="#327a3d" />
+
+            <!-- Mountain Trees Silhouette -->
+            <path d="M 0 220 Q 50 190 100 215 Q 150 185 200 210 Q 250 195 300 220 Q 350 190 400 215 Q 450 200 500 225 Q 550 195 600 220 Q 650 205 700 230 Q 750 200 800 225 Q 850 210 900 235 Q 950 205 1000 230" fill="#1b4d24" opacity="0.6"/>
         </svg>
     </div>
 
     <!-- ÎLE D'ORLÉANS (Azimuth 90) -->
-    <div class="landmark" data-azimuth="90" data-width="40" style="width: 40vw; height: 150px;">
-        <svg width="100%" height="100%" viewBox="0 0 1000 150" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M 0 150 Q 200 80 500 50 T 1000 120 L 1000 150 Z" fill="#2d6a4f" />
-            <path d="M 100 150 Q 300 100 600 70 T 1000 140 L 1000 150 Z" fill="#1b4332" opacity="0.7"/>
-            <!-- Church spire in Ste-Pétronille -->
-            <rect x="150" y="80" width="10" height="30" fill="#cbd5e1" />
-            <polygon points="150,80 155,50 160,80" fill="#94a3b8" />
+    <!-- Blends the gap between North Shore (ends at 90) and South Shore (starts at 90) -->
+    <div class="landmark" data-azimuth="90" data-width="50" style="width: 50vw; height: 180px; z-index: 2;">
+        <svg width="100%" height="100%" viewBox="0 0 1000 180" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M 100 180 Q 300 100 500 80 T 900 180 Z" fill="#2d6a4f" />
+            <path d="M 200 180 Q 400 120 600 100 T 800 180 Z" fill="#1b4332" opacity="0.7"/>
+            <!-- Church spire in Ste-Pétronille (Left side) -->
+            <rect x="250" y="110" width="10" height="30" fill="#cbd5e1" />
+            <polygon points="250,110 255,80 260,110" fill="#94a3b8" />
         </svg>
     </div>
 
     <!-- BRIDGES: Pierre-Laporte & Pont de Québec (Azimuth 250) -->
-    <div class="landmark" data-azimuth="250" data-width="50" style="width: 50vw; height: 250px;">
+    <!-- Blends the gap between South Shore (ends at 270) and North Shore (starts at 270) -->
+    <div class="landmark" data-azimuth="250" data-width="40" style="width: 40vw; height: 250px; z-index: 2;">
         <svg width="100%" height="100%" viewBox="0 0 1000 250" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-            <!-- Distant hills -->
-            <path d="M 0 250 L 0 180 Q 250 150 500 170 T 1000 160 L 1000 250 Z" fill="#1b4d24" opacity="0.5"/>
-
-            <!-- Pont Pierre-Laporte (Suspension Bridge - lighter grey) -->
-            <!-- Pillars -->
+            <!-- Pont Pierre-Laporte (Suspension Bridge) -->
             <rect x="250" y="50" width="20" height="200" fill="#cbd5e1" />
             <rect x="750" y="50" width="20" height="200" fill="#cbd5e1" />
-            <!-- Deck -->
             <rect x="0" y="160" width="1000" height="8" fill="#94a3b8" />
-            <!-- Main Cables -->
             <path d="M 0 100 Q 125 150 260 50" fill="none" stroke="#94a3b8" stroke-width="4" />
             <path d="M 260 50 Q 500 160 760 50" fill="none" stroke="#94a3b8" stroke-width="4" />
             <path d="M 760 50 Q 880 150 1000 100" fill="none" stroke="#94a3b8" stroke-width="4" />
-            <!-- Suspenders -->
             <path d="M 300 90 L 300 160 M 350 120 L 350 160 M 400 140 L 400 160 M 450 155 L 450 160 M 500 160 L 500 160 M 550 155 L 550 160 M 600 140 L 600 160 M 650 120 L 650 160 M 700 90 L 700 160" stroke="#cbd5e1" stroke-width="1" />
 
-            <!-- Pont de Québec (Cantilever Bridge - dark grey/black) -->
-            <!-- Base Piers -->
+            <!-- Pont de Québec (Cantilever Bridge) -->
             <rect x="350" y="170" width="40" height="80" fill="#475569" />
             <rect x="650" y="170" width="40" height="80" fill="#475569" />
-            <!-- Deck -->
             <rect x="0" y="145" width="1000" height="12" fill="#1e293b" />
-            <!-- Cantilever Trusses -->
-            <!-- Left Anchor Arm -->
             <polygon points="0,145 350,145 370,60 100,100" fill="none" stroke="#334155" stroke-width="6" />
             <path d="M 0 145 L 100 100 L 150 145 L 200 90 L 250 145 L 300 75 L 350 145 L 370 60 Z" fill="none" stroke="#334155" stroke-width="3" />
-            <!-- Left Cantilever Arm -->
             <polygon points="350,145 370,60 450,145" fill="none" stroke="#334155" stroke-width="6" />
-            <!-- Right Anchor Arm -->
             <polygon points="1000,145 690,145 670,60 900,100" fill="none" stroke="#334155" stroke-width="6" />
             <path d="M 1000 145 L 900 100 L 850 145 L 800 90 L 750 145 L 700 75 L 690 145 L 670 60 Z" fill="none" stroke="#334155" stroke-width="3" />
-            <!-- Right Cantilever Arm -->
             <polygon points="690,145 670,60 590,145" fill="none" stroke="#334155" stroke-width="6" />
-            <!-- Center Suspended Span -->
             <rect x="450" y="125" width="140" height="20" fill="none" stroke="#334155" stroke-width="5" />
             <path d="M 450 125 L 485 145 M 485 125 L 520 145 M 520 125 L 555 145 M 555 125 L 590 145" stroke="#334155" stroke-width="2" />
         </svg>
     </div>
 
-    <!-- VALERO DOCK (Azimuth 135) -->
-    <div class="landmark" data-azimuth="135" data-width="80" style="width: 80vw; height: 250px;">
+    <!-- VALERO DOCK (Azimuth 135) - sits perfectly on top of the South Shore (azimuth 180) -->
+    <!-- Removed mountain background to make it overlay cleanly -->
+    <div class="landmark" data-azimuth="135" data-width="80" style="width: 80vw; height: 250px; z-index: 3;">
     <svg width="100%" height="250" viewBox="0 0 1000 250" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" style="overflow: visible;">
-        <!-- Mountain Background (Heavily wooded) -->
-        <path d="M 0 250 L 0 60 Q 150 10 300 70 T 700 30 T 1000 80 L 1000 250 Z" fill="#1b4d24" />
-        <path d="M 0 250 L 0 90 Q 200 30 400 100 T 800 60 L 1000 110 L 1000 250 Z" fill="#266330" />
-        <path d="M 0 250 L 0 130 Q 250 80 500 140 T 1000 150 L 1000 250 Z" fill="#327a3d" />
-
-        <!-- Mountain Trees Silhouette -->
-        <path d="M 0 130 Q 30 110 60 135 Q 90 105 120 130 Q 150 115 180 140 Q 210 110 240 135 Q 270 120 300 145" fill="#1b4d24" opacity="0.6"/>
-        <path d="M 700 120 Q 730 90 760 125 Q 790 105 820 130 Q 850 100 880 125 Q 910 110 940 135 Q 970 105 1000 130" fill="#1b4d24" opacity="0.6"/>
-
         <!-- Oil Reservoirs on the hill -->
         <g fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2">
-            <rect x="200" y="80" width="60" height="40" rx="4" />
-            <rect x="280" y="95" width="50" height="35" rx="4" />
-            <rect x="700" y="70" width="70" height="45" rx="4" />
-            <rect x="790" y="85" width="55" height="35" rx="4" />
-            <rect x="860" y="100" width="45" height="30" rx="4" />
+            <rect x="200" y="40" width="60" height="40" rx="4" />
+            <rect x="280" y="55" width="50" height="35" rx="4" />
+            <rect x="700" y="30" width="70" height="45" rx="4" />
+            <rect x="790" y="45" width="55" height="35" rx="4" />
+            <rect x="860" y="60" width="45" height="30" rx="4" />
         </g>
 
         <!-- Pipelines coming down the mountain -->
-        <path d="M 230 120 L 450 190" fill="none" stroke="#cbd5e1" stroke-width="5" />
-        <path d="M 240 120 L 460 190" fill="none" stroke="#94a3b8" stroke-width="5" />
-        <path d="M 735 115 L 550 190" fill="none" stroke="#cbd5e1" stroke-width="5" />
-        <path d="M 725 115 L 540 190" fill="none" stroke="#94a3b8" stroke-width="5" />
+        <path d="M 230 80 L 450 190" fill="none" stroke="#cbd5e1" stroke-width="5" />
+        <path d="M 240 80 L 460 190" fill="none" stroke="#94a3b8" stroke-width="5" />
+        <path d="M 735 75 L 550 190" fill="none" stroke="#cbd5e1" stroke-width="5" />
+        <path d="M 725 75 L 540 190" fill="none" stroke="#94a3b8" stroke-width="5" />
 
         <!-- Valero Dock - Mooring Dolphins (Ducs d'albe) and Catwalks -->
         <!-- Catwalks (Yellow) -->
@@ -2966,8 +2959,8 @@ function renderWeatherUI() {
         }
 
         // Update landmarks in the 360 panorama
-        const landmarks = document.querySelectorAll('.landmark');
-        landmarks.forEach(lm => {
+        const landmarks = document.querySelectorAll('.landmark:not([id^="clone-"])');
+        landmarks.forEach((lm, idx) => {
             let az = parseFloat(lm.getAttribute('data-azimuth'));
             let widthDeg = parseFloat(lm.getAttribute('data-width'));
 
@@ -2985,9 +2978,28 @@ function renderWeatherUI() {
 
             lm.style.left = `${x}px`;
             lm.style.width = `${pixelWidth}px`;
-            // Base the bottom of the landmark on the horizon
             lm.style.bottom = `${H - horizonY}px`;
             lm.style.transform = `translateX(-50%)`;
+
+            // SEAMLESS CLONING LOGIC
+            // If the landmark spans beyond the -180 or 180 boundary (or is very wide),
+            // we should draw a cloned copy on the opposite side to prevent it from disappearing
+            // instantly when its center crosses the +/- 180 threshold.
+            let clone = document.getElementById(`clone-${idx}`);
+            if (!clone) {
+                clone = lm.cloneNode(true);
+                clone.id = `clone-${idx}`;
+                lm.parentNode.appendChild(clone);
+            }
+
+            // Calculate the alternate azimuth (either +360 or -360 depending on where we are)
+            let altRelAz = relAz > 0 ? relAz - 360 : relAz + 360;
+            let altX = (W / 2) + (altRelAz * pixelsPerDegreeX);
+
+            clone.style.left = `${altX}px`;
+            clone.style.width = `${pixelWidth}px`;
+            clone.style.bottom = `${H - horizonY}px`;
+            clone.style.transform = `translateX(-50%)`;
         });
 
         return { horizonY, waterTopY, pixelsPerDegreeX, pixelsPerDegreeY };
