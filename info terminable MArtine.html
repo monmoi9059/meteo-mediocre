@@ -98,7 +98,13 @@
         }
 
         .shore-layer {
-            position: fixed; left: 0; right: 0; bottom: calc(45vh - 30px); height: 250px; z-index: 1; pointer-events: none;
+            position: fixed; left: 0; top: 0; width: 100vw; height: 100vh; z-index: 1; pointer-events: none;
+        }
+        .landmark {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform-origin: bottom center;
         }
 
         /* --- BOAT LAYER --- */
@@ -294,8 +300,95 @@
 <div id="dynamic-bg" class="dynamic-bg"></div>
 <canvas id="sky-fx" class="sky-fx"></canvas>
 
-<!-- SHORE LAYER (LEVIS BACKGROUND) -->
+<!-- SHORE LAYER (360 ENVIRONMENT PANORAMA) -->
 <div id="shore-layer" class="shore-layer">
+
+    <!-- QUEBEC CITY (Azimuth 0) -->
+    <div class="landmark" data-azimuth="0" data-width="60" style="width: 60vw; height: 350px;">
+        <svg width="100%" height="100%" viewBox="0 0 1000 350" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Cap Diamant (Cliffs) -->
+            <path d="M 0 350 L 0 200 Q 200 150 400 120 L 1000 250 L 1000 350 Z" fill="#475569" />
+            <path d="M 50 350 L 50 220 Q 250 170 450 140 L 950 260 L 950 350 Z" fill="#334155" opacity="0.5"/>
+            <!-- Château Frontenac -->
+            <g fill="#7f8c8d" stroke="#2c3e50" stroke-width="2">
+                <!-- Main Building -->
+                <rect x="350" y="70" width="100" height="50" />
+                <!-- Center Tower -->
+                <rect x="380" y="20" width="40" height="50" />
+            </g>
+            <!-- Roofs (Copper Green) -->
+            <g fill="#3a7a6b">
+                <polygon points="380,20 400,0 420,20" />
+                <polygon points="350,70 360,50 380,70" />
+                <polygon points="420,70 440,50 450,70" />
+            </g>
+            <rect x="390" y="30" width="20" height="10" fill="#f1c40f" opacity="0.6" />
+            <!-- Other buildings silhouette -->
+            <rect x="250" y="110" width="60" height="60" fill="#64748b" />
+            <polygon points="250,110 280,90 310,110" fill="#475569" />
+            <rect x="470" y="100" width="80" height="40" fill="#64748b" />
+            <!-- Parliament building roughly -->
+            <rect x="580" y="180" width="120" height="40" fill="#94a3b8" />
+            <rect x="630" y="150" width="20" height="30" fill="#94a3b8" />
+            <polygon points="630,150 640,130 650,150" fill="#718096" />
+        </svg>
+    </div>
+
+    <!-- ÎLE D'ORLÉANS (Azimuth 90) -->
+    <div class="landmark" data-azimuth="90" data-width="40" style="width: 40vw; height: 150px;">
+        <svg width="100%" height="100%" viewBox="0 0 1000 150" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M 0 150 Q 200 80 500 50 T 1000 120 L 1000 150 Z" fill="#2d6a4f" />
+            <path d="M 100 150 Q 300 100 600 70 T 1000 140 L 1000 150 Z" fill="#1b4332" opacity="0.7"/>
+            <!-- Church spire in Ste-Pétronille -->
+            <rect x="150" y="80" width="10" height="30" fill="#cbd5e1" />
+            <polygon points="150,80 155,50 160,80" fill="#94a3b8" />
+        </svg>
+    </div>
+
+    <!-- BRIDGES: Pierre-Laporte & Pont de Québec (Azimuth 250) -->
+    <div class="landmark" data-azimuth="250" data-width="50" style="width: 50vw; height: 250px;">
+        <svg width="100%" height="100%" viewBox="0 0 1000 250" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Distant hills -->
+            <path d="M 0 250 L 0 180 Q 250 150 500 170 T 1000 160 L 1000 250 Z" fill="#1b4d24" opacity="0.5"/>
+
+            <!-- Pont Pierre-Laporte (Suspension Bridge - lighter grey) -->
+            <!-- Pillars -->
+            <rect x="250" y="50" width="20" height="200" fill="#cbd5e1" />
+            <rect x="750" y="50" width="20" height="200" fill="#cbd5e1" />
+            <!-- Deck -->
+            <rect x="0" y="160" width="1000" height="8" fill="#94a3b8" />
+            <!-- Main Cables -->
+            <path d="M 0 100 Q 125 150 260 50" fill="none" stroke="#94a3b8" stroke-width="4" />
+            <path d="M 260 50 Q 500 160 760 50" fill="none" stroke="#94a3b8" stroke-width="4" />
+            <path d="M 760 50 Q 880 150 1000 100" fill="none" stroke="#94a3b8" stroke-width="4" />
+            <!-- Suspenders -->
+            <path d="M 300 90 L 300 160 M 350 120 L 350 160 M 400 140 L 400 160 M 450 155 L 450 160 M 500 160 L 500 160 M 550 155 L 550 160 M 600 140 L 600 160 M 650 120 L 650 160 M 700 90 L 700 160" stroke="#cbd5e1" stroke-width="1" />
+
+            <!-- Pont de Québec (Cantilever Bridge - dark grey/black) -->
+            <!-- Base Piers -->
+            <rect x="350" y="170" width="40" height="80" fill="#475569" />
+            <rect x="650" y="170" width="40" height="80" fill="#475569" />
+            <!-- Deck -->
+            <rect x="0" y="145" width="1000" height="12" fill="#1e293b" />
+            <!-- Cantilever Trusses -->
+            <!-- Left Anchor Arm -->
+            <polygon points="0,145 350,145 370,60 100,100" fill="none" stroke="#334155" stroke-width="6" />
+            <path d="M 0 145 L 100 100 L 150 145 L 200 90 L 250 145 L 300 75 L 350 145 L 370 60 Z" fill="none" stroke="#334155" stroke-width="3" />
+            <!-- Left Cantilever Arm -->
+            <polygon points="350,145 370,60 450,145" fill="none" stroke="#334155" stroke-width="6" />
+            <!-- Right Anchor Arm -->
+            <polygon points="1000,145 690,145 670,60 900,100" fill="none" stroke="#334155" stroke-width="6" />
+            <path d="M 1000 145 L 900 100 L 850 145 L 800 90 L 750 145 L 700 75 L 690 145 L 670 60 Z" fill="none" stroke="#334155" stroke-width="3" />
+            <!-- Right Cantilever Arm -->
+            <polygon points="690,145 670,60 590,145" fill="none" stroke="#334155" stroke-width="6" />
+            <!-- Center Suspended Span -->
+            <rect x="450" y="125" width="140" height="20" fill="none" stroke="#334155" stroke-width="5" />
+            <path d="M 450 125 L 485 145 M 485 125 L 520 145 M 520 125 L 555 145 M 555 125 L 590 145" stroke="#334155" stroke-width="2" />
+        </svg>
+    </div>
+
+    <!-- VALERO DOCK (Azimuth 135) -->
+    <div class="landmark" data-azimuth="135" data-width="80" style="width: 80vw; height: 250px;">
     <svg width="100%" height="250" viewBox="0 0 1000 250" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" style="overflow: visible;">
         <!-- Mountain Background (Heavily wooded) -->
         <path d="M 0 250 L 0 60 Q 150 10 300 70 T 700 30 T 1000 80 L 1000 250 Z" fill="#1b4d24" />
@@ -501,6 +594,7 @@
         <line x1="230" y1="200" x2="770" y2="200" stroke="#facc15" stroke-width="3" />
         <path d="M 230 220 L 230 200 M 270 220 L 270 200 M 310 220 L 310 200 M 690 220 L 690 200 M 730 220 L 730 200 M 770 220 L 770 200" stroke="#ca8a04" stroke-width="3" />
     </svg>
+    </div>
 </div>
 
 <!-- BEACH LAYER (SAND AND ROCKS) -->
@@ -860,8 +954,9 @@
     let currentLocationName = "Lévis";
 
     // --- VARIABLES DE VUE (Ciel) ---
-    let viewAzimuth = 180; // Facing South by default
-    const viewFOV = 120; // 120 degrees horizontal field of view
+    let viewAzimuth = 135; // Facing South-East by default
+    let viewFOV = 160; // 160 degrees horizontal field of view
+    let viewAltitude = 0; // 0 degrees = looking at horizon
 
     // --- VARIABLES GLOBALES ET FOND DYNAMIQUE ---
     let currentConditions = {
@@ -1117,13 +1212,15 @@
             if (Math.abs(relAz) > (viewFOV / 2 + 10)) return null;
 
             // X mapping: Center of screen is relAz = 0.
-            // Screen width W represents viewFOV degrees.
-            let x = (W / 2) + (relAz / viewFOV) * W;
+            let pixelsPerDegreeX = W / viewFOV;
+            let x = (W / 2) + (relAz * pixelsPerDegreeX);
 
-            // Y mapping: Horizon (alt 0) is roughly H * 0.75. Let's say H * 0.75.
-            // Zenith (alt 90) is H * -0.2 (off screen top mostly, but gives perspective)
-            // Or let's map Alt 0 -> H*0.75, Alt 90 -> H*0.1
-            let y = H * 0.75 - (alt / 90) * (H * 0.65);
+            // Y mapping: Base horizon on global camera
+            let viewFOVY = viewFOV * (H / W);
+            let pixelsPerDegreeY = H / viewFOVY;
+            let horizonY = (H * 0.75) + (viewAltitude * pixelsPerDegreeY);
+
+            let y = horizonY - (alt * pixelsPerDegreeY);
 
             return { x, y };
         }
@@ -2836,8 +2933,64 @@ function renderWeatherUI() {
         requestAnimationFrame(updateDebrisFX);
     }
 
+    // --- CAMERA PROJECTION LOGIC ---
+    function updateCamera() {
+        let W = window.innerWidth;
+        let H = window.innerHeight;
+        let pixelsPerDegreeX = W / viewFOV;
+        let viewFOVY = viewFOV * (H / W);
+        let pixelsPerDegreeY = H / viewFOVY;
+
+        // Base horizon is at 75% down the screen, adjusted by viewAltitude
+        let horizonY = (H * 0.75) + (viewAltitude * pixelsPerDegreeY);
+
+        // Update water layer and beach layer heights based on horizon
+        const waterLayer = document.getElementById('water-layer');
+        const beachLayer = document.getElementById('beach-layer');
+        if (waterLayer) {
+            // Water layer starts from horizon and goes down to bottom
+            waterLayer.style.top = `${horizonY}px`;
+            waterLayer.style.bottom = '0px';
+            waterLayer.style.height = 'auto'; // override CSS calc
+        }
+        if (beachLayer) {
+            beachLayer.style.top = `${horizonY}px`;
+            beachLayer.style.bottom = '0px';
+            beachLayer.style.height = 'auto';
+        }
+
+        // Update landmarks in the 360 panorama
+        const landmarks = document.querySelectorAll('.landmark');
+        landmarks.forEach(lm => {
+            let az = parseFloat(lm.getAttribute('data-azimuth'));
+            let widthDeg = parseFloat(lm.getAttribute('data-width'));
+
+            // Calculate relative azimuth (difference from viewing direction)
+            let relAz = az - viewAzimuth;
+            // Normalize to [-180, 180]
+            if (relAz > 180) relAz -= 360;
+            if (relAz < -180) relAz += 360;
+
+            // X mapping: Center of screen is relAz = 0.
+            let x = (W / 2) + (relAz * pixelsPerDegreeX);
+
+            // Width mapping: how many pixels wide is this landmark based on FOV
+            let pixelWidth = widthDeg * pixelsPerDegreeX;
+
+            lm.style.left = `${x}px`;
+            lm.style.width = `${pixelWidth}px`;
+            // Base the bottom of the landmark on the horizon
+            lm.style.bottom = `${H - horizonY}px`;
+            lm.style.transform = `translateX(-50%)`;
+        });
+
+        return { horizonY, pixelsPerDegreeX, pixelsPerDegreeY };
+    }
+
     // --- ANIMATION DU BATEAU ET DES VAGUES ---
     function animateBoatAndWaves() {
+        let cam = updateCamera();
+
         const boat = document.getElementById('boat-container');
         const waves = document.querySelector('.waves');
 
@@ -2871,8 +3024,25 @@ function renderWeatherUI() {
         if (boat) {
             let t = Date.now() / 1000;
 
+            // Base scale depends on zoom
+            let baseScale = 160 / viewFOV * 2;
+
+            // Calculate screen X position for the boat based on its fixed azimuth of 135
+            let boatAzimuth = 135;
+            let relAz = boatAzimuth - viewAzimuth;
+            if (relAz > 180) relAz -= 360;
+            if (relAz < -180) relAz += 360;
+
+            let boatXScreen = (window.innerWidth / 2) + (relAz * cam.pixelsPerDegreeX);
+            // Assuming boat is slightly below the horizon (altitude approx -5 degrees)
+            let boatYScreen = cam.horizonY + (5 * cam.pixelsPerDegreeY);
+
+            boat.style.left = `${boatXScreen}px`;
+            // Calculate bottom instead of relying on default css
+            boat.style.bottom = `${window.innerHeight - boatYScreen}px`;
+
             if (wind < 5) {
-                boat.style.transform = `translateX(-50%) scale(2) rotate(0deg) translateY(0px)`;
+                boat.style.transform = `translateX(-50%) scale(${baseScale}) rotate(0deg) translateY(0px)`;
             } else {
                 // Bobbing parameters
                 // Max bobbing is +/- 30px (total 60px)
@@ -2887,10 +3057,9 @@ function renderWeatherUI() {
                 let tornadoEffectX = 0;
                 let tornadoEffectY = 0;
                 let tornadoEffectRot = 0;
-                let boatX = window.innerWidth / 2;
 
                 tornados.forEach(tor => {
-                    let dist = Math.abs(tor.x - boatX);
+                    let dist = Math.abs(tor.x - boatXScreen);
                     if (dist < 200) {
                         let intensity = 1 - (dist / 200);
                         tornadoEffectRot = (Math.random() - 0.5) * 40 * intensity;
@@ -2909,7 +3078,7 @@ function renderWeatherUI() {
                     transY += (Math.random() - 0.5) * 5;
                 }
 
-                boat.style.transform = `translateX(calc(${transX}% + ${tornadoEffectX}px)) scale(2) rotate(${rot}deg) translateY(${transY}px)`;
+                boat.style.transform = `translateX(calc(${transX}% + ${tornadoEffectX}px)) scale(${baseScale}) rotate(${rot}deg) translateY(${transY}px)`;
             }
         }
 
@@ -3266,6 +3435,78 @@ function renderWeatherUI() {
 
     // Start debris animation
     requestAnimationFrame(updateDebrisFX);
+
+    // --- CAMERA PANNING & ZOOMING LOGIC ---
+    let isPanning = false;
+    let startMouseX = 0;
+    let startMouseY = 0;
+    let startAzimuth = 0;
+    let startAltitude = 0;
+
+    window.addEventListener('mousedown', (e) => {
+        if (!document.body.classList.contains('hide-ui')) return;
+        // Right click (button 2) or Middle click (button 1)
+        if (e.button === 2 || e.button === 1) {
+            isPanning = true;
+            startMouseX = e.clientX;
+            startMouseY = e.clientY;
+            startAzimuth = viewAzimuth;
+            startAltitude = viewAltitude;
+        }
+    });
+
+    window.addEventListener('mousemove', (e) => {
+        if (!isPanning) return;
+
+        let dx = e.clientX - startMouseX;
+        let dy = e.clientY - startMouseY;
+
+        // Horizontal panning (1 pixel = some degrees depending on FOV)
+        let pixelsPerDegreeX = window.innerWidth / viewFOV;
+        viewAzimuth = startAzimuth - (dx / pixelsPerDegreeX);
+        if (viewAzimuth < 0) viewAzimuth += 360;
+        if (viewAzimuth >= 360) viewAzimuth -= 360;
+
+        // Vertical panning
+        // Let's assume vertical FOV is proportional to screen aspect ratio
+        let viewFOVY = viewFOV * (window.innerHeight / window.innerWidth);
+        let pixelsPerDegreeY = window.innerHeight / viewFOVY;
+        viewAltitude = startAltitude + (dy / pixelsPerDegreeY);
+
+        // Clamp altitude
+        if (viewAltitude > 90) viewAltitude = 90;
+        if (viewAltitude < -20) viewAltitude = -20; // Don't let them look too far down into the ground
+
+        // Sync the view dir inputs if they are visible (they shouldn't be in hide-ui, but just in case)
+        if (typeof viewDirInput !== 'undefined' && viewDirInput) {
+            viewDirInput.value = viewAzimuth.toFixed(1);
+        }
+    });
+
+    window.addEventListener('mouseup', (e) => {
+        if (e.button === 2 || e.button === 1) {
+            isPanning = false;
+        }
+    });
+
+    // Prevent context menu when right-clicking to pan in clean mode
+    window.addEventListener('contextmenu', (e) => {
+        if (document.body.classList.contains('hide-ui')) {
+            e.preventDefault();
+        }
+    });
+
+    window.addEventListener('wheel', (e) => {
+        if (!document.body.classList.contains('hide-ui')) return;
+
+        // Zooming changes FOV
+        let zoomAmount = e.deltaY * 0.05;
+        viewFOV += zoomAmount;
+
+        // Clamp FOV
+        if (viewFOV < 30) viewFOV = 30; // Max zoom in
+        if (viewFOV > 180) viewFOV = 180; // Max zoom out
+    });
 
     // INIT
     updateDynamicBackground(); fetchWeather(); fetchTides();
