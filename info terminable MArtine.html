@@ -2944,12 +2944,18 @@ function renderWeatherUI() {
         // Base horizon is at 75% down the screen, adjusted by viewAltitude
         let horizonY = (H * 0.75) + (viewAltitude * pixelsPerDegreeY);
 
+        // Calculate water level based on tideHeight
+        // currentConditions.tideHeight is approximately between 10 (low) and 45 (high)
+        // Let's map it so high tide is near the horizon and low tide is significantly below.
+        // We'll say high tide (45) is horizonY + 20px, low tide (10) is horizonY + 150px
+        let tideFactor = (currentConditions.tideHeight - 10) / 35; // 0 to 1
+        let waterTopY = horizonY + 150 - (tideFactor * 130);
+
         // Update water layer and beach layer heights based on horizon
         const waterLayer = document.getElementById('water-layer');
         const beachLayer = document.getElementById('beach-layer');
         if (waterLayer) {
-            // Water layer starts from horizon and goes down to bottom
-            waterLayer.style.top = `${horizonY}px`;
+            waterLayer.style.top = `${waterTopY}px`;
             waterLayer.style.bottom = '0px';
             waterLayer.style.height = 'auto'; // override CSS calc
         }
@@ -2984,7 +2990,7 @@ function renderWeatherUI() {
             lm.style.transform = `translateX(-50%)`;
         });
 
-        return { horizonY, pixelsPerDegreeX, pixelsPerDegreeY };
+        return { horizonY, waterTopY, pixelsPerDegreeX, pixelsPerDegreeY };
     }
 
     // --- ANIMATION DU BATEAU ET DES VAGUES ---
@@ -3034,8 +3040,8 @@ function renderWeatherUI() {
             if (relAz < -180) relAz += 360;
 
             let boatXScreen = (window.innerWidth / 2) + (relAz * cam.pixelsPerDegreeX);
-            // Assuming boat is slightly below the horizon (altitude approx -5 degrees)
-            let boatYScreen = cam.horizonY + (5 * cam.pixelsPerDegreeY);
+            // Boat should sit slightly "in" the water, so it bobs below the water top layer
+            let boatYScreen = cam.waterTopY + 35;
 
             boat.style.left = `${boatXScreen}px`;
             // Calculate bottom instead of relying on default css
