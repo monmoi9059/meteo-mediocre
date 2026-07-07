@@ -152,6 +152,16 @@
         .view-dir-input { width: 60px; text-align: center; }
 
         /* Conteneur Principal */
+        /* --- BATTLE SIM --- */
+        #battle-sim-btn { display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 20; padding: 10px 20px; background: rgba(220, 53, 69, 0.8); color: white; border: 2px solid white; border-radius: 5px; font-weight: bold; cursor: pointer; pointer-events: auto; }
+        body.hide-ui:not(.game-active) #battle-sim-btn { display: block; }
+        #battle-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 5; display: none; }
+        body.game-active { user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; }
+        body.game-active #battle-container { display: block; pointer-events: auto; }
+        #battle-hud { position: absolute; z-index: 100; top: 80px; left: 20px; color: #fff; text-shadow: 2px 2px 4px #000; font-family: monospace; font-size: 24px; text-shadow: 2px 2px 0 #000; pointer-events: none; }
+        #battle-fx { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        .enemy-entity { position: absolute; transform-origin: center; pointer-events: none; z-index: 5; }
+
         /* HIDE UI CLASS */
         body.hide-ui .main-dashboard {
             opacity: 0;
@@ -520,6 +530,17 @@
 </div>
 
 <canvas id="weather-fx" class="weather-fx"></canvas>
+<button id="battle-sim-btn">Start Defense</button>
+<div id="battle-container">
+    <canvas id="battle-fx"></canvas>
+    <div id="battle-enemies"></div>
+    <div id="battle-hud">
+        <div>SCORE: <span id="game-score">0</span></div>
+        <div>AMMO: <span id="game-ammo">30</span>/30</div>
+        <div>HEALTH: <span id="game-health">5.0</span>/5</div>
+    </div>
+</div>
+
 <div id="boat-container" class="boat-container">
     <!-- Cap Quebec Suezmax Tanker -->
     <svg width="600" height="180" viewBox="0 0 600 180" xmlns="http://www.w3.org/2000/svg">
@@ -535,6 +556,16 @@
         <!-- Accommodation Block (White) - Stern -->
         <path d="M 30 95 L 30 40 L 100 40 L 110 95 Z" fill="#ecf0f1" />
         <path d="M 40 40 L 40 20 L 80 20 L 90 40 Z" fill="#ecf0f1" />
+        <!-- Defense Turret (Midship) -->
+        <g id="boat-turret" transform="translate(300, 90)">
+            <!-- Turret Base -->
+            <circle cx="0" cy="0" r="10" fill="#7f8c8d" stroke="#2c3e50" stroke-width="2"/>
+            <!-- Turret Barrel group (rotates) -->
+            <g id="turret-barrel">
+                <rect x="-3" y="-30" width="6" height="30" fill="#95a5a6" stroke="#2c3e50" stroke-width="1"/>
+            </g>
+        </g>
+
         <!-- Bridge windows -->
         <rect x="45" y="25" width="5" height="10" fill="#34495e" />
         <rect x="55" y="25" width="5" height="10" fill="#34495e" />
@@ -2885,6 +2916,353 @@ function renderWeatherUI() {
         requestAnimationFrame(animateBoatAndWaves);
     }
     requestAnimationFrame(animateBoatAndWaves);
+
+    // --- BATTLE SIM LOGIC ---
+    let battleState = {
+        active: false,
+        score: 0,
+        ammo: 30,
+        maxAmmo: 30,
+        health: 5,
+        maxHealth: 5,
+        bullets: [],
+        enemies: [],
+        lastSpawn: 0,
+        difficulty: 1,
+        mouseX: 0,
+        mouseY: 0
+    };
+    const battleBtn = document.getElementById("battle-sim-btn");
+    const battleContainer = document.getElementById("battle-container");
+    const battleFxCanvas = document.getElementById("battle-fx");
+    const battleFxCtx = battleFxCanvas.getContext("2d");
+    const battleEnemiesContainer = document.getElementById("battle-enemies");
+    const turretBarrel = document.getElementById("turret-barrel");
+
+    function resizeBattleCanvas() {
+        battleFxCanvas.width = window.innerWidth;
+        battleFxCanvas.height = window.innerHeight;
+    }
+    window.addEventListener("resize", resizeBattleCanvas);
+    resizeBattleCanvas();
+
+    battleBtn.addEventListener("click", () => {
+        battleState.active = true;
+        document.body.classList.add("game-active");
+        battleState.score = 0;
+        battleState.ammo = battleState.maxAmmo;
+        battleState.health = battleState.maxHealth;
+        battleState.bullets = [];
+        battleState.enemies = [];
+        battleState.difficulty = 1;
+        battleEnemiesContainer.innerHTML = "";
+        updateBattleHUD();
+        requestAnimationFrame(updateBattleSim);
+    });
+
+    function updateBattleHUD() {
+        document.getElementById("game-score").textContent = battleState.score;
+        document.getElementById("game-ammo").textContent = battleState.ammo;
+        document.getElementById("game-health").textContent = battleState.health.toFixed(1);
+    }
+
+    document.addEventListener("mousemove", (e) => {
+        if (!battleState.active) return;
+        battleState.mouseX = e.clientX;
+        battleState.mouseY = e.clientY;
+
+        // Calculate turret rotation
+        const boat = document.getElementById("boat-container");
+        const boatRect = boat.getBoundingClientRect();
+        // Turret is around midship (300 out of 600 width of SVG). Given scale(2), it is centered.
+        // We approximate turret absolute screen position.
+        const turretAbsX = boatRect.left + (boatRect.width / 2);
+        const turretAbsY = boatRect.top + (boatRect.height / 2) + 20; // Adjusted for height
+
+        let dx = battleState.mouseX - turretAbsX;
+        let dy = battleState.mouseY - turretAbsY;
+        let angle = Math.atan2(dy, dx) * (180 / Math.PI) + 90; // Add 90 because turret points up by default
+        turretBarrel.setAttribute("transform", `rotate(${angle})`);
+    });
+
+    document.addEventListener("mousedown", (e) => {
+        if (!battleState.active || battleState.ammo <= 0) return;
+        if (e.target === battleBtn) return; // Don"t fire when clicking start button
+
+        // Fire bullet
+        battleState.ammo--;
+        updateBattleHUD();
+
+        const boat = document.getElementById("boat-container");
+        const boatRect = boat.getBoundingClientRect();
+        const turretAbsX = boatRect.left + (boatRect.width / 2);
+        const turretAbsY = boatRect.top + (boatRect.height / 2) + 20;
+
+        let dx = battleState.mouseX - turretAbsX;
+        let dy = battleState.mouseY - turretAbsY;
+        let angle = Math.atan2(dy, dx);
+
+        battleState.bullets.push({
+            x: turretAbsX,
+            y: turretAbsY,
+            vx: Math.cos(angle) * 30,
+            vy: Math.sin(angle) * 30
+        });
+    });
+
+    document.addEventListener("keydown", (e) => {
+        if (!battleState.active) return;
+        if (e.key.toLowerCase() === "r") {
+            battleState.ammo = battleState.maxAmmo;
+            updateBattleHUD();
+        }
+    });
+
+    function spawnEnemy() {
+        let types = ["jetski", "boat", "ship", "heli"];
+        // Increase difficulty over time: bias towards harder enemies as difficulty goes up
+        let maxIdx = Math.min(types.length - 1, Math.floor(battleState.difficulty / 2));
+        let type = types[Math.floor(Math.random() * (maxIdx + 1))];
+
+        let enemy = {
+            id: "enemy-" + Date.now() + Math.random(),
+            type: type,
+            x: 0,
+            y: 0,
+            speed: 0,
+            hp: 1,
+            size: 20
+        };
+
+        // Spawn edges (left or right)
+        if (Math.random() > 0.5) {
+            enemy.x = -100;
+        } else {
+            enemy.x = window.innerWidth + 100;
+        }
+
+        // Y position based on type
+        let waterLevelY = window.innerHeight - (parseFloat(document.documentElement.style.getPropertyValue("--water-h") || "45") / 100 * window.innerHeight);
+
+        if (type === "heli") {
+            enemy.y = Math.random() * (waterLevelY - 200) + 50;
+            enemy.speed = 3 + Math.random() * 2;
+            enemy.hp = 3;
+            enemy.size = 80;
+        } else {
+            enemy.y = waterLevelY - 20 + Math.random() * 40;
+            if (type === "jetski") {
+                enemy.speed = 4 + Math.random() * 2;
+                enemy.hp = 1;
+                enemy.size = 40;
+            } else if (type === "boat") {
+                enemy.speed = 2 + Math.random() * 1.5;
+                enemy.hp = 3;
+                enemy.size = 100;
+            } else if (type === "ship") {
+                enemy.speed = 1 + Math.random();
+                enemy.hp = 6;
+                enemy.size = 160;
+            }
+        }
+
+        battleState.enemies.push(enemy);
+
+        let el = document.createElement("div");
+        el.className = "enemy-entity";
+        el.id = enemy.id;
+
+        // Improved inline SVGs for enemies
+        if (type === "jetski") {
+            el.innerHTML = `<svg width="80" height="40" viewBox="0 0 40 20">
+                <!-- Hull -->
+                <path d="M2,16 C10,12 25,12 38,16 L35,20 L5,20 Z" fill="#111" />
+                <path d="M5,14 L12,8 L20,8 L28,14 Z" fill="#c0392b" />
+                <!-- Rider -->
+                <circle cx="16" cy="5" r="3" fill="#ecf0f1" />
+                <path d="M14,8 L18,8 L16,12 Z" fill="#34495e" />
+                <!-- Wake/Water splash -->
+                <path d="M0,18 L5,18 M2,20 L8,20" stroke="#fff" stroke-width="1" fill="none" opacity="0.6"/>
+            </svg>`;
+        } else if (type === "boat") {
+            el.innerHTML = `<svg width="160" height="70" viewBox="0 0 80 35">
+                <!-- Hull -->
+                <path d="M5,25 L65,25 L75,32 L5,32 Z" fill="#2c3e50" />
+                <!-- Trim -->
+                <path d="M5,23 L62,23 L72,30 L72,32 L65,25 Z" fill="#e74c3c" />
+                <!-- Cabin -->
+                <rect x="25" y="10" width="20" height="15" rx="2" fill="#7f8c8d" />
+                <!-- Window -->
+                <rect x="30" y="12" width="10" height="6" fill="#3498db" />
+                <!-- Antenna/Gun -->
+                <line x1="40" y1="10" x2="45" y2="2" stroke="#333" stroke-width="1.5" />
+                <!-- Wake -->
+                <path d="M0,30 L10,30 M0,33 L15,33" stroke="#fff" stroke-width="1.5" fill="none" opacity="0.6"/>
+            </svg>`;
+        } else if (type === "ship") {
+            el.innerHTML = `<svg width="240" height="100" viewBox="0 0 120 50">
+                <!-- Main Hull -->
+                <path d="M5,35 L95,35 L115,48 L5,48 Z" fill="#1a252f" />
+                <!-- Red Line -->
+                <path d="M5,33 L93,33 L113,46 L113,48 L95,35 Z" fill="#c0392b" />
+                <!-- Superstructure Level 1 -->
+                <rect x="25" y="20" width="50" height="15" fill="#34495e" />
+                <!-- Bridge Level 2 -->
+                <rect x="35" y="8" width="30" height="12" fill="#7f8c8d" />
+                <!-- Bridge Windows -->
+                <rect x="40" y="10" width="5" height="5" fill="#3498db" />
+                <rect x="48" y="10" width="5" height="5" fill="#3498db" />
+                <rect x="56" y="10" width="5" height="5" fill="#3498db" />
+                <!-- Radar/Mast -->
+                <line x1="50" y1="8" x2="50" y2="0" stroke="#95a5a6" stroke-width="2" />
+                <line x1="45" y1="2" x2="55" y2="2" stroke="#95a5a6" stroke-width="1" />
+                <!-- Gun Turret -->
+                <circle cx="85" cy="30" r="4" fill="#7f8c8d" />
+                <line x1="85" y1="30" x2="100" y2="28" stroke="#7f8c8d" stroke-width="2" />
+            </svg>`;
+        } else if (type === "heli") {
+            el.innerHTML = `<svg width="140" height="80" viewBox="0 0 70 40">
+                <!-- Main Rotor -->
+                <line x1="10" y1="5" x2="60" y2="5" stroke="#333" stroke-width="2" stroke-dasharray="8 4" />
+                <!-- Rotor Shaft -->
+                <rect x="33" y="5" width="4" height="8" fill="#555" />
+                <!-- Cockpit/Body -->
+                <ellipse cx="35" cy="20" rx="20" ry="12" fill="#2c3e50" />
+                <!-- Window -->
+                <path d="M40,12 C48,12 52,16 52,20 L35,20 Z" fill="#3498db" />
+                <!-- Tail Boom -->
+                <path d="M5,15 L20,18 L20,22 L5,20 Z" fill="#34495e" />
+                <!-- Tail Rotor -->
+                <circle cx="5" cy="17" r="5" stroke="#333" stroke-width="1.5" fill="none" />
+                <line x1="0" y1="17" x2="10" y2="17" stroke="#333" stroke-width="1" />
+                <!-- Skids -->
+                <line x1="20" y1="35" x2="50" y2="35" stroke="#7f8c8d" stroke-width="2" />
+                <line x1="25" y1="30" x2="25" y2="35" stroke="#7f8c8d" stroke-width="2" />
+                <line x1="45" y1="30" x2="45" y2="35" stroke="#7f8c8d" stroke-width="2" />
+            </svg>`;
+        }
+
+        battleEnemiesContainer.appendChild(el);
+    }
+
+    function updateBattleSim(timestamp) {
+        if (!battleState.active) return;
+
+        battleFxCtx.clearRect(0, 0, battleFxCanvas.width, battleFxCanvas.height);
+
+        // Spawning logic
+        if (timestamp - battleState.lastSpawn > Math.max(1000, 3000 - battleState.difficulty * 200)) {
+            spawnEnemy();
+            battleState.lastSpawn = timestamp;
+            battleState.difficulty += 0.1;
+        }
+
+        const boat = document.getElementById("boat-container");
+        const boatRect = boat.getBoundingClientRect();
+        const targetX = boatRect.left + boatRect.width / 2;
+
+        // Update bullets
+        battleFxCtx.fillStyle = "#f1c40f";
+        for (let i = battleState.bullets.length - 1; i >= 0; i--) {
+            let b = battleState.bullets[i];
+            b.x += b.vx;
+            b.y += b.vy;
+
+            // Draw bullet
+            battleFxCtx.beginPath();
+            battleFxCtx.arc(b.x, b.y, 5, 0, Math.PI * 2);
+            battleFxCtx.fill();
+
+            // Remove off-screen bullets
+            if (b.x < 0 || b.x > window.innerWidth || b.y < 0 || b.y > window.innerHeight) {
+                battleState.bullets.splice(i, 1);
+                continue;
+            }
+
+            // Bullet Collision with enemies
+            let hit = false;
+            for (let j = battleState.enemies.length - 1; j >= 0; j--) {
+                let e = battleState.enemies[j];
+                let dist = Math.hypot(b.x - e.x, b.y - e.y);
+                if (dist < e.size) {
+                    e.hp--;
+                    hit = true;
+                    if (e.hp <= 0) {
+                        // Destroy enemy
+                        let el = document.getElementById(e.id);
+                        if (el) el.remove();
+                        battleState.score += (e.type === "jetski" ? 10 : e.type === "boat" ? 20 : e.type === "heli" ? 30 : 50);
+                        battleState.health = Math.min(battleState.maxHealth, battleState.health + 0.2);
+                        updateBattleHUD();
+                        battleState.enemies.splice(j, 1);
+                    }
+                    break;
+                }
+            }
+            if (hit) {
+                battleState.bullets.splice(i, 1);
+            }
+        }
+
+        // Update enemies
+        for (let i = battleState.enemies.length - 1; i >= 0; i--) {
+            let e = battleState.enemies[i];
+            let dir = targetX > e.x ? 1 : -1;
+            e.x += e.speed * dir;
+
+            let el = document.getElementById(e.id);
+            if (el) {
+                el.style.left = e.x + "px";
+                el.style.top = e.y + "px";
+                el.style.transform = dir === 1 ? "scaleX(1)" : "scaleX(-1)"; // flip based on dir
+            }
+
+            // Collision with Tanker
+            if (Math.abs(e.x - targetX) < 150) {
+                battleState.health -= 1;
+
+                // Flash hit effect
+                battleFxCtx.fillStyle = "rgba(255, 0, 0, 0.4)";
+                battleFxCtx.fillRect(0, 0, battleFxCanvas.width, battleFxCanvas.height);
+
+                // Remove enemy
+                let el = document.getElementById(e.id);
+                if (el) el.remove();
+                battleState.enemies.splice(i, 1);
+                updateBattleHUD();
+
+                if (battleState.health <= 0) {
+                    gameOver();
+                    return;
+                }
+            }
+        }
+
+        requestAnimationFrame(updateBattleSim);
+    }
+
+    function gameOver() {
+        battleState.active = false;
+        // Explosion effect
+        const boat = document.getElementById("boat-container");
+        const boatRect = boat.getBoundingClientRect();
+        let exX = boatRect.left + boatRect.width / 2;
+        let exY = boatRect.top + boatRect.height / 2;
+
+        battleFxCtx.fillStyle = "rgba(255, 69, 0, 0.8)";
+        battleFxCtx.beginPath();
+        battleFxCtx.arc(exX, exY, 150, 0, Math.PI * 2);
+        battleFxCtx.fill();
+
+        setTimeout(() => {
+            alert("GAME OVER! Ship destroyed.\nScore: " + battleState.score);
+            document.body.classList.remove("game-active");
+            battleEnemiesContainer.innerHTML = "";
+            battleFxCtx.clearRect(0, 0, battleFxCanvas.width, battleFxCanvas.height);
+            battleState.enemies = [];
+            battleState.bullets = [];
+        }, 100);
+    }
 
     // Start debris animation
     requestAnimationFrame(updateDebrisFX);
