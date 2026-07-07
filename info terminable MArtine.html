@@ -295,7 +295,65 @@
             .card-body { overflow-x: auto; }
             th { position: static; }
         }
-    </style>
+
+    /* Compass UI in Hide UI mode */
+    body:not(.hide-ui) #compass-container {
+        display: none;
+    }
+    #compass-container {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        border: 2px solid rgba(255, 255, 255, 0.5);
+        background: rgba(0, 0, 0, 0.3);
+        transform: translateX(-50%);
+        pointer-events: none;
+        z-index: 1000;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+    }
+    .compass-labels {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        font-family: monospace;
+        font-size: 14px;
+        color: white;
+        font-weight: bold;
+    }
+    .compass-labels span {
+        position: absolute;
+        transform: translate(-50%, -50%);
+    }
+    .compass-labels .n { top: 10%; left: 50%; color: #ff4444; }
+    .compass-labels .e { top: 50%; left: 90%; }
+    .compass-labels .s { top: 90%; left: 50%; }
+    .compass-labels .w { top: 50%; left: 10%; }
+    #compass-arrow {
+        position: absolute;
+        bottom: 50%;
+        left: 50%;
+        width: 4px;
+        height: 45%;
+        background-color: #ff4444;
+        transform-origin: bottom center;
+        border-radius: 2px;
+        /* Negate the view rotation, so N points to where N is */
+    }
+    #compass-arrow::after {
+        content: '';
+        position: absolute;
+        top: 100%;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background-color: white;
+        border-radius: 2px;
+    }
+</style>
+
 </head>
 <body>
 
@@ -1230,8 +1288,8 @@
 
     // --- VARIABLES DE VUE (Ciel) ---
     let viewAzimuth = 135; // Facing South-East by default
-    let viewFOV = 130; // 160 degrees horizontal field of view
-    let viewAltitude = 0; // 0 degrees = looking at horizon
+    let viewFOV = 100; // Less bunched up
+    let viewAltitude = -5; // Look slightly down
 
     // --- VARIABLES GLOBALES ET FOND DYNAMIQUE ---
     let currentConditions = {
@@ -1499,7 +1557,7 @@
             // Y mapping: Base horizon on global camera
             let viewFOVY = viewFOV * (H / W);
             let pixelsPerDegreeY = H / viewFOVY;
-            let horizonY = (H * 0.75) + (viewAltitude * pixelsPerDegreeY);
+            let horizonY = (H * 0.60) + (viewAltitude * pixelsPerDegreeY);
 
             let y = horizonY - (alt * pixelsPerDegreeY);
 
@@ -3320,8 +3378,8 @@ function renderWeatherUI() {
         let viewFOVY = viewFOV * (H / W);
         let pixelsPerDegreeY = H / viewFOVY;
 
-        // Base horizon is at 75% down the screen, adjusted by viewAltitude
-        let horizonY = (H * 0.75) + (viewAltitude * pixelsPerDegreeY);
+        // Base horizon is at 60% down the screen, adjusted by viewAltitude
+        let horizonY = (H * 0.60) + (viewAltitude * pixelsPerDegreeY);
 
         // Calculate water level based on tideHeight
         // currentConditions.tideHeight is approximately between 10 (low) and 45 (high)
@@ -3928,6 +3986,30 @@ function renderWeatherUI() {
         if (viewFOV < 30) viewFOV = 30; // Max zoom in
         if (viewFOV > 180) viewFOV = 180; // Max zoom out
     });
+
+
+    // --- COMPASS INJECTION ---
+    const compassHTML = `
+        <div id="compass-container">
+            <div class="compass-labels">
+                <span class="n">N</span>
+                <span class="e">E</span>
+                <span class="s">S</span>
+                <span class="w">W</span>
+            </div>
+            <div id="compass-arrow"></div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', compassHTML);
+    const compassArrow = document.getElementById('compass-arrow');
+
+    function updateCompass() {
+        if (compassArrow) {
+            compassArrow.style.transform = `translate(-50%, -100%) rotate(${viewAzimuth}deg)`;
+        }
+        requestAnimationFrame(updateCompass);
+    }
+    requestAnimationFrame(updateCompass);
 
     // INIT
     updateDynamicBackground(); fetchWeather(); fetchTides();
