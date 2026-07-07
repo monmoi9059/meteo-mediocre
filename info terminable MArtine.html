@@ -150,10 +150,10 @@
         /* --- BOAT LAYER --- */
         .boat-container {
             position: fixed; left: 50vw; bottom: calc(var(--water-h) - 35px); z-index: 3;
-            transform: translateX(-50%) scale(2); transform-origin: bottom center; transition: bottom 0.5s ease-in-out;
+            transform: translateX(-50%) scale(1.6); transform-origin: bottom center; transition: bottom 0.5s ease-in-out;
             pointer-events: none;
         }
-        @keyframes boatBobbing { 0%, 100% { transform: translate(-50%, 0) scale(2) rotate(-0.5deg); } 50% { transform: translate(-50%, -15px) scale(2) rotate(0.5deg); } }
+        @keyframes boatBobbing { 0%, 100% { transform: translate(-50%, 0) scale(1.6) rotate(-0.5deg); } 50% { transform: translate(-50%, -15px) scale(1.6) rotate(0.5deg); } }
 
         /* --- CANVAS EFFETS --- */
         .sky-fx, .weather-fx { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 0; }
@@ -489,7 +489,7 @@
     </div>
 
     <!-- SOUTH SHORE (LEVIS SIDE) - spans East (90) to West (270), centered at South (180) -->
-    <div class="landmark" data-azimuth="180" data-width="120" style="width: 120vw; height: 350px; z-index: 1;">
+    <div class="landmark" data-azimuth="180" data-width="180" style="width: 180vw; height: 350px; z-index: 1;">
         <svg width="100%" height="100%" viewBox="0 0 1000 350" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M0,350 L0,220 L150,200 L300,160 L450,180 L600,210 L800,240 L1000,250 L1000,350 Z" fill="url(#levisGrad)"/>
 
@@ -518,23 +518,6 @@
         </svg>
     </div>
 
-    <!-- VALERO DOCK (SOUTH) - ~180 degrees -->
-    <div class="landmark" data-azimuth="180" data-width="40" style="width: 40vw; height: 180px; z-index: 2;">
-        <svg width="100%" height="100%" viewBox="0 0 400 180" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="50" y="100" width="300" height="80" fill="#34495e" />
-            <!-- Storage Tanks -->
-            <rect x="70" y="50" width="60" height="50" fill="#ecf0f1" rx="5" ry="5" />
-            <rect x="150" y="40" width="70" height="60" fill="#ecf0f1" rx="5" ry="5" />
-            <rect x="240" y="50" width="60" height="50" fill="#ecf0f1" rx="5" ry="5" />
-            <!-- Cranes / Pipes -->
-            <path d="M60,100 L40,20 L100,20" fill="none" stroke="#e67e22" stroke-width="4" />
-            <path d="M340,100 L360,30 L300,30" fill="none" stroke="#e67e22" stroke-width="4" />
-
-            <!-- Warning Lights -->
-            <circle cx="40" cy="20" r="3" fill="#e74c3c" class="buoy-light" style="animation-delay: 0.1s"/>
-            <circle cx="360" cy="30" r="3" fill="#e74c3c" class="buoy-light" style="animation-delay: 0.7s"/>
-        </svg>
-    </div>
 
     <!-- BUOYS -->
     <!-- Buoy Red -->
@@ -566,7 +549,7 @@
     </div>
 
     <!-- NORTH SHORE (QUEBEC SIDE) - spans West (270) to East (90), centered at North (0) -->
-    <div class="landmark" data-azimuth="0" data-width="120" style="width: 120vw; height: 400px; z-index: 1;">
+    <div class="landmark" data-azimuth="0" data-width="180" style="width: 180vw; height: 400px; z-index: 1;">
         <svg width="100%" height="100%" viewBox="0 0 1000 400" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
             <!-- Cap Diamant Base with shading -->
             <path d="M0,400 L0,200 L100,180 L200,150 L300,120 L400,130 L450,150 L500,200 L600,220 L800,250 L1000,280 L1000,400 Z" fill="url(#cliffGrad)"/>
@@ -607,7 +590,16 @@
         </svg>
     </div>
 
-        <!-- BRIDGES: Pierre-Laporte & Pont de Québec (Azimuth 270) -->
+    <!-- ILE D'ORLEANS (Azimuth 90) -->
+    <!-- Distant island view marking the East -->
+    <div class="landmark" data-azimuth="90" data-width="40" style="width: 40vw; height: 150px; z-index: 1;">
+        <svg width="100%" height="100%" viewBox="0 0 1000 150" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M0,150 L200,100 L400,90 L600,95 L800,110 L1000,150 Z" fill="#2c3e50" opacity="0.8"/>
+            <path d="M100,150 L300,120 L500,115 L700,125 L900,150 Z" fill="#34495e" opacity="0.6"/>
+        </svg>
+    </div>
+
+    <!-- BRIDGES: Pierre-Laporte & Pont de Québec (Azimuth 270) -->
     <!-- Blends the gap between South Shore (ends at 270) and North Shore (starts at 270) -->
     <div class="landmark" data-azimuth="270" data-width="40" style="width: 40vw; height: 250px; z-index: 2;">
         <svg width="100%" height="100%" viewBox="0 0 1000 250" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
@@ -1194,7 +1186,7 @@
     let currentLocationName = "Lévis";
 
     // --- VARIABLES DE VUE (Ciel) ---
-    let viewAzimuth = 135; // Facing South-East by default
+    let viewAzimuth = 180; // Facing South-East by default
     let viewFOV = 160; // 160 degrees horizontal field of view
     let viewAltitude = 0; // 0 degrees = looking at horizon
 
@@ -1466,7 +1458,14 @@
             let pixelsPerDegreeY = H / viewFOVY;
             let horizonY = (H * 0.75) + (viewAltitude * pixelsPerDegreeY);
 
-            let y = horizonY - (alt * pixelsPerDegreeY);
+            // Amplify altitude mapping so celestial bodies appear higher in the sky (more realistic perception)
+            let altMultiplier = 1.0;
+            if (alt > 0) {
+                // Non-linear amplification to push bodies higher up without messing up the horizon
+                altMultiplier = 2.0;
+            }
+
+            let y = horizonY - (alt * pixelsPerDegreeY * altMultiplier);
 
             return { x, y };
         }
