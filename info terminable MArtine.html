@@ -117,10 +117,10 @@
         /* --- BOAT LAYER --- */
         .boat-container {
             position: fixed; left: 50vw; bottom: calc(var(--water-h) - 35px); z-index: 3;
-            transform: translateX(-50%) scale(2); transform-origin: bottom center; transition: bottom 0.5s ease-in-out;
+            transform: translateX(-50%) scale(1.4); transform-origin: bottom center; transition: bottom 0.5s ease-in-out;
             pointer-events: none;
         }
-        @keyframes boatBobbing { 0%, 100% { transform: translate(-50%, 0) scale(2) rotate(-0.5deg); } 50% { transform: translate(-50%, -15px) scale(2) rotate(0.5deg); } }
+        @keyframes boatBobbing { 0%, 100% { transform: translate(-50%, 0) scale(1.4) rotate(-0.5deg); } 50% { transform: translate(-50%, -15px) scale(1.4) rotate(0.5deg); } }
 
         /* --- CANVAS EFFETS --- */
         .sky-fx, .weather-fx { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 0; }
@@ -1230,7 +1230,7 @@
 
     // --- VARIABLES DE VUE (Ciel) ---
     let viewAzimuth = 135; // Facing South-East by default
-    let viewFOV = 160; // 160 degrees horizontal field of view
+    let viewFOV = 130; // 160 degrees horizontal field of view
     let viewAltitude = 0; // 0 degrees = looking at horizon
 
     // --- VARIABLES GLOBALES ET FOND DYNAMIQUE ---
@@ -3446,7 +3446,7 @@ function renderWeatherUI() {
             let t = Date.now() / 1000;
 
             // Base scale depends on zoom
-            let baseScale = 160 / viewFOV * 2;
+            let baseScale = 130 / viewFOV * 1.4;
 
             // Calculate screen X position for the boat based on its fixed azimuth of 135
             let boatAzimuth = 135;
@@ -3564,7 +3564,7 @@ function renderWeatherUI() {
         // Calculate turret rotation
         const boat = document.getElementById("boat-container");
         const boatRect = boat.getBoundingClientRect();
-        // Turret is around midship (300 out of 600 width of SVG). Given scale(2), it is centered.
+        // Turret is around midship (300 out of 600 width of SVG). Given scale(1.4), it is centered.
         // We approximate turret absolute screen position.
         const turretAbsX = boatRect.left + (boatRect.width / 2);
         const turretAbsY = boatRect.top + (boatRect.height / 2) + 20; // Adjusted for height
