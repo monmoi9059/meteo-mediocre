@@ -92,6 +92,13 @@
         @keyframes move-forever-slack { 0% { transform: translate3d(0px,0,0); } 50% { transform: translate3d(-20px,0,0); } 100% { transform: translate3d(0px,0,0); } }
 
         /* --- SHORE LAYER --- */
+        /* --- DISTANT WATER LAYER --- */
+        .distant-water-layer {
+            position: fixed; left: 0; right: 0; bottom: 0; z-index: -1; pointer-events: none;
+            background-color: var(--water-distant-c);
+            transition: background-color 0.5s ease;
+        }
+
         /* --- BEACH LAYER --- */
         .beach-layer {
             position: fixed; left: 0; right: 0; bottom: 0; height: calc(45vh - 30px); z-index: 0; pointer-events: none;
@@ -299,6 +306,9 @@
 <!-- FOND ET EFFETS -->
 <div id="dynamic-bg" class="dynamic-bg"></div>
 <canvas id="sky-fx" class="sky-fx"></canvas>
+
+<!-- DISTANT WATER LAYER -->
+<div id="distant-water-layer" class="distant-water-layer"></div>
 
 <!-- SHORE LAYER (360 ENVIRONMENT PANORAMA) -->
 <div id="shore-layer" class="shore-layer">
@@ -1137,8 +1147,14 @@
         bgDiv.style.animation = `bgShift ${animSpeed}s ease infinite`;
         bgDiv.style.setProperty('--water-c', waterColor);
 
+        // Create a paler, bluer shade for the distant water
+        let distantWaterColor = hexToRgba(baseWaterColor, c.isNight ? 0.60 : 0.50);
+        distantWaterColor = lerpColor(baseWaterColor, '#60a5fa', 0.2); // mix in some light blue
+        distantWaterColor = hexToRgba(distantWaterColor, c.isNight ? 0.70 : 0.60);
+
         // Use document root for water variables so that boat and water-layer can pick them up
         document.documentElement.style.setProperty('--water-c', waterColor);
+        document.documentElement.style.setProperty('--water-distant-c', distantWaterColor);
         document.documentElement.style.setProperty('--water-h', c.tideHeight + 'vh');
         bgDiv.style.setProperty('--anim-speed', animSpeed + 's');
 
@@ -2947,15 +2963,32 @@ function renderWeatherUI() {
         // Update water layer and beach layer heights based on horizon
         const waterLayer = document.getElementById('water-layer');
         const beachLayer = document.getElementById('beach-layer');
+        const distantWaterLayer = document.getElementById('distant-water-layer');
+
         if (waterLayer) {
             waterLayer.style.top = `${waterTopY}px`;
             waterLayer.style.bottom = '0px';
             waterLayer.style.height = 'auto'; // override CSS calc
         }
+        if (distantWaterLayer) {
+            distantWaterLayer.style.top = `${horizonY}px`;
+        }
         if (beachLayer) {
             beachLayer.style.top = `${horizonY}px`;
             beachLayer.style.bottom = '0px';
             beachLayer.style.height = 'auto';
+
+            // The beach should only be visible when looking at the shores (North ~0° or South ~180°)
+            // It should disappear when looking down the river (East ~90° or West ~270°)
+            // We can calculate this using a sine wave based on viewAzimuth
+            // cos(viewAzimuth * PI / 180) gives 1 at 0, -1 at 180, and 0 at 90/270
+            let beachOpacity = Math.abs(Math.cos(viewAzimuth * Math.PI / 180));
+            // Let's make the fade a bit sharper so it disappears completely more quickly
+            beachOpacity = (beachOpacity - 0.3) / 0.7;
+            if (beachOpacity < 0) beachOpacity = 0;
+            if (beachOpacity > 1) beachOpacity = 1;
+
+            beachLayer.style.opacity = beachOpacity;
         }
 
         // Update landmarks in the 360 panorama
