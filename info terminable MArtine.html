@@ -1234,6 +1234,35 @@
             return { x, y };
         }
 
+        // Constellations Data: pairs of RA/DEC degrees to draw lines between.
+        // We will define a few prominent constellations (Ursa Major, Orion, Cassiopeia)
+        const constellations = [
+            // Ursa Major (Big Dipper)
+            [{ra: 165.46, dec: 61.75}, {ra: 164.46, dec: 56.38}], // Dubhe to Merak
+            [{ra: 164.46, dec: 56.38}, {ra: 178.45, dec: 53.69}], // Merak to Phecda
+            [{ra: 178.45, dec: 53.69}, {ra: 183.85, dec: 57.03}], // Phecda to Megrez
+            [{ra: 183.85, dec: 57.03}, {ra: 165.46, dec: 61.75}], // Megrez to Dubhe (Bowl)
+            [{ra: 183.85, dec: 57.03}, {ra: 193.5, dec: 55.95}],  // Megrez to Alioth
+            [{ra: 193.5, dec: 55.95}, {ra: 200.98, dec: 54.92}],  // Alioth to Mizar
+            [{ra: 200.98, dec: 54.92}, {ra: 206.88, dec: 49.31}], // Mizar to Alkaid
+
+            // Orion
+            [{ra: 88.79, dec: 7.40}, {ra: 81.28, dec: 6.34}],    // Betelgeuse to Bellatrix
+            [{ra: 88.79, dec: 7.40}, {ra: 83.00, dec: -0.29}],   // Betelgeuse to Alnilam (belt)
+            [{ra: 81.28, dec: 6.34}, {ra: 80.11, dec: -0.30}],   // Bellatrix to Mintaka (belt)
+            [{ra: 83.00, dec: -0.29}, {ra: 81.57, dec: -1.20}],  // Alnilam to Alnitak (belt)
+            [{ra: 81.57, dec: -1.20}, {ra: 80.11, dec: -0.30}],  // Alnitak to Mintaka
+            [{ra: 83.00, dec: -0.29}, {ra: 86.93, dec: -9.66}],  // Belt to Saiph
+            [{ra: 80.11, dec: -0.30}, {ra: 78.63, dec: -8.20}],  // Belt to Rigel
+            [{ra: 86.93, dec: -9.66}, {ra: 78.63, dec: -8.20}],  // Saiph to Rigel
+
+            // Cassiopeia (W shape)
+            [{ra: 1.48, dec: 59.14}, {ra: 10.12, dec: 56.53}],   // Caph to Schedar
+            [{ra: 10.12, dec: 56.53}, {ra: 14.17, dec: 60.71}],  // Schedar to Gamma Cas
+            [{ra: 14.17, dec: 60.71}, {ra: 21.05, dec: 60.23}],  // Gamma Cas to Ruchbah
+            [{ra: 21.05, dec: 60.23}, {ra: 28.59, dec: 63.67}]   // Ruchbah to Segin
+        ];
+
         if (observer) {
             // 1. Draw Real Stars (if night time or very low light)
             if (c.isNight || (c.isGoldenHour && c.cloudCover < 50)) {
@@ -1262,6 +1291,28 @@
                         sCtx.fill();
                     }
                 });
+
+                // Draw Constellation Lines
+                sCtx.lineWidth = 0.5;
+                sCtx.strokeStyle = "rgba(255, 255, 255, 0.15)";
+                constellations.forEach(line => {
+                    // line is an array of two stars: [{ra, dec}, {ra, dec}]
+                    let raHours1 = line[0].ra / 15;
+                    let hor1 = Astronomy.Horizon(dDate, observer, raHours1, line[0].dec, 'normal');
+                    let pos1 = getCanvasXY(hor1.azimuth, hor1.altitude);
+
+                    let raHours2 = line[1].ra / 15;
+                    let hor2 = Astronomy.Horizon(dDate, observer, raHours2, line[1].dec, 'normal');
+                    let pos2 = getCanvasXY(hor2.azimuth, hor2.altitude);
+
+                    if (pos1 && pos2 && hor1.altitude > 0 && hor2.altitude > 0) {
+                        sCtx.beginPath();
+                        sCtx.moveTo(pos1.x, pos1.y);
+                        sCtx.lineTo(pos2.x, pos2.y);
+                        sCtx.stroke();
+                    }
+                });
+
                 sCtx.restore();
             }
 
@@ -1279,6 +1330,11 @@
                         sCtx.shadowColor = planet.color;
                         sCtx.fill();
                         sCtx.shadowBlur = 0;
+
+                        // Draw planet name
+                        sCtx.font = "10px Inter";
+                        sCtx.fillStyle = "rgba(255, 255, 255, 0.7)";
+                        sCtx.fillText(planet.name, pos.x + 8, pos.y + 4);
                     }
                 });
             }
