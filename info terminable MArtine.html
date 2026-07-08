@@ -1,6 +1,465 @@
-<!-- ÎLE D'ORLÉANS (Azimuth 62) -->
-    <!-- Blends the gap between North Shore (ends at 50) and South Shore (starts at 90) -->
-    <!-- Scaled down and positioned lower to look much further away in the East -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data: blob:; img-src * data: blob:; media-src * data: blob:; font-src * data:; style-src * 'unsafe-inline'; script-src * 'unsafe-inline' 'unsafe-eval'; frame-src *;">
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitoring Terminal Maritime St-Romuald (Lévis)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>
+    <style>
+        :root {
+            --primary: #004b6b;
+            --secondary: #007a99;
+            --bg-color: transparent;
+            --text-color: #1e293b;
+            --text-shadow: 1px 1px 1px rgba(255,255,255,0.8);
+            --card-bg: rgba(255, 255, 255, 0.65);
+            --tooltip-bg: rgba(255, 255, 255, 0.95);
+            --border-color: rgba(0, 0, 0, 0.1);
+            --th-bg: rgba(0, 122, 153, 0.15);
+            --tr-hover: rgba(0, 0, 0, 0.05);
+            --chart-grid: rgba(0, 0, 0, 0.05);
+            --red-alert: #dc2626;
+            --green-ok: #16a34a;
+            --scrollbar-bg: rgba(0, 0, 0, 0.05);
+            --scrollbar-thumb: rgba(0, 0, 0, 0.2);
+        }
+
+        body.dark-mode {
+            --primary: #93c5fd;
+            --secondary: #6ee7b7;
+            --bg-color: transparent;
+            --text-color: #f1f5f9;
+            --text-shadow: 1px 1px 2px rgba(0,0,0,0.9);
+            --card-bg: rgba(15, 23, 42, 0.75);
+            --tooltip-bg: rgba(15, 23, 42, 0.95);
+            --border-color: rgba(255, 255, 255, 0.15);
+            --th-bg: rgba(255, 255, 255, 0.15);
+            --tr-hover: rgba(255, 255, 255, 0.05);
+            --chart-grid: rgba(255, 255, 255, 0.1);
+            --red-alert: #ef4444;
+            --green-ok: #22c55e;
+            --scrollbar-bg: rgba(0, 0, 0, 0.3);
+            --scrollbar-thumb: rgba(255, 255, 255, 0.25);
+        }
+
+        /* --- FOND DYNAMIQUE --- */
+        .dynamic-bg {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 0;
+            background: linear-gradient(135deg, var(--c1, #eef2f5), var(--c2, #cbd5e1), var(--c1, #eef2f5));
+            background-size: 300% 300%;
+            animation: bgShift var(--anim-speed, 15s) ease infinite;
+        }
+        @keyframes bgShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+
+        /* --- WATER LAYER --- */
+        .water-layer {
+            position: fixed; left: 0; right: 0; bottom: 0; height: var(--water-h); z-index: 4;
+            background-color: var(--water-c);
+            transition: height 0.5s ease-in-out, background-color 0.5s ease;
+        }
+        .waves {
+            position: absolute;
+            bottom: 100%; /* Sits exactly on top of the solid water-layer */
+            left: 0;
+            width: 100%;
+            height: 60px;
+            display: block;
+            transition: height 0.5s ease-in-out;
+        }
+
+        /* Animation for parallax waves */
+        .water-layer.flow-left .parallax > use { animation-name: move-forever-left; animation-timing-function: cubic-bezier(.55,.5,.45,.5); animation-iteration-count: infinite; }
+        .water-layer.flow-right .parallax > use { animation-name: move-forever-right; animation-timing-function: cubic-bezier(.55,.5,.45,.5); animation-iteration-count: infinite; }
+        .water-layer.flow-slack .parallax > use { animation-name: move-forever-slack; animation-timing-function: ease-in-out; animation-iteration-count: infinite; }
+
+        /* Staggered animation delays for the different layers */
+        .parallax > use:nth-child(1) { animation-delay: -1s; animation-duration: 6s; }
+        .parallax > use:nth-child(2) { animation-delay: -2s; animation-duration: 8s; }
+        .parallax > use:nth-child(3) { animation-delay: -3s; animation-duration: 10s; }
+        .parallax > use:nth-child(4) { animation-delay: -4s; animation-duration: 12s; }
+        .parallax > use:nth-child(5) { animation-delay: -5s; animation-duration: 15s; }
+        .parallax > use:nth-child(6) { animation-delay: -6s; animation-duration: 18s; }
+        .parallax > use:nth-child(7) { animation-delay: -7s; animation-duration: 22s; }
+
+        @keyframes move-forever-left { 0% { transform: translate3d(85px,0,0); } 100% { transform: translate3d(-90px,0,0); } }
+        @keyframes move-forever-right { 0% { transform: translate3d(-90px,0,0); } 100% { transform: translate3d(85px,0,0); } }
+        @keyframes move-forever-slack { 0% { transform: translate3d(0px,0,0); } 50% { transform: translate3d(-20px,0,0); } 100% { transform: translate3d(0px,0,0); } }
+
+        /* --- SHORE LAYER --- */
+        /* --- DISTANT WATER LAYER --- */
+        .distant-water-layer {
+            position: fixed; left: 0; right: 0; bottom: 0; z-index: -1; pointer-events: none;
+            background-color: var(--water-distant-c);
+            transition: background-color 0.5s ease;
+        }
+
+        .shore-layer {
+            position: fixed; left: 0; top: 0; width: 100vw; height: 100vh; z-index: 1; pointer-events: none;
+        }
+        .landmark {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform-origin: bottom center;
+        }
+
+        /* --- BOAT LAYER --- */
+        .boat-container {
+            position: fixed; left: 50vw; bottom: calc(var(--water-h) - 35px); z-index: 3;
+            transform: translateX(-50%) scale(1.4); transform-origin: bottom center; transition: bottom 0.5s ease-in-out;
+            pointer-events: none;
+        }
+        @keyframes boatBobbing { 0%, 100% { transform: translate(-50%, 0) scale(1.4) rotate(-0.5deg); } 50% { transform: translate(-50%, -15px) scale(1.4) rotate(0.5deg); } }
+
+        /* --- CANVAS EFFETS --- */
+        .sky-fx, .weather-fx { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 0; }
+        .sky-fx { opacity: 0.9; } .weather-fx { opacity: 0.85; }
+
+        html, body {
+            margin: 0; padding: 0; min-height: 100vh; overflow-y: auto; overflow-x: hidden;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: var(--text-color); display: flex; flex-direction: column; background-color: transparent;
+            text-shadow: var(--text-shadow);
+        }
+        script#theme-init { display: none; }
+
+        /* Scrollbars */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: var(--scrollbar-bg); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--secondary); }
+
+        /* En-tête */
+        .header {
+            height: 60px; min-height: 60px; display: flex; justify-content: space-between; align-items: center;
+            padding: 0 20px; background: var(--card-bg); border-bottom: 1px solid var(--border-color);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            position: relative; z-index: 10;
+        }
+        .header h1 { font-size: 1.4rem; color: var(--primary); margin: 0; text-shadow: 0 1px 2px rgba(255,255,255,0.3); }
+        .dark-mode .header h1 { text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
+
+        .header-actions { display: flex; gap: 10px; }
+        .theme-toggle {
+            background: transparent; color: var(--text-color); border: 1px solid var(--border-color);
+            padding: 6px 15px; border-radius: 20px; cursor: pointer; font-weight: bold; font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+        .theme-toggle:hover { background: var(--th-bg); }
+        .view-dir-select, .view-dir-input {
+            background: transparent; color: var(--text-color); border: 1px solid var(--border-color);
+            padding: 6px 10px; border-radius: 20px; font-weight: bold; font-size: 0.85rem; outline: none;
+        }
+        .view-dir-select option { background: var(--card-bg); color: var(--text-color); }
+        .view-dir-input { width: 60px; text-align: center; }
+
+        /* Conteneur Principal */
+        /* --- BATTLE SIM --- */
+        #battle-sim-btn { display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 20; padding: 10px 20px; background: rgba(220, 53, 69, 0.8); color: white; border: 2px solid white; border-radius: 5px; font-weight: bold; cursor: pointer; pointer-events: auto; }
+        body.hide-ui:not(.game-active) #battle-sim-btn { display: block; }
+        #battle-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 5; display: none; }
+        body.game-active { user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; }
+        body.game-active #battle-container { display: block; pointer-events: auto; }
+        #battle-hud { position: absolute; z-index: 100; top: 80px; left: 20px; color: #fff; text-shadow: 2px 2px 4px #000; font-family: monospace; font-size: 24px; text-shadow: 2px 2px 0 #000; pointer-events: none; }
+        #battle-fx { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        .enemy-entity { position: absolute; transform-origin: center; pointer-events: none; z-index: 5; }
+
+        /* HIDE UI CLASS */
+        body.hide-ui .main-dashboard {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .main-dashboard {
+            display: flex; flex: 1; padding: 10px; gap: 10px; position: relative; z-index: 10; pointer-events: none;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .main-dashboard > * { pointer-events: auto; }
+        .col-left { width: 33.333%; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+        .col-mid { width: 33.333%; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+        .col-right { width: 33.333%; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color); border-radius: 8px;
+            display: flex; flex-direction: column; overflow: hidden;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1); max-height: calc(100vh - 85px);
+        }
+        .card-header { background: var(--th-bg); padding: 8px 15px; border-bottom: 1px solid var(--border-color); }
+        .card-header h2 { margin: 0; font-size: 1.1rem; color: var(--secondary); display: flex; align-items: center; gap: 6px;}
+        .card-body { flex: 1; padding: 10px; overflow-y: auto; }
+
+        .card-body p, .card-body table, .card-body .live-bar, .card-body .ocean-banner, .card-body .status-block {
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 6px;
+        }
+        .dark-mode .card-body p, .dark-mode .card-body table, .dark-mode .card-body .live-bar, .dark-mode .card-body .ocean-banner, .dark-mode .card-body .status-block {
+            background: rgba(15, 23, 42, 0.3);
+        }
+        .card-body table { background: rgba(255, 255, 255, 0.7); }
+        .dark-mode .card-body table { background: rgba(15, 23, 42, 0.5); }
+
+        .chart-wrapper { height: 180px; min-height: 180px; width: 100%; margin-bottom: 10px; position: relative;}
+
+        table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+        th {
+            position: sticky; top: -10px; background: var(--tooltip-bg);
+            color: var(--primary); font-weight: 600; padding: 8px 5px; border-bottom: 2px solid var(--secondary);
+            text-align: left; z-index: 3;
+        }
+        td { padding: 8px 5px; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
+        tr:hover { background-color: var(--tr-hover); }
+
+        .badge { padding: 3px 6px; border-radius: 4px; font-weight: bold; font-size: 0.75rem;}
+        .badge-pm { background: #004b6b; color: white; }
+        .badge-bm { background: #88c9d4; color: #003344; }
+        .txt-red { color: var(--red-alert); font-weight: bold; }
+        .txt-green { color: var(--green-ok); font-weight: bold; }
+
+        .live-bar { display: flex; justify-content: space-between; align-items: center; background: var(--th-bg); padding: 8px; border-radius: 6px; font-size: 0.9rem; }
+        .live-item { display: flex; flex-direction: column; align-items: center; line-height: 1.2; text-align: center; }
+        .live-item span { font-size: 0.75rem; color: var(--primary); font-weight: bold;}
+        .live-item strong { font-size: 1.1rem; }
+
+        /* --- STATUTS FEUX CIRCULATION --- */
+        .ocean-banner { background: rgba(0, 122, 153, 0.15); border: 1px solid var(--secondary); border-radius: 6px; padding: 8px; margin-bottom: 10px; text-align: center; font-size: 0.85rem;}
+        .ocean-banner strong { color: var(--primary); font-size: 1rem;}
+        .dark-mode .ocean-banner strong { color: #93c5fd; }
+        .status-block { margin-bottom: 12px; padding: 10px; background: rgba(0,0,0,0.03); border-radius: 6px; border: 1px solid var(--border-color);}
+        .dark-mode .status-block { background: rgba(255,255,255,0.03); }
+        .status-header { margin: 0 0 8px 0; font-size:1.05rem; color: var(--primary); border-bottom: 1px dashed var(--border-color); padding-bottom: 4px; font-weight: bold;}
+        .status-row { display: flex; align-items: flex-start; gap: 8px; font-size: 0.8rem; margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px solid rgba(0,0,0,0.05); }
+        .dark-mode .status-row { border-bottom-color: rgba(255,255,255,0.05); }
+        .status-row:last-child { border: none; margin: 0; padding: 0; }
+        .status-icon { font-size: 1.1rem; line-height: 1; }
+        .status-info { flex: 1; line-height: 1.3; }
+
+        .loading { text-align: center; color: var(--primary); padding: 15px; font-style: italic; font-weight: bold; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
+
+        /* --- MODALS (Règles & Calculatrice) --- */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.5); z-index: 2000; justify-content: center; align-items: center;
+             opacity: 0; transition: opacity 0.3s;
+        }
+        .modal-overlay.active { display: flex; opacity: 1; }
+        .modal-content {
+            background: var(--tooltip-bg);
+            border: 1px solid var(--border-color); border-radius: 12px;
+            width: 500px; max-width: 90%; max-height: 90vh; overflow-y: auto;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.4); transform: translateY(20px); transition: transform 0.3s;
+        }
+        .modal-overlay.active .modal-content { transform: translateY(0); }
+        .modal-header {
+            padding: 15px 20px; border-bottom: 1px solid var(--border-color);
+            display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: inherit; z-index: 10;
+        }
+        .modal-header h3 { margin: 0; color: var(--primary); font-size: 1.2rem; }
+        .btn-close { background: transparent; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-color); }
+        .modal-body { padding: 20px; }
+
+        /* Contenu Règles */
+        .rule-section { margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed var(--border-color); }
+        .rule-section:last-child { border: none; margin: 0; padding: 0;}
+        .rule-section h3 { margin: 0 0 8px 0; background: #f1c40f; color: #000; padding: 4px; text-align: center; border-radius: 4px; font-size: 1rem;}
+        .rule-section h4 { margin: 0 0 5px 0; font-size: 0.9rem; color: var(--primary); }
+        .rule-section p { margin: 4px 0; font-size: 0.85rem;}
+
+        /* Contenu Calc */
+        .input-group { margin-bottom: 15px; }
+        .input-group label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 0.9rem; color: var(--primary); }
+        .calc-input { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); background: rgba(255,255,255,0.5); color: var(--text-color); font-size: 1.05rem; box-sizing: border-box; outline: none; }
+        .dark-mode .calc-input { background: rgba(0,0,0,0.3); color: white; border-color: rgba(255,255,255,0.2); }
+        .calc-result { margin-top: 20px; padding: 15px; background: var(--th-bg); border-radius: 8px; border-left: 4px solid var(--secondary); }
+        .calc-result p { margin: 8px 0; font-size: 1.05rem; }
+
+        @media (max-width: 1024px) {
+            .header { height: auto; padding: 12px 10px; flex-direction: column; gap: 10px; text-align: center; }
+            .main-dashboard { flex-direction: column; padding: 8px; }
+            .col-left, .col-mid, .col-right { width: 100%; height: auto; }
+            .card { max-height: none; }
+            .chart-wrapper { height: 220px; min-height: 220px; }
+            .card-body { overflow-x: auto; }
+            th { position: static; }
+        }
+
+    /* Compass UI in Hide UI mode */
+    body:not(.hide-ui) #compass-container {
+        display: none;
+    }
+    #compass-container {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        border: 2px solid rgba(255, 255, 255, 0.5);
+        background: rgba(0, 0, 0, 0.3);
+        transform: translateX(-50%);
+        pointer-events: none;
+        z-index: 1000;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+    }
+    .compass-labels {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        font-family: monospace;
+        font-size: 14px;
+        color: white;
+        font-weight: bold;
+    }
+    .compass-labels span {
+        position: absolute;
+        transform: translate(-50%, -50%);
+    }
+    .compass-labels .n { top: 10%; left: 50%; color: #ff4444; }
+    .compass-labels .e { top: 50%; left: 90%; }
+    .compass-labels .s { top: 90%; left: 50%; }
+    .compass-labels .w { top: 50%; left: 10%; }
+    #compass-arrow {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 4px;
+        height: 90%;
+        background-color: transparent;
+        transform-origin: center center;
+        border-radius: 2px;
+        /* Center rotation */
+        margin-top: -45%; /* half of height */
+    }
+    .compass-needle-n {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 50%;
+        background-color: #ff4444;
+        border-radius: 2px 2px 0 0;
+    }
+    .compass-needle-s {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 50%;
+        background-color: white;
+        border-radius: 0 0 2px 2px;
+    }
+</style>
+
+</head>
+<body>
+
+<script id="theme-init">
+    try { if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode'); } catch(e) {}
+</script>
+
+<!-- FOND ET EFFETS -->
+<div id="dynamic-bg" class="dynamic-bg"></div>
+<canvas id="sky-fx" class="sky-fx"></canvas>
+
+<!-- DISTANT WATER LAYER -->
+<div id="distant-water-layer" class="distant-water-layer"></div>
+
+<!-- SHORE LAYER (360 ENVIRONMENT PANORAMA) -->
+<div id="shore-layer" class="shore-layer">
+
+    <!-- NORTH SHORE (QUEBEC SIDE) - spans West (270) to East (90), centered at North (310) -->
+    <div class="landmark" data-azimuth="310" data-width="200" data-offset-y="100" style="width: 200vw; height: 500px; z-index: 1;">
+        <svg width="100%" height="100%" viewBox="0 0 2000 500" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="mntGrad1" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#2a3f35" />
+                    <stop offset="50%" stop-color="#1f2d26" />
+                    <stop offset="100%" stop-color="#0f1613" />
+                </linearGradient>
+                <linearGradient id="mntGrad2" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#3b5949" />
+                    <stop offset="100%" stop-color="#18241d" />
+                </linearGradient>
+                <linearGradient id="cityLights" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stop-color="#fef08a" stop-opacity="0.8" />
+                    <stop offset="100%" stop-color="#fef08a" stop-opacity="0.2" />
+                </linearGradient>
+                <linearGradient id="northBeachWaterGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#4d4233" />
+                    <stop offset="30%" stop-color="#2b241c" />
+                    <stop offset="100%" stop-color="#0f1115" />
+                </linearGradient>
+            </defs>
+            <path d="M 0 350 Q 200 250 400 320 T 900 280 T 1400 330 T 2000 300 L 2000 500 L 0 500 Z" fill="url(#mntGrad1)" opacity="0.6"/>
+            <path d="M 0 150 Q 150 160 300 220 Q 500 180 650 200 L 700 180 L 720 180 L 730 150 L 740 180 L 760 180 L 800 200 L 950 190 L 1050 250 Q 1400 300 1800 350 Q 1950 360 2000 380 L 2000 500 L 0 500 Z" fill="url(#mntGrad2)"/>
+            <path d="M 690 180 L 690 140 L 700 140 L 700 120 L 705 100 L 710 120 L 710 140 L 725 140 L 725 110 L 730 80 L 735 110 L 735 140 L 745 140 L 745 150 L 755 150 L 755 180 Z" fill="#111815"/>
+            <rect x="650" y="150" width="15" height="30" fill="#18241d" />
+            <rect x="670" y="160" width="10" height="20" fill="#18241d" />
+            <rect x="765" y="170" width="20" height="10" fill="#18241d" />
+            <rect x="790" y="165" width="25" height="25" fill="#18241d" />
+            <path d="M 680 180 L 680 250 L 720 280 L 800 240 Z" fill="#1f2d26" opacity="0.5"/>
+            <path d="M 0 150 L 0 350 L 150 300 L 300 350 L 300 220 Z" fill="#1f2d26" opacity="0.4"/>
+            <g class="night-lights" opacity="0" transition="opacity 2s">
+                <circle cx="700" cy="150" r="1.5" fill="#fef08a" opacity="0.8"/>
+                <circle cx="715" cy="130" r="1.5" fill="#fef08a" opacity="0.9"/>
+                <circle cx="730" cy="120" r="2" fill="#fef08a" />
+                <circle cx="740" cy="160" r="1" fill="#fef08a" opacity="0.7"/>
+                <circle cx="680" cy="170" r="1.5" fill="#fef08a" opacity="0.6"/>
+                <rect x="652" y="155" width="2" height="2" fill="#fef08a" />
+                <rect x="657" y="165" width="2" height="2" fill="#fef08a" />
+                <rect x="795" y="175" width="2" height="2" fill="#fef08a" />
+                <path d="M 680 280 Q 750 270 850 250" stroke="url(#cityLights)" stroke-width="2" fill="none" stroke-dasharray="4, 6"/>
+                <path d="M 100 200 Q 300 230 500 200" stroke="#fef08a" stroke-width="1.5" fill="none" stroke-dasharray="2, 8" opacity="0.6"/>
+            </g>
+            <path d="M 0 450 Q 500 480 1000 490 Q 1500 500 2000 500 L 2000 500 L 0 500 Z" fill="url(#northBeachWaterGrad)" />
+        </svg>
+    </div>
+
+    <!-- SOUTH SHORE (LÉVIS SIDE) - spans East (90) to West (270), centered at South (44) -->
+    <div class="landmark" data-azimuth="44" data-width="200" data-offset-y="100" style="width: 200vw; height: 450px; z-index: 1;">
+        <svg width="100%" height="100%" viewBox="0 0 2000 450" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="southMnt1" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#314739" />
+                    <stop offset="100%" stop-color="#18241d" />
+                </linearGradient>
+                <linearGradient id="southCliff" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#223328" />
+                    <stop offset="100%" stop-color="#121b15" />
+                </linearGradient>
+                <linearGradient id="southBeachWaterGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#5a4e3d" />
+                    <stop offset="20%" stop-color="#2b241c" />
+                    <stop offset="100%" stop-color="#0f1115" />
+                </linearGradient>
+            </defs>
+            <path d="M 0 300 Q 300 250 600 280 T 1300 260 T 2000 290 L 2000 450 L 0 450 Z" fill="url(#southMnt1)" opacity="0.8"/>
+            <path d="M 0 280 Q 200 290 400 260 Q 700 230 1000 250 Q 1400 220 1700 180 Q 1850 160 2000 150 L 2000 450 L 0 450 Z" fill="url(#southCliff)"/>
+            <path d="M 1600 190 L 1650 250 L 1750 220 L 1800 280 L 1950 200 L 2000 240 L 2000 450 L 1600 450 Z" fill="#18241d" opacity="0.6"/>
+            <path d="M 400 260 L 450 320 L 550 290 L 600 350 L 750 280 L 800 320 L 800 450 L 400 450 Z" fill="#18241d" opacity="0.5"/>
+            <rect x="950" y="240" width="40" height="10" fill="#121b15" />
+            <polygon points="960,240 970,230 980,240" fill="#121b15" />
+            <rect x="1750" y="170" width="20" height="15" fill="#121b15" />
+            <path d="M 0 400 Q 500 420 1000 430 Q 1500 440 2000 450 L 2000 450 L 0 450 Z" fill="url(#southBeachWaterGrad)" />
+            <g class="night-lights" opacity="0" transition="opacity 2s">
+                <circle cx="1000" cy="260" r="2" fill="#fef08a" opacity="0.8"/>
+                <circle cx="980" cy="270" r="1.5" fill="#fef08a" opacity="0.7"/>
+                <circle cx="1020" cy="265" r="1.5" fill="#fef08a" opacity="0.7"/>
+                <path d="M 1600 210 Q 1800 190 2000 180" stroke="#fef08a" stroke-width="1.5" fill="none" stroke-dasharray="2, 6" opacity="0.6"/>
+                <path d="M 100 380 Q 400 390 800 380" stroke="#fef08a" stroke-width="1" fill="none" stroke-dasharray="3, 10" opacity="0.5"/>
+            </g>
+        </svg>
+    </div>
+
+    <!-- ÎLE D'ORLÉANS (Azimuth 62) -->
     <div class="landmark" data-azimuth="62" data-width="40" style="width: 40vw; height: 100px; z-index: 2;">
         <svg width="100%" height="100%" viewBox="0 0 1000 200" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
             <defs>
@@ -14,27 +473,16 @@
                     <stop offset="100%" stop-color="#0f1115" />
                 </linearGradient>
             </defs>
-
-            <!-- Main profile of the island's western tip (Sainte-Pétronille) -->
-            <!-- The left side drops sharply (Bout de l'Île cliff), the right tapers off -->
             <path d="M 100 200 L 120 120 Q 200 110 350 130 Q 600 160 900 180 L 1000 200 Z" fill="url(#ileGrad1)" opacity="0.9"/>
-
-            <!-- Distant tree lines / agricultural plateau profile -->
             <path d="M 120 120 Q 150 105 200 110 Q 250 115 300 125 L 350 130 Z" fill="#1b2921" opacity="0.8"/>
             <path d="M 180 115 Q 220 108 260 118 L 300 125 Z" fill="#141f1a" opacity="0.6"/>
-
-            <!-- Distant Shoreline blending into the water layer -->
             <path d="M 100 200 Q 500 195 1000 200 Z" fill="url(#ileWaterGrad)" />
-
-            <!-- Nighttime distant village lights (Sainte-Pétronille) -->
             <g class="night-lights" opacity="0" transition="opacity 2s">
-                <!-- A faint cluster of warm lights at the tip of the island -->
                 <circle cx="130" cy="140" r="1.5" fill="#fef08a" opacity="0.6"/>
                 <circle cx="150" cy="145" r="1" fill="#fef08a" opacity="0.5"/>
                 <circle cx="170" cy="150" r="1.2" fill="#fef08a" opacity="0.6"/>
                 <circle cx="140" cy="160" r="1" fill="#fef08a" opacity="0.4"/>
                 <circle cx="200" cy="155" r="1" fill="#fef08a" opacity="0.4"/>
-                <!-- Occasional sparse lights down the south side of the island -->
                 <circle cx="300" cy="165" r="0.8" fill="#fef08a" opacity="0.3"/>
                 <circle cx="450" cy="175" r="0.8" fill="#fef08a" opacity="0.2"/>
             </g>
@@ -42,7 +490,6 @@
     </div>
 
     <!-- BRIDGES: Pierre-Laporte & Pont de Québec (Azimuth 248) -->
-    <!-- Blends the gap between South Shore (ends at 270) and North Shore (starts at 270) -->
     <div class="landmark" data-azimuth="248" data-width="80" style="width: 80vw; height: 300px; z-index: 2;">
         <svg width="100%" height="100%" viewBox="0 0 1500 300" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
             <defs>
@@ -59,46 +506,28 @@
                     <stop offset="100%" stop-color="#111827" />
                 </linearGradient>
             </defs>
-
-            <!-- Pont de Québec (Cantilever Bridge - Foreground) -->
             <g id="pont-de-quebec" opacity="0.9">
-                <!-- Main pillars -->
                 <rect x="400" y="100" width="30" height="200" fill="url(#cantileverSteel)" />
                 <rect x="1000" y="100" width="30" height="200" fill="url(#cantileverSteel)" />
-                <!-- Cantilever arms (diamond shapes) -->
                 <path d="M 415 100 L 200 180 L 415 190 L 650 180 Z" fill="none" stroke="url(#cantileverSteel)" stroke-width="6"/>
                 <path d="M 1015 100 L 800 180 L 1015 190 L 1250 180 Z" fill="none" stroke="url(#cantileverSteel)" stroke-width="6"/>
-                <!-- Central suspended span -->
                 <path d="M 650 180 L 800 180" fill="none" stroke="url(#cantileverSteel)" stroke-width="8"/>
                 <path d="M 650 180 L 725 150 L 800 180" fill="none" stroke="url(#cantileverSteel)" stroke-width="4"/>
-                <!-- Deck -->
                 <rect x="0" y="180" width="1500" height="10" fill="#111827" />
-                <!-- X-bracing details on pillars -->
                 <path d="M 400 100 L 430 150 M 430 100 L 400 150 M 400 150 L 430 200 M 430 150 L 400 200 M 400 200 L 430 250 M 430 200 L 400 250" stroke="#111827" stroke-width="2"/>
                 <path d="M 1000 100 L 1030 150 M 1030 100 L 1000 150 M 1000 150 L 1030 200 M 1030 150 L 1000 200 M 1000 200 L 1030 250 M 1030 200 L 1000 250" stroke="#111827" stroke-width="2"/>
             </g>
-
-            <!-- Pont Pierre-Laporte (Suspension Bridge - Background) -->
             <g id="pierre-laporte" opacity="0.6">
-                <!-- Pillars (Taller, slightly offset) -->
                 <rect x="500" y="30" width="20" height="270" fill="url(#bridgeSteel)" />
                 <rect x="1100" y="30" width="20" height="270" fill="url(#bridgeSteel)" />
-                <!-- Main suspension cables (Parabolic curve) -->
                 <path d="M 0 100 Q 250 30 510 30 Q 800 180 1110 30 Q 1350 30 1500 100" fill="none" stroke="url(#suspensionCables)" stroke-width="4"/>
-                <!-- Deck (Higher than Pont de Québec) -->
                 <rect x="0" y="160" width="1500" height="6" fill="#1a202c" />
-                <!-- Vertical suspender cables (simplified) -->
                 <path d="M 550 85 L 550 160 M 600 120 L 600 160 M 650 145 L 650 160 M 700 160 L 700 160 M 750 170 L 750 160 M 800 175 L 800 160 M 850 170 L 850 160 M 900 160 L 900 160 M 950 145 L 950 160 M 1000 120 L 1000 160 M 1050 85 L 1050 160" stroke="#718096" stroke-width="1"/>
             </g>
-
-            <!-- Nighttime Bridge Lights (Class controlled via JS: .night-lights) -->
             <g class="night-lights" opacity="0" transition="opacity 2s">
-                <!-- Red aviation lights on top of pillars -->
                 <circle cx="510" cy="30" r="3" fill="#ef4444" opacity="0.9" />
                 <circle cx="1110" cy="30" r="3" fill="#ef4444" opacity="0.9" />
-                <!-- Streetlights along the deck of Pont Pierre-Laporte -->
                 <path d="M 0 158 L 1500 158" stroke="#fef08a" stroke-width="1" stroke-dasharray="2, 10" opacity="0.7"/>
-                <!-- Headlights/Taillights (Yellow and Red streaks on Pierre-Laporte) -->
                 <path d="M 200 159 L 400 159" stroke="#fef08a" stroke-width="1.5" opacity="0.8"/>
                 <path d="M 800 159 L 950 159" stroke="#ef4444" stroke-width="1.5" opacity="0.8"/>
             </g>
@@ -1032,15 +1461,11 @@
 
         // 1. Procedural Background Stars (Night/Twilight only)
         if (c.isNight || c.isGoldenHour) {
-            // Generate a persistent array of ~2000 stars if it doesn't exist
             if (typeof window.proceduralStars === 'undefined') {
                 window.proceduralStars = [];
                 for (let i = 0; i < 2000; i++) {
-                    // Random RA (0 to 360 degrees) and Dec (-90 to +90 degrees)
                     let ra = Math.random() * 360;
-                    // Distribution favoring the equator slightly, but covering the whole sphere
                     let dec = Math.asin(Math.random() * 2 - 1) * (180 / Math.PI);
-                    // Mag from 1.0 (bright) to 6.0 (faint)
                     let mag = 1.0 + Math.random() * 5.0;
                     window.proceduralStars.push({ ra, dec, mag });
                 }
@@ -1048,14 +1473,11 @@
 
             let starOpacityMod = 1.0;
             if (c.isGoldenHour) {
-                // Fade out stars during twilight
                 let minsFromSunrise = Math.abs(c.nowSec - c.sunriseTime) / 60;
                 let minsFromSunset = Math.abs(c.nowSec - c.sunsetTime) / 60;
                 let closest = Math.min(minsFromSunrise, minsFromSunset);
-                starOpacityMod = Math.max(0, (closest - 20) / 40); // Fade in over twilight
+                starOpacityMod = Math.max(0, (closest - 20) / 40);
             }
-
-            // Reduce star visibility based on cloud cover
             starOpacityMod *= (1 - (c.cloudCover / 100));
 
             if (starOpacityMod > 0.05 && observer) {
@@ -1065,14 +1487,11 @@
                     if (hor.altitude > 0) {
                         let pos = getCanvasXY(hor.azimuth, hor.altitude);
                         if (pos) {
-                            let magScale = Math.max(0, 6.0 - star.mag) / 5.0; // Brighter = larger value
+                            let magScale = Math.max(0, 6.0 - star.mag) / 5.0;
                             let opacity = (0.2 + 0.8 * magScale) * starOpacityMod;
                             let size = 0.5 + magScale * 1.5;
-
-                            // Twinkle effect for brighter stars
                             if (star.mag < 3.0 && Math.random() > 0.95) opacity *= (0.5 + Math.random()*0.5);
                             if (opacity > 1) opacity = 1;
-
                             sCtx.beginPath();
                             sCtx.arc(pos.x, pos.y, size, 0, Math.PI*2);
                             sCtx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
