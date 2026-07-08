@@ -4285,7 +4285,7 @@ function renderWeatherUI() {
         // Hauteur des vagues
         if (waves) {
             let minWaveHeight = 60; // base height when calm
-            let maxWaveHeight = 150; // max height during storm
+            let maxWaveHeight = 350; // max height during storm
             let waveHeight = minWaveHeight + windIntensity * (maxWaveHeight - minWaveHeight);
         // Whitecaps logic
         const whitecaps = document.querySelector('.whitecaps');
@@ -4334,10 +4334,10 @@ function renderWeatherUI() {
                 boat.style.transform = `translateX(-50%) scale(${baseScale}) rotate(0deg) translateY(0px)`;
             } else {
                 // Bobbing parameters
-                // Max bobbing is +/- 30px (total 60px)
-                // Max rotation is +/- 25 degrees
-                let maxRot = 25 * windIntensity;
-                let maxTransY = 30 * windIntensity;
+                // Max bobbing is +/- 15px (total 30px)
+                // Max rotation is +/- 12.5 degrees
+                let maxRot = 12.5 * windIntensity;
+                let maxTransY = 15 * windIntensity;
 
                 // Frequency of bobbing increases slightly with wind
                 let freq = 1 + windIntensity * 1.5;
