@@ -1480,7 +1480,70 @@
         <!-- Safety Rails on main platform edge -->
         <line x1="300" y1="260" x2="1160" y2="260" stroke="#facc15" stroke-width="4" />
         <path d="M 300 280 L 300 260 M 360 280 L 360 260 M 420 280 L 420 260 M 1040 280 L 1040 260 M 1100 280 L 1100 260 M 1160 280 L 1160 260" stroke="#ca8a04" stroke-width="4" />
-    </svg>
+
+            <!-- Refinery Structures -->
+            <g class="refinery-structures">
+                <!-- Distillation Column 1 -->
+                <rect x="1100" y="50" width="30" height="200" fill="url(#tankGrad)" />
+                <path d="M 1095 50 L 1135 50 L 1125 30 L 1105 30 Z" fill="#94a3b8" />
+                <line x1="1090" y1="80" x2="1140" y2="80" stroke="#475569" stroke-width="2" />
+                <line x1="1090" y1="120" x2="1140" y2="120" stroke="#475569" stroke-width="2" />
+                <line x1="1090" y1="160" x2="1140" y2="160" stroke="#475569" stroke-width="2" />
+
+                <!-- Flare Stack -->
+                <rect x="1200" y="20" width="10" height="230" fill="#64748b" />
+                <path d="M 1195 20 L 1215 20 L 1210 10 L 1200 10 Z" fill="#475569" />
+
+                <!-- Distillation Column 2 -->
+                <rect x="950" y="100" width="20" height="150" fill="url(#tankGrad)" />
+                <path d="M 945 100 L 975 100 L 965 85 L 955 85 Z" fill="#94a3b8" />
+
+                <!-- Pipelines and framework -->
+                <path d="M 970 180 L 1100 180 M 1130 200 L 1200 200" stroke="url(#pipeGrad)" stroke-width="4" fill="none" />
+                <rect x="1000" y="150" width="60" height="100" fill="none" stroke="#475569" stroke-width="2" />
+                <line x1="1000" y1="150" x2="1060" y2="250" stroke="#475569" stroke-width="1" />
+                <line x1="1060" y1="150" x2="1000" y2="250" stroke="#475569" stroke-width="1" />
+            </g>
+
+            <!-- Night Lights -->
+            <g class="night-lights" style="opacity: var(--night-lights-opacity, 0);">
+                <!-- Flare (animated or static orange glow) -->
+                <circle cx="1205" cy="5" r="10" fill="#f97316" filter="drop-shadow(0 0 10px #f97316)" />
+                <circle cx="1205" cy="5" r="4" fill="#fef08a" />
+
+                <!-- Aviation Warning Lights -->
+                <circle cx="1115" cy="25" r="3" fill="#ef4444" filter="drop-shadow(0 0 5px #ef4444)" />
+                <circle cx="960" cy="80" r="3" fill="#ef4444" filter="drop-shadow(0 0 5px #ef4444)" />
+                <circle cx="200" cy="95" r="3" fill="#ef4444" filter="drop-shadow(0 0 5px #ef4444)" />
+                <circle cx="800" cy="95" r="3" fill="#ef4444" filter="drop-shadow(0 0 5px #ef4444)" />
+
+                <!-- Industrial Platform Lights -->
+                <circle cx="1115" cy="80" r="2" fill="#facc15" filter="drop-shadow(0 0 3px #facc15)" />
+                <circle cx="1115" cy="120" r="2" fill="#facc15" filter="drop-shadow(0 0 3px #facc15)" />
+                <circle cx="1115" cy="160" r="2" fill="#facc15" filter="drop-shadow(0 0 3px #facc15)" />
+
+                <rect x="1010" y="180" width="4" height="4" fill="#fef08a" />
+                <rect x="1040" y="180" width="4" height="4" fill="#fef08a" />
+                <rect x="1010" y="220" width="4" height="4" fill="#fef08a" />
+                <rect x="1040" y="220" width="4" height="4" fill="#fef08a" />
+
+                <!-- Base Dock Floodlights -->
+                <path d="M 50 250 L 0 350 L 100 350 Z" fill="#fef08a" opacity="0.15" mix-blend-mode="screen" />
+                <circle cx="50" cy="250" r="2" fill="#facc15" filter="drop-shadow(0 0 4px #facc15)" />
+
+                <path d="M 350 250 L 300 350 L 400 350 Z" fill="#fef08a" opacity="0.15" mix-blend-mode="screen" />
+                <circle cx="350" cy="250" r="2" fill="#facc15" filter="drop-shadow(0 0 4px #facc15)" />
+
+                <path d="M 650 250 L 600 350 L 700 350 Z" fill="#fef08a" opacity="0.15" mix-blend-mode="screen" />
+                <circle cx="650" cy="250" r="2" fill="#facc15" filter="drop-shadow(0 0 4px #facc15)" />
+
+                <path d="M 950 250 L 900 350 L 1000 350 Z" fill="#fef08a" opacity="0.15" mix-blend-mode="screen" />
+                <circle cx="950" cy="250" r="2" fill="#facc15" filter="drop-shadow(0 0 4px #facc15)" />
+
+                <path d="M 1250 250 L 1200 350 L 1300 350 Z" fill="#fef08a" opacity="0.15" mix-blend-mode="screen" />
+                <circle cx="1250" cy="250" r="2" fill="#facc15" filter="drop-shadow(0 0 4px #facc15)" />
+            </g>
+        </svg>
     </div>
 </div>
 
@@ -2069,7 +2132,21 @@
         // Use document root for water variables so that boat and water-layer can pick them up
         document.documentElement.style.setProperty('--water-c', waterColor);
         document.documentElement.style.setProperty('--water-distant-c', distantWaterColor);
+
         document.documentElement.style.setProperty('--water-h', c.tideHeight + 'vh');
+
+        // --- ADD NIGHT LIGHTS OPACITY UPDATE ---
+        let nightLightsOpacity = 0;
+        if (c.isNight) {
+            nightLightsOpacity = 1;
+        } else if (c.isGoldenHour) {
+            // Fade them in during golden hour
+            nightLightsOpacity = 0.5;
+        }
+        // Force night lights if user forced dark mode? Optional.
+        if (isDark) nightLightsOpacity = 1;
+        document.body.style.setProperty('--night-lights-opacity', nightLightsOpacity);
+
         bgDiv.style.setProperty('--anim-speed', animSpeed + 's');
 
         const waterLayer = document.getElementById('water-layer');
@@ -3230,7 +3307,14 @@ function renderWeatherUI() {
         currentConditions.rain = cur.precipitation || 0; currentConditions.snow = cur.snowfall || 0;
         currentConditions.cloudCover = cur.cloud_cover || 50; currentConditions.pressure = cur.surface_pressure;
         currentConditions.humidity = cur.relative_humidity_2m; currentConditions.weatherCode = cur.weather_code;
-        currentConditions.nowSec = nowSec; currentConditions.sunriseTime = data.daily.sunrise[0]; currentConditions.sunsetTime = data.daily.sunset[0];
+
+        currentConditions.nowSec = nowSec;
+        // Override sunrise to 05:30 and sunset to 19:00
+        let d = new Date(nowSec * 1000);
+        let midnight = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime() / 1000;
+        currentConditions.sunriseTime = midnight + (5 * 3600) + (30 * 60); // 05:30
+        currentConditions.sunsetTime = midnight + (19 * 3600); // 19:00
+
         currentConditions.isNight = (nowSec < currentConditions.sunriseTime || nowSec > currentConditions.sunsetTime);
         currentConditions.isGoldenHour = (!currentConditions.isNight && (Math.abs(nowSec - currentConditions.sunriseTime) < 3600 || Math.abs(nowSec - currentConditions.sunsetTime) < 3600));
         
