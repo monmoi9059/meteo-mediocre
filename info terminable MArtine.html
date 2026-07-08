@@ -2232,50 +2232,6 @@
             return { x, y };
         }
 
-        // 1. Procedural Background Stars (Night/Twilight only)
-        if (c.isNight || c.isGoldenHour) {
-            if (typeof window.proceduralStars === 'undefined') {
-                window.proceduralStars = [];
-                for (let i = 0; i < 2000; i++) {
-                    let ra = Math.random() * 360;
-                    let dec = Math.asin(Math.random() * 2 - 1) * (180 / Math.PI);
-                    let mag = 1.0 + Math.random() * 5.0;
-                    window.proceduralStars.push({ ra, dec, mag });
-                }
-            }
-
-            let starOpacityMod = 1.0;
-            if (c.isGoldenHour) {
-                let minsFromSunrise = Math.abs(c.nowSec - c.sunriseTime) / 60;
-                let minsFromSunset = Math.abs(c.nowSec - c.sunsetTime) / 60;
-                let closest = Math.min(minsFromSunrise, minsFromSunset);
-                starOpacityMod = Math.max(0, (closest - 20) / 40);
-            }
-            starOpacityMod *= (1 - (c.cloudCover / 100));
-
-            if (starOpacityMod > 0.05 && observer) {
-                sCtx.save();
-                window.proceduralStars.forEach(star => {
-                    let hor = Astronomy.Horizon(dDate, observer, star.ra / 15, star.dec, 'normal');
-                    if (hor.altitude > 0) {
-                        let pos = getCanvasXY(hor.azimuth, hor.altitude);
-                        if (pos) {
-                            let magScale = Math.max(0, 6.0 - star.mag) / 5.0;
-                            let opacity = (0.2 + 0.8 * magScale) * starOpacityMod;
-                            let size = 0.5 + magScale * 1.5;
-                            if (star.mag < 3.0 && Math.random() > 0.95) opacity *= (0.5 + Math.random()*0.5);
-                            if (opacity > 1) opacity = 1;
-                            sCtx.beginPath();
-                            sCtx.arc(pos.x, pos.y, size, 0, Math.PI*2);
-                            sCtx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
-                            sCtx.fill();
-                        }
-                    }
-                });
-                sCtx.restore();
-            }
-        }
-
         // Constellations Data: pairs of RA/DEC degrees to draw lines between.
         // We will define a few prominent constellations (Ursa Major, Orion, Cassiopeia)
         const constellations = [
@@ -3406,6 +3362,33 @@ function renderWeatherUI() {
     function addTime(iso, hrs) { let d = new Date(iso); d.setMinutes(d.getMinutes() + (hrs * 60)); return d.getTime(); }
     function formatT(ms) { return new Date(ms).toLocaleTimeString('fr-CA', timeOptions).replace(' h', 'h'); }
 
+
+    function updateRealtimeState() {
+        if (!window.globalTidesData) return;
+        const tidesData = window.globalTidesData;
+        const nowTime = Date.now();
+        let prevTide = null, nextTide = null;
+        let minTide = Math.min(...tidesData.map(t=>t.value)); let maxTide = Math.max(...tidesData.map(t=>t.value));
+        let currentWaterLevel = 0;
+
+        for (let i = 0; i < tidesData.length - 1; i++) {
+            if (nowTime >= new Date(tidesData[i].eventDate).getTime() && nowTime <= new Date(tidesData[i+1].eventDate).getTime()) {
+                prevTide = tidesData[i]; nextTide = tidesData[i+1]; break;
+            }
+        }
+        if (prevTide && nextTide) {
+            const t1 = new Date(prevTide.eventDate).getTime(); const t2 = new Date(nextTide.eventDate).getTime();
+            const prog = (nowTime - t1) / (t2 - t1);
+            currentWaterLevel = prevTide.value + (nextTide.value - prevTide.value) * ((1 - Math.cos(prog * Math.PI)) / 2);
+            currentConditions.tideHeight = 10 + (((currentWaterLevel - minTide) / (maxTide - minTide)) * 100 * 0.35);
+            currentConditions.tideTrend = nextTide.value > prevTide.value ? '⬆️ Montante' : '⬇️ Descendante';
+
+            updateDynamicBackground();
+        }
+        updateTrafficLights(tidesData, nowTime);
+    }
+    setInterval(updateRealtimeState, 60000); // recalculate every 60s
+
     async function fetchTides() {
         try {
             const stationRes = await fetch(`https://api-iwls.dfo-mpo.gc.ca/api/v1/stations`);
@@ -3420,28 +3403,10 @@ function renderWeatherUI() {
             const tidesData = await tidesRes.json();
             tidesData.sort((a, b) => new Date(a.eventDate) - new Date(b.eventDate));
 
+            window.globalTidesData = tidesData;
+            updateRealtimeState();
+
             const nowTime = Date.now();
-            let prevTide = null, nextTide = null;
-            let minTide = Math.min(...tidesData.map(t=>t.value)); let maxTide = Math.max(...tidesData.map(t=>t.value));
-            let currentWaterLevel = 0;
-
-            for (let i = 0; i < tidesData.length - 1; i++) {
-                if (nowTime >= new Date(tidesData[i].eventDate).getTime() && nowTime <= new Date(tidesData[i+1].eventDate).getTime()) {
-                    prevTide = tidesData[i]; nextTide = tidesData[i+1]; break;
-                }
-            }
-            if (prevTide && nextTide) {
-                const t1 = new Date(prevTide.eventDate).getTime(); const t2 = new Date(nextTide.eventDate).getTime();
-                const prog = (nowTime - t1) / (t2 - t1);
-                currentWaterLevel = prevTide.value + (nextTide.value - prevTide.value) * ((1 - Math.cos(prog * Math.PI)) / 2);
-                currentConditions.tideHeight = 10 + (((currentWaterLevel - minTide) / (maxTide - minTide)) * 100 * 0.35); 
-                currentConditions.tideTrend = nextTide.value > prevTide.value ? '⬆️ Montante' : '⬇️ Descendante';
-
-                updateDynamicBackground();
-            }
-
-            updateTrafficLights(tidesData, nowTime);
-
             let futureTides = tidesData.filter(t => new Date(t.eventDate).getTime() > nowTime - 4*3600*1000);
             
             let waterTempStr = '';
