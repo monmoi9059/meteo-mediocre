@@ -3380,6 +3380,7 @@ function renderWeatherUI() {
             const t1 = new Date(prevTide.eventDate).getTime(); const t2 = new Date(nextTide.eventDate).getTime();
             const prog = (nowTime - t1) / (t2 - t1);
             currentWaterLevel = prevTide.value + (nextTide.value - prevTide.value) * ((1 - Math.cos(prog * Math.PI)) / 2);
+            currentConditions.currentWaterLevel = currentWaterLevel;
             currentConditions.tideHeight = 10 + (((currentWaterLevel - minTide) / (maxTide - minTide)) * 100 * 0.35);
             currentConditions.tideTrend = nextTide.value > prevTide.value ? '⬆️ Montante' : '⬇️ Descendante';
 
@@ -3426,7 +3427,7 @@ function renderWeatherUI() {
 
             let html = `
                 <div style="text-align:center; font-weight:bold; color:var(--primary); margin-bottom:5px;">
-                    Niveau actuel estimé : <span style="font-size:1.2rem;">${currentWaterLevel.toFixed(2)}m</span> ${currentConditions.tideTrend}
+                    Niveau actuel estimé : <span style="font-size:1.2rem;">${(currentConditions.currentWaterLevel || 0).toFixed(2)}m</span> ${currentConditions.tideTrend}
                 </div>
                 <div class="chart-wrapper"><canvas id="tChart"></canvas></div>
                 ${waterTempStr ? `<div style="text-align:center; margin-bottom:10px;">${waterTempStr}</div>` : ''}
