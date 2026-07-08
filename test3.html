@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+    body { background: black; }
+    #compass-container {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        width: 150px;
+        height: 150px;
+        border: 2px solid white;
+        border-radius: 50%;
+        transform: translateX(-50%);
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+    }
+    .compass-labels {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        font-family: monospace;
+        font-size: 14px;
+        color: white;
+        font-weight: bold;
+    }
+    .compass-labels span {
+        position: absolute;
+        transform: translate(-50%, -50%);
+    }
+    .compass-labels .n { top: 10%; left: 50%; color: #ff4444; }
+    .compass-labels .e { top: 50%; left: 90%; }
+    .compass-labels .s { top: 90%; left: 50%; }
+    .compass-labels .w { top: 50%; left: 10%; }
+
+    #compass-arrow-3 {
+        position: absolute;
+        bottom: 50%;
+        left: 50%;
+        width: 4px;
+        height: 45%;
+        background-color: #ff4444;
+        transform-origin: bottom center;
+        border-radius: 2px;
+        transform: translateX(-50%) rotate(45deg);
+    }
+    #compass-arrow-3::after {
+        content: '';
+        position: absolute;
+        top: 100%;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background-color: white;
+        border-radius: 2px;
+    }
+</style>
+</head>
+<body>
+    <div id="compass-container">
+        <div class="compass-labels">
+            <span class="n">N</span>
+            <span class="e">E</span>
+            <span class="s">S</span>
+            <span class="w">W</span>
+        </div>
+        <div id="compass-arrow-3"></div>
+    </div>
+</body>
+</html>
