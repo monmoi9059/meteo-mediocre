@@ -375,161 +375,114 @@
 <!-- SHORE LAYER (360 ENVIRONMENT PANORAMA) -->
 <div id="shore-layer" class="shore-layer">
 
-    <!-- NORTH SHORE (QUEBEC SIDE) - spans West (270) to East (90), centered at North (310) -->
-    <div class="landmark" data-azimuth="310" data-width="200" data-offset-y="100" style="width: 200vw; height: 500px; z-index: 1;">
-        <svg width="100%" height="100%" viewBox="0 0 2000 500" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- NORTH SHORE (QUEBEC SIDE) -->
+    <!-- Centered at 340 (NNW). Width 180. Spans 250 (West) to 70 (East). -->
+    <div class="landmark" data-azimuth="340" data-width="180" data-offset-y="100" style="width: 180vw; height: 500px; z-index: 1;">
+        <svg width="100%" height="100%" viewBox="0 0 3000 500" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
             <defs>
-                <linearGradient id="mntGrad1" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="#2a3f35" />
-                    <stop offset="50%" stop-color="#1f2d26" />
-                    <stop offset="100%" stop-color="#0f1613" />
-                </linearGradient>
-                <linearGradient id="mntGrad2" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="#3b5949" />
+                <linearGradient id="northCliffGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#3b4d42" />
                     <stop offset="100%" stop-color="#18241d" />
                 </linearGradient>
-                <linearGradient id="cityLights" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%" stop-color="#fef08a" stop-opacity="0.8" />
-                    <stop offset="100%" stop-color="#fef08a" stop-opacity="0.2" />
-                </linearGradient>
-                <linearGradient id="northBeachWaterGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="#4d4233" />
-                    <stop offset="30%" stop-color="#2b241c" />
-                    <stop offset="100%" stop-color="#0f1115" />
-                </linearGradient>
             </defs>
-            <path d="M 0 350 Q 200 250 400 320 T 900 280 T 1400 330 T 2000 300 L 2000 500 L 0 500 Z" fill="url(#mntGrad1)" opacity="0.6"/>
-            <path d="M 0 150 Q 150 160 300 220 Q 500 180 650 200 L 700 180 L 720 180 L 730 150 L 740 180 L 760 180 L 800 200 L 950 190 L 1050 250 Q 1400 300 1800 350 Q 1950 360 2000 380 L 2000 500 L 0 500 Z" fill="url(#mntGrad2)"/>
-            <path d="M 690 180 L 690 140 L 700 140 L 700 120 L 705 100 L 710 120 L 710 140 L 725 140 L 725 110 L 730 80 L 735 110 L 735 140 L 745 140 L 745 150 L 755 150 L 755 180 Z" fill="#111815"/>
-            <rect x="650" y="150" width="15" height="30" fill="#18241d" />
-            <rect x="670" y="160" width="10" height="20" fill="#18241d" />
-            <rect x="765" y="170" width="20" height="10" fill="#18241d" />
-            <rect x="790" y="165" width="25" height="25" fill="#18241d" />
-            <path d="M 680 180 L 680 250 L 720 280 L 800 240 Z" fill="#1f2d26" opacity="0.5"/>
-            <path d="M 0 150 L 0 350 L 150 300 L 300 350 L 300 220 Z" fill="#1f2d26" opacity="0.4"/>
-            <g class="night-lights" opacity="0" transition="opacity 2s">
-                <circle cx="700" cy="150" r="1.5" fill="#fef08a" opacity="0.8"/>
-                <circle cx="715" cy="130" r="1.5" fill="#fef08a" opacity="0.9"/>
-                <circle cx="730" cy="120" r="2" fill="#fef08a" />
-                <circle cx="740" cy="160" r="1" fill="#fef08a" opacity="0.7"/>
-                <circle cx="680" cy="170" r="1.5" fill="#fef08a" opacity="0.6"/>
-                <rect x="652" y="155" width="2" height="2" fill="#fef08a" />
-                <rect x="657" y="165" width="2" height="2" fill="#fef08a" />
-                <rect x="795" y="175" width="2" height="2" fill="#fef08a" />
-                <path d="M 680 280 Q 750 270 850 250" stroke="url(#cityLights)" stroke-width="2" fill="none" stroke-dasharray="4, 6"/>
-                <path d="M 100 200 Q 300 230 500 200" stroke="#fef08a" stroke-width="1.5" fill="none" stroke-dasharray="2, 8" opacity="0.6"/>
+            <!-- Left edge (250) must be high to connect to bridges at Y=200 -->
+            <!-- X=1000 is Chateau Frontenac (Azimuth 310) on Cap-Diamant (highest point) -->
+            <!-- Right edge (70) slopes down to the Beauport flats -->
+
+            <!-- Base landmass -->
+            <path d="M 0 200 L 400 180 L 800 140 L 950 130 L 1050 130 L 1400 180 L 2000 250 L 3000 350 L 3000 500 L 0 500 Z" fill="url(#northCliffGrad)"/>
+
+            <!-- Cap-Diamant Cliffs -->
+            <path d="M 800 140 L 850 250 L 1050 260 L 1050 130 Z" fill="#1f2d26" opacity="0.6"/>
+
+            <!-- Chateau Frontenac at exactly X=1000 -->
+            <g transform="translate(1000, 130)">
+                <!-- Main tower -->
+                <rect x="-15" y="-60" width="30" height="60" fill="#111815"/>
+                <!-- Roofs -->
+                <polygon points="-15,-60 0,-90 15,-60" fill="#0f1613"/>
+                <polygon points="-30,-40 -15,-60 -15,-40" fill="#0f1613"/>
+                <polygon points="15,-40 15,-60 30,-40" fill="#0f1613"/>
+                <!-- Side wings -->
+                <rect x="-30" y="-40" width="15" height="40" fill="#111815"/>
+                <rect x="15" y="-40" width="15" height="40" fill="#111815"/>
+                <rect x="-50" y="-20" width="20" height="20" fill="#111815"/>
             </g>
-            <path d="M 0 450 Q 500 480 1000 490 Q 1500 500 2000 500 L 2000 500 L 0 500 Z" fill="url(#northBeachWaterGrad)" />
+
+            <!-- Price Building (X=1060) -->
+            <g transform="translate(1060, 130)">
+                <rect x="0" y="-40" width="15" height="40" fill="#111815"/>
+                <polygon points="0,-40 7.5,-55 15,-40" fill="#0f1613"/>
+            </g>
+
+            <!-- Parliament Hill / Downtown Highrises -->
+            <rect x="850" y="110" width="20" height="30" fill="#18241d" />
+            <rect x="880" y="100" width="25" height="40" fill="#18241d" />
+            <rect x="910" y="115" width="15" height="25" fill="#18241d" />
+
+            <!-- Nighttime Lights -->
+            <g class="night-lights" opacity="0" transition="opacity 2s">
+                <circle cx="1000" cy="100" r="1.5" fill="#fef08a" opacity="0.8"/>
+                <circle cx="1010" cy="80" r="1.5" fill="#fef08a" opacity="0.9"/>
+                <path d="M 950 250 Q 1000 255 1100 260" stroke="#fef08a" stroke-width="2" fill="none" stroke-dasharray="3, 5"/>
+                <path d="M 0 300 Q 400 280 800 250" stroke="#fef08a" stroke-width="1.5" fill="none" stroke-dasharray="2, 8" opacity="0.6"/>
+            </g>
+            <path d="M 0 450 Q 1500 480 3000 500 L 3000 500 L 0 500 Z" fill="#2b241c" opacity="0.5"/>
         </svg>
     </div>
 
-    <!-- SOUTH SHORE (LÉVIS SIDE) - spans East (90) to West (270), centered at South (44) -->
-    <div class="landmark" data-azimuth="44" data-width="200" data-offset-y="100" style="width: 200vw; height: 450px; z-index: 1;">
-        <svg width="100%" height="100%" viewBox="0 0 2000 450" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- SOUTH SHORE (LÉVIS SIDE) -->
+    <!-- Centered at 160 (SSE). Width 180. Spans 70 (East) to 250 (West). -->
+    <div class="landmark" data-azimuth="160" data-width="180" data-offset-y="100" style="width: 180vw; height: 450px; z-index: 1;">
+        <svg width="100%" height="100%" viewBox="0 0 3000 450" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
             <defs>
-                <linearGradient id="southMnt1" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="#314739" />
-                    <stop offset="100%" stop-color="#18241d" />
-                </linearGradient>
-                <linearGradient id="southCliff" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="#223328" />
+                <linearGradient id="southCliffGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#2a3c30" />
                     <stop offset="100%" stop-color="#121b15" />
                 </linearGradient>
-                <linearGradient id="southBeachWaterGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="#5a4e3d" />
-                    <stop offset="20%" stop-color="#2b241c" />
-                    <stop offset="100%" stop-color="#0f1115" />
-                </linearGradient>
             </defs>
-            <path d="M 0 300 Q 300 250 600 280 T 1300 260 T 2000 290 L 2000 450 L 0 450 Z" fill="url(#southMnt1)" opacity="0.8"/>
-            <path d="M 0 280 Q 200 290 400 260 Q 700 230 1000 250 Q 1400 220 1700 180 Q 1850 160 2000 150 L 2000 450 L 0 450 Z" fill="url(#southCliff)"/>
-            <path d="M 1600 190 L 1650 250 L 1750 220 L 1800 280 L 1950 200 L 2000 240 L 2000 450 L 1600 450 Z" fill="#18241d" opacity="0.6"/>
-            <path d="M 400 260 L 450 320 L 550 290 L 600 350 L 750 280 L 800 320 L 800 450 L 400 450 Z" fill="#18241d" opacity="0.5"/>
-            <rect x="950" y="240" width="40" height="10" fill="#121b15" />
-            <polygon points="960,240 970,230 980,240" fill="#121b15" />
-            <rect x="1750" y="170" width="20" height="15" fill="#121b15" />
-            <path d="M 0 400 Q 500 420 1000 430 Q 1500 440 2000 450 L 2000 450 L 0 450 Z" fill="url(#southBeachWaterGrad)" />
+            <!-- Left edge (East, 70) is low -->
+            <!-- Middle (Levis, 160) rises up -->
+            <!-- Right edge (West, 250) must be high to connect to bridges at Y=200 -->
+            <path d="M 0 300 L 500 250 L 1000 220 L 1500 180 L 2000 160 L 2500 180 L 3000 200 L 3000 450 L 0 450 Z" fill="url(#southCliffGrad)"/>
+
+            <!-- Levis Cliffs / Terrasse de Levis (around X=1500 to 2000) -->
+            <path d="M 1400 180 L 1500 250 L 1800 260 L 2000 160 Z" fill="#18241d" opacity="0.6"/>
+            <rect x="1600" y="160" width="40" height="20" fill="#121b15" />
+            <rect x="1650" y="150" width="20" height="30" fill="#121b15" />
+
             <g class="night-lights" opacity="0" transition="opacity 2s">
-                <circle cx="1000" cy="260" r="2" fill="#fef08a" opacity="0.8"/>
-                <circle cx="980" cy="270" r="1.5" fill="#fef08a" opacity="0.7"/>
-                <circle cx="1020" cy="265" r="1.5" fill="#fef08a" opacity="0.7"/>
-                <path d="M 1600 210 Q 1800 190 2000 180" stroke="#fef08a" stroke-width="1.5" fill="none" stroke-dasharray="2, 6" opacity="0.6"/>
-                <path d="M 100 380 Q 400 390 800 380" stroke="#fef08a" stroke-width="1" fill="none" stroke-dasharray="3, 10" opacity="0.5"/>
+                <path d="M 1400 260 Q 1600 265 1800 260" stroke="#fef08a" stroke-width="2" fill="none" stroke-dasharray="3, 5"/>
+                <path d="M 2000 250 Q 2500 280 3000 300" stroke="#fef08a" stroke-width="1.5" fill="none" stroke-dasharray="2, 8" opacity="0.6"/>
             </g>
+            <path d="M 0 400 Q 1500 430 3000 450 L 3000 450 L 0 450 Z" fill="#2b241c" opacity="0.5"/>
         </svg>
     </div>
 
     <!-- ÎLE D'ORLÉANS (Azimuth 62) -->
-    <div class="landmark" data-azimuth="62" data-width="40" style="width: 40vw; height: 100px; z-index: 2;">
+    <div class="landmark" data-azimuth="62" data-width="30" style="width: 30vw; height: 100px; z-index: 2;">
         <svg width="100%" height="100%" viewBox="0 0 1000 200" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-                <linearGradient id="ileGrad1" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="#283a30" />
-                    <stop offset="100%" stop-color="#141f1a" />
-                </linearGradient>
-                <linearGradient id="ileWaterGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="#1c2520" />
-                    <stop offset="40%" stop-color="#151b18" />
-                    <stop offset="100%" stop-color="#0f1115" />
-                </linearGradient>
-            </defs>
-            <path d="M 100 200 L 120 120 Q 200 110 350 130 Q 600 160 900 180 L 1000 200 Z" fill="url(#ileGrad1)" opacity="0.9"/>
-            <path d="M 120 120 Q 150 105 200 110 Q 250 115 300 125 L 350 130 Z" fill="#1b2921" opacity="0.8"/>
-            <path d="M 180 115 Q 220 108 260 118 L 300 125 Z" fill="#141f1a" opacity="0.6"/>
-            <path d="M 100 200 Q 500 195 1000 200 Z" fill="url(#ileWaterGrad)" />
-            <g class="night-lights" opacity="0" transition="opacity 2s">
-                <circle cx="130" cy="140" r="1.5" fill="#fef08a" opacity="0.6"/>
-                <circle cx="150" cy="145" r="1" fill="#fef08a" opacity="0.5"/>
-                <circle cx="170" cy="150" r="1.2" fill="#fef08a" opacity="0.6"/>
-                <circle cx="140" cy="160" r="1" fill="#fef08a" opacity="0.4"/>
-                <circle cx="200" cy="155" r="1" fill="#fef08a" opacity="0.4"/>
-                <circle cx="300" cy="165" r="0.8" fill="#fef08a" opacity="0.3"/>
-                <circle cx="450" cy="175" r="0.8" fill="#fef08a" opacity="0.2"/>
-            </g>
+            <path d="M 100 200 L 150 120 Q 300 110 500 130 Q 800 160 1000 200 Z" fill="#1b2921" opacity="0.9"/>
+            <path d="M 100 200 Q 500 195 1000 200 Z" fill="#151b18" opacity="0.6"/>
         </svg>
     </div>
 
-    <!-- BRIDGES: Pierre-Laporte & Pont de Québec (Azimuth 248) -->
-    <div class="landmark" data-azimuth="248" data-width="80" style="width: 80vw; height: 300px; z-index: 2;">
-        <svg width="100%" height="100%" viewBox="0 0 1500 300" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-                <linearGradient id="bridgeSteel" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="#4a5568" />
-                    <stop offset="100%" stop-color="#1a202c" />
-                </linearGradient>
-                <linearGradient id="suspensionCables" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="#718096" />
-                    <stop offset="100%" stop-color="#2d3748" />
-                </linearGradient>
-                <linearGradient id="cantileverSteel" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="#2d3748" />
-                    <stop offset="100%" stop-color="#111827" />
-                </linearGradient>
-            </defs>
-            <g id="pont-de-quebec" opacity="0.9">
-                <rect x="400" y="100" width="30" height="200" fill="url(#cantileverSteel)" />
-                <rect x="1000" y="100" width="30" height="200" fill="url(#cantileverSteel)" />
-                <path d="M 415 100 L 200 180 L 415 190 L 650 180 Z" fill="none" stroke="url(#cantileverSteel)" stroke-width="6"/>
-                <path d="M 1015 100 L 800 180 L 1015 190 L 1250 180 Z" fill="none" stroke="url(#cantileverSteel)" stroke-width="6"/>
-                <path d="M 650 180 L 800 180" fill="none" stroke="url(#cantileverSteel)" stroke-width="8"/>
-                <path d="M 650 180 L 725 150 L 800 180" fill="none" stroke="url(#cantileverSteel)" stroke-width="4"/>
-                <rect x="0" y="180" width="1500" height="10" fill="#111827" />
-                <path d="M 400 100 L 430 150 M 430 100 L 400 150 M 400 150 L 430 200 M 430 150 L 400 200 M 400 200 L 430 250 M 430 200 L 400 250" stroke="#111827" stroke-width="2"/>
-                <path d="M 1000 100 L 1030 150 M 1030 100 L 1000 150 M 1000 150 L 1030 200 M 1030 150 L 1000 200 M 1000 200 L 1030 250 M 1030 200 L 1000 250" stroke="#111827" stroke-width="2"/>
-            </g>
-            <g id="pierre-laporte" opacity="0.6">
-                <rect x="500" y="30" width="20" height="270" fill="url(#bridgeSteel)" />
-                <rect x="1100" y="30" width="20" height="270" fill="url(#bridgeSteel)" />
-                <path d="M 0 100 Q 250 30 510 30 Q 800 180 1110 30 Q 1350 30 1500 100" fill="none" stroke="url(#suspensionCables)" stroke-width="4"/>
-                <rect x="0" y="160" width="1500" height="6" fill="#1a202c" />
-                <path d="M 550 85 L 550 160 M 600 120 L 600 160 M 650 145 L 650 160 M 700 160 L 700 160 M 750 170 L 750 160 M 800 175 L 800 160 M 850 170 L 850 160 M 900 160 L 900 160 M 950 145 L 950 160 M 1000 120 L 1000 160 M 1050 85 L 1050 160" stroke="#718096" stroke-width="1"/>
+    <!-- BRIDGES (Azimuth 250) -->
+    <div class="landmark" data-azimuth="250" data-width="20" data-offset-y="100" style="width: 20vw; height: 450px; z-index: 2;">
+        <svg width="100%" height="100%" viewBox="0 0 1000 450" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+            <g id="pierre-laporte" opacity="0.8">
+                <!-- Pillars -->
+                <rect x="200" y="50" width="20" height="150" fill="#2d3748" />
+                <rect x="800" y="50" width="20" height="150" fill="#2d3748" />
+                <!-- Deck connects at Y=200 -->
+                <rect x="0" y="195" width="1000" height="10" fill="#1a202c" />
+                <!-- Suspension cables -->
+                <path d="M 0 100 Q 500 200 1000 100" fill="none" stroke="#718096" stroke-width="4"/>
             </g>
             <g class="night-lights" opacity="0" transition="opacity 2s">
-                <circle cx="510" cy="30" r="3" fill="#ef4444" opacity="0.9" />
-                <circle cx="1110" cy="30" r="3" fill="#ef4444" opacity="0.9" />
-                <path d="M 0 158 L 1500 158" stroke="#fef08a" stroke-width="1" stroke-dasharray="2, 10" opacity="0.7"/>
-                <path d="M 200 159 L 400 159" stroke="#fef08a" stroke-width="1.5" opacity="0.8"/>
-                <path d="M 800 159 L 950 159" stroke="#ef4444" stroke-width="1.5" opacity="0.8"/>
+                <circle cx="210" cy="50" r="3" fill="#ef4444" opacity="0.9" />
+                <circle cx="810" cy="50" r="3" fill="#ef4444" opacity="0.9" />
+                <path d="M 0 195 L 1000 195" stroke="#fef08a" stroke-width="1.5" stroke-dasharray="5, 15" opacity="0.8"/>
             </g>
         </svg>
     </div>
