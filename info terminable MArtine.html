@@ -5016,6 +5016,67 @@ function renderWeatherUI() {
         });
     });
 
+    document.addEventListener("touchmove", (e) => {
+        if (!battleState.active) return;
+        // e.preventDefault(); // Might interfere with scroll out of battle
+        battleState.mouseX = e.touches[0].clientX;
+        battleState.mouseY = e.touches[0].clientY;
+
+        // Calculate turret rotation
+        const boat = document.getElementById("boat-container");
+        const boatRect = boat.getBoundingClientRect();
+        const turretAbsX = boatRect.left + (boatRect.width / 2);
+        const turretAbsY = boatRect.top + (boatRect.height / 2) + 20;
+
+        let dx = battleState.mouseX - turretAbsX;
+        let dy = battleState.mouseY - turretAbsY;
+        let angle = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
+        turretBarrel.setAttribute("transform", `rotate(${angle})`);
+    }, {passive: true});
+
+    document.addEventListener("touchstart", (e) => {
+        if (!battleState.active || battleState.ammo <= 0) return;
+        if (e.target === battleBtn) return;
+
+        // Support reloading via touching the HUD
+        const ammoHUD = document.getElementById("game-ammo");
+        if (e.target === ammoHUD || e.target.parentNode === ammoHUD || e.target.parentNode.parentNode === document.getElementById('battle-hud')) {
+            battleState.ammo = battleState.maxAmmo;
+            updateBattleHUD();
+            return;
+        }
+
+        battleState.mouseX = e.touches[0].clientX;
+        battleState.mouseY = e.touches[0].clientY;
+
+        // Calculate turret rotation quickly so it points before firing
+        const boat = document.getElementById("boat-container");
+        const boatRect = boat.getBoundingClientRect();
+        const turretAbsX = boatRect.left + (boatRect.width / 2);
+        const turretAbsY = boatRect.top + (boatRect.height / 2) + 20;
+
+        let dxAim = battleState.mouseX - turretAbsX;
+        let dyAim = battleState.mouseY - turretAbsY;
+        let angleAim = Math.atan2(dyAim, dxAim) * (180 / Math.PI) + 90;
+        turretBarrel.setAttribute("transform", `rotate(${angleAim})`);
+
+        // Fire bullet
+        battleState.ammo--;
+        updateBattleHUD();
+
+        let dx = battleState.mouseX - turretAbsX;
+        let dy = battleState.mouseY - turretAbsY;
+        let angle = Math.atan2(dy, dx);
+
+        battleState.bullets.push({
+            x: turretAbsX,
+            y: turretAbsY,
+            vx: Math.cos(angle) * 30,
+            vy: Math.sin(angle) * 30
+        });
+    }, {passive: true});
+
+
     document.addEventListener("keydown", (e) => {
         if (!battleState.active) return;
         if (e.key.toLowerCase() === "r") {
@@ -5023,6 +5084,13 @@ function renderWeatherUI() {
             updateBattleHUD();
         }
     });
+
+    document.getElementById("battle-hud").addEventListener("click", () => {
+        if (!battleState.active) return;
+        battleState.ammo = battleState.maxAmmo;
+        updateBattleHUD();
+    });
+
 
     function spawnEnemy() {
         let types = ["jetski", "boat", "ship", "heli"];
@@ -5279,6 +5347,8 @@ function renderWeatherUI() {
     let startMouseY = 0;
     let startAzimuth = 0;
     let startAltitude = 0;
+    let initialPinchDistance = null;
+    let initialFOV = null;
 
     window.addEventListener('mousedown', (e) => {
         if (!document.body.classList.contains('hide-ui')) return;
@@ -5345,6 +5415,77 @@ function renderWeatherUI() {
         if (viewFOV > 180) viewFOV = 180; // Max zoom out
     });
 
+
+
+    window.addEventListener('touchstart', (e) => {
+        if (!document.body.classList.contains('hide-ui')) return;
+
+        if (e.touches.length === 1) {
+            // Single touch for panning
+            isPanning = true;
+            startMouseX = e.touches[0].clientX;
+            startMouseY = e.touches[0].clientY;
+            startAzimuth = viewAzimuth;
+            startAltitude = viewAltitude;
+        } else if (e.touches.length === 2) {
+            // Double touch for zooming
+            isPanning = false; // Cancel panning if zooming
+            const dx = e.touches[0].clientX - e.touches[1].clientX;
+            const dy = e.touches[0].clientY - e.touches[1].clientY;
+            initialPinchDistance = Math.sqrt(dx * dx + dy * dy);
+            initialFOV = viewFOV;
+        }
+    }, { passive: false });
+
+    window.addEventListener('touchmove', (e) => {
+        if (!document.body.classList.contains('hide-ui')) return;
+
+        if (isPanning && e.touches.length === 1) {
+            let dx = e.touches[0].clientX - startMouseX;
+            let dy = e.touches[0].clientY - startMouseY;
+
+            let pixelsPerDegreeX = window.innerWidth / viewFOV;
+            viewAzimuth = startAzimuth - (dx / pixelsPerDegreeX);
+            if (viewAzimuth < 0) viewAzimuth += 360;
+            if (viewAzimuth >= 360) viewAzimuth -= 360;
+
+            let viewFOVY = viewFOV * (window.innerHeight / window.innerWidth);
+            let pixelsPerDegreeY = window.innerHeight / viewFOVY;
+            viewAltitude = startAltitude + (dy / pixelsPerDegreeY);
+
+            if (viewAltitude > 90) viewAltitude = 90;
+            if (viewAltitude < -20) viewAltitude = -20;
+
+            if (typeof viewDirInput !== 'undefined' && viewDirInput) {
+                viewDirInput.value = viewAzimuth.toFixed(1);
+            }
+        } else if (e.touches.length === 2 && initialPinchDistance !== null) {
+            const dx = e.touches[0].clientX - e.touches[1].clientX;
+            const dy = e.touches[0].clientY - e.touches[1].clientY;
+            const currentPinchDistance = Math.sqrt(dx * dx + dy * dy);
+
+            const scale = initialPinchDistance / currentPinchDistance;
+            viewFOV = initialFOV * scale;
+
+            if (viewFOV < 30) viewFOV = 30;
+            if (viewFOV > 180) viewFOV = 180;
+        }
+    }, { passive: false });
+
+    window.addEventListener('touchend', (e) => {
+        if (e.touches.length === 0) {
+            isPanning = false;
+            initialPinchDistance = null;
+        } else if (e.touches.length === 1) {
+            // If one finger is lifted during a zoom, start panning with the remaining finger
+            initialPinchDistance = null;
+            isPanning = true;
+            startMouseX = e.touches[0].clientX;
+            startMouseY = e.touches[0].clientY;
+            startAzimuth = viewAzimuth;
+            startAltitude = viewAltitude;
+        }
+    });
 
     // --- COMPASS INJECTION ---
     const compassHTML = `
