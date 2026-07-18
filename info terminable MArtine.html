@@ -2413,6 +2413,7 @@
         </div>
         <button id="hide-ui-toggle" class="theme-toggle">👁️ Cacher UI</button>
         <button id="stars-mode-toggle" class="theme-toggle">✨ Mode Étoiles</button>
+        <button id="sensor-mode-toggle" class="theme-toggle">📱 Capteurs</button>
         <button id="image-toggle" class="theme-toggle">🖼️ petit Langlois ilustrée</button>
         <button id="rules-toggle" class="theme-toggle">📖 Règles</button>
         <button id="calc-toggle" class="theme-toggle">🧮 Calc ETA</button>
@@ -2556,6 +2557,7 @@
     let viewFOV = 100; // Less bunched up
     let viewAltitude = -5; // Look slightly down
     let starsModeActive = false;
+    let sensorModeActive = false;
 
     // --- VARIABLES GLOBALES ET FOND DYNAMIQUE ---
     let currentConditions = {
@@ -4589,6 +4591,32 @@ function renderWeatherUI() {
         });
     }
 
+    // Toggle Sensor Mode
+    const sensorModeBtn = document.getElementById('sensor-mode-toggle');
+    if (sensorModeBtn) {
+        sensorModeBtn.addEventListener('click', async () => {
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                try {
+                    const permissionState = await DeviceOrientationEvent.requestPermission();
+                    if (permissionState !== 'granted') {
+                        alert('Permission pour les capteurs refusée.');
+                        return;
+                    }
+                } catch (e) {
+                    console.error('Erreur lors de la demande de permission:', e);
+                    return;
+                }
+            }
+            sensorModeActive = !sensorModeActive;
+            sensorModeBtn.innerHTML = sensorModeActive ? '📱 Capteurs (Actif)' : '📱 Capteurs';
+            if (sensorModeActive) {
+                sensorModeBtn.style.background = 'var(--primary)';
+            } else {
+                sensorModeBtn.style.background = '';
+            }
+        });
+    }
+
     const hideUiBtn = document.getElementById('hide-ui-toggle');
     if (hideUiBtn) {
 
@@ -5296,6 +5324,52 @@ function renderWeatherUI() {
 
     // Start debris animation
     requestAnimationFrame(updateDebrisFX);
+
+    window.addEventListener('deviceorientation', handleOrientation, true);
+    window.addEventListener('deviceorientationabsolute', handleOrientation, true); // For some Android devices
+
+    function handleOrientation(event) {
+        if (!sensorModeActive) return;
+
+        // Calculer l'azimut (direction)
+        let heading = null;
+        if (event.webkitCompassHeading) {
+            // iOS
+            heading = event.webkitCompassHeading;
+        } else if (event.alpha !== null) {
+            // Android (alpha est la rotation autour de l'axe Z)
+            // L'API DeviceOrientationEvent sur Android utilise parfois des valeurs absolues si disponibles.
+            // On utilise 360 - alpha pour inverser le sens.
+            heading = 360 - event.alpha;
+        }
+
+        if (heading !== null) {
+            viewAzimuth = heading;
+            if (viewAzimuth < 0) viewAzimuth += 360;
+            if (viewAzimuth >= 360) viewAzimuth -= 360;
+        }
+
+        // Calculer l'altitude (inclinaison du téléphone)
+        // Beta: rotation d'avant en arrière [-180, 180]
+        if (event.beta !== null) {
+            // Quand le téléphone est vertical, beta est autour de 90.
+            // Quand le téléphone est à plat, beta est autour de 0.
+            // On mappe l'inclinaison de façon à regarder droit devant (-5) quand le tel est tenu verticalement.
+            // Ce n'est pas parfait, mais 90 - beta donne 0 (horizon) quand vertical.
+            let alt = 90 - event.beta;
+
+            // Clamp
+            if (alt > 90) alt = 90;
+            if (alt < -20) alt = -20;
+            viewAltitude = alt;
+        }
+
+        // Sync the input
+        const viewDirInput = document.getElementById('view-dir-input');
+        if (viewDirInput) {
+            viewDirInput.value = viewAzimuth.toFixed(1);
+        }
+    }
 
     // --- CAMERA PANNING & ZOOMING LOGIC ---
     let isPanning = false;
