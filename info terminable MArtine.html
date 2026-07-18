@@ -4595,6 +4595,11 @@ function renderWeatherUI() {
     const sensorModeBtn = document.getElementById('sensor-mode-toggle');
     if (sensorModeBtn) {
         sensorModeBtn.addEventListener('click', async () => {
+            if (window.isSecureContext === false && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+                alert('Les capteurs nécessitent une connexion sécurisée (HTTPS).');
+                return;
+            }
+
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
                 try {
                     const permissionState = await DeviceOrientationEvent.requestPermission();
@@ -5325,22 +5330,34 @@ function renderWeatherUI() {
     // Start debris animation
     requestAnimationFrame(updateDebrisFX);
 
-    window.addEventListener('deviceorientation', handleOrientation, true);
-    window.addEventListener('deviceorientationabsolute', handleOrientation, true); // For some Android devices
+    let hasAbsoluteEvent = false;
 
-    function handleOrientation(event) {
+    window.addEventListener('deviceorientationabsolute', (event) => {
+        hasAbsoluteEvent = true;
+        handleOrientation(event, true);
+    }, true);
+
+    window.addEventListener('deviceorientation', (event) => {
+        if (hasAbsoluteEvent) return; // Android triggers both, we only want absolute if available
+        handleOrientation(event, false);
+    }, true);
+
+    function handleOrientation(event, isAbsolute) {
         if (!sensorModeActive) return;
 
         // Calculer l'azimut (direction)
         let heading = null;
-        if (event.webkitCompassHeading) {
-            // iOS
+
+        // Fix iOS falsy bug (0 is falsy, check typeof instead)
+        if (typeof event.webkitCompassHeading === 'number') {
             heading = event.webkitCompassHeading;
         } else if (event.alpha !== null) {
-            // Android (alpha est la rotation autour de l'axe Z)
-            // L'API DeviceOrientationEvent sur Android utilise parfois des valeurs absolues si disponibles.
-            // On utilise 360 - alpha pour inverser le sens.
-            heading = 360 - event.alpha;
+            if (event.absolute || isAbsolute) {
+                heading = 360 - event.alpha;
+            } else {
+                // If it's relative, it might jump around. Some browsers set alpha as absolute anyway.
+                heading = 360 - event.alpha;
+            }
         }
 
         if (heading !== null) {
@@ -5350,12 +5367,7 @@ function renderWeatherUI() {
         }
 
         // Calculer l'altitude (inclinaison du téléphone)
-        // Beta: rotation d'avant en arrière [-180, 180]
         if (event.beta !== null) {
-            // Quand le téléphone est vertical, beta est autour de 90.
-            // Quand le téléphone est à plat, beta est autour de 0.
-            // On mappe l'inclinaison de façon à regarder droit devant (-5) quand le tel est tenu verticalement.
-            // Ce n'est pas parfait, mais 90 - beta donne 0 (horizon) quand vertical.
             let alt = 90 - event.beta;
 
             // Clamp
