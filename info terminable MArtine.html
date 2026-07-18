@@ -5351,7 +5351,7 @@ function renderWeatherUI() {
         // Fix iOS falsy bug (0 is falsy, check typeof instead)
         if (typeof event.webkitCompassHeading === 'number') {
             heading = event.webkitCompassHeading;
-        } else if (event.alpha !== null) {
+        } else if (typeof event.alpha === 'number') {
             if (event.absolute || isAbsolute) {
                 heading = 360 - event.alpha;
             } else {
@@ -5367,7 +5367,7 @@ function renderWeatherUI() {
         }
 
         // Calculer l'altitude (inclinaison du téléphone)
-        if (event.beta !== null) {
+        if (typeof event.beta === 'number') {
             let alt = 90 - event.beta;
 
             // Clamp
