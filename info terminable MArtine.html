@@ -2843,9 +2843,14 @@
             // Y mapping: Base horizon on global camera
             let viewFOVY = viewFOV * (H / W);
             let pixelsPerDegreeY = H / viewFOVY;
-            let horizonY = (H * 0.70) + (viewAltitude * pixelsPerDegreeY);
+            // Shift astronomical horizon up to clear tall SVG landmasses
+            let horizonY = (H * 0.70) + (viewAltitude * pixelsPerDegreeY) - 240;
 
-            let y = horizonY - (alt * pixelsPerDegreeY);
+            // Non-linear altitude multiplier: objects near horizon stay near, objects higher up are pushed even higher
+            // This compensates for the narrow vertical FOV and creates a more dramatic sky
+            let altMultiplier = alt > 0 ? (1 + (alt / 30)) : 1;
+
+            let y = horizonY - (alt * altMultiplier * pixelsPerDegreeY);
 
             return { x, y };
         }
