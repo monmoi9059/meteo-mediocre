@@ -3233,18 +3233,19 @@
         }
 
         let numCloudsActive = Math.min(Math.floor((c.cloudCover / 100) * clouds.length), clouds.length);
-        if (numCloudsActive < 2 && c.cloudCover > 0) numCloudsActive = 2; 
+        if (numCloudsActive < 2 && c.cloudCover > 0) numCloudsActive = 2;
+        if (starsModeActive) numCloudsActive = 0;
         let windSpeedPx = c.wind * 0.05; 
 
         // Fog check
-        const isFoggy = c.weatherCode === 45 || c.weatherCode === 48;
+        const isFoggy = (c.weatherCode === 45 || c.weatherCode === 48) && !starsModeActive;
         if (isFoggy) {
             sCtx.fillStyle = c.isNight ? 'rgba(50, 50, 60, 0.6)' : 'rgba(255, 255, 255, 0.5)';
             sCtx.fillRect(0, 0, W, H);
         }
 
         // Lightning effect
-        const isThunderstorm = c.weatherCode === 95 || c.weatherCode === 96 || c.weatherCode === 99;
+        const isThunderstorm = (c.weatherCode === 95 || c.weatherCode === 96 || c.weatherCode === 99) && !starsModeActive;
         if (isThunderstorm) {
             // Randomly trigger a flash
             if (Math.random() < 0.01) { // roughly every few seconds at 60fps
@@ -3446,6 +3447,7 @@
 
     function drawWeatherFX() {
         ctx.clearRect(0, 0, W, H);
+        if (starsModeActive) { requestAnimationFrame(drawWeatherFX); return; }
         tornados.forEach(t => {
             ctx.save();
             ctx.translate(t.x, 0); // Translate to tornado x
