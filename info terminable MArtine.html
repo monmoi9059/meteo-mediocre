@@ -112,7 +112,7 @@
         /* --- BOAT LAYER --- */
         .boat-container {
             position: fixed; left: 50vw; bottom: calc(var(--water-h) - 35px); z-index: 3;
-            transform: translateX(-50%) scale(1.4); transform-origin: bottom center; transition: bottom 0.5s ease-in-out;
+            transform: translateX(-50%) scale(1.4); transform-origin: bottom center;
             pointer-events: none;
         }
         @keyframes boatBobbing { 0%, 100% { transform: translate(-50%, 0) scale(1.4) rotate(-0.5deg); } 50% { transform: translate(-50%, -15px) scale(1.4) rotate(0.5deg); } }
@@ -2412,6 +2412,7 @@
             <input type="number" id="view-dir-input" class="view-dir-input" value="180" min="0" max="359">
         </div>
         <button id="hide-ui-toggle" class="theme-toggle">👁️ Cacher UI</button>
+        <button id="stars-mode-toggle" class="theme-toggle">✨ Mode Étoiles</button>
         <button id="image-toggle" class="theme-toggle">🖼️ petit Langlois ilustrée</button>
         <button id="rules-toggle" class="theme-toggle">📖 Règles</button>
         <button id="calc-toggle" class="theme-toggle">🧮 Calc ETA</button>
@@ -2554,6 +2555,7 @@
     let viewAzimuth = 135; // Facing South-East by default
     let viewFOV = 100; // Less bunched up
     let viewAltitude = -5; // Look slightly down
+    let starsModeActive = false;
 
     // --- VARIABLES GLOBALES ET FOND DYNAMIQUE ---
     let currentConditions = {
@@ -2843,9 +2845,14 @@
             // Y mapping: Base horizon on global camera
             let viewFOVY = viewFOV * (H / W);
             let pixelsPerDegreeY = H / viewFOVY;
-            let horizonY = (H * 0.70) + (viewAltitude * pixelsPerDegreeY);
+            // Shift astronomical horizon up to clear tall SVG landmasses
+            let horizonY = (H * 0.70) + (viewAltitude * pixelsPerDegreeY) - 240;
 
-            let y = horizonY - (alt * pixelsPerDegreeY);
+            // Non-linear altitude multiplier: objects near horizon stay near, objects higher up are pushed even higher
+            // This compensates for the narrow vertical FOV and creates a more dramatic sky
+            let altMultiplier = alt > 0 ? (1 + (alt / 30)) : 1;
+
+            let y = horizonY - (alt * altMultiplier * pixelsPerDegreeY);
 
             return { x, y };
         }
@@ -2855,10 +2862,10 @@
 
         if (observer) {
             // 1. Draw Real Stars (if night time or very low light)
-            if (c.isNight || (c.isGoldenHour && c.cloudCover < 50)) {
+            if (c.isNight || (c.isGoldenHour && c.cloudCover < 50) || starsModeActive) {
                 sCtx.save();
-                let starOpacityMod = c.isNight ? 1.0 : 0.3;
-                if (c.cloudCover > 50) starOpacityMod *= (100 - c.cloudCover)/50; // fade stars in clouds
+                let starOpacityMod = (c.isNight || starsModeActive) ? 1.0 : 0.3;
+                if (c.cloudCover > 50 && !starsModeActive) starOpacityMod *= (100 - c.cloudCover)/50; // fade stars in clouds
 
                 starCatalog.forEach(star => {
                     // For stars, we use their RA/DEC directly to get Horizon coordinates
@@ -3226,18 +3233,19 @@
         }
 
         let numCloudsActive = Math.min(Math.floor((c.cloudCover / 100) * clouds.length), clouds.length);
-        if (numCloudsActive < 2 && c.cloudCover > 0) numCloudsActive = 2; 
+        if (numCloudsActive < 2 && c.cloudCover > 0) numCloudsActive = 2;
+        if (starsModeActive) numCloudsActive = 0;
         let windSpeedPx = c.wind * 0.05; 
 
         // Fog check
-        const isFoggy = c.weatherCode === 45 || c.weatherCode === 48;
+        const isFoggy = (c.weatherCode === 45 || c.weatherCode === 48) && !starsModeActive;
         if (isFoggy) {
             sCtx.fillStyle = c.isNight ? 'rgba(50, 50, 60, 0.6)' : 'rgba(255, 255, 255, 0.5)';
             sCtx.fillRect(0, 0, W, H);
         }
 
         // Lightning effect
-        const isThunderstorm = c.weatherCode === 95 || c.weatherCode === 96 || c.weatherCode === 99;
+        const isThunderstorm = (c.weatherCode === 95 || c.weatherCode === 96 || c.weatherCode === 99) && !starsModeActive;
         if (isThunderstorm) {
             // Randomly trigger a flash
             if (Math.random() < 0.01) { // roughly every few seconds at 60fps
@@ -3439,6 +3447,7 @@
 
     function drawWeatherFX() {
         ctx.clearRect(0, 0, W, H);
+        if (starsModeActive) { requestAnimationFrame(drawWeatherFX); return; }
         tornados.forEach(t => {
             ctx.save();
             ctx.translate(t.x, 0); // Translate to tornado x
@@ -4565,6 +4574,21 @@ function renderWeatherUI() {
     });
 
     // Toggle Hide UI
+    const starsModeBtn = document.getElementById('stars-mode-toggle');
+    if (starsModeBtn) {
+        starsModeBtn.addEventListener('click', () => {
+            starsModeActive = !starsModeActive;
+            starsModeBtn.innerHTML = starsModeActive ? '✨ Mode Étoiles (Actif)' : '✨ Mode Étoiles';
+            if (starsModeActive) {
+                starsModeBtn.style.background = 'var(--primary)';
+            } else {
+                starsModeBtn.style.background = '';
+            }
+            if (typeof drawSkyFX === 'function') drawSkyFX();
+            if (typeof drawWeatherFX === 'function') drawWeatherFX();
+        });
+    }
+
     const hideUiBtn = document.getElementById('hide-ui-toggle');
     if (hideUiBtn) {
 
