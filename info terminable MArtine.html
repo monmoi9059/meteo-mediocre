@@ -4919,19 +4919,14 @@ function renderWeatherUI() {
             let t = Date.now() / 1000;
 
             // Base scale depends on zoom
-            let baseScale = 130 / viewFOV * 1.4;
+            let baseScale = 130 / viewFOV * 0.7;
 
-            // Calculate screen X position for the boat based on its fixed azimuth of 135
-            let boatAzimuth = 135;
-            let relAz = boatAzimuth - viewAzimuth;
-            if (relAz > 180) relAz -= 360;
-            if (relAz < -180) relAz += 360;
-
-            let boatXScreen = (window.innerWidth / 2) + (relAz * cam.pixelsPerDegreeX);
             // Boat should sit slightly "in" the water, so it bobs below the water top layer
             let boatYScreen = cam.waterTopY + 35;
 
-            boat.style.left = `${boatXScreen}px`;
+            // Remove horizontal translation override to keep the boat moored at the dock UI-wise (center of screen)
+            boat.style.left = `50vw`;
+
             // Calculate bottom instead of relying on default css
             boat.style.bottom = `${window.innerHeight - boatYScreen}px`;
 
@@ -5345,38 +5340,48 @@ function renderWeatherUI() {
     function handleOrientation(event, isAbsolute) {
         if (!sensorModeActive) return;
 
-        // Calculer l'azimut (direction)
         let heading = null;
 
-        // Fix iOS falsy bug (0 is falsy, check typeof instead)
         if (typeof event.webkitCompassHeading === 'number') {
             heading = event.webkitCompassHeading;
         } else if (typeof event.alpha === 'number') {
-            if (event.absolute || isAbsolute) {
-                heading = 360 - event.alpha;
-            } else {
-                // If it's relative, it might jump around. Some browsers set alpha as absolute anyway.
-                heading = 360 - event.alpha;
-            }
+            // event.alpha is counter-clockwise from North in some implementations.
+            // Most standard implementations: alpha = 0 is North, 90 is West, 180 is South, 270 is East.
+            // Our viewAzimuth is 0=North, 90=East, 180=South, 270=West.
+            heading = 360 - event.alpha;
         }
 
         if (heading !== null) {
+            // Apply a low-pass filter to smooth the sensor data
+            if (!window.lastHeading) window.lastHeading = heading;
+            let diff = heading - window.lastHeading;
+            // Handle wrap-around
+            if (diff > 180) diff -= 360;
+            if (diff < -180) diff += 360;
+
+            heading = window.lastHeading + diff * 0.1; // Smooth factor 0.1
+            window.lastHeading = heading;
+
             viewAzimuth = heading;
             if (viewAzimuth < 0) viewAzimuth += 360;
             if (viewAzimuth >= 360) viewAzimuth -= 360;
         }
 
-        // Calculer l'altitude (inclinaison du téléphone)
-        if (typeof event.beta === 'number') {
+        if (typeof event.beta === 'number' && typeof event.gamma === 'number') {
+            // Depending on device orientation (portrait vs landscape), beta or gamma is the pitch.
+            // Assuming portrait mode:
             let alt = 90 - event.beta;
 
-            // Clamp
+            // Smooth altitude
+            if (!window.lastAlt) window.lastAlt = alt;
+            alt = window.lastAlt + (alt - window.lastAlt) * 0.1;
+            window.lastAlt = alt;
+
             if (alt > 90) alt = 90;
             if (alt < -20) alt = -20;
             viewAltitude = alt;
         }
 
-        // Sync the input
         const viewDirInput = document.getElementById('view-dir-input');
         if (viewDirInput) {
             viewDirInput.value = viewAzimuth.toFixed(1);
