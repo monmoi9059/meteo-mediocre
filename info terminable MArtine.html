@@ -2831,30 +2831,47 @@
         function getCanvasXY(az, alt) {
             if (alt < -2) return null; // Below horizon (slightly extended for glow/refraction)
             
-            // Calculate relative azimuth (difference from viewing direction)
-            let relAz = az - viewAzimuth;
-            // Normalize to [-180, 180]
-            if (relAz > 180) relAz -= 360;
-            if (relAz < -180) relAz += 360;
+            let d2r = Math.PI / 180;
 
-            // Check if within Field of View (add some padding for large objects)
-            if (Math.abs(relAz) > (viewFOV / 2 + 10)) return null;
+            // 1. World vector for celestial object
+            // East = +X, North = -Z, Up = +Y
+            // Astronomy uses azimuth from North (0), East (90), South (180)
+            let x_w = Math.cos(alt * d2r) * Math.sin(az * d2r);
+            let y_w = Math.sin(alt * d2r);
+            let z_w = Math.cos(alt * d2r) * -Math.cos(az * d2r);
 
-            // X mapping: Center of screen is relAz = 0.
-            let pixelsPerDegreeX = W / viewFOV;
-            let x = (W / 2) + (relAz * pixelsPerDegreeX);
+            // 2. Camera vector (Forward)
+            let fX = Math.cos(viewAltitude * d2r) * Math.sin(viewAzimuth * d2r);
+            let fY = Math.sin(viewAltitude * d2r);
+            let fZ = Math.cos(viewAltitude * d2r) * -Math.cos(viewAzimuth * d2r);
 
-            // Y mapping: Base horizon on global camera
-            let viewFOVY = viewFOV * (H / W);
-            let pixelsPerDegreeY = H / viewFOVY;
-            // Shift astronomical horizon up to clear tall SVG landmasses
-            let horizonY = (H * 0.70) + (viewAltitude * pixelsPerDegreeY) - 240;
+            // 3. Camera Right vector (parallel to XZ plane)
+            let rX = Math.cos(viewAzimuth * d2r);
+            let rY = 0;
+            let rZ = Math.sin(viewAzimuth * d2r);
 
-            // Non-linear altitude multiplier: objects near horizon stay near, objects higher up are pushed even higher
-            // This compensates for the narrow vertical FOV and creates a more dramatic sky
-            let altMultiplier = alt > 0 ? (1 + (alt / 30)) : 1;
+            // 4. Camera Up vector = Right x Forward
+            let uX = rY * fZ - rZ * fY;
+            let uY = rZ * fX - rX * fZ;
+            let uZ = rX * fY - rY * fX;
 
-            let y = horizonY - (alt * altMultiplier * pixelsPerDegreeY);
+            // 5. Project world point onto camera axes
+            let cx = x_w * rX + y_w * rY + z_w * rZ;
+            let cy = x_w * uX + y_w * uY + z_w * uZ;
+            let cz = x_w * fX + y_w * fY + z_w * fZ;
+
+            if (cz <= 0.0001) return null; // Behind camera or exactly on the plane
+
+            // 6. Perspective division to screen coordinates
+            let focalLength = (W / 2) / Math.tan((viewFOV / 2) * d2r);
+            let x = (W / 2) + (cx / cz) * focalLength;
+
+            // Maintain the optical center logic of the original scene (matching standard zoom)
+            let opticalCenterY = (H * 0.70) - 240;
+            let y = opticalCenterY - (cy / cz) * focalLength;
+
+            // Padding check
+            if (x < -200 || x > W + 200 || y < -200 || y > H + 500) return null;
 
             return { x, y };
         }
@@ -3012,7 +3029,10 @@
                     let pos = getCanvasXY(hor.azimuth, hor.altitude);
                     if (pos && hor.altitude > 0) {
                         sCtx.beginPath();
-                        sCtx.arc(pos.x, pos.y, planet.size, 0, Math.PI*2);
+                        // Make planets 2x bigger, and scale up as camera zooms in (FOV decreases)
+                        let zoomScale = 100 / viewFOV;
+                        let dynamicSize = planet.size * 2 * zoomScale;
+                        sCtx.arc(pos.x, pos.y, dynamicSize, 0, Math.PI*2);
                         sCtx.fillStyle = planet.color;
                         sCtx.shadowBlur = 10;
                         sCtx.shadowColor = planet.color;
