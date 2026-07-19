@@ -4818,23 +4818,20 @@ function renderWeatherUI() {
             // Spin
             d.rotation += d.spinSpeed;
 
-            // Project World Azimuth to Screen X
-            let proj = window.projectAzAlt ? window.projectAzAlt(d.worldAz, 0, window.innerWidth, window.innerHeight, window.viewAzimuth, window.viewAltitude, window.viewFOV) : null;
-            let screenX = -999;
-            if (proj && proj.cz > 0) {
-                screenX = proj.x;
-                d.el.style.transform = `translate3d(${screenX}px, ${currentY}px, 0) rotate(${d.rotation}deg)`;
-                d.el.style.display = 'block';
-            } else {
-                d.el.style.display = 'none';
-            }
+            // Calculate relative azimuth for screen X
+            let relAz = d.worldAz - window.viewAzimuth;
+            if (relAz > 180) relAz -= 360;
+            if (relAz < -180) relAz += 360;
+
+            // Linear projection based on camera FOV
+            let pixelsPerDegreeX = window.innerWidth / window.viewFOV;
+            let screenX = (window.innerWidth / 2) + (relAz * pixelsPerDegreeX);
+
+            d.el.style.transform = `translate3d(${screenX}px, ${currentY}px, 0) rotate(${d.rotation}deg)`;
+            d.el.style.display = 'block';
 
             // Remove if offscreen by checking difference between viewAzimuth and worldAz
-            let diff = d.worldAz - window.viewAzimuth;
-            if (diff > 180) diff -= 360;
-            if (diff < -180) diff += 360;
-
-            if (Math.abs(diff) > 90) { // Out of 180 deg hemisphere FOV
+            if (Math.abs(relAz) > (window.viewFOV / 2) + 20) {
                 d.el.remove();
                 debrisList.splice(i, 1);
             }
@@ -4881,62 +4878,41 @@ function renderWeatherUI() {
             let widthDeg = parseFloat(lm.getAttribute('data-width'));
             let offsetY = parseFloat(lm.getAttribute('data-offset-y')) || 0;
 
-            if (typeof window.projectAzAlt === 'function') {
-                // Spherical mapping for center X
-                let centerProj = window.projectAzAlt(az, 0, W, H, viewAzimuth, viewAltitude, viewFOV);
+            // Calculate relative azimuth (difference from viewing direction)
+            let relAz = az - viewAzimuth;
+            // Normalize to [-180, 180]
+            if (relAz > 180) relAz -= 360;
+            if (relAz < -180) relAz += 360;
 
-                // If it's behind the camera, don't render it
-                if (!centerProj || centerProj.cz <= 0.0001) {
-                    lm.style.display = 'none';
-                    let clone = document.getElementById(`clone-${idx}`);
-                    if(clone) clone.style.display = 'none';
-                    return;
-                }
-                lm.style.display = 'block';
+            // X mapping: Center of screen is relAz = 0.
+            let x = (W / 2) + (relAz * pixelsPerDegreeX);
 
-                // Calculate width spherically by projecting left and right edges
-                let leftAz = az - widthDeg / 2;
-                let rightAz = az + widthDeg / 2;
+            // Width mapping: how many pixels wide is this landmark based on FOV
+            let pixelWidth = widthDeg * pixelsPerDegreeX;
 
-                let leftProj = window.projectAzAlt(leftAz, 0, W, H, viewAzimuth, viewAltitude, viewFOV);
-                let rightProj = window.projectAzAlt(rightAz, 0, W, H, viewAzimuth, viewAltitude, viewFOV);
+            lm.style.display = 'block';
+            lm.style.left = `${x}px`;
+            lm.style.width = `${pixelWidth}px`;
+            lm.style.bottom = `${H - horizonY - offsetY}px`;
+            lm.style.transform = `translateX(-50%)`;
 
-                let pixelWidth;
-                if (leftProj && rightProj && leftProj.cz > 0 && rightProj.cz > 0) {
-                    pixelWidth = Math.abs(rightProj.x - leftProj.x);
-                } else {
-                    // Fallback to linear width if edges are behind camera
-                    pixelWidth = widthDeg * (W / viewFOV);
-                }
-
-                lm.style.left = `${centerProj.x}px`;
-                lm.style.width = `${pixelWidth}px`;
-                lm.style.bottom = `${H - horizonY - offsetY}px`;
-                lm.style.transform = `translateX(-50%)`;
-
-                // CLONING: In spherical, we might not strictly need it unless they span exactly 180 deg behind,
-                // but let's keep the logic for seamless 360 wrapping.
-                let clone = document.getElementById(`clone-${idx}`);
-                if (!clone) {
-                    clone = lm.cloneNode(true);
-                    clone.id = `clone-${idx}`;
-                    lm.parentNode.appendChild(clone);
-                }
-                clone.style.display = 'block';
-
-                // Opposite azimuth mapping
-                let altAz = az > 180 ? az - 360 : az + 360;
-                let altCenter = window.projectAzAlt(altAz, 0, W, H, viewAzimuth, viewAltitude, viewFOV);
-
-                if (altCenter && altCenter.cz > 0) {
-                    clone.style.left = `${altCenter.x}px`;
-                    clone.style.width = `${pixelWidth}px`;
-                    clone.style.bottom = `${H - horizonY}px`;
-                    clone.style.transform = `translateX(-50%)`;
-                } else {
-                    clone.style.display = 'none';
-                }
+            // SEAMLESS CLONING LOGIC
+            let clone = document.getElementById(`clone-${idx}`);
+            if (!clone) {
+                clone = lm.cloneNode(true);
+                clone.id = `clone-${idx}`;
+                lm.parentNode.appendChild(clone);
             }
+            clone.style.display = 'block';
+
+            // Calculate the alternate azimuth
+            let altRelAz = relAz > 0 ? relAz - 360 : relAz + 360;
+            let altX = (W / 2) + (altRelAz * pixelsPerDegreeX);
+
+            clone.style.left = `${altX}px`;
+            clone.style.width = `${pixelWidth}px`;
+            clone.style.bottom = `${H - horizonY}px`;
+            clone.style.transform = `translateX(-50%)`;
         });
 
         return { horizonY, waterTopY, pixelsPerDegreeX, pixelsPerDegreeY };
