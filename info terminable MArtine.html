@@ -2827,9 +2827,33 @@
             observer = new Astronomy.Observer(currentLat, currentLon, 0);
         }
 
+        // Let the user test both projections
+        // Change this variable to true to test Option B, false for Option A
+        const useEquirectangular = true;
+
         // --- MAPPING FUNCTION: Azimuth/Altitude to X/Y on Canvas ---
         // Helper to project any Azimuth/Altitude to screen X/Y using 3D perspective
         window.projectAzAlt = function(az, alt, w, h, vAz, vAlt, fov) {
+
+            if (useEquirectangular) {
+                // Option B: Equirectangular / Cylindrical Projection (Matches ground perfectly)
+                // The ground uses: x = (W / 2) + (relAz * pixelsPerDegreeX)
+                //                  horizonY = (H * 0.70) + (viewAltitude * pixelsPerDegreeY);
+                let relAz = az - vAz;
+                if (relAz > 180) relAz -= 360;
+                if (relAz < -180) relAz += 360;
+
+                let pixelsPerDegreeX = w / fov;
+                let viewFOVY = fov * (h / w);
+                let pixelsPerDegreeY = h / viewFOVY;
+
+                let x = (w / 2) + (relAz * pixelsPerDegreeX);
+                let horizonY = (h * 0.70) + (vAlt * pixelsPerDegreeY);
+                let y = horizonY - (alt * pixelsPerDegreeY);
+
+                return { x, y, cx: 0, cy: 0, cz: 1 }; // Fake 3D vectors to pass checks
+            }
+
             let d2r = Math.PI / 180;
 
             // 1. World vector
@@ -2837,11 +2861,11 @@
             let y_w = Math.sin(alt * d2r);
             let z_w = Math.cos(alt * d2r) * -Math.cos(az * d2r);
 
-            // 2. Camera vector (Forward) - We include vAlt here to physically tilt the celestial sphere
-            // when looking up, which gives it the realistic 3D dome feel.
-            let fX = Math.cos(vAlt * d2r) * Math.sin(vAz * d2r);
-            let fY = Math.sin(vAlt * d2r);
-            let fZ = Math.cos(vAlt * d2r) * -Math.cos(vAz * d2r);
+            // Option A: Stereographic with locked pitch and linear Y shift
+            let camPitch = 0; // Lock internal pitch to 0 to keep horizon straight
+            let fX = Math.cos(camPitch * d2r) * Math.sin(vAz * d2r);
+            let fY = Math.sin(camPitch * d2r);
+            let fZ = Math.cos(camPitch * d2r) * -Math.cos(vAz * d2r);
 
             // 3. Camera Right vector
             let rX = Math.cos(vAz * d2r);
@@ -2871,21 +2895,13 @@
 
             let screenX = (w / 2) + (cx / (1 + cz)) * focalLength;
 
-            // Synchronize the celestial horizon exactly with the ground horizon's linear shift.
-            // The ground moves linearly: horizonY = (H * 0.70) + (viewAltitude * pixelsPerDegreeY)
-            // But a 3D stereographic tilt is non-linear. To perfectly align them without breaking 3D:
-            // We find the 'cy' and 'cz' of the horizon point directly in front of the camera (az = vAz, alt = 0)
-            let hz_x_w = Math.sin(vAz * d2r);
-            let hz_z_w = -Math.cos(vAz * d2r);
-            let hz_cy = hz_x_w * uX + hz_z_w * uZ; // y_w is 0 for alt=0
-            let hz_cz = hz_x_w * fX + hz_z_w * fZ;
-
+            // Option A linear shift integration
             let viewFOVY = fov * (h / w);
             let pixelsPerDegreeY = h / viewFOVY;
             let linearHorizonY = (h * 0.70) + (vAlt * pixelsPerDegreeY);
 
-            // We set the optical center so that the stereographic horizon projection exactly hits linearHorizonY
-            let opticalCenterY = linearHorizonY + (hz_cy / (1 + hz_cz)) * focalLength;
+            // Since camPitch = 0, opticalCenterY exactly equals the horizon.
+            let opticalCenterY = linearHorizonY;
             let screenY = opticalCenterY - (cy / (1 + cz)) * focalLength;
 
             return { x: screenX, y: screenY, cx, cy, cz };
