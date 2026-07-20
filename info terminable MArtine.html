@@ -2898,7 +2898,7 @@
                     // For stars, we use their RA/DEC directly to get Horizon coordinates
                     // Note: RA is expected in hours (0-24) by astronomy-engine, not degrees (0-360)
                     let raHours = star.ra / 15;
-                    let hor = Astronomy.Horizon(dDate, observer, raHours, star.dec, 'normal');
+                    let hor = Astronomy.Horizon(dDate, observer, raHours, star.dec, 'none');
                     let pos = getCanvasXY(hor.azimuth, hor.altitude);
                     if (pos) {
                         // Max magnitude is now 5.5, let's adjust scale.
@@ -2954,11 +2954,11 @@
 
                     constell.lines.forEach(line => {
                         let raHours1 = line[0].ra / 15;
-                        let hor1 = Astronomy.Horizon(dDate, observer, raHours1, line[0].dec, 'normal');
+                        let hor1 = Astronomy.Horizon(dDate, observer, raHours1, line[0].dec, 'none');
                         let pos1 = getCanvasXY(hor1.azimuth, hor1.altitude);
 
                         let raHours2 = line[1].ra / 15;
-                        let hor2 = Astronomy.Horizon(dDate, observer, raHours2, line[1].dec, 'normal');
+                        let hor2 = Astronomy.Horizon(dDate, observer, raHours2, line[1].dec, 'none');
                         let pos2 = getCanvasXY(hor2.azimuth, hor2.altitude);
 
                         if (pos1 && pos2 && hor1.altitude > 0 && hor2.altitude > 0) {
@@ -3033,7 +3033,7 @@
             if (c.isNight || c.isGoldenHour) {
                 planetConfig.forEach(planet => {
                     let eq = Astronomy.Equator(planet.name, dDate, observer, true, true);
-                    let hor = Astronomy.Horizon(dDate, observer, eq.ra, eq.dec, 'normal');
+                    let hor = Astronomy.Horizon(dDate, observer, eq.ra, eq.dec, 'none');
                     let pos = getCanvasXY(hor.azimuth, hor.altitude);
                     if (pos && hor.altitude > 0) {
                         sCtx.beginPath();
@@ -3057,7 +3057,7 @@
 
             // 3. Draw Moon
             let eqMoon = Astronomy.Equator("Moon", dDate, observer, true, true);
-            let horMoon = Astronomy.Horizon(dDate, observer, eqMoon.ra, eqMoon.dec, 'normal');
+            let horMoon = Astronomy.Horizon(dDate, observer, eqMoon.ra, eqMoon.dec, 'none');
             let moonPos = getCanvasXY(horMoon.azimuth, horMoon.altitude);
 
             if (moonPos) {
@@ -3147,7 +3147,7 @@
 
             // 4. Draw Sun
             let eqSun = Astronomy.Equator("Sun", dDate, observer, true, true);
-            let horSun = Astronomy.Horizon(dDate, observer, eqSun.ra, eqSun.dec, 'normal');
+            let horSun = Astronomy.Horizon(dDate, observer, eqSun.ra, eqSun.dec, 'none');
             let sunPos = getCanvasXY(horSun.azimuth, horSun.altitude);
 
             if (sunPos && horSun.altitude > -10) { // Show slightly below horizon for glow
@@ -4797,11 +4797,13 @@ function renderWeatherUI() {
             let speedDegrees = currentSpeed * 0.05; // Convert speed to degrees
 
             if (currentConditions.flowDirection === 'right') {
-                // Rising Tide: Flow towards 250 (West)
-                d.worldAz += speedDegrees;
-            } else if (currentConditions.flowDirection === 'left') {
-                // Dropping Tide: Flow towards 62 (East)
+                // Rising Tide
+                // Reverted to moving left to right when tide is going up
                 d.worldAz -= speedDegrees;
+            } else if (currentConditions.flowDirection === 'left') {
+                // Dropping Tide
+                // Reverted to reverse when going down
+                d.worldAz += speedDegrees;
             } else {
                 // Slack: drift slowly
                 d.worldAz += (Math.random() - 0.5) * 0.01;
