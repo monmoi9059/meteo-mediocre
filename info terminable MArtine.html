@@ -4764,8 +4764,8 @@ function renderWeatherUI() {
 
         // In Spherical tide flow, track 'worldAzimuth' instead of flat 'x'
         // Spawn offscreen based on flow direction relative to viewAzimuth
-        let fovHalf = window.viewFOV / 2;
-        let worldAz = window.viewAzimuth;
+        let fovHalf = viewFOV / 2;
+        let worldAz = viewAzimuth;
 
         if (currentConditions.flowDirection === 'right') {
             // Flowing right (Azimuth increasing), so spawn on the left edge (viewAzimuth - FOV/2 - some buffer)
@@ -4775,7 +4775,7 @@ function renderWeatherUI() {
             worldAz += (fovHalf + 10);
         } else {
             // Slack: spawn randomly within view
-            worldAz += (Math.random() * window.viewFOV - fovHalf);
+            worldAz += (Math.random() * viewFOV - fovHalf);
         }
 
         const debrisObj = {
@@ -4839,19 +4839,19 @@ function renderWeatherUI() {
             d.rotation += d.spinSpeed;
 
             // Calculate relative azimuth for screen X
-            let relAz = d.worldAz - window.viewAzimuth;
+            let relAz = d.worldAz - viewAzimuth;
             if (relAz > 180) relAz -= 360;
             if (relAz < -180) relAz += 360;
 
             // Linear projection based on camera FOV
-            let pixelsPerDegreeX = window.innerWidth / window.viewFOV;
+            let pixelsPerDegreeX = window.innerWidth / viewFOV;
             let screenX = (window.innerWidth / 2) + (relAz * pixelsPerDegreeX);
 
             d.el.style.transform = `translate3d(${screenX}px, ${currentY}px, 0) rotate(${d.rotation}deg)`;
             d.el.style.display = 'block';
 
             // Remove if offscreen by checking difference between viewAzimuth and worldAz
-            if (Math.abs(relAz) > (window.viewFOV / 2) + 20) {
+            if (Math.abs(relAz) > (viewFOV / 2) + 20) {
                 d.el.remove();
                 debrisList.splice(i, 1);
             }
