@@ -2830,75 +2830,26 @@
         // --- MAPPING FUNCTION: Azimuth/Altitude to X/Y on Canvas ---
         // Helper to project any Azimuth/Altitude to screen X/Y using 3D perspective
         window.projectAzAlt = function(az, alt, w, h, vAz, vAlt, fov) {
-            let d2r = Math.PI / 180;
+            let relAz = az - vAz;
 
-            // 1. World vector
-            let x_w = Math.cos(alt * d2r) * Math.sin(az * d2r);
-            let y_w = Math.sin(alt * d2r);
-            let z_w = Math.cos(alt * d2r) * -Math.cos(az * d2r);
+            // Normalize to [-180, 180]
+            if (relAz > 180) relAz -= 360;
+            if (relAz < -180) relAz += 360;
 
-            // 2. Camera vector (Forward) - We include vAlt here to physically tilt the celestial sphere
-            // when looking up, which is what gives it the realistic dome feel!
-            let fX = Math.cos(vAlt * d2r) * Math.sin(vAz * d2r);
-            let fY = Math.sin(vAlt * d2r);
-            let fZ = Math.cos(vAlt * d2r) * -Math.cos(vAz * d2r);
+            // Culling bounds (don't draw things way off screen)
+            if (Math.abs(relAz) > (fov / 2) + 20) return null;
 
-            // 3. Camera Right vector
-            let rX = Math.cos(vAz * d2r);
-            let rY = 0;
-            let rZ = Math.sin(vAz * d2r);
-
-            // 4. Camera Up vector
-            let uX = rY * fZ - rZ * fY;
-            let uY = rZ * fX - rX * fZ;
-            let uZ = rX * fY - rY * fX;
-
-            // 5. Project world point onto camera axes
-            let cx = x_w * rX + y_w * rY + z_w * rZ;
-            let cy = x_w * uX + y_w * uY + z_w * uZ;
-            let cz = x_w * fX + y_w * fY + z_w * fZ;
-
-            if (cz <= 0.0001) return null; // Behind camera
-
-            // 6. STEREOGRAPHIC PROJECTION
-            // This is the magic math that keeps the beautiful spherical look,
-            // but prevents "bunching" by expanding the edges gracefully,
-            // making the sphere feel "far away".
-            // It maps the hemisphere using cx / (1 + cz).
-
-            // Stereographic focal length calculation based on FOV
-            let focalLength = (w / 2) / (2 * Math.tan((fov / 4) * d2r));
-
-            let screenX = (w / 2) + (cx / (1 + cz)) * focalLength;
-
-            // When vAlt is 0 (looking at the horizon), the center of the camera is exactly at (h * 0.70).
-            // When we look up, vAlt tilts the entire 3D sphere, so we don't need to manually shift Y!
-            // The matrix does it automatically.
-            let opticalCenterY = (h * 0.70);
-
-            // To ensure the center of the celestial horizon ALWAYS aligns exactly with the center of the
-            // 2D equirectangular ground horizon, we calculate the exact difference between the 3D optical
-            // center and the 2D linear ground level, and apply that offset to the final screenY.
-            // This preserves the beautiful realistic stereographic 3D curve (no flat walls) but anchors it exactly to the ground.
-
-            // 2D linear ground horizon:
             let viewFOVY = fov * (h / w);
+            let pixelsPerDegreeX = w / fov;
             let pixelsPerDegreeY = h / viewFOVY;
-            let linearHorizonY = (h * 0.70) + (vAlt * pixelsPerDegreeY);
 
-            // 3D stereographic horizon center (az = vAz, alt = 0):
-            let hz_x_w = Math.sin(vAz * d2r);
-            let hz_z_w = -Math.cos(vAz * d2r);
-            let hz_cy = hz_x_w * uX + hz_z_w * uZ;
-            let hz_cz = hz_x_w * fX + hz_z_w * fZ;
-            let stereographicHorizonY = opticalCenterY - (hz_cy / (1 + hz_cz)) * focalLength;
+            let x = (w / 2) + (relAz * pixelsPerDegreeX);
 
-            // The missing gap offset:
-            let horizonCorrectionOffset = linearHorizonY - stereographicHorizonY;
+            // Calculate screen Y relative to the exact ground horizon calculation
+            let horizonY = (h * 0.70) + (vAlt * pixelsPerDegreeY);
+            let y = horizonY - (alt * pixelsPerDegreeY); // Altitude goes up (negative Y)
 
-            let screenY = (opticalCenterY - (cy / (1 + cz)) * focalLength) + horizonCorrectionOffset;
-
-            return { x: screenX, y: screenY, cx, cy, cz };
+            return { x, y, cx: 0, cy: 0, cz: 1 };
         };
 
         function getCanvasXY(az, alt) {
