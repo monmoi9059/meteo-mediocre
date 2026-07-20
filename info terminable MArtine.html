@@ -2829,42 +2829,59 @@
 
         // --- MAPPING FUNCTION: Azimuth/Altitude to X/Y on Canvas ---
         // Helper to project any Azimuth/Altitude to screen X/Y using 3D perspective
-        // But with a hybrid approach to match the linear land horizon perfectly at the horizon line (alt=0).
         window.projectAzAlt = function(az, alt, w, h, vAz, vAlt, fov) {
             let d2r = Math.PI / 180;
 
-            // 1. Calculate relative azimuth for linear X mapping (to perfectly match the CSS background pan/zoom)
-            let relAz = az - vAz;
-            while (relAz > 180) relAz -= 360;
-            while (relAz < -180) relAz += 360;
+            // 1. World vector
+            let x_w = Math.cos(alt * d2r) * Math.sin(az * d2r);
+            let y_w = Math.sin(alt * d2r);
+            let z_w = Math.cos(alt * d2r) * -Math.cos(az * d2r);
 
-            if (Math.abs(relAz) > (fov / 2) + 90) return null; // Behind camera/offscreen
+            // 2. Camera vector (Forward)
+            let fX = Math.cos(vAlt * d2r) * Math.sin(vAz * d2r);
+            let fY = Math.sin(vAlt * d2r);
+            let fZ = Math.cos(vAlt * d2r) * -Math.cos(vAz * d2r);
 
-            // Linear X mapping (identical to land/water)
-            let pixelsPerDegreeX = w / fov;
-            let screenX = (w / 2) + (relAz * pixelsPerDegreeX);
+            // 3. Camera Right vector (parallel to XZ plane)
+            let rX = Math.cos(vAz * d2r);
+            let rY = 0;
+            let rZ = Math.sin(vAz * d2r);
 
-            // 2. Y mapping (hybrid tangent mapping for zenith curvature, but locked to linear horizon)
-            let viewFOVY = fov * (h / w);
-            let pixelsPerDegreeY = h / viewFOVY;
+            // 4. Camera Up vector = Right x Forward
+            let uX = rY * fZ - rZ * fY;
+            let uY = rZ * fX - rX * fZ;
+            let uZ = rX * fY - rY * fX;
 
-            // The physical horizon on screen is at alt=0
-            let horizonY = (h * 0.70) + (vAlt * pixelsPerDegreeY);
+            // 5. Project world point onto camera axes
+            let cx = x_w * rX + y_w * rY + z_w * rZ;
+            let cy = x_w * uX + y_w * uY + z_w * uZ;
+            let cz = x_w * fX + y_w * fY + z_w * fZ;
 
-            // Apply tangent distortion based on actual altitude to simulate looking into a dome.
-            // When alt is small (near horizon), tan(alt) ~ alt, so it matches the linear horizon.
-            // When alt approaches 90 (zenith), tan(alt) shoots to infinity, preventing it from looking flat.
-            // But we scale it by a focal-like factor so it matches pixelsPerDegreeY at the horizon!
+            if (cz <= 0.0001) return null; // Behind camera
 
-            // A pseudo-focal length that makes the derivative of tan at 0 match our pixelsPerDegreeY:
-            // d/d(alt) [F * tan(alt)] = F. So we want F = pixelsPerDegreeY / (Math.PI/180).
-            let focalLengthY = pixelsPerDegreeY / d2r;
+            // 6. Linear perspective division to match the linear FOV zoom of the background
+            // The background scales linearly (w / fov).
+            // A traditional 3D camera scales by tangent: (w / 2) / Math.tan((fov / 2) * d2r)
+            // By using a linear focal length, we keep the beautiful 3D spherical dome projection
+            // for panning/looking up, but prevent the stars from "bunching up" unnaturally when zooming out!
 
-            // Calculate screen Y by shifting up from the horizon using the tangent projection
-            let screenY = horizonY - (Math.tan(alt * d2r) * focalLengthY);
+            // To synchronize the 3D horizon (alt=0) with the CSS horizon perfectly:
+            // We use the linear pixels-per-degree mapped to radians.
+            let focalLength = (w / fov) / d2r;
 
-            // Mock cz so other checks don't fail
-            return { x: screenX, y: screenY, cx: relAz, cy: alt, cz: 1 };
+            // In a cylindrical-like mapping for the X axis, if we just use cx/cz, it causes tangent distortion.
+            // Let's use the true angle to prevent X-bunching.
+            let angleX = Math.atan2(cx, cz);
+            let screenX = (w / 2) + (angleX * focalLength);
+
+            // Let's also use the true angle for Y to prevent Y-bunching when looking up.
+            let angleY = Math.asin(cy);
+
+            // The visual horizon is at 70% height
+            let opticalCenterY = (h * 0.70);
+            let screenY = opticalCenterY - (angleY * focalLength);
+
+            return { x: screenX, y: screenY, cx, cy, cz };
         };
 
         function getCanvasXY(az, alt) {
