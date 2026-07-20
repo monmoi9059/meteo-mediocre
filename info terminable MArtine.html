@@ -296,7 +296,7 @@
         display: none;
     }
     #compass-container {
-        position: absolute;
+        position: fixed;
         bottom: 20px;
         left: 50%;
         width: 150px;
@@ -2837,34 +2837,40 @@
             let y_w = Math.sin(alt * d2r);
             let z_w = Math.cos(alt * d2r) * -Math.cos(az * d2r);
 
-            // 2. Camera vector (Forward)
-            let fX = Math.cos(vAlt * d2r) * Math.sin(vAz * d2r);
-            let fY = Math.sin(vAlt * d2r);
-            let fZ = Math.cos(vAlt * d2r) * -Math.cos(vAz * d2r);
+            // 2. Camera vector (Forward, perfectly horizontal to match land horizon logic)
+            let fX = Math.sin(vAz * d2r);
+            let fY = 0;
+            let fZ = -Math.cos(vAz * d2r);
 
-            // 3. Camera Right vector (parallel to XZ plane)
+            // 3. Camera Right vector
             let rX = Math.cos(vAz * d2r);
             let rY = 0;
             let rZ = Math.sin(vAz * d2r);
 
-            // 4. Camera Up vector = Right x Forward
-            let uX = rY * fZ - rZ * fY;
-            let uY = rZ * fX - rX * fZ;
-            let uZ = rX * fY - rY * fX;
+            // 4. Camera Up vector
+            let uX = 0;
+            let uY = 1;
+            let uZ = 0;
 
             // 5. Project world point onto camera axes
             let cx = x_w * rX + y_w * rY + z_w * rZ;
             let cy = x_w * uX + y_w * uY + z_w * uZ;
             let cz = x_w * fX + y_w * fY + z_w * fZ;
 
-            if (cz <= 0.0001) return null; // Behind camera or exactly on the plane
+            if (cz <= 0.0001) return null; // Behind camera
 
             // 6. Perspective division to screen coordinates
             let focalLength = (w / 2) / Math.tan((fov / 2) * d2r);
             let screenX = (w / 2) + (cx / cz) * focalLength;
 
-            let opticalCenterY = (h * 0.70);
-            let screenY = opticalCenterY - (cy / cz) * focalLength;
+            // To match the land horizon perfectly during zooming and panning,
+            // we use the exact same calculation as updateCamera() for the base horizon,
+            // then offset it by the projected altitude.
+            let viewFOVY = fov * (h / w);
+            let pixelsPerDegreeY = h / viewFOVY;
+            let horizonY = (h * 0.70) + (vAlt * pixelsPerDegreeY);
+
+            let screenY = horizonY - (cy / cz) * focalLength;
 
             return { x: screenX, y: screenY, cx, cy, cz };
         };
