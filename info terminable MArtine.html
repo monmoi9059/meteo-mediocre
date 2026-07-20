@@ -2837,11 +2837,12 @@
             let y_w = Math.sin(alt * d2r);
             let z_w = Math.cos(alt * d2r) * -Math.cos(az * d2r);
 
-            // 2. Camera vector (Forward) - We include vAlt here to physically tilt the celestial sphere
-            // when looking up, which is what gives it the realistic dome feel!
-            let fX = Math.cos(vAlt * d2r) * Math.sin(vAz * d2r);
-            let fY = Math.sin(vAlt * d2r);
-            let fZ = Math.cos(vAlt * d2r) * -Math.cos(vAz * d2r);
+            // 2. Camera vector (Forward) - We lock internal vAlt to 0 to keep the dome perfectly aligned with
+            // the linear CSS background, and apply vertical panning via a 2D linear shift instead.
+            let camPitch = 0;
+            let fX = Math.cos(camPitch * d2r) * Math.sin(vAz * d2r);
+            let fY = Math.sin(camPitch * d2r);
+            let fZ = Math.cos(camPitch * d2r) * -Math.cos(vAz * d2r);
 
             // 3. Camera Right vector
             let rX = Math.cos(vAz * d2r);
@@ -2871,17 +2872,21 @@
 
             let screenX = (w / 2) + (cx / (1 + cz)) * focalLength;
 
-            // When vAlt is 0 (looking at the horizon), the center of the camera is exactly at (h * 0.70).
-            // When we look up, vAlt tilts the entire 3D sphere, so we don't need to manually shift Y!
-            // The matrix does it automatically.
-            let opticalCenterY = (h * 0.70);
+            // Synchronize the celestial horizon exactly with the ground horizon's linear shift.
+            // Ground horizon uses: horizonY = (H * 0.70) + (viewAltitude * pixelsPerDegreeY);
+            let viewFOVY = fov * (h / w);
+            let pixelsPerDegreeY = h / viewFOVY;
+            let opticalCenterY = (h * 0.70) + (vAlt * pixelsPerDegreeY);
             let screenY = opticalCenterY - (cy / (1 + cz)) * focalLength;
 
             return { x: screenX, y: screenY, cx, cy, cz };
         };
 
         function getCanvasXY(az, alt) {
-            if (alt < -2) return null; // Below horizon (slightly extended for glow/refraction)
+            // Expand the altitude lower limit so elements don't suddenly disappear
+            // when the camera is panned up, since they might still be on screen now
+            // that we are using a linear vertical shift instead of a 3D pitch.
+            if (alt < -45) return null;
 
             let pos = window.projectAzAlt(az, alt, W, H, viewAzimuth, viewAltitude, viewFOV);
             if (!pos) return null;
@@ -3056,9 +3061,9 @@
                     let pos = getCanvasXY(hor.azimuth, hor.altitude);
                     if (pos && hor.altitude > 0) {
                         sCtx.beginPath();
-                        // Make planets 2x bigger, and scale up as camera zooms in (FOV decreases)
+                        // Make planets 4x bigger, and scale up as camera zooms in (FOV decreases)
                         let zoomScale = 100 / viewFOV;
-                        let dynamicSize = planet.size * 2 * zoomScale;
+                        let dynamicSize = planet.size * 4 * zoomScale;
                         sCtx.arc(pos.x, pos.y, dynamicSize, 0, Math.PI*2);
                         sCtx.fillStyle = planet.color;
                         sCtx.shadowBlur = 10;
