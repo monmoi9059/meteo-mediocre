@@ -2830,30 +2830,58 @@
         // --- MAPPING FUNCTION: Azimuth/Altitude to X/Y on Canvas ---
         // Helper to project any Azimuth/Altitude to screen X/Y using 3D perspective
         window.projectAzAlt = function(az, alt, w, h, vAz, vAlt, fov) {
-            let relAz = az - vAz;
+            let d2r = Math.PI / 180;
 
-            // Normalize to [-180, 180]
-            if (relAz > 180) relAz -= 360;
-            if (relAz < -180) relAz += 360;
+            // 1. World vector
+            let x_w = Math.cos(alt * d2r) * Math.sin(az * d2r);
+            let y_w = Math.sin(alt * d2r);
+            let z_w = Math.cos(alt * d2r) * -Math.cos(az * d2r);
 
-            // Culling bounds (don't draw things way off screen)
-            if (Math.abs(relAz) > (fov / 2) + 20) return null;
+            // 2. Camera vector (Forward) - We include vAlt here to physically tilt the celestial sphere
+            // when looking up, which is what gives it the realistic dome feel!
+            let fX = Math.cos(vAlt * d2r) * Math.sin(vAz * d2r);
+            let fY = Math.sin(vAlt * d2r);
+            let fZ = Math.cos(vAlt * d2r) * -Math.cos(vAz * d2r);
 
-            let viewFOVY = fov * (h / w);
-            let pixelsPerDegreeX = w / fov;
-            let pixelsPerDegreeY = h / viewFOVY;
+            // 3. Camera Right vector
+            let rX = Math.cos(vAz * d2r);
+            let rY = 0;
+            let rZ = Math.sin(vAz * d2r);
 
-            let x = (w / 2) + (relAz * pixelsPerDegreeX);
+            // 4. Camera Up vector
+            let uX = rY * fZ - rZ * fY;
+            let uY = rZ * fX - rX * fZ;
+            let uZ = rX * fY - rY * fX;
 
-            // Calculate screen Y relative to the exact ground horizon calculation
-            let horizonY = (h * 0.70) + (vAlt * pixelsPerDegreeY);
-            let y = horizonY - (alt * pixelsPerDegreeY); // Altitude goes up (negative Y)
+            // 5. Project world point onto camera axes
+            let cx = x_w * rX + y_w * rY + z_w * rZ;
+            let cy = x_w * uX + y_w * uY + z_w * uZ;
+            let cz = x_w * fX + y_w * fY + z_w * fZ;
 
-            return { x, y, cx: 0, cy: 0, cz: 1 };
+            if (cz <= 0.0001) return null; // Behind camera
+
+            // 6. STEREOGRAPHIC PROJECTION
+            // This is the magic math that keeps the beautiful spherical look,
+            // but prevents "bunching" by expanding the edges gracefully,
+            // making the sphere feel "far away".
+            // It maps the hemisphere using cx / (1 + cz).
+
+            // Stereographic focal length calculation based on FOV
+            let focalLength = (w / 2) / (2 * Math.tan((fov / 4) * d2r));
+
+            let screenX = (w / 2) + (cx / (1 + cz)) * focalLength;
+
+            // When vAlt is 0 (looking at the horizon), the center of the camera is exactly at (h * 0.70).
+            // When we look up, vAlt tilts the entire 3D sphere, so we don't need to manually shift Y!
+            // The matrix does it automatically.
+            let opticalCenterY = (h * 0.70);
+            let screenY = opticalCenterY - (cy / (1 + cz)) * focalLength;
+
+            return { x: screenX, y: screenY, cx, cy, cz };
         };
 
         function getCanvasXY(az, alt) {
-            if (alt < -45) return null; // Draw elements well below the horizon so no gap ever shows up when looking up and the sphere rolls
+            if (alt < -2) return null; // Below horizon (slightly extended for glow/refraction)
 
             let pos = window.projectAzAlt(az, alt, W, H, viewAzimuth, viewAltitude, viewFOV);
             if (!pos) return null;
@@ -3030,7 +3058,7 @@
                         sCtx.beginPath();
                         // Make planets 2x bigger, and scale up as camera zooms in (FOV decreases)
                         let zoomScale = 100 / viewFOV;
-                        let dynamicSize = planet.size * 4 * zoomScale;
+                        let dynamicSize = planet.size * 2 * zoomScale;
                         sCtx.arc(pos.x, pos.y, dynamicSize, 0, Math.PI*2);
                         sCtx.fillStyle = planet.color;
                         sCtx.shadowBlur = 10;
@@ -4847,19 +4875,22 @@ function renderWeatherUI() {
     function updateCamera() {
         let W = window.innerWidth;
         let H = window.innerHeight;
+
         let pixelsPerDegreeX = W / viewFOV;
         let viewFOVY = viewFOV * (H / W);
         let pixelsPerDegreeY = H / viewFOVY;
 
-        // Base horizon is at 60% down the screen, adjusted by viewAltitude
-        let horizonY = (H * 0.70) + (viewAltitude * pixelsPerDegreeY);
+        // Base horizon is computed purely from the 3D stereographic projection center
+        // so it exactly aligns with the stars!
+        let horizonPos = window.projectAzAlt(viewAzimuth, 0, W, H, viewAzimuth, viewAltitude, viewFOV);
+        let horizonY = horizonPos ? horizonPos.y : (H * 0.70) + (viewAltitude * pixelsPerDegreeY);
 
-        // Calculate water level based on tideHeight
-        // currentConditions.tideHeight is approximately between 10 (low) and 45 (high)
-        // Let's map it so high tide is near the horizon and low tide is significantly below.
-        // We'll say high tide (45) is horizonY + 20px, low tide (10) is horizonY + 150px
         let tideFactor = (currentConditions.tideHeight - 10) / 35; // 0 to 1
-        let waterTopY = horizonY + 150 - (tideFactor * 130);
+
+        // Let's project the water level directly via altitude so it curves in 3D
+        let tideAltOffset = -((150 - (tideFactor * 130)) / pixelsPerDegreeY);
+        let waterPos = window.projectAzAlt(viewAzimuth, tideAltOffset, W, H, viewAzimuth, viewAltitude, viewFOV);
+        let waterTopY = waterPos ? waterPos.y : horizonY + 150 - (tideFactor * 130);
 
         // Update water layer height based on horizon
         const waterLayer = document.getElementById('water-layer');
@@ -4869,53 +4900,77 @@ function renderWeatherUI() {
             waterLayer.style.top = `${waterTopY}px`;
             waterLayer.style.bottom = '0px';
             waterLayer.style.height = 'auto'; // override CSS calc
+            // Hide overflow to mask the harsh flat line if it bends too much, or rely on shore layer
         }
         if (distantWaterLayer) {
             distantWaterLayer.style.top = `${horizonY}px`;
         }
 
-        // Update landmarks in the 360 panorama
+        // Update landmarks in the 360 panorama using the 3D Stereographic Math!
         const landmarks = document.querySelectorAll('.landmark:not([id^="clone-"])');
         landmarks.forEach((lm, idx) => {
             let az = parseFloat(lm.getAttribute('data-azimuth'));
             let widthDeg = parseFloat(lm.getAttribute('data-width'));
             let offsetY = parseFloat(lm.getAttribute('data-offset-y')) || 0;
 
-            // Calculate relative azimuth (difference from viewing direction)
-            let relAz = az - viewAzimuth;
-            // Normalize to [-180, 180]
-            if (relAz > 180) relAz -= 360;
-            if (relAz < -180) relAz += 360;
-
-            // X mapping: Center of screen is relAz = 0.
-            let x = (W / 2) + (relAz * pixelsPerDegreeX);
-
-            // Width mapping: how many pixels wide is this landmark based on FOV
-            let pixelWidth = widthDeg * pixelsPerDegreeX;
-
-            lm.style.display = 'block';
-            lm.style.left = `${x}px`;
-            lm.style.width = `${pixelWidth}px`;
-            lm.style.bottom = `${H - horizonY - offsetY}px`;
-            lm.style.transform = `translateX(-50%)`;
-
-            // SEAMLESS CLONING LOGIC
+            // Generate Clone element
             let clone = document.getElementById(`clone-${idx}`);
             if (!clone) {
                 clone = lm.cloneNode(true);
                 clone.id = `clone-${idx}`;
                 lm.parentNode.appendChild(clone);
             }
-            clone.style.display = 'block';
 
-            // Calculate the alternate azimuth
-            let altRelAz = relAz > 0 ? relAz - 360 : relAz + 360;
-            let altX = (W / 2) + (altRelAz * pixelsPerDegreeX);
+            // Central projection
+            let pos = window.projectAzAlt(az, 0, W, H, viewAzimuth, viewAltitude, viewFOV);
 
-            clone.style.left = `${altX}px`;
-            clone.style.width = `${pixelWidth}px`;
-            clone.style.bottom = `${H - horizonY}px`;
-            clone.style.transform = `translateX(-50%)`;
+            if (!pos) {
+                lm.style.display = 'none';
+            } else {
+                lm.style.display = 'block';
+                // Scale width physically by the depth (1 / (1 + cz))
+                let scaleAdjust = 1 / (1 + pos.cz);
+                let pixelWidth = widthDeg * pixelsPerDegreeX * (scaleAdjust * 2); // roughly 1.0 near center
+
+                lm.style.left = `${pos.x}px`;
+                lm.style.width = `${pixelWidth}px`;
+                lm.style.bottom = `${H - pos.y - offsetY}px`;
+
+                // Tilt the 2D elements to match the spherical curve
+                let relAz = az - viewAzimuth;
+                if (relAz > 180) relAz -= 360;
+                if (relAz < -180) relAz += 360;
+                let tiltAngle = -(relAz * viewAltitude * 0.005);
+
+                lm.style.transform = `translateX(-50%) rotate(${tiltAngle}deg)`;
+            }
+
+            // Clone projection for wrapping
+            let relAz = az - viewAzimuth;
+            if (relAz > 180) relAz -= 360;
+            if (relAz < -180) relAz += 360;
+            let altAz = relAz > 0 ? az - 360 : az + 360;
+
+            let altPos = window.projectAzAlt(altAz, 0, W, H, viewAzimuth, viewAltitude, viewFOV);
+
+            if (!altPos) {
+                clone.style.display = 'none';
+            } else {
+                clone.style.display = 'block';
+                let scaleAdjust = 1 / (1 + altPos.cz);
+                let altPixelWidth = widthDeg * pixelsPerDegreeX * (scaleAdjust * 2);
+
+                clone.style.left = `${altPos.x}px`;
+                clone.style.width = `${altPixelWidth}px`;
+                clone.style.bottom = `${H - altPos.y - offsetY}px`;
+
+                let altRelAz = altAz - viewAzimuth;
+                if (altRelAz > 180) altRelAz -= 360;
+                if (altRelAz < -180) altRelAz += 360;
+                let altTiltAngle = -(altRelAz * viewAltitude * 0.005);
+
+                clone.style.transform = `translateX(-50%) rotate(${altTiltAngle}deg)`;
+            }
         });
 
         return { horizonY, waterTopY, pixelsPerDegreeX, pixelsPerDegreeY };
