@@ -2828,33 +2828,58 @@
         }
 
         // --- MAPPING FUNCTION: Azimuth/Altitude to X/Y on Canvas ---
+        // Helper to project any Azimuth/Altitude to screen X/Y using 3D perspective
+        window.projectAzAlt = function(az, alt, w, h, vAz, vAlt, fov) {
+            let d2r = Math.PI / 180;
+
+            // 1. World vector
+            let x_w = Math.cos(alt * d2r) * Math.sin(az * d2r);
+            let y_w = Math.sin(alt * d2r);
+            let z_w = Math.cos(alt * d2r) * -Math.cos(az * d2r);
+
+            // 2. Camera vector (Forward)
+            let fX = Math.cos(vAlt * d2r) * Math.sin(vAz * d2r);
+            let fY = Math.sin(vAlt * d2r);
+            let fZ = Math.cos(vAlt * d2r) * -Math.cos(vAz * d2r);
+
+            // 3. Camera Right vector (parallel to XZ plane)
+            let rX = Math.cos(vAz * d2r);
+            let rY = 0;
+            let rZ = Math.sin(vAz * d2r);
+
+            // 4. Camera Up vector = Right x Forward
+            let uX = rY * fZ - rZ * fY;
+            let uY = rZ * fX - rX * fZ;
+            let uZ = rX * fY - rY * fX;
+
+            // 5. Project world point onto camera axes
+            let cx = x_w * rX + y_w * rY + z_w * rZ;
+            let cy = x_w * uX + y_w * uY + z_w * uZ;
+            let cz = x_w * fX + y_w * fY + z_w * fZ;
+
+            if (cz <= 0.0001) return null; // Behind camera or exactly on the plane
+
+            // 6. Perspective division to screen coordinates
+            let focalLength = (w / 2) / Math.tan((fov / 2) * d2r);
+            let screenX = (w / 2) + (cx / cz) * focalLength;
+
+            let opticalCenterY = (h * 0.70) - 240;
+            let screenY = opticalCenterY - (cy / cz) * focalLength;
+
+            return { x: screenX, y: screenY, cx, cy, cz };
+        };
+
         function getCanvasXY(az, alt) {
             if (alt < -2) return null; // Below horizon (slightly extended for glow/refraction)
-            
-            // Calculate relative azimuth (difference from viewing direction)
-            let relAz = az - viewAzimuth;
-            // Normalize to [-180, 180]
-            if (relAz > 180) relAz -= 360;
-            if (relAz < -180) relAz += 360;
 
-            // Check if within Field of View (add some padding for large objects)
-            if (Math.abs(relAz) > (viewFOV / 2 + 10)) return null;
+            let pos = window.projectAzAlt(az, alt, W, H, viewAzimuth, viewAltitude, viewFOV);
+            if (!pos) return null;
 
-            // X mapping: Center of screen is relAz = 0.
-            let pixelsPerDegreeX = W / viewFOV;
-            let x = (W / 2) + (relAz * pixelsPerDegreeX);
+            let x = pos.x;
+            let y = pos.y;
 
-            // Y mapping: Base horizon on global camera
-            let viewFOVY = viewFOV * (H / W);
-            let pixelsPerDegreeY = H / viewFOVY;
-            // Shift astronomical horizon up to clear tall SVG landmasses
-            let horizonY = (H * 0.70) + (viewAltitude * pixelsPerDegreeY) - 240;
-
-            // Non-linear altitude multiplier: objects near horizon stay near, objects higher up are pushed even higher
-            // This compensates for the narrow vertical FOV and creates a more dramatic sky
-            let altMultiplier = alt > 0 ? (1 + (alt / 30)) : 1;
-
-            let y = horizonY - (alt * altMultiplier * pixelsPerDegreeY);
+            // Padding check
+            if (x < -200 || x > W + 200 || y < -200 || y > H + 500) return null;
 
             return { x, y };
         }
@@ -3012,7 +3037,10 @@
                     let pos = getCanvasXY(hor.azimuth, hor.altitude);
                     if (pos && hor.altitude > 0) {
                         sCtx.beginPath();
-                        sCtx.arc(pos.x, pos.y, planet.size, 0, Math.PI*2);
+                        // Make planets 2x bigger, and scale up as camera zooms in (FOV decreases)
+                        let zoomScale = 100 / viewFOV;
+                        let dynamicSize = planet.size * 2 * zoomScale;
+                        sCtx.arc(pos.x, pos.y, dynamicSize, 0, Math.PI*2);
                         sCtx.fillStyle = planet.color;
                         sCtx.shadowBlur = 10;
                         sCtx.shadowColor = planet.color;
@@ -4725,9 +4753,14 @@ function renderWeatherUI() {
             speed = Math.random() * 0.1; // Very slow
         }
 
+
+        // In Spherical tide flow, track 'worldAzimuth' instead of flat 'x'
+        // Random starting azimuth relative to current view
+        let worldAz = window.viewAzimuth + (Math.random() * 60 - 30);
+
         const debrisObj = {
             el: el,
-            x: x,
+            worldAz: worldAz,
             y: y,
             speed: speed,
             rotation: Math.random() * 360,
@@ -4759,15 +4792,24 @@ function renderWeatherUI() {
                 d.spinSpeed = d.spinSpeed > 0 ? Math.max(0.5, d.spinSpeed) : Math.min(-0.5, d.spinSpeed);
             }
 
-            // Move X
+            // Move Azimuth based on flow (Right = Rising towards Quebec Bridge Az 250, Left = Dropping towards Ile d'Orleans Az 62)
+            // Note: In Azimuth, increasing goes from East(90) -> South(180) -> West(270)
+            let speedDegrees = currentSpeed * 0.05; // Convert speed to degrees
+
             if (currentConditions.flowDirection === 'right') {
-                d.x += currentSpeed;
+                // Rising Tide: Flow towards 250 (West)
+                d.worldAz += speedDegrees;
             } else if (currentConditions.flowDirection === 'left') {
-                d.x -= currentSpeed;
+                // Dropping Tide: Flow towards 62 (East)
+                d.worldAz -= speedDegrees;
             } else {
-                // Slack: drift randomly very slowly
-                d.x += (Math.random() - 0.5) * 0.2;
+                // Slack: drift slowly
+                d.worldAz += (Math.random() - 0.5) * 0.01;
             }
+
+            // Normalize Azimuth
+            if (d.worldAz > 360) d.worldAz -= 360;
+            if (d.worldAz < 0) d.worldAz += 360;
 
             // Bob Y
             d.bobOffset += 0.05;
@@ -4776,13 +4818,20 @@ function renderWeatherUI() {
             // Spin
             d.rotation += d.spinSpeed;
 
-            // Apply transforms
-            d.el.style.transform = `translate3d(${d.x}px, ${currentY}px, 0) rotate(${d.rotation}deg)`;
+            // Calculate relative azimuth for screen X
+            let relAz = d.worldAz - window.viewAzimuth;
+            if (relAz > 180) relAz -= 360;
+            if (relAz < -180) relAz += 360;
 
-            // Remove if offscreen
-            if ((currentConditions.flowDirection === 'right' && d.x > window.innerWidth + 50) ||
-                (currentConditions.flowDirection === 'left' && d.x < -50) ||
-                (currentConditions.flowDirection === 'slack' && (d.x < -100 || d.x > window.innerWidth + 100))) {
+            // Linear projection based on camera FOV
+            let pixelsPerDegreeX = window.innerWidth / window.viewFOV;
+            let screenX = (window.innerWidth / 2) + (relAz * pixelsPerDegreeX);
+
+            d.el.style.transform = `translate3d(${screenX}px, ${currentY}px, 0) rotate(${d.rotation}deg)`;
+            d.el.style.display = 'block';
+
+            // Remove if offscreen by checking difference between viewAzimuth and worldAz
+            if (Math.abs(relAz) > (window.viewFOV / 2) + 20) {
                 d.el.remove();
                 debrisList.splice(i, 1);
             }
@@ -4841,23 +4890,22 @@ function renderWeatherUI() {
             // Width mapping: how many pixels wide is this landmark based on FOV
             let pixelWidth = widthDeg * pixelsPerDegreeX;
 
+            lm.style.display = 'block';
             lm.style.left = `${x}px`;
             lm.style.width = `${pixelWidth}px`;
             lm.style.bottom = `${H - horizonY - offsetY}px`;
             lm.style.transform = `translateX(-50%)`;
 
             // SEAMLESS CLONING LOGIC
-            // If the landmark spans beyond the -180 or 180 boundary (or is very wide),
-            // we should draw a cloned copy on the opposite side to prevent it from disappearing
-            // instantly when its center crosses the +/- 180 threshold.
             let clone = document.getElementById(`clone-${idx}`);
             if (!clone) {
                 clone = lm.cloneNode(true);
                 clone.id = `clone-${idx}`;
                 lm.parentNode.appendChild(clone);
             }
+            clone.style.display = 'block';
 
-            // Calculate the alternate azimuth (either +360 or -360 depending on where we are)
+            // Calculate the alternate azimuth
             let altRelAz = relAz > 0 ? relAz - 360 : relAz + 360;
             let altX = (W / 2) + (altRelAz * pixelsPerDegreeX);
 
