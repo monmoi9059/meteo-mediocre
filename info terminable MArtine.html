@@ -316,6 +316,7 @@
       .header-actions {
         display: flex;
         gap: 10px;
+        flex-wrap: wrap;
       }
       .theme-toggle {
         background: transparent;
@@ -966,16 +967,6 @@
         --orange-btn-hover: #e65100;
       }
 
-      body {
-        font-family: "Segoe UI", sans-serif;
-        margin: 0;
-        background-color: var(--bg-body);
-        color: var(--text);
-        transition:
-          background-color 0.3s,
-          color 0.3s;
-      }
-
       header {
         background: linear-gradient(to right, var(--secondary), var(--primary));
         color: var(--light-text);
@@ -983,7 +974,7 @@
         text-align: center;
       }
 
-      .container {
+      #langlois-calc-modal .container {
         max-width: 800px;
         margin: 20px auto;
         background: var(--bg-container);
@@ -1205,7 +1196,7 @@
 
       /* Mobile Responsiveness */
       @media (max-width: 600px) {
-        .container {
+        #langlois-calc-modal .container {
           margin: 10px auto;
           padding: 10px;
           width: 95%;
@@ -11680,6 +11671,7 @@
             align-items: center;
             gap: 5px;
             margin-right: 10px;
+            flex-wrap: wrap;
           "
         >
           <span style="font-size: 0.85rem; font-weight: bold">Vue:</span>
