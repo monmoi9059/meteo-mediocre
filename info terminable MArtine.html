@@ -2350,6 +2350,23 @@
                     Fin estimée: <strong id="res-eta" style="color: var(--secondary);">--:--</strong>
                 </p>
             </div>
+            <hr style="margin: 15px 0; border: none; border-top: 1px solid var(--border-color);">
+            <h4 style="margin-bottom: 10px; color: var(--text-color);">Heure de fin par durée</h4>
+            <div class="input-group" style="display: flex; gap: 10px;">
+                <div style="flex: 1;">
+                    <label>Heures restantes</label>
+                    <input type="number" id="calc-hours" class="calc-input" placeholder="0" min="0">
+                </div>
+                <div style="flex: 1;">
+                    <label>Minutes</label>
+                    <input type="number" id="calc-minutes" class="calc-input" placeholder="0" min="0" max="59">
+                </div>
+            </div>
+            <div class="calc-result" id="calc-duration-result">
+                <p style="margin-top: 8px;">
+                    Fin estimée: <strong id="res-duration-eta" style="color: var(--secondary);">--:--</strong>
+                </p>
+            </div>
         </div>
     </div>
 </div>
@@ -4428,6 +4445,23 @@ function renderWeatherUI() {
         }
     }
     inTotal.addEventListener('input', updateCalculator); inDone.addEventListener('input', updateCalculator); inRate.addEventListener('input', updateCalculator);
+
+    // Logique Calculatrice ETA par Durée
+    const inHours = document.getElementById('calc-hours'), inMinutes = document.getElementById('calc-minutes');
+    const resDurationEta = document.getElementById('res-duration-eta');
+
+    function updateDurationCalculator() {
+        const hours = parseInt(inHours.value) || 0, minutes = parseInt(inMinutes.value) || 0;
+        if (hours > 0 || minutes > 0) {
+            const msToAdd = (hours * 3600 + minutes * 60) * 1000;
+            resDurationEta.textContent = new Date(Date.now() + msToAdd).toLocaleTimeString('fr-CA', {hour: '2-digit', minute:'2-digit', weekday: 'short', day: 'numeric', month: 'short'}).replace(' h', 'h');
+            resDurationEta.style.color = "var(--green-ok)";
+        } else {
+            resDurationEta.textContent = "--:--";
+            resDurationEta.style.color = "var(--secondary)";
+        }
+    }
+    inHours.addEventListener('input', updateDurationCalculator); inMinutes.addEventListener('input', updateDurationCalculator);
 
     // --- LOCATION SEARCH ---
     document.getElementById('btn-loc-search').addEventListener('click', async () => {
