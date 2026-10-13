@@ -262,17 +262,17 @@
         left: 50%;
         bottom: calc(var(--water-h) - 55px);
         z-index: 3;
-        transform: translateX(-50%) scale(1.4);
+        transform: translateX(-50%) scale(0.94);
         transform-origin: bottom center;
         pointer-events: none;
       }
       @keyframes boatBobbing {
         0%,
         100% {
-          transform: translate(-50%, 0) scale(1.4) rotate(-0.5deg);
+          transform: translate(-50%, 0) scale(0.94) rotate(-0.5deg);
         }
         50% {
-          transform: translate(-50%, -15px) scale(1.4) rotate(0.5deg);
+          transform: translate(-50%, -15px) scale(0.94) rotate(0.5deg);
         }
       }
 
@@ -10196,7 +10196,7 @@
         class="landmark"
         data-azimuth="133"
         data-width="120"
-        style="width: 120vw; height: 350px; z-index: 3"
+        style="width: 120vw; height: 350px; z-index: 3; transform: scale(0.67); transform-origin: bottom center;"
       >
         <svg
           width="100%"
@@ -23862,7 +23862,7 @@ maintainAspectRatio: false,
           let t = Date.now() / 1000;
 
           // Base scale depends on zoom
-          let baseScale = (130 / viewFOV) * 0.85;
+          let baseScale = (130 / viewFOV) * 0.57; // 33% reduction of original 0.85
 
           // Calculate screen X position for the boat based on its fixed azimuth of 135
           let boatAzimuth = 135;
