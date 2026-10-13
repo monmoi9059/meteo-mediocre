@@ -341,25 +341,6 @@
       .theme-toggle:hover {
         background: var(--th-bg);
       }
-      .view-dir-select,
-      .view-dir-input {
-        background: transparent;
-        color: var(--text-color);
-        border: 1px solid var(--border-color);
-        padding: 6px 10px;
-        border-radius: 20px;
-        font-weight: bold;
-        font-size: 0.85rem;
-        outline: none;
-      }
-      .view-dir-select option {
-        background: var(--card-bg);
-        color: var(--text-color);
-      }
-      .view-dir-input {
-        width: 60px;
-        text-align: center;
-      }
 
       /* Conteneur Principal */
       /* --- BATTLE SIM --- */
@@ -1219,43 +1200,17 @@
   </head>
   <body>
     <script id="theme-init">
-      try {
-        if (localStorage.getItem("theme") === "dark")
-          document.body.classList.add("dark-mode");
-      } catch (e) {}
+      // Theme is now automatically controlled by time of day.
     </script>
 
     <!-- FOND ET EFFETS -->
 
     <div class="header">
-      <h1>⚓ Terminal St-Romuald - Monitoring Avancé</h1>
+      <div style="display: flex; align-items: center; gap: 15px;">
+        <h1>⚓ Terminal St-Romuald - Monitoring Avancé</h1>
+        <div id="live-clock" style="font-size: 1.5rem; font-weight: bold; font-family: monospace; color: var(--primary);">--:--:--</div>
+      </div>
       <div class="header-actions">
-        <div
-          style="
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            margin-right: 10px;
-          "
-        >
-          <span style="font-size: 0.85rem; font-weight: bold">Vue:</span>
-          <select id="view-dir-select" class="view-dir-select">
-            <option value="0">N</option>
-            <option value="90">E</option>
-            <option value="180" selected>S</option>
-            <option value="270">O</option>
-          </select>
-          <input
-            type="number"
-            id="view-dir-input"
-            class="view-dir-input"
-            value="180"
-            min="0"
-            max="359"
-          />
-        </div>
-        <button id="hide-ui-toggle" class="theme-toggle">👁️ Cacher UI</button>
-
         <button id="sensor-mode-toggle" class="theme-toggle">
           📱 Capteurs
         </button>
@@ -1267,7 +1222,6 @@
         <button id="langlois-calc-toggle" class="theme-toggle">
           🧮 Calculateur Maritime
         </button>
-        <button id="theme-toggle" class="theme-toggle">🌙 Mode Nuit</button>
       </div>
     </div>
 
@@ -17127,7 +17081,6 @@
       }
 
       function updateDynamicBackground() {
-        const isDark = document.body.classList.contains("dark-mode");
         const c = currentConditions;
         const bgDiv = document.getElementById("dynamic-bg");
 
@@ -17266,12 +17219,11 @@
 
         waterColor = hexToRgba(baseWaterColor, c.isNight ? 0.75 : 0.65);
 
-        // Dark mode override if strictly enforced (optional, user preference if needed)
-        if (isDark && !c.isNight) {
-          color1 = lerpColor(color1, "#0f172a", 0.8);
-          color2 = lerpColor(color2, "#1e293b", 0.8);
-          color3 = lerpColor(color3, "#334155", 0.8);
-          waterColor = hexToRgba(baseWaterColor, 0.75);
+        // Auto Dark Mode based on time of day
+        if (c.isNight) {
+          document.body.classList.add("dark-mode");
+        } else {
+          document.body.classList.remove("dark-mode");
         }
 
         let animSpeed = Math.max(2, 20 - c.wind * 0.6);
@@ -17308,8 +17260,6 @@
           // Fade them in during golden hour
           nightLightsOpacity = 0.5;
         }
-        // Force night lights if user forced dark mode? Optional.
-        if (isDark) nightLightsOpacity = 1;
         document.body.style.setProperty(
           "--night-lights-opacity",
           nightLightsOpacity,
@@ -23507,26 +23457,6 @@ maintainAspectRatio: false,
         mapTitle.innerHTML = "⚡ Foudre / Orages";
       });
 
-      // --- THEME ---
-      const themeBtn = document.getElementById("theme-toggle");
-      if (document.body.classList.contains("dark-mode"))
-        themeBtn.innerHTML = "☀️ Mode Jour";
-      themeBtn.addEventListener("click", () => {
-        document.body.classList.toggle("dark-mode");
-        try {
-          if (document.body.classList.contains("dark-mode")) {
-            themeBtn.innerHTML = "☀️ Mode Jour";
-            localStorage.setItem("theme", "dark");
-          } else {
-            themeBtn.innerHTML = "🌙 Mode Nuit";
-            localStorage.setItem("theme", "light");
-          }
-        } catch (e) {}
-        updateDynamicBackground();
-        if (weatherChart) renderWeatherUI();
-        if (tidesChart) fetchTides();
-      });
-
       // Toggle Hide UI
       const starsModeBtn = document.getElementById("stars-mode-toggle");
       if (starsModeBtn) {
@@ -23583,46 +23513,6 @@ maintainAspectRatio: false,
           } else {
             sensorModeBtn.style.background = "";
           }
-        });
-      }
-
-      const hideUiBtn = document.getElementById("hide-ui-toggle");
-      if (hideUiBtn) {
-        const viewDirSelect = document.getElementById("view-dir-select");
-        const viewDirInput = document.getElementById("view-dir-input");
-
-        if (viewDirSelect && viewDirInput) {
-          viewDirSelect.addEventListener("change", (e) => {
-            viewAzimuth = parseFloat(e.target.value);
-            viewDirInput.value = viewAzimuth;
-            // Force re-render of sky
-            if (typeof drawSkyFX === "function") drawSkyFX();
-          });
-
-          viewDirInput.addEventListener("input", (e) => {
-            let val = parseFloat(e.target.value);
-            if (!isNaN(val)) {
-              viewAzimuth = val;
-              // Try to sync with select if it matches a cardinal direction
-              let matched = false;
-              Array.from(viewDirSelect.options).forEach((opt) => {
-                if (parseFloat(opt.value) === val) {
-                  opt.selected = true;
-                  matched = true;
-                }
-              });
-              if (!matched) {
-                viewDirSelect.value = ""; // Or leave it alone, but we'd need a blank option. Let's just update the value
-              }
-              if (typeof drawSkyFX === "function") drawSkyFX();
-            }
-          });
-        }
-
-        hideUiBtn.addEventListener("click", () => {
-          document.body.classList.toggle("hide-ui");
-          const isHidden = document.body.classList.contains("hide-ui");
-          hideUiBtn.innerHTML = isHidden ? "👁️ Afficher UI" : "👁️ Cacher UI";
         });
       }
 
@@ -24436,11 +24326,6 @@ maintainAspectRatio: false,
           viewAltitude = alt;
         }
 
-        // Sync the input
-        const viewDirInput = document.getElementById("view-dir-input");
-        if (viewDirInput) {
-          viewDirInput.value = viewAzimuth.toFixed(1);
-        }
       }
 
       // --- CAMERA PANNING & ZOOMING LOGIC ---
@@ -24483,10 +24368,6 @@ maintainAspectRatio: false,
         if (viewAltitude > 90) viewAltitude = 90;
         if (viewAltitude < -20) viewAltitude = -20; // Don't let them look too far down into the ground
 
-        // Sync the view dir inputs if they are visible (they shouldn't be in hide-ui, but just in case)
-        if (typeof viewDirInput !== "undefined" && viewDirInput) {
-          viewDirInput.value = viewAzimuth.toFixed(1);
-        }
       });
 
       window.addEventListener("mouseup", (e) => {
@@ -24603,6 +24484,14 @@ maintainAspectRatio: false,
       updateDynamicBackground();
       fetchWeather();
       fetchTides();
+
+      // Live Clock
+      setInterval(() => {
+        const clockEl = document.getElementById("live-clock");
+        if (clockEl) {
+          clockEl.innerText = new Date().toLocaleTimeString('fr-CA', { hour12: false });
+        }
+      }, 1000);
     </script>
 
     <script>
