@@ -12,46 +12,82 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap"
       rel="stylesheet"
     />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>
     <style>
       :root {
-        --primary: #004b6b;
-        --secondary: #007a99;
+        /* Professional Light Mode */
+        --primary: #0f2942;
+        --secondary: #1e405f;
+        --accent: #e0f7fa;
         --bg-color: transparent;
         --text-color: #1e293b;
         --text-shadow: 1px 1px 1px rgba(255, 255, 255, 0.8);
-        --card-bg: rgba(255, 255, 255, 0.65);
+        --card-bg: rgba(255, 255, 255, 0.85);
         --tooltip-bg: rgba(255, 255, 255, 0.95);
-        --border-color: rgba(0, 0, 0, 0.1);
-        --th-bg: rgba(0, 122, 153, 0.15);
-        --tr-hover: rgba(0, 0, 0, 0.05);
+        --border-color: rgba(15, 41, 66, 0.15);
+        --th-bg: rgba(15, 41, 66, 0.08);
+        --tr-hover: rgba(15, 41, 66, 0.04);
         --chart-grid: rgba(0, 0, 0, 0.05);
         --red-alert: #dc2626;
         --green-ok: #16a34a;
         --scrollbar-bg: rgba(0, 0, 0, 0.05);
-        --scrollbar-thumb: rgba(0, 0, 0, 0.2);
+        --scrollbar-thumb: rgba(15, 41, 66, 0.3);
+
+        /* Modals & Surfaces */
+        --bg-body: #f0f4f8;
+        --bg-container: #ffffff;
+        --bg-input: #ffffff;
+        --border-input: #cccccc;
+        --shadow: rgba(15, 41, 66, 0.15);
+        --text: #333333;
+        --light-text: #ffffff;
+
+        /* Specific Elements */
+        --bg-est-box: #f8fafc;
+        --border-est-box: #cbd5e1;
+        --text-est-title: #0f2942;
+        --orange-btn: #0284c7;
+        --orange-btn-hover: #0369a1;
       }
 
       body.dark-mode {
-        --primary: #93c5fd;
-        --secondary: #6ee7b7;
+        /* Professional Dark Mode */
+        --primary: #4793d4;
+        --secondary: #2b6cb0;
+        --accent: #1e293b;
         --bg-color: transparent;
         --text-color: #f1f5f9;
         --text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.9);
-        --card-bg: rgba(15, 23, 42, 0.75);
+        --card-bg: rgba(15, 23, 42, 0.85);
         --tooltip-bg: rgba(15, 23, 42, 0.95);
         --border-color: rgba(255, 255, 255, 0.15);
-        --th-bg: rgba(255, 255, 255, 0.15);
+        --th-bg: rgba(255, 255, 255, 0.1);
         --tr-hover: rgba(255, 255, 255, 0.05);
         --chart-grid: rgba(255, 255, 255, 0.1);
         --red-alert: #ef4444;
         --green-ok: #22c55e;
         --scrollbar-bg: rgba(0, 0, 0, 0.3);
-        --scrollbar-thumb: rgba(255, 255, 255, 0.25);
+        --scrollbar-thumb: rgba(71, 147, 212, 0.4);
+
+        /* Modals & Surfaces */
+        --bg-body: #0f172a;
+        --bg-container: #1e293b;
+        --bg-input: #334155;
+        --border-input: #475569;
+        --shadow: rgba(0, 0, 0, 0.5);
+        --text: #e2e8f0;
+        --light-text: #ffffff;
+
+        /* Specific Elements */
+        --bg-est-box: #1e293b;
+        --border-est-box: #334155;
+        --text-est-title: #38bdf8;
+        --orange-btn: #0284c7;
+        --orange-btn-hover: #0369a1;
       }
 
       /* --- FOND DYNAMIQUE --- */
@@ -255,7 +291,7 @@
         overflow-y: auto;
         overflow-x: hidden;
         font-family:
-          "Inter",
+          "Roboto",
           -apple-system,
           BlinkMacSystemFont,
           "Segoe UI",
@@ -908,54 +944,6 @@
         height: 50%;
         background-color: white;
         border-radius: 0 0 2px 2px;
-      }
-
-      :root {
-        /* Palette Principale (Light) */
-        --primary: #006064;
-        --secondary: #00363a;
-        --accent: #e0f7fa;
-        --text: #333;
-        --light-text: #fff;
-
-        /* Backgrounds & Surfaces */
-        --bg-body: #f0f4f8;
-        --bg-container: #ffffff;
-        --bg-input: #ffffff;
-        --border-input: #cccccc;
-        --shadow: rgba(0, 0, 0, 0.1);
-
-        /* Specific Elements */
-        --bg-est-box: #fff3e0;
-        --border-est-box: #ffe0b2;
-        --text-est-title: #e65100;
-
-        --orange-btn: #e65100;
-        --orange-btn-hover: #bf360c;
-      }
-
-      body.dark-mode {
-        /* Palette Dark Mode */
-        --primary: #1565c0; /* Bleu Foncé requested */
-        --secondary: #0d47a1;
-        --accent: #424242; /* Darker accent for results */
-        --text: #e0e0e0;
-        --light-text: #fff;
-
-        /* Backgrounds & Surfaces */
-        --bg-body: #121212;
-        --bg-container: #1e1e1e;
-        --bg-input: #333333;
-        --border-input: #555555;
-        --shadow: rgba(0, 0, 0, 0.5);
-
-        /* Specific Elements */
-        --bg-est-box: #3e2723;
-        --border-est-box: #5d4037;
-        --text-est-title: #ff9800;
-
-        --orange-btn: #f57c00;
-        --orange-btn-hover: #e65100;
       }
 
       header {
@@ -10843,7 +10831,7 @@
           y="165"
           fill="#f8fafc"
           font-size="16"
-          font-family="'Inter', sans-serif"
+          font-family="'Roboto', sans-serif"
           font-weight="800"
           letter-spacing="4"
           text-anchor="middle"
@@ -21079,7 +21067,7 @@ const skyCanvas = document.getElementById("sky-fx");
                 sCtx.shadowBlur = 0;
 
                 // Draw planet name
-                sCtx.font = "10px Inter";
+                sCtx.font = "10px Roboto";
                 sCtx.fillStyle = "rgba(255, 255, 255, 0.7)";
                 sCtx.fillText(planet.name, pos.x + 8, pos.y + 4);
               }
@@ -22902,7 +22890,7 @@ maintainAspectRatio: false,
                 // Add text label
                 ctx.fillStyle = c.txt;
                 ctx.textAlign = "center";
-                ctx.font = "bold 10px Inter";
+                ctx.font = "bold 10px Roboto";
                 ctx.fillText("Maintenant", xPos, yAxis.top - 5);
 
                 ctx.restore();
