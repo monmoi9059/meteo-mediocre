@@ -22842,7 +22842,7 @@
                 <div class="chart-wrapper"><canvas id="tChart"></canvas></div>
                 ${waterTempStr ? `<div style="text-align:center; margin-bottom:10px;">${waterTempStr}</div>` : ""}
             `;
-          html += `<table><tr><th style="width:20%">Date/Heure</th><th style="width:12%">Niveau</th><th>ARRIVÉES</th><th>DÉPARTS</th></tr>`;
+          html += `<table><tr><th style="width:15%">Date/Heure</th><th style="width:18%">Niveau</th><th>ARRIVÉES</th><th>DÉPARTS</th></tr>`;
 
           let cTime = [],
             cVal = [];
@@ -22858,7 +22858,7 @@
               .toLocaleString("fr-CA", dateOptions)
               .replace(/,/g, "");
             const bClass = isHigh ? "badge-pm" : "badge-bm";
-            const bTxt = isHigh ? "PM" : "BM";
+            const bTxt = isHigh ? "🌊 Marée haute" : "📉 Marée basse";
             let nextT = i + 1 < futureTides.length ? futureTides[i + 1] : null;
 
             let arrHtml = "-",
