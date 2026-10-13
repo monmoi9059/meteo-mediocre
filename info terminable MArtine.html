@@ -1255,9 +1255,7 @@
           />
         </div>
         <button id="hide-ui-toggle" class="theme-toggle">👁️ Cacher UI</button>
-        <button id="stars-mode-toggle" class="theme-toggle">
-          ✨ Mode Étoiles
-        </button>
+
         <button id="sensor-mode-toggle" class="theme-toggle">
           📱 Capteurs
         </button>
@@ -1279,7 +1277,12 @@
       <div class="col-left">
         <!-- Aperçu Animé - Terminal -->
         <div class="card" style="flex-shrink: 0; min-height: 650px;">
-          <div class="card-header"><h2>🎥 Aperçu Animé - Terminal</h2></div>
+          <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <h2 style="flex:1;">🎥 Aperçu Animé - Terminal</h2>
+            <button id="stars-mode-toggle" class="theme-toggle">
+          ✨ Mode Étoiles
+        </button>
+          </div>
           <div class="card-body" id="animation-window" style="position: relative; overflow: hidden; height: 600px; min-height: 600px; flex-shrink: 0; ">
             <div id="dynamic-bg" class="dynamic-bg"></div>
     <canvas id="sky-fx" class="sky-fx"></canvas>
@@ -23923,7 +23926,7 @@ maintainAspectRatio: false,
           let t = Date.now() / 1000;
 
           // Base scale depends on zoom
-          let baseScale = (130 / viewFOV) * 1.4;
+          let baseScale = (130 / viewFOV) * 0.85;
 
           // Calculate screen X position for the boat based on its fixed azimuth of 135
           let boatAzimuth = 135;
@@ -24447,10 +24450,9 @@ maintainAspectRatio: false,
       let startAzimuth = 0;
       let startAltitude = 0;
 
-      window.addEventListener("mousedown", (e) => {
-        if (!document.body.classList.contains("hide-ui")) return;
+      document.getElementById("animation-window").addEventListener("mousedown", (e) => {
         // Right click (button 2) or Middle click (button 1)
-        if (e.button === 2 || e.button === 1) {
+        if (e.button === 0 || e.button === 1 || e.button === 2) {
           isPanning = true;
           startMouseX = e.clientX;
           startMouseY = e.clientY;
@@ -24488,16 +24490,13 @@ maintainAspectRatio: false,
       });
 
       window.addEventListener("mouseup", (e) => {
-        if (e.button === 2 || e.button === 1) {
+        if (e.button === 0 || e.button === 1 || e.button === 2) {
           isPanning = false;
         }
       });
 
       // Touch events for panning on mobile
-      window.addEventListener(
-        "touchstart",
-        (e) => {
-          if (!document.body.classList.contains("hide-ui")) return;
+      document.getElementById("animation-window").addEventListener("touchstart", (e) => {
           if (sensorModeActive) return; // Don't allow manual pan if sensor mode is active
 
           // Use the first touch point
@@ -24562,8 +24561,7 @@ maintainAspectRatio: false,
         }
       });
 
-      window.addEventListener("wheel", (e) => {
-        if (!document.body.classList.contains("hide-ui")) return;
+      document.getElementById("animation-window").addEventListener("wheel", (e) => {
 
         // Zooming changes FOV
         let zoomAmount = e.deltaY * 0.05;
