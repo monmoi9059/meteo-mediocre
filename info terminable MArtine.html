@@ -52,6 +52,11 @@
         --text-est-title: #0f2942;
         --orange-btn: #0284c7;
         --orange-btn-hover: #0369a1;
+
+        /* Themes */
+        --valero-teal: #006eab;
+        --valero-yellow: #ffcf00;
+        --cando-green: #00843D;
       }
 
       body.dark-mode {
@@ -88,6 +93,11 @@
         --text-est-title: #38bdf8;
         --orange-btn: #0284c7;
         --orange-btn-hover: #0369a1;
+
+        /* Themes */
+        --valero-teal: #4793d4;
+        --valero-yellow: #ffcf00;
+        --cando-green: #22c55e;
       }
 
       /* --- FOND DYNAMIQUE --- */
@@ -326,31 +336,56 @@
 
       /* En-tête */
       .header {
-        min-height: 60px;
+        min-height: 70px;
         height: auto;
         flex-wrap: wrap;
         display: flex;
-        gap: 10px;
+        gap: 15px;
         padding: 10px 20px;
         justify-content: space-between;
         align-items: center;
 
-        background: var(--card-bg);
-        border-bottom: 1px solid var(--border-color);
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        background: linear-gradient(90deg, rgba(255,255,255,0.95) 0%, rgba(240,244,248,0.95) 50%, rgba(255,255,255,0.95) 100%);
+        border-bottom: 4px solid var(--valero-teal);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         position: relative;
         z-index: 10;
-        flex-wrap: wrap;
-        height: auto !important;
       }
+      .dark-mode .header {
+        background: linear-gradient(90deg, rgba(15,23,42,0.95) 0%, rgba(30,41,59,0.95) 50%, rgba(15,23,42,0.95) 100%);
+        border-bottom: 4px solid var(--valero-yellow);
+      }
+
+      .header-logos {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+      }
+
+      .header-logo {
+        height: 40px;
+        width: auto;
+        object-fit: contain;
+      }
+
+      .cando-logo {
+        height: 50px;
+      }
+
       .header h1 {
-        font-size: 1.4rem;
-        color: var(--primary);
+        font-size: 1.5rem;
+        color: var(--valero-teal);
         margin: 0;
-        text-shadow: 0 1px 2px rgba(255, 255, 255, 0.3);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 1px;
       }
       .dark-mode .header h1 {
         text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+        color: var(--valero-yellow);
       }
 
       .header-actions {
@@ -359,23 +394,43 @@
         flex-wrap: wrap;
         justify-content: flex-end;
         align-items: center;
-        flex-wrap: wrap;
-        gap: 10px;
       }
+
       .theme-toggle {
-        background: transparent;
+        background: var(--card-bg);
         color: var(--text-color);
-        border: 1px solid var(--border-color);
-        padding: 6px 15px;
-        border-radius: 20px;
+        border: 2px solid var(--valero-teal);
+        padding: 8px 18px;
+        border-radius: 8px;
         cursor: pointer;
         font-weight: bold;
-        font-size: 0.85rem;
-        transition: all 0.2s;
-        margin-bottom: 5px;
+        font-size: 0.9rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        display: flex;
+        align-items: center;
+        gap: 6px;
       }
+
+      .theme-toggle:nth-child(even) {
+        border-color: var(--cando-green);
+      }
+
+      .dark-mode .theme-toggle {
+        background: rgba(30,41,59,0.8);
+      }
+
       .theme-toggle:hover {
-        background: var(--th-bg);
+        background: var(--valero-teal);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 110, 171, 0.3);
+      }
+
+      .theme-toggle:nth-child(even):hover {
+        background: var(--cando-green);
+        color: white;
+        box-shadow: 0 4px 8px rgba(0, 132, 61, 0.3);
       }
 
       /* Conteneur Principal */
@@ -1194,10 +1249,16 @@
     <!-- FOND ET EFFETS -->
 
     <div class="header">
-      <div style="display: flex; align-items: center; gap: 15px;">
-        <h1>⚓ Terminal St-Romuald - Monitoring Avancé</h1>
-        <div id="live-clock" style="font-size: 1.5rem; font-weight: bold; font-family: monospace; color: var(--primary);">--:--:--</div>
+      <div class="header-logos">
+        <img class="header-logo" src="https://upload.wikimedia.org/wikipedia/en/3/3b/Valero_Energy_logo.svg" alt="Valero Logo" />
+        <h1>Terminal St-Romuald</h1>
+        <img class="header-logo cando-logo" src="https://upload.wikimedia.org/wikipedia/commons/1/10/Cando_Rail_%26_Terminals_Logo.png" alt="Cando Rail Logo" />
       </div>
+
+      <div style="display: flex; align-items: center; gap: 15px;">
+        <div id="live-clock" style="font-size: 1.5rem; font-weight: bold; font-family: monospace; color: var(--valero-teal);">--:--:--</div>
+      </div>
+
       <div class="header-actions">
         <button id="sensor-mode-toggle" class="theme-toggle">
           📱 Capteurs
