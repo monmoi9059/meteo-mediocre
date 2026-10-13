@@ -17,6 +17,7 @@
     />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.8.3/tinymce.min.js"></script>
     <style>
       :root {
         /* Professional Light Mode */
@@ -1271,6 +1272,7 @@
         <button id="langlois-calc-toggle" class="theme-toggle">
           🧮 Calculateur Maritime
         </button>
+        <button id="template-toggle" class="theme-toggle">📝 Template</button>
       </div>
     </div>
 
@@ -11394,6 +11396,29 @@
               1h apr. BM
             </p>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL TEMPLATE QUART DE TRAVAIL -->
+    <div id="template-modal" class="modal-overlay">
+      <div class="modal-content" style="max-width: 800px; width: 90vw;">
+        <div class="modal-header">
+          <h3>📝 Template Quart de Travail</h3>
+          <button id="close-template" class="btn-close">✖</button>
+        </div>
+        <div class="modal-body" style="height: 60vh; display: flex; flex-direction: column;">
+          <textarea id="template-textarea" style="flex: 1; width: 100%; resize: vertical; font-family: inherit; font-size: 1rem; padding: 10px; border: 1px solid var(--border-color); border-radius: 4px; background: inherit; color: inherit;">
+            <p>Section 86</p>
+            <p> -  </p>
+            <ul><li> - </li></ul>
+            <p>&nbsp;</p>
+            <p>Section 87</p>
+            <p> -  </p>
+            <ul><li>- </li></ul>
+            <p>Divers</p>
+            <ul><li> - </li></ul>
+          </textarea>
         </div>
       </div>
     </div>
@@ -23220,6 +23245,34 @@ maintainAspectRatio: false,
         .addEventListener("click", () => modalRules.classList.remove("active"));
       modalRules.addEventListener("click", (e) => {
         if (e.target === modalRules) modalRules.classList.remove("active");
+      });
+
+      // Toggle Template
+      const modalTemplate = document.getElementById("template-modal");
+      let tinymceInitialized = false;
+      document
+        .getElementById("template-toggle")
+        .addEventListener("click", () => {
+          modalTemplate.classList.add("active");
+          if (!tinymceInitialized) {
+            tinymce.init({
+              selector: "#template-textarea",
+              height: "100%",
+              menubar: "file edit view insert format tools table",
+              plugins: "advlist autolink lists link image charmap preview anchor searchreplace visualblocks code fullscreen insertdatetime media table code help wordcount",
+              toolbar: "undo redo | blocks | bold italic underline strikethrough | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | help",
+              content_style: "body { font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif; font-size: 14px; }",
+              skin: document.body.classList.contains("dark-mode") ? "oxide-dark" : "oxide",
+              content_css: document.body.classList.contains("dark-mode") ? "dark" : "default"
+            });
+            tinymceInitialized = true;
+          }
+        });
+      document
+        .getElementById("close-template")
+        .addEventListener("click", () => modalTemplate.classList.remove("active"));
+      modalTemplate.addEventListener("click", (e) => {
+        if (e.target === modalTemplate) modalTemplate.classList.remove("active");
       });
 
       // Toggle Image
