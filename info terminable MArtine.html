@@ -1271,6 +1271,7 @@
         <button id="langlois-calc-toggle" class="theme-toggle">
           🧮 Calculateur Maritime
         </button>
+        <button id="template-toggle" class="theme-toggle">📝 Template</button>
       </div>
     </div>
 
@@ -11394,6 +11395,27 @@
               1h apr. BM
             </p>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL TEMPLATE QUART DE TRAVAIL -->
+    <div id="template-modal" class="modal-overlay">
+      <div class="modal-content" style="max-width: 600px;">
+        <div class="modal-header">
+          <h3>📝 Template Quart de Travail</h3>
+          <button id="close-template" class="btn-close">✖</button>
+        </div>
+        <div class="modal-body">
+          <textarea id="template-textarea" style="width: 100%; height: 300px; resize: vertical; font-family: inherit; font-size: 1rem; padding: 10px; border: 1px solid var(--border-color); border-radius: 4px; background: inherit; color: inherit;">Section 86
+ -
+•	 -
+
+Section 87
+ -
+•	-
+Divers
+•	 -</textarea>
         </div>
       </div>
     </div>
@@ -23220,6 +23242,18 @@ maintainAspectRatio: false,
         .addEventListener("click", () => modalRules.classList.remove("active"));
       modalRules.addEventListener("click", (e) => {
         if (e.target === modalRules) modalRules.classList.remove("active");
+      });
+
+      // Toggle Template
+      const modalTemplate = document.getElementById("template-modal");
+      document
+        .getElementById("template-toggle")
+        .addEventListener("click", () => modalTemplate.classList.add("active"));
+      document
+        .getElementById("close-template")
+        .addEventListener("click", () => modalTemplate.classList.remove("active"));
+      modalTemplate.addEventListener("click", (e) => {
+        if (e.target === modalTemplate) modalTemplate.classList.remove("active");
       });
 
       // Toggle Image
