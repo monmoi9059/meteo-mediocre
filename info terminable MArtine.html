@@ -1228,7 +1228,62 @@
     </script>
 
     <!-- FOND ET EFFETS -->
-    <div id="dynamic-bg" class="dynamic-bg"></div>
+
+    <div class="header">
+      <h1>⚓ Terminal St-Romuald - Monitoring Avancé</h1>
+      <div class="header-actions">
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-right: 10px;
+          "
+        >
+          <span style="font-size: 0.85rem; font-weight: bold">Vue:</span>
+          <select id="view-dir-select" class="view-dir-select">
+            <option value="0">N</option>
+            <option value="90">E</option>
+            <option value="180" selected>S</option>
+            <option value="270">O</option>
+          </select>
+          <input
+            type="number"
+            id="view-dir-input"
+            class="view-dir-input"
+            value="180"
+            min="0"
+            max="359"
+          />
+        </div>
+        <button id="hide-ui-toggle" class="theme-toggle">👁️ Cacher UI</button>
+        <button id="stars-mode-toggle" class="theme-toggle">
+          ✨ Mode Étoiles
+        </button>
+        <button id="sensor-mode-toggle" class="theme-toggle">
+          📱 Capteurs
+        </button>
+        <button id="image-toggle" class="theme-toggle">
+          🖼️ petit Langlois ilustrée
+        </button>
+        <button id="rules-toggle" class="theme-toggle">📖 Règles</button>
+        <button id="calc-toggle" class="theme-toggle">🧮 Calc ETA</button>
+        <button id="langlois-calc-toggle" class="theme-toggle">
+          🧮 Calculateur Maritime
+        </button>
+        <button id="theme-toggle" class="theme-toggle">🌙 Mode Nuit</button>
+      </div>
+    </div>
+
+    <!-- CONTENU PRINCIPAL -->
+    <div class="main-dashboard">
+      <!-- COLONNE 1 : Statuts & AIS -->
+      <div class="col-left">
+        <!-- Aperçu Animé - Terminal -->
+        <div class="card">
+          <div class="card-header"><h2>🎥 Aperçu Animé - Terminal</h2></div>
+          <div class="card-body" id="animation-window" style="position: relative; overflow: hidden; height: 600px; background: #020617;">
+            <div id="dynamic-bg" class="dynamic-bg"></div>
     <canvas id="sky-fx" class="sky-fx"></canvas>
 
     <!-- DISTANT WATER LAYER -->
@@ -6595,7 +6650,7 @@
         data-azimuth="0"
         data-width="40"
         data-offset-y="100"
-        style="width: 40vw; height: 350px; z-index: 2"
+        style="width: 40vw; height: 550px; z-index: 2"
       >
         <svg
           width="100%"
@@ -11657,63 +11712,6 @@
       </div>
     </div>
     <!-- EN-TÊTE -->
-    <div class="header">
-      <h1>⚓ Terminal St-Romuald - Monitoring Avancé</h1>
-      <div class="header-actions">
-        <div
-          style="
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            margin-right: 10px;
-          "
-        >
-          <span style="font-size: 0.85rem; font-weight: bold">Vue:</span>
-          <select id="view-dir-select" class="view-dir-select">
-            <option value="0">N</option>
-            <option value="90">E</option>
-            <option value="180" selected>S</option>
-            <option value="270">O</option>
-          </select>
-          <input
-            type="number"
-            id="view-dir-input"
-            class="view-dir-input"
-            value="180"
-            min="0"
-            max="359"
-          />
-        </div>
-        <button id="hide-ui-toggle" class="theme-toggle">👁️ Cacher UI</button>
-        <button id="stars-mode-toggle" class="theme-toggle">
-          ✨ Mode Étoiles
-        </button>
-        <button id="sensor-mode-toggle" class="theme-toggle">
-          📱 Capteurs
-        </button>
-        <button id="image-toggle" class="theme-toggle">
-          🖼️ petit Langlois ilustrée
-        </button>
-        <button id="rules-toggle" class="theme-toggle">📖 Règles</button>
-        <button id="calc-toggle" class="theme-toggle">🧮 Calc ETA</button>
-        <button id="langlois-calc-toggle" class="theme-toggle">
-          🧮 Calculateur Maritime
-        </button>
-        <button id="theme-toggle" class="theme-toggle">🌙 Mode Nuit</button>
-      </div>
-    </div>
-
-    <!-- CONTENU PRINCIPAL -->
-    <div class="main-dashboard">
-      <!-- COLONNE 1 : Statuts & AIS -->
-      <div class="col-left">
-        <!-- Feux de Circulation Opérationnels -->
-        <div class="card">
-          <div class="card-header"><h2>🚥 Opérations (Temps Réel)</h2></div>
-          <div class="card-body" id="traffic-light-body" style="padding: 10px">
-            <p class="loading" style="font-size: 0.85rem">
-              Calcul des courants et fenêtres...
-            </p>
           </div>
         </div>
 
@@ -11929,6 +11927,18 @@
 
       <!-- COLONNE 3 : Marées & Tableaux -->
       <div class="col-right">
+<!-- Feux de Circulation Opérationnels -->
+        <div class="card">
+          <div class="card-header"><h2>🚥 Opérations (Temps Réel)</h2></div>
+          <div class="card-body" id="traffic-light-body" style="padding: 10px">
+            <p class="loading" style="font-size: 0.85rem">
+              Calcul des courants et fenêtres...
+            </p>
+          </div>
+        </div>
+
+
+
         <div class="card" style="flex: 1">
           <div
             class="card-header"
@@ -22702,6 +22712,7 @@
           type: "line",
           data: { labels: cTime, datasets: datasets },
           options: {
+maintainAspectRatio: false,
             responsive: true,
             maintainAspectRatio: false,
             interaction: { mode: "index", intersect: false },
@@ -22839,7 +22850,7 @@
                 <div style="text-align:center; font-weight:bold; color:var(--primary); margin-bottom:5px;">
                     Niveau actuel estimé : <span style="font-size:1.2rem;">${(currentConditions.currentWaterLevel || 0).toFixed(2)}m</span> ${currentConditions.tideTrend}
                 </div>
-                <div class="chart-wrapper"><canvas id="tChart"></canvas></div>
+                <div class="chart-wrapper"><div style="height: 150px; position: relative; width: 100%;"><canvas id="tChart"></canvas></div></div>
                 ${waterTempStr ? `<div style="text-align:center; margin-bottom:10px;">${waterTempStr}</div>` : ""}
             `;
           html += `<table><tr><th style="width:15%">Date/Heure</th><th style="width:18%">Niveau</th><th>ARRIVÉES</th><th>DÉPARTS</th></tr>`;
@@ -22963,6 +22974,7 @@
               ],
             },
             options: {
+maintainAspectRatio: false,
               responsive: true,
               maintainAspectRatio: false,
               layout: { padding: { top: 20 } },
