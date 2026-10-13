@@ -262,17 +262,17 @@
         left: 50%;
         bottom: calc(var(--water-h) - 55px);
         z-index: 3;
-        transform: translateX(-50%) scale(1.4);
+        transform: translateX(-50%) scale(0.94);
         transform-origin: bottom center;
         pointer-events: none;
       }
       @keyframes boatBobbing {
         0%,
         100% {
-          transform: translate(-50%, 0) scale(1.4) rotate(-0.5deg);
+          transform: translate(-50%, 0) scale(0.94) rotate(-0.5deg);
         }
         50% {
-          transform: translate(-50%, -15px) scale(1.4) rotate(0.5deg);
+          transform: translate(-50%, -15px) scale(0.94) rotate(0.5deg);
         }
       }
 
@@ -10195,12 +10195,12 @@
       <div
         class="landmark"
         data-azimuth="133"
-        data-width="120"
-        style="width: 120vw; height: 350px; z-index: 3"
+        data-width="60"
+        style="width: 60vw; height: 175px; z-index: 3"
       >
         <svg
           width="100%"
-          height="350"
+          height="175"
           viewBox="0 0 1500 350"
           preserveAspectRatio="none"
           xmlns="http://www.w3.org/2000/svg"
@@ -17424,8 +17424,7 @@ const skyCanvas = document.getElementById("sky-fx");
           let y_w = Math.sin(alt * d2r);
           let z_w = Math.cos(alt * d2r) * -Math.cos(az * d2r);
 
-          // 2. Camera vector (Forward) - We include vAlt here to physically tilt the celestial sphere
-          // when looking up, which is what gives it the realistic dome feel!
+          // 2. Camera vector (Forward)
           let fX = Math.cos(vAlt * d2r) * Math.sin(vAz * d2r);
           let fY = Math.sin(vAlt * d2r);
           let fZ = Math.cos(vAlt * d2r) * -Math.cos(vAz * d2r);
@@ -17447,22 +17446,20 @@ const skyCanvas = document.getElementById("sky-fx");
 
           if (cz <= 0.0001) return null; // Behind camera
 
-          // 6. STEREOGRAPHIC PROJECTION
-          // This is the magic math that keeps the beautiful spherical look,
-          // but prevents "bunching" by expanding the edges gracefully,
-          // making the sphere feel "far away".
-          // It maps the hemisphere using cx / (1 + cz).
+          // 6. HYBRID PROJECTION (Cylindrical)
+          // To keep the beautiful 3D spherical dome arcs without the stars drifting
+          // from the linear background when zooming/panning, we use a hybrid approach.
 
-          // Stereographic focal length calculation based on FOV
-          let focalLength = w / 2 / (2 * Math.tan((fov / 4) * d2r));
+          // X: Linearly map the relative 3D azimuth to keep horizontal sync with landmarks
+          let projectedAz = Math.atan2(cx, cz) * (180 / Math.PI);
+          let pixelsPerDegreeX = w / fov;
+          let screenX = w / 2 + projectedAz * pixelsPerDegreeX;
 
-          let screenX = w / 2 + (cx / (1 + cz)) * focalLength;
-
-          // When vAlt is 0 (looking at the horizon), the center of the camera is exactly at (h * 0.70).
-          // When we look up, vAlt tilts the entire 3D sphere, so we don't need to manually shift Y!
-          // The matrix does it automatically.
-          let opticalCenterY = h * 0.7;
-          let screenY = opticalCenterY - (cy / (1 + cz)) * focalLength;
+          // Y: Use the 3D stereographic tilt (cy / (1+cz)) scaled exactly to match
+          // the linear scale at the optical center.
+          let linearFocalLength = (w / fov) * (360 / Math.PI);
+          let opticalCenterY = h * 0.7; // Fixed base horizon, cy naturally handles the camera tilt!
+          let screenY = opticalCenterY - (cy / (1 + cz)) * linearFocalLength;
 
           return { x: screenX, y: screenY, cx, cy, cz };
         };
@@ -23865,7 +23862,7 @@ maintainAspectRatio: false,
           let t = Date.now() / 1000;
 
           // Base scale depends on zoom
-          let baseScale = (130 / viewFOV) * 0.85;
+          let baseScale = (130 / viewFOV) * 0.57;
 
           // Calculate screen X position for the boat based on its fixed azimuth of 135
           let boatAzimuth = 135;
