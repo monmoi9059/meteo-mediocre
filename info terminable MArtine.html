@@ -17260,6 +17260,7 @@
         let isFoggy = c.weatherCode === 45 || c.weatherCode === 48;
 
         let stormCloudCover = c.cloudCover / 100.0; // 0 to 1
+        if (isFoggy) stormCloudCover = 1;
 
         if (stormCloudCover > 0) {
           // Target cloudy/stormy colors
@@ -21687,6 +21688,8 @@ const skyCanvas = document.getElementById("sky-fx");
       // --- CANVAS : MÉTÉO BD ---
       const fxCanvas = document.getElementById("weather-fx");
       const ctx = fxCanvas.getContext("2d");
+      fxCanvas.width = getAnimW();
+      fxCanvas.height = getAnimH();
 
       window.addEventListener("resize", () => {
         W = fxCanvas.width = skyCanvas.width = getAnimW();
@@ -22529,7 +22532,7 @@ const skyCanvas = document.getElementById("sky-fx");
         currentConditions.wind = cur.windspeed_10m;
         currentConditions.rain = cur.precipitation || 0;
         currentConditions.snow = cur.snowfall || 0;
-        currentConditions.cloudCover = cur.cloud_cover || 50;
+        currentConditions.cloudCover = cur.cloud_cover !== undefined ? cur.cloud_cover : 50;
         currentConditions.pressure = cur.surface_pressure;
         currentConditions.humidity = cur.relative_humidity_2m;
         currentConditions.weatherCode = cur.weather_code;
