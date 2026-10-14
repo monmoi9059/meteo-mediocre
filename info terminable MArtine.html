@@ -511,13 +511,29 @@
       }
 
       /* HIDE UI CLASS */
+      body.dark-mode .main-dashboard {
+        background: linear-gradient(135deg, var(--sky-c1, #0f172a), var(--sky-c2, #1e293b), var(--sky-c3, #0f172a));
+        background-size: 300% 300%;
+        animation: bgShift var(--anim-speed, 15s) ease infinite;
+      }
       body.hide-ui .main-dashboard {
+        background: linear-gradient(135deg, var(--sky-c1, #eef2f5), var(--sky-c2, #cbd5e1), var(--sky-c3, #eef2f5));
+        background-size: 300% 300%;
+        animation: bgShift var(--anim-speed, 15s) ease infinite;
         opacity: 0;
         visibility: hidden;
         pointer-events: none;
       }
 
+      body.dark-mode .main-dashboard {
+        background: linear-gradient(135deg, var(--sky-c1, #0f172a), var(--sky-c2, #1e293b), var(--sky-c3, #0f172a));
+        background-size: 300% 300%;
+        animation: bgShift var(--anim-speed, 15s) ease infinite;
+      }
       .main-dashboard {
+        background: linear-gradient(135deg, var(--sky-c1, #eef2f5), var(--sky-c2, #cbd5e1), var(--sky-c3, #eef2f5));
+        background-size: 300% 300%;
+        animation: bgShift var(--anim-speed, 15s) ease infinite;
         display: flex;
         flex: 1;
         padding: 10px;
@@ -964,7 +980,15 @@
           flex-wrap: wrap;
           height: auto !important;
         }
+      body.dark-mode .main-dashboard {
+        background: linear-gradient(135deg, var(--sky-c1, #0f172a), var(--sky-c2, #1e293b), var(--sky-c3, #0f172a));
+        background-size: 300% 300%;
+        animation: bgShift var(--anim-speed, 15s) ease infinite;
+      }
         .main-dashboard {
+        background: linear-gradient(135deg, var(--sky-c1, #eef2f5), var(--sky-c2, #cbd5e1), var(--sky-c3, #eef2f5));
+        background-size: 300% 300%;
+        animation: bgShift var(--anim-speed, 15s) ease infinite;
           flex-direction: column;
           padding: 8px;
         }
