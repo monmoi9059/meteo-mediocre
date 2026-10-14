@@ -23,11 +23,11 @@
         /* Professional Light Mode */
         --primary: #0f2942;
         --secondary: #1e405f;
-        --accent: #cffafe;
+        --accent: #e0f7fa;
         --bg-color: transparent;
         --text-color: #1e293b;
         --text-shadow: 1px 1px 1px rgba(255, 255, 255, 0.8);
-        --card-bg: rgba(219, 234, 254, 0.85);
+        --card-bg: rgba(255, 255, 255, 0.85);
         --tooltip-bg: rgba(255, 255, 255, 0.95);
         --border-color: rgba(15, 41, 66, 0.15);
         --th-bg: rgba(15, 41, 66, 0.08);
@@ -39,20 +39,20 @@
         --scrollbar-thumb: rgba(15, 41, 66, 0.3);
 
         /* Modals & Surfaces */
-        --bg-body: #e0f2fe;
-        --bg-container: #dbeafe;
-        --bg-input: #f8fafc;
+        --bg-body: #f0f4f8;
+        --bg-container: #ffffff;
+        --bg-input: #ffffff;
         --border-input: #cccccc;
         --shadow: rgba(15, 41, 66, 0.15);
         --text: #333333;
         --light-text: #ffffff;
 
         /* Specific Elements */
-        --bg-est-box: #f0f9ff;
-        --border-est-box: #7dd3fc;
+        --bg-est-box: #f8fafc;
+        --border-est-box: #cbd5e1;
         --text-est-title: #0f2942;
-        --orange-btn: #ea580c;
-        --orange-btn-hover: #c2410c;
+        --orange-btn: #0284c7;
+        --orange-btn-hover: #0369a1;
 
         /* Themes */
         --valero-teal: #006eab;
@@ -64,11 +64,11 @@
         /* Professional Dark Mode */
         --primary: #4793d4;
         --secondary: #2b6cb0;
-        --accent: #0c4a6e;
+        --accent: #1e293b;
         --bg-color: transparent;
         --text-color: #f1f5f9;
         --text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.9);
-        --card-bg: rgba(7, 89, 133, 0.85);
+        --card-bg: rgba(15, 23, 42, 0.85);
         --tooltip-bg: rgba(15, 23, 42, 0.95);
         --border-color: rgba(255, 255, 255, 0.15);
         --th-bg: rgba(255, 255, 255, 0.1);
@@ -80,20 +80,20 @@
         --scrollbar-thumb: rgba(71, 147, 212, 0.4);
 
         /* Modals & Surfaces */
-        --bg-body: #082f49;
-        --bg-container: #075985;
-        --bg-input: #0369a1;
+        --bg-body: #0f172a;
+        --bg-container: #1e293b;
+        --bg-input: #334155;
         --border-input: #475569;
         --shadow: rgba(0, 0, 0, 0.5);
         --text: #e2e8f0;
         --light-text: #ffffff;
 
         /* Specific Elements */
-        --bg-est-box: #0c4a6e;
-        --border-est-box: #0284c7;
+        --bg-est-box: #1e293b;
+        --border-est-box: #334155;
         --text-est-title: #38bdf8;
-        --orange-btn: #ea580c;
-        --orange-btn-hover: #c2410c;
+        --orange-btn: #0284c7;
+        --orange-btn-hover: #0369a1;
 
         /* Themes */
         --valero-teal: #4793d4;
@@ -346,14 +346,20 @@
         justify-content: space-between;
         align-items: center;
 
-        background: linear-gradient(90deg, rgba(255,255,255,0.95) 0%, rgba(240,244,248,0.95) 50%, rgba(255,255,255,0.95) 100%);
+        background: linear-gradient(135deg, var(--sky-c1, #eef2f5), var(--sky-c2, #cbd5e1), var(--sky-c3, #eef2f5));
+        background-size: 300% 300%;
+        animation: bgShift var(--anim-speed, 15s) ease infinite;
+        box-shadow: inset 0 0 0 1000px rgba(255, 255, 255, 0.95);
         border-bottom: 4px solid var(--valero-teal);
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         position: relative;
         z-index: 10;
       }
       .dark-mode .header {
-        background: linear-gradient(90deg, rgba(15,23,42,0.95) 0%, rgba(30,41,59,0.95) 50%, rgba(15,23,42,0.95) 100%);
+        background: linear-gradient(135deg, var(--sky-c1, #0f172a), var(--sky-c2, #1e293b), var(--sky-c3, #0f172a));
+        background-size: 300% 300%;
+        animation: bgShift var(--anim-speed, 15s) ease infinite;
+        box-shadow: inset 0 0 0 1000px rgba(15, 23, 42, 0.95);
         border-bottom: 4px solid var(--valero-yellow);
       }
 
@@ -398,7 +404,10 @@
       }
 
       .theme-toggle {
-        background: var(--card-bg);
+        background: linear-gradient(135deg, var(--sky-c1, #eef2f5), var(--sky-c2, #cbd5e1), var(--sky-c3, #eef2f5));
+        background-size: 300% 300%;
+        animation: bgShift var(--anim-speed, 15s) ease infinite;
+        box-shadow: inset 0 0 0 1000px rgba(255, 255, 255, 0.85);
         color: var(--text-color);
         border: 2px solid var(--valero-teal);
         padding: 8px 18px;
@@ -545,8 +554,18 @@
         min-width: 0;
       }
 
+      .dark-mode .card {
+        background: linear-gradient(135deg, var(--sky-c1, #0f172a), var(--sky-c2, #1e293b), var(--sky-c3, #0f172a));
+        background-size: 300% 300%;
+        animation: bgShift var(--anim-speed, 15s) ease infinite;
+        box-shadow: inset 0 0 0 1000px rgba(15, 23, 42, 0.85);
+      }
+
       .card {
-        background: var(--card-bg);
+        background: linear-gradient(135deg, var(--sky-c1, #eef2f5), var(--sky-c2, #cbd5e1), var(--sky-c3, #eef2f5));
+        background-size: 300% 300%;
+        animation: bgShift var(--anim-speed, 15s) ease infinite;
+        box-shadow: inset 0 0 0 1000px rgba(255, 255, 255, 0.85);
         border: 1px solid var(--border-color);
         border-radius: 8px;
         display: flex;
@@ -579,7 +598,10 @@
       .card-body .live-bar,
       .card-body .ocean-banner,
       .card-body .status-block {
-        background: rgba(255, 255, 255, 0.5);
+        background: linear-gradient(135deg, var(--sky-c1, #eef2f5), var(--sky-c2, #cbd5e1), var(--sky-c3, #eef2f5));
+        background-size: 300% 300%;
+        animation: bgShift var(--anim-speed, 15s) ease infinite;
+        box-shadow: inset 0 0 0 1000px rgba(255, 255, 255, 0.3);
         border-radius: 6px;
       }
       .dark-mode .card-body p,
@@ -587,13 +609,35 @@
       .dark-mode .card-body .live-bar,
       .dark-mode .card-body .ocean-banner,
       .dark-mode .card-body .status-block {
-        background: rgba(15, 23, 42, 0.3);
+        background: linear-gradient(135deg, var(--sky-c1, #0f172a), var(--sky-c2, #1e293b), var(--sky-c3, #0f172a));
+        background-size: 300% 300%;
+        animation: bgShift var(--anim-speed, 15s) ease infinite;
+        box-shadow: inset 0 0 0 1000px rgba(15, 23, 42, 0.7);
       }
       .card-body table {
-        background: rgba(255, 255, 255, 0.7);
+        background: linear-gradient(135deg, var(--sky-c1, #eef2f5), var(--sky-c2, #cbd5e1), var(--sky-c3, #eef2f5));
+        background-size: 300% 300%;
+        animation: bgShift var(--anim-speed, 15s) ease infinite;
+        box-shadow: inset 0 0 0 1000px rgba(255, 255, 255, 0.5);
       }
       .dark-mode .card-body table {
-        background: rgba(15, 23, 42, 0.5);
+        background: linear-gradient(135deg, var(--sky-c1, #0f172a), var(--sky-c2, #1e293b), var(--sky-c3, #0f172a));
+        background-size: 300% 300%;
+        animation: bgShift var(--anim-speed, 15s) ease infinite;
+        box-shadow: inset 0 0 0 1000px rgba(15, 23, 42, 0.5);
+      }
+
+      .dynamic-chart-bg {
+        background: linear-gradient(135deg, var(--sky-c1, #eef2f5), var(--sky-c2, #cbd5e1), var(--sky-c3, #eef2f5));
+        background-size: 300% 300%;
+        animation: bgShift var(--anim-speed, 15s) ease infinite;
+        box-shadow: inset 0 0 0 1000px rgba(255, 255, 255, 0.5);
+      }
+      .dark-mode .dynamic-chart-bg {
+        background: linear-gradient(135deg, var(--sky-c1, #0f172a), var(--sky-c2, #1e293b), var(--sky-c3, #0f172a));
+        background-size: 300% 300%;
+        animation: bgShift var(--anim-speed, 15s) ease infinite;
+        box-shadow: inset 0 0 0 1000px rgba(15, 23, 42, 0.5);
       }
 
       .chart-wrapper {
@@ -609,10 +653,20 @@
         border-collapse: collapse;
         font-size: 0.8rem;
       }
+      .dark-mode th {
+        background: linear-gradient(135deg, var(--sky-c1, #0f172a), var(--sky-c2, #1e293b), var(--sky-c3, #0f172a));
+        background-size: 300% 300%;
+        animation: bgShift var(--anim-speed, 15s) ease infinite;
+        box-shadow: inset 0 0 0 1000px rgba(15, 23, 42, 0.95);
+      }
+
       th {
         position: sticky;
         top: -10px;
-        background: var(--tooltip-bg);
+        background: linear-gradient(135deg, var(--sky-c1, #eef2f5), var(--sky-c2, #cbd5e1), var(--sky-c3, #eef2f5));
+        background-size: 300% 300%;
+        animation: bgShift var(--anim-speed, 15s) ease infinite;
+        box-shadow: inset 0 0 0 1000px rgba(255, 255, 255, 0.95);
         color: var(--primary);
         font-weight: 600;
         padding: 8px 5px;
@@ -697,12 +751,18 @@
       .status-block {
         margin-bottom: 12px;
         padding: 10px;
-        background: rgba(0, 0, 0, 0.03);
+        background: linear-gradient(135deg, var(--sky-c1, #eef2f5), var(--sky-c2, #cbd5e1), var(--sky-c3, #eef2f5));
+        background-size: 300% 300%;
+        animation: bgShift var(--anim-speed, 15s) ease infinite;
+        box-shadow: inset 0 0 0 1000px rgba(255, 255, 255, 0.3);
         border-radius: 6px;
         border: 1px solid var(--border-color);
       }
       .dark-mode .status-block {
-        background: rgba(255, 255, 255, 0.03);
+        background: linear-gradient(135deg, var(--sky-c1, #0f172a), var(--sky-c2, #1e293b), var(--sky-c3, #0f172a));
+        background-size: 300% 300%;
+        animation: bgShift var(--anim-speed, 15s) ease infinite;
+        box-shadow: inset 0 0 0 1000px rgba(15, 23, 42, 0.7);
       }
       .status-header {
         margin: 0 0 8px 0;
@@ -778,7 +838,10 @@
         opacity: 1;
       }
       .modal-content {
-        background: var(--tooltip-bg);
+        background: linear-gradient(135deg, var(--sky-c1, #eef2f5), var(--sky-c2, #cbd5e1), var(--sky-c3, #eef2f5));
+        background-size: 300% 300%;
+        animation: bgShift var(--anim-speed, 15s) ease infinite;
+        box-shadow: inset 0 0 0 1000px rgba(255, 255, 255, 0.95);
         border: 1px solid var(--border-color);
         border-radius: 12px;
         width: 500px;
@@ -865,7 +928,10 @@
         padding: 10px;
         border-radius: 6px;
         border: 1px solid var(--border-color);
-        background: rgba(255, 255, 255, 0.5);
+        background: linear-gradient(135deg, var(--sky-c1, #eef2f5), var(--sky-c2, #cbd5e1), var(--sky-c3, #eef2f5));
+        background-size: 300% 300%;
+        animation: bgShift var(--anim-speed, 15s) ease infinite;
+        box-shadow: inset 0 0 0 1000px rgba(255, 255, 255, 0.3);
         color: var(--text-color);
         font-size: 1.05rem;
         box-sizing: border-box;
@@ -908,9 +974,29 @@
           width: 100%;
           height: auto;
         }
+      .dark-mode .card {
+        background: linear-gradient(135deg, var(--sky-c1, #0f172a), var(--sky-c2, #1e293b), var(--sky-c3, #0f172a));
+        background-size: 300% 300%;
+        animation: bgShift var(--anim-speed, 15s) ease infinite;
+        box-shadow: inset 0 0 0 1000px rgba(15, 23, 42, 0.85);
+      }
+
         .card {
           max-height: none;
         }
+      .dynamic-chart-bg {
+        background: linear-gradient(135deg, var(--sky-c1, #eef2f5), var(--sky-c2, #cbd5e1), var(--sky-c3, #eef2f5));
+        background-size: 300% 300%;
+        animation: bgShift var(--anim-speed, 15s) ease infinite;
+        box-shadow: inset 0 0 0 1000px rgba(255, 255, 255, 0.5);
+      }
+      .dark-mode .dynamic-chart-bg {
+        background: linear-gradient(135deg, var(--sky-c1, #0f172a), var(--sky-c2, #1e293b), var(--sky-c3, #0f172a));
+        background-size: 300% 300%;
+        animation: bgShift var(--anim-speed, 15s) ease infinite;
+        box-shadow: inset 0 0 0 1000px rgba(15, 23, 42, 0.5);
+      }
+
         .chart-wrapper {
           height: 220px;
           min-height: 220px;
@@ -918,6 +1004,13 @@
         .card-body {
           overflow-x: auto;
         }
+      .dark-mode th {
+        background: linear-gradient(135deg, var(--sky-c1, #0f172a), var(--sky-c2, #1e293b), var(--sky-c3, #0f172a));
+        background-size: 300% 300%;
+        animation: bgShift var(--anim-speed, 15s) ease infinite;
+        box-shadow: inset 0 0 0 1000px rgba(15, 23, 42, 0.95);
+      }
+
         th {
           position: static;
         }
@@ -998,7 +1091,10 @@
         left: 0;
         width: 100%;
         height: 50%;
-        background-color: white;
+        background: linear-gradient(135deg, var(--sky-c1, #eef2f5), var(--sky-c2, #cbd5e1), var(--sky-c3, #eef2f5));
+        background-size: 300% 300%;
+        animation: bgShift var(--anim-speed, 15s) ease infinite;
+        box-shadow: inset 0 0 0 1000px rgba(255, 255, 255, 0.95);
         border-radius: 0 0 2px 2px;
       }
 
@@ -1012,7 +1108,10 @@
       #langlois-calc-modal .container {
         max-width: 800px;
         margin: 20px auto;
-        background: var(--bg-container);
+        background: linear-gradient(135deg, var(--sky-c1, #eef2f5), var(--sky-c2, #cbd5e1), var(--sky-c3, #eef2f5));
+        background-size: 300% 300%;
+        animation: bgShift var(--anim-speed, 15s) ease infinite;
+        box-shadow: inset 0 0 0 1000px rgba(255, 255, 255, 0.95);
         padding: 20px;
         border-radius: 8px;
         box-shadow: 0 4px 15px var(--shadow);
@@ -11449,7 +11548,10 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            background: #fff;
+            background: linear-gradient(135deg, var(--sky-c1, #eef2f5), var(--sky-c2, #cbd5e1), var(--sky-c3, #eef2f5));
+            background-size: 300% 300%;
+            animation: bgShift var(--anim-speed, 15s) ease infinite;
+            box-shadow: inset 0 0 0 1000px rgba(255, 255, 255, 0.95);
           "
         >
           <img
@@ -17303,6 +17405,10 @@
 
         let animSpeed = Math.max(2, 20 - c.wind * 0.6);
         bgDiv.style.background = `linear-gradient(135deg, ${color1}, ${color2}, ${color3}, ${color1})`;
+        document.body.style.setProperty("--sky-c1", color1);
+        document.body.style.setProperty("--sky-c2", color2);
+        document.body.style.setProperty("--sky-c3", color3);
+        document.body.style.setProperty("--anim-speed", animSpeed + "s");
         bgDiv.style.backgroundSize = "300% 300%";
         bgDiv.style.animation = `bgShift ${animSpeed}s ease infinite`;
         bgDiv.style.setProperty("--water-c", waterColor);
@@ -22606,7 +22712,7 @@ const skyCanvas = document.getElementById("sky-fx");
                 <span title="Pression & Humidité">⏱️ ${Math.round(cur.surface_pressure)}hPa / 💧 ${cur.relative_humidity_2m}%</span> 
                 <span>${getMoonPhaseIcon(phaseVal)} ${sunsetStr}</span>
             </div>
-            <div class="chart-wrapper"><canvas id="wChart"></canvas></div>
+            <div class="chart-wrapper"><div class="dynamic-chart-bg" style="height: 100%; position: relative; width: 100%; border-radius: 6px;"><canvas id="wChart"></canvas></div></div>
         `;
 
         let cTime = [],
@@ -22885,7 +22991,7 @@ maintainAspectRatio: false,
                 <div style="text-align:center; font-weight:bold; color:var(--primary); margin-bottom:5px;">
                     Niveau actuel estimé : <span style="font-size:1.2rem;">${(currentConditions.currentWaterLevel || 0).toFixed(2)}m</span> ${currentConditions.tideTrend}
                 </div>
-                <div class="chart-wrapper"><div style="height: 150px; position: relative; width: 100%;"><canvas id="tChart"></canvas></div></div>
+                <div class="chart-wrapper"><div class="dynamic-chart-bg" style="height: 150px; position: relative; width: 100%; border-radius: 6px;"><canvas id="tChart"></canvas></div></div>
                 ${waterTempStr ? `<div style="text-align:center; margin-bottom:10px;">${waterTempStr}</div>` : ""}
             `;
           html += `<table><tr><th style="width:15%">Date/Heure</th><th style="width:18%">Niveau</th><th>ARRIVÉES</th><th>DÉPARTS</th></tr>`;
