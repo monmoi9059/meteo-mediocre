@@ -24059,7 +24059,7 @@ maintainAspectRatio: false,
           let boatXScreen =
             getAnimW() / 2 + relAz * cam.pixelsPerDegreeX;
           // Boat should sit slightly "in" the water, so it bobs below the water top layer
-          let boatYScreen = cam.waterTopY + 35;
+          let boatYScreen = cam.waterTopY - 40 + 40 * baseScale;
 
           boat.style.left = `${boatXScreen}px`;
           // Calculate bottom instead of relying on default css
