@@ -23275,11 +23275,14 @@ maintainAspectRatio: false,
           const banner = document.getElementById("hazard-banner-container");
           const title = document.getElementById("hazard-title");
           const desc = document.getElementById("hazard-desc");
+          const tideImpact = document.getElementById("tide-wind-impact");
+          const tideImpactText = document.getElementById("tide-wind-impact-text");
 
           if (!banner || !title || !desc) return;
 
-          if (windSpeed == null || currentConditions.flowDirection == null) {
+          if (windSpeed == null || currentConditions.flowDirection == null || currentConditions.flowDirection === "none" || currentConditions.flowDirection === "slack") {
               banner.style.display = 'none';
+              if(tideImpact) tideImpact.style.display = 'none';
               return;
           }
 
@@ -23297,6 +23300,7 @@ maintainAspectRatio: false,
 
           if (tideHeading === null) {
               banner.style.display = 'none';
+              if(tideImpact) tideImpact.style.display = 'none';
               return; // Slack tide or unknown
           }
 
@@ -23305,13 +23309,48 @@ maintainAspectRatio: false,
           if (diff > 180) diff = 360 - diff;
 
           // If wind is > 15kt and generally opposing (diff > 120 deg)
-          if (windSpeed > 15 && diff > 120) {
+          let isOpposing = diff > 120;
+          let isFollowing = diff < 60;
+
+          if (isOpposing && windSpeed > 15) {
               banner.style.display = 'block';
               let tideType = currentConditions.flowDirection === "left" ? "Jusant" : "Flot";
               title.innerText = "AVERTISSEMENT: VENT CONTRE COURANT";
               desc.innerHTML = `Rafales de ${Math.round(windSpeed)} nds opposées au ${tideType}. <strong>Clapot raide et croisé fort probable.</strong>`;
           } else {
               banner.style.display = 'none';
+          }
+
+          // Evaluate Wind Impact on Tide Times
+          if (tideImpact && tideImpactText) {
+              if (windSpeed > 15) {
+                  let shiftMins = Math.min(30, Math.floor(windSpeed * 0.8)); // 15kt = 12m, 30kt = 24m
+                  if (currentConditions.flowDirection === "left") {
+                      // Ebb flow (East)
+                      if (isFollowing) {
+                         tideImpact.style.display = 'block';
+                         tideImpactText.innerHTML = `💨 Vent d'Ouest dominant: <strong>Jusant accéléré / Marée basse anticipée (\u2248${shiftMins} min)</strong>`;
+                      } else if (isOpposing) {
+                         tideImpact.style.display = 'block';
+                         tideImpactText.innerHTML = `💨 Vent d'Est dominant: <strong>Jusant ralenti / Marée basse retardée (\u2248${shiftMins} min)</strong>`;
+                      } else {
+                         tideImpact.style.display = 'none';
+                      }
+                  } else if (currentConditions.flowDirection === "right") {
+                      // Flood flow (West)
+                      if (isFollowing) {
+                         tideImpact.style.display = 'block';
+                         tideImpactText.innerHTML = `💨 Vent d'Est dominant: <strong>Flot accéléré / Marée haute anticipée (\u2248${shiftMins} min)</strong>`;
+                      } else if (isOpposing) {
+                         tideImpact.style.display = 'block';
+                         tideImpactText.innerHTML = `💨 Vent d'Ouest dominant: <strong>Flot ralenti / Marée haute retardée (\u2248${shiftMins} min)</strong>`;
+                      } else {
+                         tideImpact.style.display = 'none';
+                      }
+                  }
+              } else {
+                  tideImpact.style.display = 'none';
+              }
           }
       }
 
