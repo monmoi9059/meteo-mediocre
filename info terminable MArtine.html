@@ -17288,6 +17288,8 @@
       let currentConditions = {
         temp: 0,
         wind: 0,
+        windGust: 0,
+        windDir: 0,
         rain: 0,
         snow: 0,
         cloudCover: 0,
@@ -22724,6 +22726,8 @@ const skyCanvas = document.getElementById("sky-fx");
 
         currentConditions.temp = cur.temperature_2m;
         currentConditions.wind = cur.windspeed_10m;
+        currentConditions.windGust = cur.wind_gusts_10m;
+        currentConditions.windDir = cur.winddirection_10m;
         currentConditions.rain = cur.precipitation || 0;
         currentConditions.snow = cur.snowfall || 0;
         currentConditions.cloudCover = cur.cloud_cover !== undefined ? cur.cloud_cover : 50;
@@ -23471,7 +23475,7 @@ maintainAspectRatio: false,
         if (s87_big_dep.state === "FERMÉ" && nextPM)
           s87_big_dep.txt = `Ouvre à ${formatT(addTime(nextPM.eventDate, 1.0))}`;
 
-        evaluateMaritimeConditions(currentConditions.wind, currentConditions.windDir, currentConditions.flowDirection, currentConditions);
+        evaluateMaritimeConditions(currentConditions.windGust || currentConditions.wind, currentConditions.windDir, currentConditions.flowDirection, currentConditions);
 
         document.getElementById("traffic-light-body").innerHTML = `
             <div class="ocean-banner">
