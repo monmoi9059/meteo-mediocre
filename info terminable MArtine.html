@@ -1363,7 +1363,30 @@
           min-height: 44px; /* Better touch target */
         }
       }
-    </style>
+      @keyframes pulse {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(74, 222, 128, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); }
+  }
+  @keyframes pulse-amber {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(2fb, 191, 36, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(251, 191, 36, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(251, 191, 36, 0); }
+  }
+  .telemetry-cached {
+      background:rgba(251,191,36,0.1) !important;
+      border-color:rgba(251,191,36,0.3) !important;
+      color:#fbbf24 !important;
+  }
+  .telemetry-cached > div {
+      background:#fbbf24 !important;
+      box-shadow:0 0 8px #fbbf24 !important;
+      animation:pulse-amber 2s infinite !important;
+  }
+  .metric-value, .tide-row td, .val, .forecast-val {
+    transition: all 0.3s ease-in-out;
+  }
+</style>
   </head>
   <body>
     <script id="theme-init">
@@ -1376,6 +1399,10 @@
       <div class="header-logos">
         <img class="header-logo" src="https://upload.wikimedia.org/wikipedia/en/3/3b/Valero_Energy_logo.svg" alt="Valero Logo" />
         <h1>Terminal St-Romuald</h1>
+        <div id="telemetry-status" style="display:flex; align-items:center; gap:5px; margin-left:10px; font-size:0.8rem; padding:4px 8px; border-radius:12px; background:rgba(0,255,0,0.1); border:1px solid rgba(0,255,0,0.3); color:#4ade80;">
+           <div style="width:8px; height:8px; border-radius:50%; background:#4ade80; box-shadow:0 0 8px #4ade80; animation:pulse 2s infinite;"></div>
+           <span id="telemetry-text">SYSTEM NOMINAL</span>
+        </div>
         <img class="header-logo cando-logo" src="https://upload.wikimedia.org/wikipedia/commons/1/10/Cando_Rail_%26_Terminals_Logo.png" alt="Cando Rail Logo" />
       </div>
 
@@ -11920,7 +11947,8 @@
               position: relative;
             "
           >
-            <iframe
+            <div id="ais-wrapper" style="width:100%; height:100%; position:relative; box-shadow: inset 0 0 20px rgba(0, 204, 255, 0.2); border: 1px solid rgba(0, 204, 255, 0.3); border-radius: 8px; overflow: hidden; transition: all 0.3s ease;">
+              <iframe
               id="ais-map"
               src="https://www.marinetraffic.com/en/ais/embed/zoom:13/centery:46.785/centerx:-71.20/maptype:1/shownames:true/mmsi:0/shipid:0/fleet:/fleet_id:/vtypes:/showmenu:false/remember:false"
               width="100%"
@@ -11930,6 +11958,7 @@
               style="border: 0; width: 100%; height: 100%; display: block"
             >
             </iframe>
+            </div>
             <iframe
               id="meteo-map"
               src="https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=mm&metricTemp=°C&metricWind=kt&zoom=10&overlay=meteo&product=ecmwf&level=surface&lat=46.76&lon=-71.26"
@@ -12074,9 +12103,35 @@
               📅 7 Jours
             </button>
           </div>
+
+          <!-- HAZARD BANNER -->
+          <div id="hazard-banner-container" style="display:none; margin: 10px; padding: 10px; border-radius: 8px; border-left: 4px solid var(--accent); background: rgba(0,0,0,0.2);">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <span id="hazard-icon" style="font-size: 1.5rem;">⚠️</span>
+              <div style="flex:1;">
+                <div id="hazard-title" style="font-weight:bold; color: var(--accent);">CONDITIONS ROUGH</div>
+                <div id="hazard-desc" style="font-size: 0.85rem; color: #ccc;">High gusts opposing strong ebb current.</div>
+              </div>
+            </div>
+          </div>
+
           <div class="card-body" id="weather-body">
             <p class="loading">Chargement météo...</p>
           </div>
+
+          <!-- FORECAST SCRUBBER -->
+          <div id="forecast-scrubber-container" style="padding: 10px; border-top: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; gap: 5px;">
+            <div style="display:flex; justify-content:space-between; font-size:0.8rem; color:#aaa;">
+               <span>-6h</span>
+               <span id="scrubber-label" style="color:var(--accent); font-weight:bold;">LIVE (0h)</span>
+               <span>+24h</span>
+            </div>
+            <div style="display:flex; gap:10px; align-items:center;">
+                <input type="range" id="time-scrubber" min="-360" max="1440" value="0" style="flex:1; accent-color: var(--accent);">
+                <button id="reset-scrubber-btn" class="theme-toggle" style="padding: 2px 8px; font-size:0.75rem;">Reset</button>
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -12105,6 +12160,35 @@
           >
             <h2>🌊 Marées & Fenêtres (Lauzon 3250)</h2>
           </div>
+
+          <!-- SVG TIDE CHART -->
+          <div id="svg-tide-container" style="padding: 10px; background: rgba(0,0,0,0.1); border-bottom: 1px solid rgba(255,255,255,0.05); position:relative; overflow:hidden;">
+            <svg id="tide-svg" viewBox="0 0 800 150" style="width: 100%; height: 100px; display: block; overflow: visible;">
+              <defs>
+                 <linearGradient id="tideGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.6" />
+                    <stop offset="100%" stop-color="var(--accent)" stop-opacity="0" />
+                 </linearGradient>
+              </defs>
+              <!-- Grid lines -->
+              <line x1="0" y1="25" x2="800" y2="25" stroke="rgba(255,255,255,0.1)" stroke-dasharray="4" />
+              <line x1="0" y1="75" x2="800" y2="75" stroke="rgba(255,255,255,0.1)" stroke-dasharray="4" />
+              <line x1="0" y1="125" x2="800" y2="125" stroke="rgba(255,255,255,0.1)" stroke-dasharray="4" />
+              <!-- Texts -->
+              <text x="10" y="20" fill="#888" font-size="12">6m</text>
+              <text x="10" y="70" fill="#888" font-size="12">3m</text>
+              <text x="10" y="120" fill="#888" font-size="12">0m</text>
+
+              <path id="tide-path-fill" d="" fill="url(#tideGrad)" />
+              <path id="tide-path-line" d="" fill="none" stroke="var(--accent)" stroke-width="2" />
+
+              <line id="tide-now-line" x1="0" y1="0" x2="0" y2="150" stroke="#4ade80" stroke-width="2" stroke-dasharray="5" style="filter: drop-shadow(0 0 4px #4ade80); transition: all 0.3s ease;"/>
+              <text id="tide-now-text" x="5" y="145" fill="#4ade80" font-size="12" style="transition: all 0.3s ease;">NOW</text>
+            </svg>
+            <!-- Hover Tooltip -->
+            <div id="tide-tooltip" style="position:absolute; display:none; background:rgba(15, 23, 42, 0.9); border:1px solid var(--accent); padding:4px 8px; border-radius:4px; color:#fff; font-size:0.75rem; pointer-events:none; z-index:10; white-space:nowrap;"></div>
+          </div>
+
           <div class="card-body" id="tides-body">
             <p class="loading">Chargement marées...</p>
           </div>
@@ -22915,6 +22999,19 @@ maintainAspectRatio: false,
           .replace(" h", "h");
       }
 
+      function updateTelemetryStatus(state, msg) {
+        const tel = document.getElementById("telemetry-status");
+        const txt = document.getElementById("telemetry-text");
+        if(!tel || !txt) return;
+        if(state === 'cached') {
+            tel.className = 'telemetry-cached';
+            txt.innerText = msg || 'CACHED (OFFLINE)';
+        } else if(state === 'live') {
+            tel.className = '';
+            txt.innerText = msg || 'SYSTEM NOMINAL';
+        }
+      }
+
       function updateRealtimeState() {
         if (!window.globalTidesData) return;
         const tidesData = window.globalTidesData;
@@ -22955,6 +23052,39 @@ maintainAspectRatio: false,
         updateTrafficLights(tidesData, nowTime);
       }
       setInterval(updateRealtimeState, 60000); // recalculate every 60s
+
+      // Scrubber state
+      window.scrubberOffsetMins = 0;
+
+      document.addEventListener("DOMContentLoaded", () => {
+          const scrubber = document.getElementById("time-scrubber");
+          const resetBtn = document.getElementById("reset-scrubber-btn");
+          const label = document.getElementById("scrubber-label");
+
+          if(scrubber) {
+              scrubber.addEventListener("input", (e) => {
+                  window.scrubberOffsetMins = parseInt(e.target.value);
+                  if (window.scrubberOffsetMins === 0) {
+                      label.innerText = "LIVE (0h)";
+                  } else {
+                      let hours = Math.floor(Math.abs(window.scrubberOffsetMins) / 60);
+                      let mins = Math.abs(window.scrubberOffsetMins) % 60;
+                      let sign = window.scrubberOffsetMins > 0 ? "+" : "-";
+                      label.innerText = `PROJ: ${sign}${hours}h ${mins}m`;
+                  }
+                  updateRealtimeState(); // Force re-render with new offset
+              });
+          }
+          if(resetBtn) {
+              resetBtn.addEventListener("click", () => {
+                  if(scrubber) scrubber.value = 0;
+                  window.scrubberOffsetMins = 0;
+                  if(label) label.innerText = "LIVE (0h)";
+                  updateRealtimeState();
+              });
+          }
+      });
+
 
       async function fetchTides() {
         try {
@@ -23158,6 +23288,63 @@ maintainAspectRatio: false,
           document.getElementById("tides-body").innerHTML =
             `<p class="txt-red">${e.message}</p>`;
         }
+      }
+
+
+      function evaluateMaritimeConditions(windSpeed, windDir, tideFlowDirection, currentConditions) {
+          const banner = document.getElementById("hazard-banner-container");
+          const title = document.getElementById("hazard-title");
+          const desc = document.getElementById("hazard-desc");
+
+          if (!banner || !title || !desc) return;
+
+          if (windSpeed == null || tideFlowDirection == null) {
+              banner.style.display = 'none';
+              return;
+          }
+
+          // Determine if wind opposes tide
+          // tideFlowDirection is roughly 'Jusant' (Ebb) ~ 60 deg, 'Flot' (Flood) ~ 240 deg
+          // Let's simplify based on keywords
+          let tideHeading = null;
+          if (tideFlowDirection.includes("Jusant")) {
+              tideHeading = 60; // Flowing East/North-East
+          } else if (tideFlowDirection.includes("Flot")) {
+              tideHeading = 240; // Flowing West/South-West
+          }
+
+          if (tideHeading === null || windSpeed < 15) { // Threshold for "calm" vs "moderate"
+              banner.style.display = 'none';
+              return;
+          }
+
+          // Calculate angle difference
+          let diff = Math.abs((windDir - tideHeading + 360) % 360);
+          if (diff > 180) diff = 360 - diff;
+
+          let isOpposing = diff > 120;
+
+          if (isOpposing && windSpeed >= 20) {
+              banner.style.display = 'block';
+              banner.style.borderLeftColor = '#ef4444'; // Red
+              title.style.color = '#ef4444';
+              title.innerText = '⚠️ CONDITIONS HAZARDOUS';
+              desc.innerText = `WARNING: High wind (${windSpeed}kt) opposing strong ${tideFlowDirection} current — steep chop likely.`;
+          } else if (isOpposing && windSpeed >= 15) {
+              banner.style.display = 'block';
+              banner.style.borderLeftColor = '#fbbf24'; // Amber
+              title.style.color = '#fbbf24';
+              title.innerText = '⚠️ CONDITIONS ROUGH';
+              desc.innerText = `Caution: Moderate wind (${windSpeed}kt) opposing ${tideFlowDirection} current.`;
+          } else if (windSpeed >= 25) {
+               banner.style.display = 'block';
+               banner.style.borderLeftColor = '#fbbf24';
+               title.style.color = '#fbbf24';
+               title.innerText = '⚠️ HIGH WIND WARNING';
+               desc.innerText = `Caution: Strong winds (${windSpeed}kt) detected.`;
+          } else {
+              banner.style.display = 'none';
+          }
       }
 
       function updateTrafficLights(tidesData, nowTime) {
@@ -23664,6 +23851,8 @@ maintainAspectRatio: false,
         btnMeteo.style.background = "transparent";
         btnFoudre.style.background = "transparent";
         aisMap.style.display = "none";
+        const wrapper = document.getElementById("ais-wrapper");
+        if(wrapper) wrapper.style.display = "none";
         meteoMap.style.display = "none";
         foudreMap.style.display = "none";
       }
@@ -23672,6 +23861,8 @@ maintainAspectRatio: false,
         resetMapBtns();
         btnAis.style.background = "var(--th-bg)";
         aisMap.style.display = "block";
+        const wrapper = document.getElementById("ais-wrapper");
+        if(wrapper) wrapper.style.display = "block";
         mapTitle.innerHTML = "🚢 Carte AIS";
       });
 
