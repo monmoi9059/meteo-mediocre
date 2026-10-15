@@ -12161,32 +12161,12 @@
             <h2>🌊 Marées & Fenêtres (Lauzon 3250)</h2>
           </div>
 
-          <!-- SVG TIDE CHART -->
-          <div id="svg-tide-container" style="padding: 10px; background: rgba(0,0,0,0.1); border-bottom: 1px solid rgba(255,255,255,0.05); position:relative; overflow:hidden;">
-            <svg id="tide-svg" viewBox="0 0 800 150" style="width: 100%; height: 100px; display: block; overflow: visible;">
-              <defs>
-                 <linearGradient id="tideGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.6" />
-                    <stop offset="100%" stop-color="var(--accent)" stop-opacity="0" />
-                 </linearGradient>
-              </defs>
-              <!-- Grid lines -->
-              <line x1="0" y1="25" x2="800" y2="25" stroke="rgba(255,255,255,0.1)" stroke-dasharray="4" />
-              <line x1="0" y1="75" x2="800" y2="75" stroke="rgba(255,255,255,0.1)" stroke-dasharray="4" />
-              <line x1="0" y1="125" x2="800" y2="125" stroke="rgba(255,255,255,0.1)" stroke-dasharray="4" />
-              <!-- Texts -->
-              <text x="10" y="20" fill="#888" font-size="12">6m</text>
-              <text x="10" y="70" fill="#888" font-size="12">3m</text>
-              <text x="10" y="120" fill="#888" font-size="12">0m</text>
 
-              <path id="tide-path-fill" d="" fill="url(#tideGrad)" />
-              <path id="tide-path-line" d="" fill="none" stroke="var(--accent)" stroke-width="2" />
 
-              <line id="tide-now-line" x1="0" y1="0" x2="0" y2="150" stroke="#4ade80" stroke-width="2" stroke-dasharray="5" style="filter: drop-shadow(0 0 4px #4ade80); transition: all 0.3s ease;"/>
-              <text id="tide-now-text" x="5" y="145" fill="#4ade80" font-size="12" style="transition: all 0.3s ease;">NOW</text>
-            </svg>
-            <!-- Hover Tooltip -->
-            <div id="tide-tooltip" style="position:absolute; display:none; background:rgba(15, 23, 42, 0.9); border:1px solid var(--accent); padding:4px 8px; border-radius:4px; color:#fff; font-size:0.75rem; pointer-events:none; z-index:10; white-space:nowrap;"></div>
+
+          <!-- TIDE WIND IMPACT -->
+          <div id="tide-wind-impact" style="display:none; padding: 10px; background: rgba(0,0,0,0.2); border-bottom: 1px solid rgba(255,255,255,0.05); text-align: center; color: var(--accent); font-weight: bold; font-size: 0.9rem;">
+            <span id="tide-wind-impact-text"></span>
           </div>
 
           <div class="card-body" id="tides-body">
