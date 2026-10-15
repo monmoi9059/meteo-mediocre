@@ -21898,7 +21898,7 @@ const skyCanvas = document.getElementById("sky-fx");
         let numSnow = Math.min(currentConditions.snow * 100, 300);
         let numWind =
           currentConditions.wind > 5
-            ? Math.min((currentConditions.wind - 5) * 10, 150)
+            ? Math.floor(Math.min((currentConditions.wind - 5) * 10, 150) * 0.25)
             : 0;
 
         for (let i = 0; i < numRain; i++)
