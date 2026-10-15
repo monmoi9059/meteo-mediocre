@@ -23278,50 +23278,38 @@ maintainAspectRatio: false,
 
           if (!banner || !title || !desc) return;
 
-          if (windSpeed == null || tideFlowDirection == null) {
+          if (windSpeed == null || currentConditions.flowDirection == null) {
               banner.style.display = 'none';
               return;
           }
 
           // Determine if wind opposes tide
-          // tideFlowDirection is roughly 'Jusant' (Ebb) ~ 60 deg, 'Flot' (Flood) ~ 240 deg
-          // Let's simplify based on keywords
+          // Based on currentConditions.flowDirection ('right'=Flot/Flood, 'left'=Jusant/Ebb)
+          // In the St Lawrence near Quebec:
+          // Jusant (Ebb) flows roughly East/Northeast (approx 60 deg)
+          // Flot (Flood) flows roughly West/Southwest (approx 240 deg)
           let tideHeading = null;
-          if (tideFlowDirection.includes("Jusant")) {
-              tideHeading = 60; // Flowing East/North-East
-          } else if (tideFlowDirection.includes("Flot")) {
-              tideHeading = 240; // Flowing West/South-West
+          if (currentConditions.flowDirection === "left") {
+              tideHeading = 60; // Ebb flows East
+          } else if (currentConditions.flowDirection === "right") {
+              tideHeading = 240; // Flood flows West
           }
 
-          if (tideHeading === null || windSpeed < 15) { // Threshold for "calm" vs "moderate"
+          if (tideHeading === null) {
               banner.style.display = 'none';
-              return;
+              return; // Slack tide or unknown
           }
 
-          // Calculate angle difference
+          // Calculate shortest angular difference
           let diff = Math.abs((windDir - tideHeading + 360) % 360);
           if (diff > 180) diff = 360 - diff;
 
-          let isOpposing = diff > 120;
-
-          if (isOpposing && windSpeed >= 20) {
+          // If wind is > 15kt and generally opposing (diff > 120 deg)
+          if (windSpeed > 15 && diff > 120) {
               banner.style.display = 'block';
-              banner.style.borderLeftColor = '#ef4444'; // Red
-              title.style.color = '#ef4444';
-              title.innerText = '⚠️ CONDITIONS HAZARDOUS';
-              desc.innerText = `WARNING: High wind (${windSpeed}kt) opposing strong ${tideFlowDirection} current — steep chop likely.`;
-          } else if (isOpposing && windSpeed >= 15) {
-              banner.style.display = 'block';
-              banner.style.borderLeftColor = '#fbbf24'; // Amber
-              title.style.color = '#fbbf24';
-              title.innerText = '⚠️ CONDITIONS ROUGH';
-              desc.innerText = `Caution: Moderate wind (${windSpeed}kt) opposing ${tideFlowDirection} current.`;
-          } else if (windSpeed >= 25) {
-               banner.style.display = 'block';
-               banner.style.borderLeftColor = '#fbbf24';
-               title.style.color = '#fbbf24';
-               title.innerText = '⚠️ HIGH WIND WARNING';
-               desc.innerText = `Caution: Strong winds (${windSpeed}kt) detected.`;
+              let tideType = currentConditions.flowDirection === "left" ? "Jusant" : "Flot";
+              title.innerText = "AVERTISSEMENT: VENT CONTRE COURANT";
+              desc.innerHTML = `Rafales de ${Math.round(windSpeed)} nds opposées au ${tideType}. <strong>Clapot raide et croisé fort probable.</strong>`;
           } else {
               banner.style.display = 'none';
           }
@@ -23453,6 +23441,8 @@ maintainAspectRatio: false,
           s87_big_arr.txt = `Ouvre à ${formatT(addTime(nextPM.eventDate, 1.5))}`;
         if (s87_big_dep.state === "FERMÉ" && nextPM)
           s87_big_dep.txt = `Ouvre à ${formatT(addTime(nextPM.eventDate, 1.0))}`;
+
+        evaluateMaritimeConditions(currentConditions.wind, currentConditions.windDir, currentConditions.flowDirection, currentConditions);
 
         document.getElementById("traffic-light-body").innerHTML = `
             <div class="ocean-banner">
