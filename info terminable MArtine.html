@@ -1434,7 +1434,10 @@
         <div class="card" style="flex-shrink: 0; min-height: 650px;">
           <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
             <h2 style="flex:1;">🎥 Aperçu Animé - Terminal</h2>
-            <button id="stars-mode-toggle" class="theme-toggle">
+            <button id="boat-toggle-btn" class="theme-toggle" style="margin-right: 10px;">
+          🚢 Navire (Actif)
+        </button>
+        <button id="stars-mode-toggle" class="theme-toggle">
           ✨ Mode Étoiles
         </button>
           </div>
@@ -11395,19 +11398,7 @@
         ></div>
       </div>
 
-      <!-- Debris Container -->
-      <div
-        id="debris-container"
-        style="
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          pointer-events: none;
-          overflow: hidden;
-        "
-      ></div>
+
     </div>
 
     <!-- MODAL CALCULATRICE ETA -->
@@ -24058,6 +24049,20 @@ maintainAspectRatio: false,
         mapTitle.innerHTML = "⚡ Foudre / Orages";
       });
 
+      // Toggle Boat Visibility
+      const boatToggleBtn = document.getElementById("boat-toggle-btn");
+      let boatVisible = true;
+      if (boatToggleBtn) {
+        boatToggleBtn.addEventListener("click", () => {
+          boatVisible = !boatVisible;
+          boatToggleBtn.innerHTML = boatVisible ? "🚢 Navire (Actif)" : "🚢 Navire (Masqué)";
+          const boatContainer = document.getElementById("boat-container");
+          if (boatContainer) {
+            boatContainer.style.display = boatVisible ? "block" : "none";
+          }
+        });
+      }
+
       // Toggle Hide UI
       const starsModeBtn = document.getElementById("stars-mode-toggle");
       if (starsModeBtn) {
@@ -24078,173 +24083,141 @@ maintainAspectRatio: false,
 
 
 
-      // --- DÉBRIS ET EFFETS DE RIVIÈRE ---
-      let debrisList = [];
-      const debrisContainer = document.getElementById("debris-container");
+      // --- RIPPLES ET EFFETS DE RIVIÈRE ---
+      let ripplesList = [];
+      // We will inject ripples directly into the animation window or a specific container
+      const animationWindow = document.getElementById("animation-window");
 
-      function getSeasonalDebris() {
-        const month = new Date().getMonth(); // 0 = Janvier, 11 = Décembre
+      // Let's create a container for ripples so it stays under UI but in the animation window
+      const ripplesContainer = document.createElement("div");
+      ripplesContainer.id = "ripples-container";
+      ripplesContainer.style.position = "absolute";
+      ripplesContainer.style.top = "0";
+      ripplesContainer.style.left = "0";
+      ripplesContainer.style.width = "100%";
+      ripplesContainer.style.height = "100%";
+      ripplesContainer.style.pointerEvents = "none";
+      ripplesContainer.style.zIndex = "5"; // Between water (4) and ui/boat
+      animationWindow.appendChild(ripplesContainer);
 
-        // Base debris: beaucoup de bois et trucs communs
-        let debris = ["🪵", "🪵", "🪵", "🪵", "🪵", "🛢️", "📦", "🌲"];
-
-        // Saisonniers
-        if (month === 9) {
-          // Octobre
-          debris.push("🎃", "🦇");
-        } else if (month === 11) {
-          // Décembre
-          debris.push("🎁", "🎅", "🧊");
-        } else if (month === 2) {
-          // Mars
-          debris.push("☘️");
-        } else if (month === 0 || month === 1) {
-          // Jan-Fev
-          debris.push("🧊", "🧊", "🧊");
-        } else if (month >= 8 && month <= 10) {
-          // Automne
-          debris.push("🍂", "🍁");
-        } else if (month >= 5 && month <= 7) {
-          // Été
-          debris.push("🏖️", "🕶️", "🛶");
-        }
-
-        return debris;
-      }
-
-      function spawnDebris() {
-        if (!debrisContainer) return;
-
-        const types = getSeasonalDebris();
-        const type = types[Math.floor(Math.random() * types.length)];
-
-        const el = document.createElement("div");
-        el.innerText = type;
+      function spawnRipple() {
+        let el = document.createElement("div");
         el.style.position = "absolute";
+        el.style.backgroundColor = "rgba(255, 255, 255, 0.4)";
+        el.style.borderRadius = "50%";
+        el.style.pointerEvents = "none";
 
-        // Random Y position in the top 30px of the water layer
-        const y = Math.random() * 30 + 5;
-        el.style.top = y + "px";
+        // Random perspective properties
+        let pz = Math.random() * 0.8 + 0.1; // "Depth" factor 0.1 (far) to 0.9 (near)
 
-        // Size and base styles
-        const size = Math.random() * 0.8 + 0.7; // Scale 0.7 to 1.5
-        el.style.fontSize = 20 * size + "px";
-        el.style.opacity = Math.random() * 0.4 + 0.6; // Opacity 0.6 to 1.0
+        let width = 20 + pz * 60;
+        let height = 2 + pz * 3;
+        el.style.width = width + "px";
+        el.style.height = height + "px";
 
-        // Random spin direction
-        const spinSpeed = (Math.random() - 0.5) * 2;
+        // Y position based on pz. pz=0 is horizon, pz=1 is bottom of screen.
+        let horizonY = 400; // approximate horizon
 
-        // Start offscreen depending on current flow
-        let x = -50;
-        let speed = Math.random() * 0.5 + 0.2;
+        let rippleObj = {
+          el: el,
+          pz: pz,
+          width: width,
+          height: height,
+          worldAz: 0,
+          baseSpeed: (Math.random() * 0.2 + 0.1) * pz,
+          opacity: 0,
+          life: 0,
+          maxLife: 200 + Math.random() * 300
+        };
 
-        if (currentConditions.flowDirection === "left") {
-          x = getAnimW() + 50;
-        } else if (currentConditions.flowDirection === "slack") {
-          // If slack, spawn offscreen randomly on the left or right side
-          x = Math.random() > 0.5 ? -50 : getAnimW() + 50;
-          speed = Math.random() * 0.1; // Very slow
-        }
-
-        // In Spherical tide flow, track 'worldAzimuth' instead of flat 'x'
-        // Spawn offscreen based on flow direction relative to viewAzimuth
         let fovHalf = viewFOV / 2;
         let worldAz = viewAzimuth;
 
         if (currentConditions.flowDirection === "right") {
-          // Flowing right (Azimuth increasing), so spawn on the left edge (viewAzimuth - FOV/2 - some buffer)
           worldAz -= fovHalf + 10;
         } else if (currentConditions.flowDirection === "left") {
-          // Flowing left (Azimuth decreasing), so spawn on the right edge (viewAzimuth + FOV/2 + some buffer)
           worldAz += fovHalf + 10;
         } else {
-          // Slack: spawn randomly within view
           worldAz += Math.random() * viewFOV - fovHalf;
         }
 
-        const debrisObj = {
-          el: el,
-          worldAz: worldAz,
-          y: y,
-          speed: speed,
-          rotation: Math.random() * 360,
-          spinSpeed: spinSpeed,
-          baseSpeed: speed,
-          bobOffset: Math.random() * Math.PI * 2,
-        };
+        rippleObj.worldAz = worldAz;
 
-        debrisList.push(debrisObj);
-        debrisContainer.appendChild(el);
+        ripplesList.push(rippleObj);
+        ripplesContainer.appendChild(el);
       }
 
-      function updateDebrisFX() {
-        // Spawn new debris randomly (approx every few seconds)
-        if (Math.random() < 0.003) {
-          spawnDebris();
+      function updateWaterFX() {
+        if (Math.random() < 0.05) {
+          spawnRipple();
         }
 
-        for (let i = debrisList.length - 1; i >= 0; i--) {
-          let d = debrisList[i];
+        let fovHalf = viewFOV / 2;
 
-          // Adjust speed based on flow
-          let currentSpeed = d.baseSpeed;
-          if (currentConditions.flowDirection === "slack") {
-            currentSpeed *= 0.1; // Slow down significantly
-            d.spinSpeed = d.spinSpeed > 0 ? 0.2 : -0.2; // Slow spin
+        for (let i = ripplesList.length - 1; i >= 0; i--) {
+          let r = ripplesList[i];
+
+          r.life++;
+
+          // Fade in and fade out based on life
+          if (r.life < 50) {
+             r.opacity = r.life / 50;
+          } else if (r.life > r.maxLife - 50) {
+             r.opacity = (r.maxLife - r.life) / 50;
           } else {
-            // Return to normal speed/spin gradually or instantly
-            d.spinSpeed =
-              d.spinSpeed > 0
-                ? Math.max(0.5, d.spinSpeed)
-                : Math.min(-0.5, d.spinSpeed);
+             r.opacity = 1;
           }
 
-          // Move Azimuth based on flow (Right = Rising towards Quebec Bridge Az 250, Left = Dropping towards Ile d'Orleans Az 62)
-          // Note: In Azimuth, increasing goes from East(90) -> South(180) -> West(270)
-          let speedDegrees = currentSpeed * 0.05; // Convert speed to degrees
+          if (r.life >= r.maxLife || r.opacity <= 0 && r.life > 50) {
+            r.el.remove();
+            ripplesList.splice(i, 1);
+            continue;
+          }
+
+          let currentSpeed = r.baseSpeed;
+          if (currentConditions.flowDirection === "slack") {
+            currentSpeed *= 0.1;
+          }
+
+          let speedDegrees = currentSpeed * 0.05;
 
           if (currentConditions.flowDirection === "right") {
-            // Rising Tide: Move right across the screen (Azimuth increases relative to view)
-            d.worldAz += speedDegrees;
+            r.worldAz += speedDegrees;
           } else if (currentConditions.flowDirection === "left") {
-            // Dropping Tide: Move left across the screen (Azimuth decreases relative to view)
-            d.worldAz -= speedDegrees;
+            r.worldAz -= speedDegrees;
           } else {
-            // Slack: drift slowly
-            d.worldAz += (Math.random() - 0.5) * 0.01;
+            r.worldAz += (Math.random() - 0.5) * 0.01;
           }
 
-          // Normalize Azimuth
-          if (d.worldAz > 360) d.worldAz -= 360;
-          if (d.worldAz < 0) d.worldAz += 360;
-
-          // Bob Y
-          d.bobOffset += 0.05;
-          let currentY = d.y + Math.sin(d.bobOffset) * 3;
-
-          // Spin
-          d.rotation += d.spinSpeed;
-
-          // Calculate relative azimuth for screen X
-          let relAz = d.worldAz - viewAzimuth;
+          let relAz = r.worldAz - viewAzimuth;
           if (relAz > 180) relAz -= 360;
           if (relAz < -180) relAz += 360;
 
-          // Linear projection based on camera FOV
-          let pixelsPerDegreeX = getAnimW() / viewFOV;
+          if (Math.abs(relAz) > fovHalf + 15) {
+             // Off screen, maybe remove early if we have too many
+             if (ripplesList.length > 50) {
+                 r.el.remove();
+                 ripplesList.splice(i, 1);
+                 continue;
+             }
+          }
+
           let screenX = getAnimW() / 2 + relAz * pixelsPerDegreeX;
 
-          d.el.style.transform = `translate3d(${screenX}px, ${currentY}px, 0) rotate(${d.rotation}deg)`;
-          d.el.style.display = "block";
+          // Compute screen Y dynamically since water level changes.
+          // Horizon is at center basically but let's map it across the water height
+          let wh = waterTopY; // The top of the water in pixels from top
+          let availableWaterHeight = getAnimH() - wh;
 
-          // Remove if offscreen by checking difference between viewAzimuth and worldAz
-          if (Math.abs(relAz) > viewFOV / 2 + 20) {
-            d.el.remove();
-            debrisList.splice(i, 1);
-          }
+          // Use pz to position it vertically within the water area (quadratic for perspective)
+          let screenY = wh + (r.pz * r.pz) * availableWaterHeight;
+
+          r.el.style.left = (screenX - r.width/2) + "px";
+          r.el.style.top = screenY + "px";
+          r.el.style.opacity = r.opacity * 0.6; // Max opacity 0.6
         }
 
-        requestAnimationFrame(updateDebrisFX);
+        requestAnimationFrame(updateWaterFX);
       }
 
       // --- CAMERA PROJECTION LOGIC ---
@@ -24832,7 +24805,7 @@ maintainAspectRatio: false,
       }
 
       // Start debris animation
-      requestAnimationFrame(updateDebrisFX);
+      requestAnimationFrame(updateWaterFX);
 
 
 
