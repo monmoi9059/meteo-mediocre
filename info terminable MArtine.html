@@ -24085,6 +24085,7 @@ maintainAspectRatio: false,
 
       // --- FISH ET EFFETS DE RIVIÈRE ---
       let fishList = [];
+      let globalWaterTopY = 400;
       const animationWindow = document.getElementById("animation-window");
 
       const fishContainer = document.createElement("div");
@@ -24112,7 +24113,7 @@ maintainAspectRatio: false,
         let scale = 0.5 + pz * 1.5; // Far fish are small, near fish are larger
         el.style.fontSize = (20 * scale) + "px";
 
-        let wh = waterTopY; // The top of the water in pixels from top
+        let wh = globalWaterTopY; // The top of the water in pixels from top
 
         let fishObj = {
           el: el,
@@ -24203,8 +24204,9 @@ maintainAspectRatio: false,
              }
           }
 
+          let pixelsPerDegreeX = getAnimW() / viewFOV;
           let screenX = getAnimW() / 2 + relAz * pixelsPerDegreeX;
-          let wh = waterTopY;
+          let wh = globalWaterTopY;
           let availableWaterHeight = getAnimH() - wh;
 
           // Use pz to position it vertically within the water area (quadratic for perspective)
@@ -24238,6 +24240,7 @@ maintainAspectRatio: false,
         // We'll say high tide (45) is horizonY + 20px, low tide (10) is horizonY + 150px
         let tideFactor = (currentConditions.tideHeight - 10) / 35; // 0 to 1
         let waterTopY = horizonY + 150 - tideFactor * 130;
+        globalWaterTopY = waterTopY;
 
         // Update water layer height based on horizon
         const waterLayer = document.getElementById("water-layer");
