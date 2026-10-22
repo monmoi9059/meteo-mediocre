@@ -24210,7 +24210,7 @@ maintainAspectRatio: false,
           let availableWaterHeight = getAnimH() - wh;
 
           // Use pz to position it vertically within the water area (quadratic for perspective)
-          let screenY = wh + (r.pz * r.pz) * availableWaterHeight;
+          let screenY = wh + (r.pz * r.pz) * (availableWaterHeight * 0.4);
 
           r.el.style.left = (screenX - r.width/2) + "px";
           r.el.style.top = screenY + "px";
