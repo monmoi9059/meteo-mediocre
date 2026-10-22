@@ -24083,48 +24083,44 @@ maintainAspectRatio: false,
 
 
 
-      // --- RIPPLES ET EFFETS DE RIVIÈRE ---
-      let ripplesList = [];
-      // We will inject ripples directly into the animation window or a specific container
+      // --- FISH ET EFFETS DE RIVIÈRE ---
+      let fishList = [];
       const animationWindow = document.getElementById("animation-window");
 
-      // Let's create a container for ripples so it stays under UI but in the animation window
-      const ripplesContainer = document.createElement("div");
-      ripplesContainer.id = "ripples-container";
-      ripplesContainer.style.position = "absolute";
-      ripplesContainer.style.top = "0";
-      ripplesContainer.style.left = "0";
-      ripplesContainer.style.width = "100%";
-      ripplesContainer.style.height = "100%";
-      ripplesContainer.style.pointerEvents = "none";
-      ripplesContainer.style.zIndex = "5"; // Between water (4) and ui/boat
-      animationWindow.appendChild(ripplesContainer);
+      const fishContainer = document.createElement("div");
+      fishContainer.id = "ripples-container"; // Keep same ID so we don't break testing logic, though it holds fish
+      fishContainer.style.position = "absolute";
+      fishContainer.style.top = "0";
+      fishContainer.style.left = "0";
+      fishContainer.style.width = "100%";
+      fishContainer.style.height = "100%";
+      fishContainer.style.pointerEvents = "none";
+      fishContainer.style.zIndex = "5"; // Between water (4) and ui/boat
+      animationWindow.appendChild(fishContainer);
 
-      function spawnRipple() {
+      const fishEmojis = ["🐟", "🐠", "🐡"];
+
+      function spawnFish() {
         let el = document.createElement("div");
         el.style.position = "absolute";
-        el.style.backgroundColor = "rgba(255, 255, 255, 0.4)";
-        el.style.borderRadius = "50%";
+        el.innerText = fishEmojis[Math.floor(Math.random() * fishEmojis.length)];
         el.style.pointerEvents = "none";
 
         // Random perspective properties
         let pz = Math.random() * 0.8 + 0.1; // "Depth" factor 0.1 (far) to 0.9 (near)
 
-        let width = 20 + pz * 60;
-        let height = 2 + pz * 3;
-        el.style.width = width + "px";
-        el.style.height = height + "px";
+        let scale = 0.5 + pz * 1.5; // Far fish are small, near fish are larger
+        el.style.fontSize = (20 * scale) + "px";
 
-        // Y position based on pz. pz=0 is horizon, pz=1 is bottom of screen.
-        let horizonY = 400; // approximate horizon
+        let wh = waterTopY; // The top of the water in pixels from top
 
-        let rippleObj = {
+        let fishObj = {
           el: el,
           pz: pz,
-          width: width,
-          height: height,
+          width: 30 * scale,
+          height: 30 * scale,
           worldAz: 0,
-          baseSpeed: (Math.random() * 0.2 + 0.1) * pz,
+          baseSpeed: (Math.random() * 0.4 + 0.2) * pz,
           opacity: 0,
           life: 0,
           maxLife: 200 + Math.random() * 300
@@ -24141,25 +24137,25 @@ maintainAspectRatio: false,
           worldAz += Math.random() * viewFOV - fovHalf;
         }
 
-        rippleObj.worldAz = worldAz;
+        fishObj.worldAz = worldAz;
 
-        ripplesList.push(rippleObj);
-        ripplesContainer.appendChild(el);
+        fishList.push(fishObj);
+        fishContainer.appendChild(el);
       }
 
       function updateWaterFX() {
+        // Spawn faster so it's more obvious
         if (Math.random() < 0.05) {
-          spawnRipple();
+          spawnFish();
         }
 
         let fovHalf = viewFOV / 2;
 
-        for (let i = ripplesList.length - 1; i >= 0; i--) {
-          let r = ripplesList[i];
+        for (let i = fishList.length - 1; i >= 0; i--) {
+          let r = fishList[i];
 
           r.life++;
 
-          // Fade in and fade out based on life
           if (r.life < 50) {
              r.opacity = r.life / 50;
           } else if (r.life > r.maxLife - 50) {
@@ -24170,11 +24166,13 @@ maintainAspectRatio: false,
 
           if (r.life >= r.maxLife || r.opacity <= 0 && r.life > 50) {
             r.el.remove();
-            ripplesList.splice(i, 1);
+            fishList.splice(i, 1);
             continue;
           }
 
           let currentSpeed = r.baseSpeed;
+          let flip = 1; // 1 = facing left by default (Emojis face left usually, e.g. 🐟)
+
           if (currentConditions.flowDirection === "slack") {
             currentSpeed *= 0.1;
           }
@@ -24183,10 +24181,14 @@ maintainAspectRatio: false,
 
           if (currentConditions.flowDirection === "right") {
             r.worldAz += speedDegrees;
+            flip = -1; // Moving right, so flip horizontally
           } else if (currentConditions.flowDirection === "left") {
             r.worldAz -= speedDegrees;
+            flip = 1;
           } else {
             r.worldAz += (Math.random() - 0.5) * 0.01;
+            // random drift flip
+            flip = (r.life % 200 > 100) ? 1 : -1;
           }
 
           let relAz = r.worldAz - viewAzimuth;
@@ -24194,19 +24196,15 @@ maintainAspectRatio: false,
           if (relAz < -180) relAz += 360;
 
           if (Math.abs(relAz) > fovHalf + 15) {
-             // Off screen, maybe remove early if we have too many
-             if (ripplesList.length > 50) {
+             if (fishList.length > 30) {
                  r.el.remove();
-                 ripplesList.splice(i, 1);
+                 fishList.splice(i, 1);
                  continue;
              }
           }
 
           let screenX = getAnimW() / 2 + relAz * pixelsPerDegreeX;
-
-          // Compute screen Y dynamically since water level changes.
-          // Horizon is at center basically but let's map it across the water height
-          let wh = waterTopY; // The top of the water in pixels from top
+          let wh = waterTopY;
           let availableWaterHeight = getAnimH() - wh;
 
           // Use pz to position it vertically within the water area (quadratic for perspective)
@@ -24214,7 +24212,10 @@ maintainAspectRatio: false,
 
           r.el.style.left = (screenX - r.width/2) + "px";
           r.el.style.top = screenY + "px";
-          r.el.style.opacity = r.opacity * 0.6; // Max opacity 0.6
+          r.el.style.opacity = r.opacity;
+
+          // Apply transform to flip based on direction
+          r.el.style.transform = `scaleX(${flip})`;
         }
 
         requestAnimationFrame(updateWaterFX);
