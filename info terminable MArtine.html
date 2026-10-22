@@ -25426,11 +25426,37 @@ maintainAspectRatio: false,
 
           let totalTankQty = 0;
 
+          let dischargedRemaining = discharged;
+
           tankRows.forEach((row, index) => {
             let name =
               row.querySelector(".tank-name").value || `Réservoir ${index + 1}`;
-            let qty = parseFloat(row.querySelector(".tank-qty").value) || 0;
+            let qtyOriginal = parseFloat(row.querySelector(".tank-qty").value) || 0;
+            let qty = qtyOriginal;
             let delay = parseFloat(row.querySelector(".tank-delay").value) || 0;
+
+            // Déduction de la quantité déjà déchargée pour ce réservoir
+            if (dischargedRemaining > 0) {
+                if (dischargedRemaining >= qty) {
+                    dischargedRemaining -= qty;
+                    qty = 0;
+                } else {
+                    qty -= dischargedRemaining;
+                    dischargedRemaining = 0;
+                }
+            }
+
+            // Si le réservoir avait une quantité mais est maintenant vide (déjà terminé)
+            if (qtyOriginal > 0 && qty === 0) {
+                extraHtml += `
+                    <div style="margin-bottom:8px; border-bottom:1px solid #eee; padding-bottom:5px; opacity:0.5;">
+                        <div style="display:flex; justify-content:space-between; font-size:1em; text-decoration: line-through;">
+                            <span>${name} (${qtyOriginal} m³)</span>
+                            <span>Déjà terminé</span>
+                        </div>
+                    </div>
+                `;
+            }
 
             // Slowdown inputs
             let slowRateInput =
@@ -25443,7 +25469,7 @@ maintainAspectRatio: false,
               slowDurInput > 0;
 
             if (qty > 0) {
-              totalTankQty += qty;
+              totalTankQty += qty; // Ajoute seulement la quantité RESTE pour les totaux
 
               // Add User Delay first
               totalDurationMins += delay;
@@ -25456,8 +25482,9 @@ maintainAspectRatio: false,
               // --- Phase 1: Standard Slow Start (30 min @ Max 3000 m³/h) ---
               let bypassCheck = row.querySelector(".tank-bypass-check");
               let isBypass = index === 0 && bypassCheck && bypassCheck.checked;
+              let isTankPartiallyDischarged = (qty < qtyOriginal);
 
-              if (!isBypass) {
+              if (!isBypass && !isTankPartiallyDischarged) {
                 let startDur = 30;
                 // Limité à 3000 m³/h, ou le taux normal si inférieur
                 let startRate = rate > 3000 ? 3000 : rate;
@@ -25477,9 +25504,13 @@ maintainAspectRatio: false,
                     `<div style="font-size:0.85em; color:var(--text); opacity:0.8; margin-left:10px;">➜ Démarrage standard : 30m @ ${startRate.toFixed(0)} m³/h</div>`,
                   );
                 }
-              } else {
+              } else if (isBypass) {
                 msgs.push(
                   `<div style="font-size:0.85em; color:#d84315; margin-left:10px;">➜ Démarrage standard bypassé</div>`,
+                );
+              } else if (isTankPartiallyDischarged) {
+                msgs.push(
+                  `<div style="font-size:0.85em; color:var(--text); opacity:0.8; margin-left:10px;">➜ Démarrage standard ignoré (Réservoir en cours)</div>`,
                 );
               }
 
@@ -25515,7 +25546,7 @@ maintainAspectRatio: false,
               extraHtml += `
                         <div style="margin-bottom:8px; border-bottom:1px solid #eee; padding-bottom:5px;">
                             <div style="display:flex; justify-content:space-between; font-size:1em;">
-                                <span>${name} (${qty} m³)</span>
+                                <span>${name} (${isTankPartiallyDischarged ? `Reste: ${qty.toFixed(1)} m³ / ${qtyOriginal}` : qty} m³)</span>
                                 <span style="font-weight:bold;">Fin : ${formatDateTime(tankEndTime)}</span>
                             </div>
                             ${delay > 0 ? `<div style="font-size:0.85em; color:var(--text); opacity:0.8; margin-left:10px;">➜ Délai avant : ${delay} min</div>` : ""}
