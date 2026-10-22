@@ -1411,8 +1411,8 @@
       </div>
 
       <div class="header-actions">
-        <button id="sensor-mode-toggle" class="theme-toggle">
-          📱 Capteurs
+        <button id="conversion-toggle" class="theme-toggle">
+          🔄 Conversions
         </button>
         <button id="image-toggle" class="theme-toggle">
           🖼️ petit Langlois ilustrée
@@ -11614,6 +11614,169 @@
       </div>
     </div>
 
+    <!-- MODAL CONVERSIONS -->
+    <div id="conversion-modal" class="modal-overlay">
+      <div class="modal-content" style="max-width: 800px; width: 95%;">
+        <div class="modal-header">
+          <h3>🔄 Tables de Conversion</h3>
+          <button id="close-conversion" class="btn-close">✖</button>
+        </div>
+        <div class="modal-body" style="background-color: var(--bg-body); padding: 0">
+          <div class="tabs" style="margin-top: 0">
+            <button class="tab-btn active" onclick="openConvTab(event, 'conv-wind')">Vent</button>
+            <button class="tab-btn" onclick="openConvTab(event, 'conv-pressure')">Pression</button>
+            <button class="tab-btn" onclick="openConvTab(event, 'conv-dist')">Distance</button>
+            <button class="tab-btn" onclick="openConvTab(event, 'conv-temp')">Température</button>
+          </div>
+
+          <div id="conv-wind" class="conv-tab-content active" style="padding: 15px;">
+            <table style="width: 100%; border-collapse: collapse; text-align: center;">
+              <thead>
+                <tr style="background: var(--bg-card);">
+                  <th style="padding: 10px; border: 1px solid var(--border);">Beaufort</th>
+                  <th style="padding: 10px; border: 1px solid var(--border);">Noeuds (kts)</th>
+                  <th style="padding: 10px; border: 1px solid var(--border);">km/h</th>
+                  <th style="padding: 10px; border: 1px solid var(--border);">m/s</th>
+                  <th style="padding: 10px; border: 1px solid var(--border);">Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td style="padding: 8px; border: 1px solid var(--border);">0</td><td style="padding: 8px; border: 1px solid var(--border);">&lt; 1</td><td style="padding: 8px; border: 1px solid var(--border);">&lt; 1</td><td style="padding: 8px; border: 1px solid var(--border);">0 - 0.2</td><td style="padding: 8px; border: 1px solid var(--border);">Calme</td></tr>
+                <tr style="background: rgba(0,0,0,0.05);"><td style="padding: 8px; border: 1px solid var(--border);">1</td><td style="padding: 8px; border: 1px solid var(--border);">1 - 3</td><td style="padding: 8px; border: 1px solid var(--border);">1 - 5</td><td style="padding: 8px; border: 1px solid var(--border);">0.3 - 1.5</td><td style="padding: 8px; border: 1px solid var(--border);">Très légère brise</td></tr>
+                <tr><td style="padding: 8px; border: 1px solid var(--border);">2</td><td style="padding: 8px; border: 1px solid var(--border);">4 - 6</td><td style="padding: 8px; border: 1px solid var(--border);">6 - 11</td><td style="padding: 8px; border: 1px solid var(--border);">1.6 - 3.3</td><td style="padding: 8px; border: 1px solid var(--border);">Légère brise</td></tr>
+                <tr style="background: rgba(0,0,0,0.05);"><td style="padding: 8px; border: 1px solid var(--border);">3</td><td style="padding: 8px; border: 1px solid var(--border);">7 - 10</td><td style="padding: 8px; border: 1px solid var(--border);">12 - 19</td><td style="padding: 8px; border: 1px solid var(--border);">3.4 - 5.4</td><td style="padding: 8px; border: 1px solid var(--border);">Petite brise</td></tr>
+                <tr><td style="padding: 8px; border: 1px solid var(--border);">4</td><td style="padding: 8px; border: 1px solid var(--border);">11 - 16</td><td style="padding: 8px; border: 1px solid var(--border);">20 - 28</td><td style="padding: 8px; border: 1px solid var(--border);">5.5 - 7.9</td><td style="padding: 8px; border: 1px solid var(--border);">Jolie brise</td></tr>
+                <tr style="background: rgba(0,0,0,0.05);"><td style="padding: 8px; border: 1px solid var(--border);">5</td><td style="padding: 8px; border: 1px solid var(--border);">17 - 21</td><td style="padding: 8px; border: 1px solid var(--border);">29 - 38</td><td style="padding: 8px; border: 1px solid var(--border);">8.0 - 10.7</td><td style="padding: 8px; border: 1px solid var(--border);">Bonne brise</td></tr>
+                <tr><td style="padding: 8px; border: 1px solid var(--border);">6</td><td style="padding: 8px; border: 1px solid var(--border);">22 - 27</td><td style="padding: 8px; border: 1px solid var(--border);">39 - 49</td><td style="padding: 8px; border: 1px solid var(--border);">10.8 - 13.8</td><td style="padding: 8px; border: 1px solid var(--border);">Vent frais</td></tr>
+                <tr style="background: rgba(0,0,0,0.05);"><td style="padding: 8px; border: 1px solid var(--border);">7</td><td style="padding: 8px; border: 1px solid var(--border);">28 - 33</td><td style="padding: 8px; border: 1px solid var(--border);">50 - 61</td><td style="padding: 8px; border: 1px solid var(--border);">13.9 - 17.1</td><td style="padding: 8px; border: 1px solid var(--border);">Grand frais</td></tr>
+                <tr><td style="padding: 8px; border: 1px solid var(--border);">8</td><td style="padding: 8px; border: 1px solid var(--border);">34 - 40</td><td style="padding: 8px; border: 1px solid var(--border);">62 - 74</td><td style="padding: 8px; border: 1px solid var(--border);">17.2 - 20.7</td><td style="padding: 8px; border: 1px solid var(--border);">Coup de vent</td></tr>
+                <tr style="background: rgba(0,0,0,0.05);"><td style="padding: 8px; border: 1px solid var(--border);">9</td><td style="padding: 8px; border: 1px solid var(--border);">41 - 47</td><td style="padding: 8px; border: 1px solid var(--border);">75 - 88</td><td style="padding: 8px; border: 1px solid var(--border);">20.8 - 24.4</td><td style="padding: 8px; border: 1px solid var(--border);">Fort coup de vent</td></tr>
+                <tr><td style="padding: 8px; border: 1px solid var(--border);">10</td><td style="padding: 8px; border: 1px solid var(--border);">48 - 55</td><td style="padding: 8px; border: 1px solid var(--border);">89 - 102</td><td style="padding: 8px; border: 1px solid var(--border);">24.5 - 28.4</td><td style="padding: 8px; border: 1px solid var(--border);">Tempête</td></tr>
+                <tr style="background: rgba(0,0,0,0.05);"><td style="padding: 8px; border: 1px solid var(--border);">11</td><td style="padding: 8px; border: 1px solid var(--border);">56 - 63</td><td style="padding: 8px; border: 1px solid var(--border);">103 - 117</td><td style="padding: 8px; border: 1px solid var(--border);">28.5 - 32.6</td><td style="padding: 8px; border: 1px solid var(--border);">Violente tempête</td></tr>
+                <tr><td style="padding: 8px; border: 1px solid var(--border);">12</td><td style="padding: 8px; border: 1px solid var(--border);">&gt; 64</td><td style="padding: 8px; border: 1px solid var(--border);">&gt; 118</td><td style="padding: 8px; border: 1px solid var(--border);">&gt; 32.7</td><td style="padding: 8px; border: 1px solid var(--border);">Ouragan</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div id="conv-pressure" class="conv-tab-content" style="padding: 15px; display: none;">
+            <table style="width: 100%; border-collapse: collapse; text-align: center;">
+              <thead>
+                <tr style="background: var(--bg-card);">
+                  <th style="padding: 10px; border: 1px solid var(--border);">kPa</th>
+                  <th style="padding: 10px; border: 1px solid var(--border);">Bar</th>
+                  <th style="padding: 10px; border: 1px solid var(--border);">PSI</th>
+                  <th style="padding: 10px; border: 1px solid var(--border);">Atm</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td style="padding: 8px; border: 1px solid var(--border);">100</td><td style="padding: 8px; border: 1px solid var(--border);">1.0</td><td style="padding: 8px; border: 1px solid var(--border);">14.50</td><td style="padding: 8px; border: 1px solid var(--border);">0.987</td></tr>
+                <tr style="background: rgba(0,0,0,0.05);"><td style="padding: 8px; border: 1px solid var(--border);">101.325</td><td style="padding: 8px; border: 1px solid var(--border);">1.013</td><td style="padding: 8px; border: 1px solid var(--border);">14.69</td><td style="padding: 8px; border: 1px solid var(--border);">1.000</td></tr>
+                <tr><td style="padding: 8px; border: 1px solid var(--border);">200</td><td style="padding: 8px; border: 1px solid var(--border);">2.0</td><td style="padding: 8px; border: 1px solid var(--border);">29.01</td><td style="padding: 8px; border: 1px solid var(--border);">1.974</td></tr>
+                <tr style="background: rgba(0,0,0,0.05);"><td style="padding: 8px; border: 1px solid var(--border);">300</td><td style="padding: 8px; border: 1px solid var(--border);">3.0</td><td style="padding: 8px; border: 1px solid var(--border);">43.51</td><td style="padding: 8px; border: 1px solid var(--border);">2.961</td></tr>
+                <tr><td style="padding: 8px; border: 1px solid var(--border);">400</td><td style="padding: 8px; border: 1px solid var(--border);">4.0</td><td style="padding: 8px; border: 1px solid var(--border);">58.02</td><td style="padding: 8px; border: 1px solid var(--border);">3.948</td></tr>
+                <tr style="background: rgba(0,0,0,0.05);"><td style="padding: 8px; border: 1px solid var(--border);">500</td><td style="padding: 8px; border: 1px solid var(--border);">5.0</td><td style="padding: 8px; border: 1px solid var(--border);">72.52</td><td style="padding: 8px; border: 1px solid var(--border);">4.935</td></tr>
+                <tr><td style="padding: 8px; border: 1px solid var(--border);">1000</td><td style="padding: 8px; border: 1px solid var(--border);">10.0</td><td style="padding: 8px; border: 1px solid var(--border);">145.04</td><td style="padding: 8px; border: 1px solid var(--border);">9.869</td></tr>
+              </tbody>
+            </table>
+
+            <div style="margin-top: 20px; display: flex; gap: 15px; flex-wrap: wrap;">
+               <div style="flex: 1; min-width: 200px;" class="card">
+                  <div class="card-header" style="font-weight: bold; background: var(--bg-card); padding: 10px; border-bottom: 1px solid var(--border);">Convertisseur Rapide</div>
+                  <div style="padding: 10px; display: flex; flex-direction: column; gap: 10px;">
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                       <input type="number" id="conv-kpa-input" style="flex:1; padding:5px; border-radius:4px; border:1px solid var(--border); background:var(--bg-card); color:var(--text-main);" placeholder="kPa" oninput="document.getElementById('conv-psi-input').value = (this.value * 0.145038).toFixed(2)">
+                       <span>kPa =</span>
+                       <input type="number" id="conv-psi-input" style="flex:1; padding:5px; border-radius:4px; border:1px solid var(--border); background:var(--bg-card); color:var(--text-main);" placeholder="PSI" oninput="document.getElementById('conv-kpa-input').value = (this.value / 0.145038).toFixed(2)">
+                       <span>PSI</span>
+                    </div>
+                  </div>
+               </div>
+            </div>
+          </div>
+
+          <div id="conv-dist" class="conv-tab-content" style="padding: 15px; display: none;">
+             <table style="width: 100%; border-collapse: collapse; text-align: center;">
+              <thead>
+                <tr style="background: var(--bg-card);">
+                  <th style="padding: 10px; border: 1px solid var(--border);">Mille nautique (NM)</th>
+                  <th style="padding: 10px; border: 1px solid var(--border);">Kilomètre (km)</th>
+                  <th style="padding: 10px; border: 1px solid var(--border);">Mille terrestre (mi)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td style="padding: 8px; border: 1px solid var(--border);">1</td><td style="padding: 8px; border: 1px solid var(--border);">1.852</td><td style="padding: 8px; border: 1px solid var(--border);">1.15078</td></tr>
+              </tbody>
+            </table>
+
+            <table style="width: 100%; border-collapse: collapse; text-align: center; margin-top: 20px;">
+              <thead>
+                <tr style="background: var(--bg-card);">
+                  <th style="padding: 10px; border: 1px solid var(--border);">Pied (ft)</th>
+                  <th style="padding: 10px; border: 1px solid var(--border);">Mètre (m)</th>
+                  <th style="padding: 10px; border: 1px solid var(--border);">Brasse (fm)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td style="padding: 8px; border: 1px solid var(--border);">1</td><td style="padding: 8px; border: 1px solid var(--border);">0.3048</td><td style="padding: 8px; border: 1px solid var(--border);">0.1667</td></tr>
+                <tr style="background: rgba(0,0,0,0.05);"><td style="padding: 8px; border: 1px solid var(--border);">3.2808</td><td style="padding: 8px; border: 1px solid var(--border);">1</td><td style="padding: 8px; border: 1px solid var(--border);">0.5468</td></tr>
+                <tr><td style="padding: 8px; border: 1px solid var(--border);">6</td><td style="padding: 8px; border: 1px solid var(--border);">1.8288</td><td style="padding: 8px; border: 1px solid var(--border);">1</td></tr>
+              </tbody>
+            </table>
+
+             <div style="margin-top: 20px; display: flex; gap: 15px; flex-wrap: wrap;">
+               <div style="flex: 1; min-width: 200px;" class="card">
+                  <div class="card-header" style="font-weight: bold; background: var(--bg-card); padding: 10px; border-bottom: 1px solid var(--border);">Convertisseur Mètres / Pieds</div>
+                  <div style="padding: 10px; display: flex; flex-direction: column; gap: 10px;">
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                       <input type="number" id="conv-m-input" style="flex:1; padding:5px; border-radius:4px; border:1px solid var(--border); background:var(--bg-card); color:var(--text-main);" placeholder="Mètres" oninput="document.getElementById('conv-ft-input').value = (this.value * 3.28084).toFixed(2)">
+                       <span>m =</span>
+                       <input type="number" id="conv-ft-input" style="flex:1; padding:5px; border-radius:4px; border:1px solid var(--border); background:var(--bg-card); color:var(--text-main);" placeholder="Pieds" oninput="document.getElementById('conv-m-input').value = (this.value / 3.28084).toFixed(2)">
+                       <span>ft</span>
+                    </div>
+                  </div>
+               </div>
+            </div>
+          </div>
+
+          <div id="conv-temp" class="conv-tab-content" style="padding: 15px; display: none;">
+             <table style="width: 100%; border-collapse: collapse; text-align: center;">
+              <thead>
+                <tr style="background: var(--bg-card);">
+                  <th style="padding: 10px; border: 1px solid var(--border);">Celsius (°C)</th>
+                  <th style="padding: 10px; border: 1px solid var(--border);">Fahrenheit (°F)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td style="padding: 8px; border: 1px solid var(--border);">-40</td><td style="padding: 8px; border: 1px solid var(--border);">-40</td></tr>
+                <tr style="background: rgba(0,0,0,0.05);"><td style="padding: 8px; border: 1px solid var(--border);">-30</td><td style="padding: 8px; border: 1px solid var(--border);">-22</td></tr>
+                <tr><td style="padding: 8px; border: 1px solid var(--border);">-20</td><td style="padding: 8px; border: 1px solid var(--border);">-4</td></tr>
+                <tr style="background: rgba(0,0,0,0.05);"><td style="padding: 8px; border: 1px solid var(--border);">-10</td><td style="padding: 8px; border: 1px solid var(--border);">14</td></tr>
+                <tr><td style="padding: 8px; border: 1px solid var(--border);">0</td><td style="padding: 8px; border: 1px solid var(--border);">32</td></tr>
+                <tr style="background: rgba(0,0,0,0.05);"><td style="padding: 8px; border: 1px solid var(--border);">10</td><td style="padding: 8px; border: 1px solid var(--border);">50</td></tr>
+                <tr><td style="padding: 8px; border: 1px solid var(--border);">20</td><td style="padding: 8px; border: 1px solid var(--border);">68</td></tr>
+                <tr style="background: rgba(0,0,0,0.05);"><td style="padding: 8px; border: 1px solid var(--border);">30</td><td style="padding: 8px; border: 1px solid var(--border);">86</td></tr>
+                <tr><td style="padding: 8px; border: 1px solid var(--border);">40</td><td style="padding: 8px; border: 1px solid var(--border);">104</td></tr>
+              </tbody>
+            </table>
+
+             <div style="margin-top: 20px; display: flex; gap: 15px; flex-wrap: wrap;">
+               <div style="flex: 1; min-width: 200px;" class="card">
+                  <div class="card-header" style="font-weight: bold; background: var(--bg-card); padding: 10px; border-bottom: 1px solid var(--border);">Convertisseur Température</div>
+                  <div style="padding: 10px; display: flex; flex-direction: column; gap: 10px;">
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                       <input type="number" id="conv-c-input" style="flex:1; padding:5px; border-radius:4px; border:1px solid var(--border); background:var(--bg-card); color:var(--text-main);" placeholder="°C" oninput="document.getElementById('conv-f-input').value = (this.value * 9/5 + 32).toFixed(1)">
+                       <span>°C =</span>
+                       <input type="number" id="conv-f-input" style="flex:1; padding:5px; border-radius:4px; border:1px solid var(--border); background:var(--bg-card); color:var(--text-main);" placeholder="°F" oninput="document.getElementById('conv-c-input').value = ((this.value - 32) * 5/9).toFixed(1)">
+                       <span>°F</span>
+                    </div>
+                  </div>
+               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- MODAL LANGLOIS CALCULATRICE -->
     <div id="langlois-calc-modal" class="modal-overlay">
       <div class="modal-content" style="max-width: 900px; width: 95%">
@@ -17282,7 +17445,7 @@
       let viewFOV = 100; // Less bunched up
       let viewAltitude = -5; // Look slightly down
       let starsModeActive = false;
-      let sensorModeActive = false;
+
 
       // --- VARIABLES GLOBALES ET FOND DYNAMIQUE ---
       let currentConditions = {
@@ -23530,6 +23693,7 @@ maintainAspectRatio: false,
       const modalRules = document.getElementById("rules-modal");
       const modalImage = document.getElementById("image-modal");
       const modalLangloisCalc = document.getElementById("langlois-calc-modal");
+      const modalConversion = document.getElementById("conversion-modal");
 
       // Toggle Calculatrice Langlois
       document
@@ -23607,6 +23771,17 @@ maintainAspectRatio: false,
         .addEventListener("click", () => modalImage.classList.remove("active"));
       modalImage.addEventListener("click", (e) => {
         if (e.target === modalImage) modalImage.classList.remove("active");
+      });
+
+      // Toggle Conversions
+      document
+        .getElementById("conversion-toggle")
+        .addEventListener("click", () => modalConversion.classList.add("active"));
+      document
+        .getElementById("close-conversion")
+        .addEventListener("click", () => modalConversion.classList.remove("active"));
+      modalConversion.addEventListener("click", (e) => {
+        if (e.target === modalConversion) modalConversion.classList.remove("active");
       });
 
       // Logique Calculatrice
@@ -23901,46 +24076,7 @@ maintainAspectRatio: false,
         });
       }
 
-      // Toggle Sensor Mode
-      const sensorModeBtn = document.getElementById("sensor-mode-toggle");
-      if (sensorModeBtn) {
-        sensorModeBtn.addEventListener("click", async () => {
-          if (
-            window.isSecureContext === false &&
-            location.hostname !== "localhost" &&
-            location.hostname !== "127.0.0.1"
-          ) {
-            alert("Les capteurs nécessitent une connexion sécurisée (HTTPS).");
-            return;
-          }
 
-          if (
-            typeof DeviceOrientationEvent !== "undefined" &&
-            typeof DeviceOrientationEvent.requestPermission === "function"
-          ) {
-            try {
-              const permissionState =
-                await DeviceOrientationEvent.requestPermission();
-              if (permissionState !== "granted") {
-                alert("Permission pour les capteurs refusée.");
-                return;
-              }
-            } catch (e) {
-              console.error("Erreur lors de la demande de permission:", e);
-              return;
-            }
-          }
-          sensorModeActive = !sensorModeActive;
-          sensorModeBtn.innerHTML = sensorModeActive
-            ? "📱 Capteurs (Actif)"
-            : "📱 Capteurs";
-          if (sensorModeActive) {
-            sensorModeBtn.style.background = "var(--primary)";
-          } else {
-            sensorModeBtn.style.background = "";
-          }
-        });
-      }
 
       // --- DÉBRIS ET EFFETS DE RIVIÈRE ---
       let debrisList = [];
@@ -24698,61 +24834,7 @@ maintainAspectRatio: false,
       // Start debris animation
       requestAnimationFrame(updateDebrisFX);
 
-      let hasAbsoluteEvent = false;
 
-      window.addEventListener(
-        "deviceorientationabsolute",
-        (event) => {
-          hasAbsoluteEvent = true;
-          handleOrientation(event, true);
-        },
-        true,
-      );
-
-      window.addEventListener(
-        "deviceorientation",
-        (event) => {
-          if (hasAbsoluteEvent) return; // Android triggers both, we only want absolute if available
-          handleOrientation(event, false);
-        },
-        true,
-      );
-
-      function handleOrientation(event, isAbsolute) {
-        if (!sensorModeActive) return;
-
-        // Calculer l'azimut (direction)
-        let heading = null;
-
-        // Fix iOS falsy bug (0 is falsy, check typeof instead)
-        if (typeof event.webkitCompassHeading === "number") {
-          heading = event.webkitCompassHeading;
-        } else if (typeof event.alpha === "number") {
-          if (event.absolute || isAbsolute) {
-            heading = 360 - event.alpha;
-          } else {
-            // If it's relative, it might jump around. Some browsers set alpha as absolute anyway.
-            heading = 360 - event.alpha;
-          }
-        }
-
-        if (heading !== null) {
-          viewAzimuth = heading;
-          if (viewAzimuth < 0) viewAzimuth += 360;
-          if (viewAzimuth >= 360) viewAzimuth -= 360;
-        }
-
-        // Calculer l'altitude (inclinaison du téléphone)
-        if (typeof event.beta === "number") {
-          let alt = 90 - event.beta;
-
-          // Clamp
-          if (alt > 90) alt = 90;
-          if (alt < -20) alt = -20;
-          viewAltitude = alt;
-        }
-
-      }
 
       // --- CAMERA PANNING & ZOOMING LOGIC ---
       let isPanning = false;
@@ -24804,7 +24886,7 @@ maintainAspectRatio: false,
 
       // Touch events for panning on mobile
       document.getElementById("animation-window").addEventListener("touchstart", (e) => {
-          if (sensorModeActive) return; // Don't allow manual pan if sensor mode is active
+
 
           // Use the first touch point
           if (e.touches.length === 1) {
@@ -24822,7 +24904,7 @@ maintainAspectRatio: false,
         "touchmove",
         (e) => {
           if (!isPanning) return;
-          if (sensorModeActive) return;
+
 
           // Prevent scrolling while panning
           e.preventDefault();
@@ -24939,6 +25021,20 @@ maintainAspectRatio: false,
       function updateDensityFromSelect() {
         const sel = document.getElementById("productSelect").value;
         if (sel !== "custom") document.getElementById("density").value = sel;
+      }
+
+      function openConvTab(evt, tabName) {
+        var i, tabcontent, tablinks;
+        tabcontent = document.getElementsByClassName("conv-tab-content");
+        for (i = 0; i < tabcontent.length; i++) {
+          tabcontent[i].style.display = "none";
+        }
+        tablinks = evt.currentTarget.parentElement.getElementsByClassName("tab-btn");
+        for (i = 0; i < tablinks.length; i++) {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+        document.getElementById(tabName).style.display = "block";
+        evt.currentTarget.className += " active";
       }
 
       function openTab(evt, tabName) {
