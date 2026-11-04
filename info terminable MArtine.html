@@ -2,6 +2,7 @@
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Monitoring Terminal Maritime St-Romuald (Lévis) — Command Center PRO</title>
     <link rel="manifest" href="manifest.json" />
@@ -24,42 +25,50 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
       :root {
-        /* Palette Maritime Command Center (Mode Jour) */
-        --bg: #eef2f6;
-        --card-bg: rgba(255, 255, 255, 0.88);
+        /* ==========================================================================
+           POSTE DE CONTRÔLE PORTUAIRE & MARITIME — TERMINAL ST-ROMUALD (SEC. 86/87)
+           Mode Jour : Table à Cartes Hydrographiques CHS / Admiralty Paper Console
+           ========================================================================== */
+        --bg: #dce5ee;
+        --card-bg: rgba(246, 250, 254, 0.94);
         --card-bg-solid: #ffffff;
-        --card-header-bg: rgba(248, 250, 252, 0.92);
-        --text: #0f172a;
-        --text-light: #475569;
-        --text-muted: #64748b;
-        --border: rgba(148, 163, 184, 0.32);
-        --border-strong: rgba(100, 116, 139, 0.45);
-        --surface-hover: rgba(241, 245, 249, 0.9);
-        --surface-subtle: rgba(241, 245, 249, 0.7);
+        --card-header-bg: linear-gradient(180deg, #eef4fa 0%, #e1ebf4 100%);
+        --text: #051424;
+        --text-light: #2c4966;
+        --text-muted: #53718e;
+        --border: rgba(30, 68, 102, 0.28);
+        --border-strong: rgba(14, 45, 75, 0.55);
+        --surface-hover: rgba(215, 230, 245, 0.9);
+        --surface-subtle: rgba(225, 237, 248, 0.75);
         --input-bg: #ffffff;
 
-        /* Couleurs Officielles Valero & Cando */
-        --valero-navy: #003b4a;
-        --valero-teal: #00809d;
-        --valero-gold: #fdb913;
-        --cando-red: #d31145;
+        /* Identité Valero Marine & Cando Rail/Terminals */
+        --valero-navy: #002b36;
+        --valero-teal: #00738c;
+        --valero-gold: #c28008;
+        --cando-red: #b90e3c;
 
-        --accent: var(--valero-teal);
-        --accent-hover: var(--valero-navy);
-        --accent-glow: rgba(0, 128, 157, 0.25);
+        --accent: #00738c;
+        --accent-hover: #002b36;
+        --accent-glow: rgba(0, 115, 140, 0.25);
 
-        --success: #10b981;
-        --success-bg: rgba(16, 185, 129, 0.12);
-        --warning: #f59e0b;
-        --warning-bg: rgba(245, 158, 11, 0.14);
-        --danger: #ef4444;
-        --danger-bg: rgba(239, 68, 68, 0.14);
+        /* Balisage Maritime IALA Région B (Fleuve St-Laurent) */
+        --tribord-green: #0a8f64;
+        --babord-red: #d92d3e;
+        --beacon-amber: #d97706;
 
-        --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.06);
-        --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.1);
-        --shadow-lg: 0 16px 40px rgba(15, 23, 42, 0.18);
+        --success: #0a8f64;
+        --success-bg: rgba(10, 143, 100, 0.14);
+        --warning: #d97706;
+        --warning-bg: rgba(217, 119, 6, 0.15);
+        --danger: #d92d3e;
+        --danger-bg: rgba(217, 45, 62, 0.15);
 
-        /* Variables Dynamiques 360° */
+        --shadow-sm: 0 1px 3px rgba(5, 20, 36, 0.1), 0 1px 2px rgba(5, 20, 36, 0.08);
+        --shadow-md: 0 4px 16px rgba(5, 20, 36, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+        --shadow-lg: 0 14px 36px rgba(5, 20, 36, 0.22);
+
+        /* Variables Dynamiques Fleuve 360° */
         --sky-c1: #0284c7;
         --sky-c2: #38bdf8;
         --sky-c3: #bae6fd;
@@ -72,26 +81,41 @@
       }
 
       body.dark-mode {
-        --bg: #070d19;
-        --card-bg: rgba(15, 23, 42, 0.84);
-        --card-bg-solid: #0f172a;
-        --card-header-bg: rgba(30, 41, 59, 0.88);
-        --text: #f8fafc;
-        --text-light: #94a3b8;
-        --text-muted: #64748b;
-        --border: rgba(51, 65, 85, 0.65);
-        --border-strong: rgba(71, 85, 105, 0.85);
-        --surface-hover: rgba(30, 41, 59, 0.85);
-        --surface-subtle: rgba(30, 41, 59, 0.55);
-        --input-bg: rgba(15, 23, 42, 0.9);
+        /* ==========================================================================
+           POSTE DE CONTRÔLE PORTUAIRE — CONSOLE PASSERELLE ECDIS NUIT
+           Palette Haute-Mer : Kongsberg K-Chief / Furuno ECDIS / Valero Marine DCS
+           ========================================================================== */
+        --bg: #030812;
+        --card-bg: rgba(7, 18, 33, 0.92);
+        --card-bg-solid: #061221;
+        --card-header-bg: linear-gradient(180deg, #0e223b 0%, #091729 100%);
+        --text: #e6f1fb;
+        --text-light: #88a9c7;
+        --text-muted: #507191;
+        --border: rgba(56, 189, 248, 0.22);
+        --border-strong: rgba(56, 189, 248, 0.48);
+        --surface-hover: rgba(14, 165, 233, 0.16);
+        --surface-subtle: rgba(11, 25, 45, 0.85);
+        --input-bg: #040c17;
 
         --accent: #38bdf8;
-        --accent-hover: var(--valero-gold);
-        --accent-glow: rgba(56, 189, 248, 0.25);
+        --accent-hover: #f59e0b;
+        --accent-glow: rgba(56, 189, 248, 0.35);
 
-        --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.35);
-        --shadow-md: 0 10px 28px rgba(0, 0, 0, 0.45);
-        --shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.65);
+        --tribord-green: #00f59b;
+        --babord-red: #ff3366;
+        --beacon-amber: #ffb300;
+
+        --success: #00f59b;
+        --success-bg: rgba(0, 245, 155, 0.14);
+        --warning: #ffb300;
+        --warning-bg: rgba(255, 179, 0, 0.16);
+        --danger: #ff3366;
+        --danger-bg: rgba(255, 51, 102, 0.16);
+
+        --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.5);
+        --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(56, 189, 248, 0.12);
+        --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.85);
       }
 
       * {
@@ -100,17 +124,18 @@
         padding: 0;
       }
 
-      /* Scrollbars raffinées */
+      /* Barres de défilement style console marine */
       ::-webkit-scrollbar {
         width: 7px;
         height: 7px;
       }
       ::-webkit-scrollbar-track {
-        background: transparent;
+        background: rgba(3, 10, 20, 0.4);
       }
       ::-webkit-scrollbar-thumb {
-        background: rgba(148, 163, 184, 0.4);
-        border-radius: 999px;
+        background: rgba(56, 189, 248, 0.35);
+        border-radius: 4px;
+        border: 1px solid rgba(0, 0, 0, 0.2);
       }
       ::-webkit-scrollbar-thumb:hover {
         background: var(--accent);
@@ -120,9 +145,10 @@
         font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         background-color: var(--bg);
         background-image:
-          radial-gradient(at 0% 0%, rgba(0, 128, 157, 0.10) 0px, transparent 50%),
-          radial-gradient(at 100% 0%, rgba(253, 185, 19, 0.07) 0px, transparent 50%),
-          radial-gradient(at 50% 100%, rgba(0, 59, 74, 0.12) 0px, transparent 60%);
+          radial-gradient(ellipse at 50% -10%, rgba(0, 156, 184, 0.16) 0%, transparent 65%),
+          linear-gradient(rgba(14, 165, 233, 0.04) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(14, 165, 233, 0.04) 1px, transparent 1px);
+        background-size: 100% 100%, 36px 36px, 36px 36px;
         color: var(--text);
         height: 100vh;
         width: 100vw;
@@ -130,6 +156,13 @@
         flex-direction: column;
         overflow: hidden;
         transition: background-color 0.35s ease, color 0.35s ease;
+      }
+      body:not(.dark-mode) {
+        background-image:
+          radial-gradient(ellipse at 50% -10%, rgba(0, 115, 140, 0.1) 0%, transparent 65%),
+          linear-gradient(rgba(14, 68, 105, 0.05) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(14, 68, 105, 0.05) 1px, transparent 1px);
+        background-size: 100% 100%, 36px 36px, 36px 36px;
       }
 
       .mono {
@@ -305,57 +338,6 @@
         }
       }
 
-      #boat-turret {
-        display: none;
-      }
-      body.game-active #boat-turret {
-        display: block;
-      }
-
-      #battle-container {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        pointer-events: none;
-        z-index: 15;
-        display: none;
-      }
-      body.game-active #battle-container {
-        display: block;
-      }
-      #battle-fx {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        pointer-events: none;
-      }
-      #battle-hud {
-        position: absolute;
-        z-index: 20;
-        top: 48px;
-        left: 12px;
-        background: rgba(15, 23, 42, 0.82);
-        backdrop-filter: blur(8px);
-        border: 1px solid rgba(255, 255, 255, 0.22);
-        padding: 0.45rem 0.75rem;
-        border-radius: 0.5rem;
-        color: #fff;
-        font-family: "JetBrains Mono", monospace;
-        font-size: 0.82rem;
-        font-weight: 800;
-        pointer-events: none;
-        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
-      }
-      .enemy-entity {
-        position: absolute;
-        transform-origin: center;
-        pointer-events: none;
-        z-index: 14;
-      }
 
       .smoke-puff {
         animation: smokeRise 4s ease-out infinite;
@@ -460,26 +442,36 @@
         100% { transform: rotate(0.8deg); }
       }
 
-      /* --- HEADER COMMAND CENTER --- */
+      /* --- HEADER COMMAND CENTER : CONSOLE PASSERELLE MARITIME --- */
       .header {
-        background: var(--card-bg);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        padding: 0.35rem 0.85rem;
+        background: linear-gradient(180deg, #081729 0%, #040c17 100%);
+        color: #ecf4fc;
+        padding: 0.32rem 0.85rem;
         border-bottom: 2px solid var(--valero-gold);
         display: flex;
         justify-content: space-between;
         align-items: center;
         gap: 0.6rem;
-        box-shadow: var(--shadow-sm);
+        box-shadow: 0 4px 18px rgba(0, 0, 0, 0.6);
         z-index: 20;
         flex-shrink: 0;
+        position: relative;
+      }
+      .header::after {
+        content: "";
+        position: absolute;
+        bottom: -3px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: linear-gradient(90deg, var(--valero-teal), var(--valero-gold) 45%, var(--cando-red) 75%, var(--valero-teal));
+        opacity: 0.8;
       }
 
       .header-brand {
         display: flex;
         align-items: center;
-        gap: 0.7rem;
+        gap: 0.75rem;
         min-width: 0;
       }
 
@@ -487,20 +479,22 @@
         display: flex;
         align-items: center;
         gap: 0.45rem;
-        background: rgba(15, 23, 42, 0.06);
-        padding: 0.2rem 0.55rem;
-        border-radius: 0.45rem;
-        border: 1px solid var(--border);
+        background: rgba(14, 30, 52, 0.88);
+        padding: 0.22rem 0.6rem;
+        border-radius: 4px;
+        border: 1px solid rgba(56, 189, 248, 0.35);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
       }
       body.dark-mode .brand-logos {
-        background: rgba(255, 255, 255, 0.05);
+        background: rgba(14, 30, 52, 0.95);
       }
 
       .header-title-block h1 {
-        font-size: 0.96rem;
-        font-weight: 800;
-        letter-spacing: -0.02em;
-        color: var(--text);
+        font-size: 0.94rem;
+        font-weight: 900;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        color: #ffffff;
         display: flex;
         align-items: center;
         gap: 0.4rem;
@@ -508,12 +502,13 @@
       }
 
       .header-subtitle {
-        font-size: 0.68rem;
-        color: var(--text-light);
+        font-size: 0.67rem;
+        color: #8bb2d6;
         font-weight: 600;
         display: flex;
         align-items: center;
-        gap: 0.4rem;
+        gap: 0.45rem;
+        letter-spacing: 0.02em;
       }
 
       .controls {
@@ -527,103 +522,117 @@
       .live-clock-pill {
         display: flex;
         align-items: center;
-        gap: 0.42rem;
-        background: rgba(0, 59, 74, 0.09);
-        border: 1px solid var(--border);
-        padding: 0.22rem 0.55rem;
-        border-radius: 0.45rem;
+        gap: 0.45rem;
+        background: rgba(8, 22, 38, 0.92);
+        border: 1px solid rgba(56, 189, 248, 0.35);
+        padding: 0.22rem 0.6rem;
+        border-radius: 4px;
         font-size: 0.78rem;
-        font-weight: 700;
+        font-weight: 800;
+        color: #ffffff;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
       }
       body.dark-mode .live-clock-pill {
-        background: rgba(15, 23, 42, 0.75);
+        background: rgba(8, 22, 38, 0.92);
       }
 
       .telemetry-badge {
         display: inline-flex;
         align-items: center;
-        gap: 0.3rem;
-        padding: 0.18rem 0.45rem;
-        border-radius: 999px;
-        font-size: 0.64rem;
-        font-weight: 800;
-        letter-spacing: 0.04em;
+        gap: 0.35rem;
+        padding: 0.16rem 0.48rem;
+        border-radius: 3px;
+        font-size: 0.63rem;
+        font-weight: 900;
+        letter-spacing: 0.06em;
         text-transform: uppercase;
-        background: rgba(16, 185, 129, 0.12);
-        border: 1px solid rgba(16, 185, 129, 0.35);
-        color: #10b981;
+        background: rgba(0, 245, 155, 0.14);
+        border: 1px solid rgba(0, 245, 155, 0.45);
+        color: #00f59b;
       }
       .telemetry-dot {
         width: 6px;
         height: 6px;
         border-radius: 50%;
-        background: #10b981;
-        box-shadow: 0 0 8px #10b981;
+        background: #00f59b;
+        box-shadow: 0 0 8px #00f59b;
+        animation: pulse-beacon 1.8s infinite;
+      }
+
+      @keyframes pulse-beacon {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.45; transform: scale(0.85); }
       }
 
       .theme-toggle, .btn-tool {
-        background: var(--surface-subtle);
-        border: 1px solid var(--border);
-        color: var(--text);
-        padding: 0.26rem 0.56rem;
-        border-radius: 0.4rem;
+        background: rgba(14, 31, 54, 0.88);
+        border: 1px solid rgba(56, 189, 248, 0.32);
+        color: #e2effa;
+        padding: 0.26rem 0.58rem;
+        border-radius: 4px;
         cursor: pointer;
-        font-weight: 600;
-        font-size: 0.72rem;
+        font-weight: 700;
+        font-size: 0.71rem;
+        letter-spacing: 0.02em;
         display: inline-flex;
         align-items: center;
-        gap: 0.3rem;
+        gap: 0.32rem;
         transition: all 0.18s ease;
         white-space: nowrap;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 2px 5px rgba(0,0,0,0.3);
       }
       .theme-toggle:hover, .btn-tool:hover {
-        background: var(--valero-teal);
+        background: #0284c7;
         color: #ffffff;
-        border-color: var(--valero-teal);
+        border-color: #38bdf8;
         transform: translateY(-1px);
-        box-shadow: 0 4px 12px var(--accent-glow);
+        box-shadow: 0 0 14px rgba(56, 189, 248, 0.5);
       }
       .theme-toggle.active {
         background: var(--valero-navy);
         color: var(--valero-gold);
         border-color: var(--valero-gold);
+        box-shadow: 0 0 12px rgba(245, 158, 11, 0.4);
       }
 
       /* --- BANNIÈRE PROJECTION TEMPORELLE GLOBALE --- */
       .projection-banner {
         display: none;
-        background: linear-gradient(90deg, #b45309, #d97706, #b45309);
+        background: linear-gradient(90deg, #9a3412, #c2410c, #9a3412);
         color: #ffffff;
-        padding: 0.22rem 0.85rem;
-        font-size: 0.75rem;
-        font-weight: 700;
+        padding: 0.24rem 0.85rem;
+        font-size: 0.74rem;
+        font-weight: 800;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
         align-items: center;
         justify-content: center;
         gap: 0.85rem;
         z-index: 19;
         flex-shrink: 0;
-        box-shadow: 0 2px 10px rgba(217, 119, 6, 0.4);
+        box-shadow: 0 3px 12px rgba(194, 65, 12, 0.5);
+        border-bottom: 1px solid #ea580c;
       }
       .projection-banner.active {
         display: flex;
       }
       .projection-banner button {
         background: #ffffff;
-        color: #b45309;
-        border: none;
-        border-radius: 0.3rem;
-        padding: 0.12rem 0.5rem;
-        font-weight: 800;
-        font-size: 0.7rem;
+        color: #9a3412;
+        border: 1px solid #ffffff;
+        border-radius: 3px;
+        padding: 0.14rem 0.55rem;
+        font-weight: 900;
+        font-size: 0.69rem;
         cursor: pointer;
+        text-transform: uppercase;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.25);
       }
 
       /* --- RUBAN HORIZONTAL GLOBAL : PROJECTION TEMPORELLE (-6h à +24h) --- */
       .scrubber-ribbon {
-        background: var(--card-bg);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border-bottom: 1px solid var(--border);
+        background: linear-gradient(180deg, rgba(8, 20, 36, 0.96), rgba(5, 14, 26, 0.96));
+        border-bottom: 1px solid var(--border-strong);
         padding: 0.26rem 0.85rem;
         display: flex;
         align-items: center;
@@ -640,10 +649,10 @@
       }
       .scrubber-ribbon-title {
         font-size: 0.72rem;
-        font-weight: 800;
-        color: var(--text);
+        font-weight: 900;
+        color: var(--accent);
         text-transform: uppercase;
-        letter-spacing: 0.03em;
+        letter-spacing: 0.05em;
         white-space: nowrap;
       }
       .scrubber-ribbon-slider-wrap {
@@ -655,9 +664,12 @@
       }
       .scrubber-ribbon-slider-wrap input[type="range"] {
         width: 100%;
-        height: 5px;
+        height: 6px;
         cursor: pointer;
-        accent-color: var(--valero-teal);
+        accent-color: var(--accent);
+        border-radius: 3px;
+        background: rgba(14, 38, 66, 0.85);
+        border: 1px solid var(--border);
       }
       .scrubber-quick-btns {
         display: flex;
@@ -666,23 +678,25 @@
         flex-shrink: 0;
       }
       .scrubber-qbtn {
-        padding: 0.16rem 0.42rem;
+        padding: 0.16rem 0.45rem;
         font-size: 0.67rem;
-        font-weight: 700;
-        border-radius: 0.3rem;
+        font-weight: 800;
+        border-radius: 3px;
         border: 1px solid var(--border);
-        background: var(--surface-subtle);
+        background: rgba(12, 28, 48, 0.85);
         color: var(--text);
         cursor: pointer;
         text-align: center;
         transition: all 0.15s;
         white-space: nowrap;
+        letter-spacing: 0.02em;
       }
       .scrubber-qbtn:hover,
       .scrubber-qbtn.active {
-        background: var(--valero-teal);
+        background: var(--accent);
         color: #fff;
-        border-color: var(--valero-teal);
+        border-color: var(--valero-gold);
+        box-shadow: 0 0 10px var(--accent-glow);
       }
 
       /* --- GRILLE DASHBOARD 3 COLONNES (ZERO-SCROLL BENTO 100VH) --- */
@@ -708,12 +722,12 @@
         overflow: hidden;
       }
 
-      /* --- CARTES GLASSMORPHISM --- */
+      /* --- CARTES MODULES DU POSTE DE CONTRÔLE (CONSOLE UNITS) --- */
       .card {
         background: var(--card-bg);
         backdrop-filter: blur(14px);
         -webkit-backdrop-filter: blur(14px);
-        border-radius: 0.65rem;
+        border-radius: 4px;
         border: 1px solid var(--border);
         box-shadow: var(--shadow-md);
         display: flex;
@@ -722,10 +736,22 @@
         min-height: 0;
         overflow: hidden;
         transition: border-color 0.25s ease, box-shadow 0.25s ease, flex 0.25s ease;
+        position: relative;
+      }
+      .card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: var(--accent);
+        opacity: 0.85;
+        z-index: 2;
       }
 
       .card-header {
-        padding: 0.38rem 0.68rem;
+        padding: 0.36rem 0.65rem;
         border-bottom: 1px solid var(--border);
         background: var(--card-header-bg);
         display: flex;
@@ -736,14 +762,15 @@
       }
 
       .card-header h2 {
-        font-size: 0.82rem;
+        font-size: 0.79rem;
         font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
         color: var(--text);
         display: flex;
         align-items: center;
-        gap: 0.35rem;
+        gap: 0.4rem;
         margin: 0;
-        letter-spacing: -0.01em;
         white-space: nowrap;
       }
 
@@ -757,7 +784,7 @@
         min-height: 0;
       }
 
-      /* --- HUD 360° APERÇU ANIMÉ --- */
+      /* --- HUD 360° APERÇU ANIMÉ & WEBGL --- */
       .viewport-hud-top {
         position: absolute;
         top: 6px;
@@ -773,18 +800,18 @@
 
       .viewport-telemetry {
         pointer-events: auto;
-        background: rgba(15, 23, 42, 0.72);
+        background: rgba(6, 16, 28, 0.85);
         backdrop-filter: blur(8px);
-        border: 1px solid rgba(255, 255, 255, 0.18);
+        border: 1px solid rgba(56, 189, 248, 0.4);
         color: #f8fafc;
-        padding: 0.2rem 0.5rem;
-        border-radius: 0.4rem;
+        padding: 0.2rem 0.55rem;
+        border-radius: 4px;
         font-size: 0.66rem;
-        font-weight: 600;
+        font-weight: 700;
         display: flex;
         align-items: center;
         gap: 0.45rem;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
         white-space: nowrap;
       }
 
@@ -797,14 +824,14 @@
       }
 
       .hud-pill-btn {
-        background: rgba(15, 23, 42, 0.72);
+        background: rgba(8, 20, 36, 0.85);
         backdrop-filter: blur(8px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(56, 189, 248, 0.35);
         color: #f8fafc;
-        padding: 0.18rem 0.42rem;
-        border-radius: 0.35rem;
+        padding: 0.18rem 0.45rem;
+        border-radius: 3px;
         font-size: 0.65rem;
-        font-weight: 700;
+        font-weight: 800;
         cursor: pointer;
         transition: all 0.15s ease;
       }
@@ -813,6 +840,7 @@
         background: var(--valero-teal);
         border-color: var(--valero-gold);
         color: #fff;
+        box-shadow: 0 0 10px var(--accent-glow);
       }
 
       .viewport-landmarks-bar {
@@ -829,23 +857,24 @@
       }
       .landmark-jump-btn {
         pointer-events: auto;
-        background: rgba(15, 23, 42, 0.74);
+        background: rgba(6, 16, 28, 0.88);
         backdrop-filter: blur(6px);
-        border: 1px solid rgba(255, 255, 255, 0.18);
+        border: 1px solid rgba(56, 189, 248, 0.32);
         color: #e2e8f0;
-        padding: 0.16rem 0.42rem;
-        border-radius: 999px;
+        padding: 0.16rem 0.45rem;
+        border-radius: 3px;
         font-size: 0.63rem;
-        font-weight: 600;
+        font-weight: 700;
         cursor: pointer;
         transition: all 0.15s ease;
       }
       .landmark-jump-btn:hover,
       .landmark-jump-btn.active {
         background: var(--valero-gold);
-        color: #0f172a;
+        color: #040c17;
         border-color: #ffffff;
-        font-weight: 800;
+        font-weight: 900;
+        box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
       }
 
       /* Fullscreen pour carte ou aperçu 360 */
@@ -861,7 +890,7 @@
         flex: 1 !important;
       }
 
-      /* --- MÉTÉO : BARRE DE RECHERCHE, PRESETS & CONDITIONS --- */
+      /* --- MÉTÉO : BARRE DE CONTRÔLE & PRESETS --- */
       .weather-controls-bar {
         display: flex;
         flex-wrap: wrap;
@@ -873,22 +902,23 @@
 
       .weather-search-input {
         padding: 0.22rem 0.48rem;
-        border-radius: 0.35rem;
+        border-radius: 3px;
         border: 1px solid var(--border);
         background: var(--input-bg);
         color: var(--text);
         font-size: 0.72rem;
         width: 128px;
+        font-family: inherit;
       }
 
       .weather-select {
         padding: 0.22rem 0.38rem;
-        border-radius: 0.35rem;
+        border-radius: 3px;
         border: 1px solid var(--border);
         background: var(--input-bg);
         color: var(--text);
         font-size: 0.7rem;
-        font-weight: 600;
+        font-weight: 700;
         cursor: pointer;
       }
 
@@ -898,19 +928,19 @@
         gap: 0.18rem;
         background: var(--surface-subtle);
         padding: 0.12rem 0.32rem;
-        border-radius: 0.38rem;
+        border-radius: 3px;
         border: 1px solid var(--border);
       }
 
       .preset-btn {
         padding: 0.14rem 0.38rem;
         font-size: 0.68rem;
-        border-radius: 0.25rem;
+        border-radius: 3px;
         border: 1px solid transparent;
         background: transparent;
         color: var(--text);
         cursor: pointer;
-        font-weight: 700;
+        font-weight: 800;
         transition: all 0.15s;
       }
       .preset-btn:hover {
@@ -918,30 +948,40 @@
         color: #fff;
       }
 
+      /* --- CONSOLE MÉTÉO MARINE (12 TUILES CAPTEURS) --- */
       .current-weather {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
         gap: 0.32rem;
         background: var(--surface-subtle);
-        padding: 0.38rem;
-        border-radius: 0.5rem;
+        padding: 0.36rem;
+        border-radius: 4px;
         border: 1px solid var(--border);
         flex-shrink: 0;
       }
 
       .cw-item {
-        background: var(--card-bg);
+        background: var(--card-bg-solid);
         border: 1px solid var(--border);
-        border-radius: 0.38rem;
-        padding: 0.24rem 0.4rem;
+        border-left: 3px solid var(--valero-teal);
+        border-radius: 3px;
+        padding: 0.25rem 0.42rem;
         display: flex;
         flex-direction: column;
         justify-content: center;
         min-width: 0;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        transition: all 0.15s ease;
+      }
+      .cw-item:hover {
+        border-color: var(--accent);
+        background: var(--surface-hover);
+        transform: translateY(-1px);
       }
       .cw-val {
-        font-size: 0.82rem;
-        font-weight: 800;
+        font-size: 0.84rem;
+        font-weight: 900;
+        font-family: "JetBrains Mono", monospace;
         color: var(--text);
         line-height: 1.15;
         white-space: nowrap;
@@ -949,11 +989,11 @@
         text-overflow: ellipsis;
       }
       .cw-lbl {
-        font-size: 0.59rem;
+        font-size: 0.58rem;
         color: var(--text-light);
         text-transform: uppercase;
-        font-weight: 700;
-        letter-spacing: 0.02em;
+        font-weight: 800;
+        letter-spacing: 0.04em;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -967,13 +1007,14 @@
         flex-shrink: 0;
       }
 
-      /* --- TABLES MÉTÉO & MARÉES --- */
+      /* --- TABLES JOURNAL DE BORD & CONDITIONS HYDRO-MÉTÉO --- */
       .table-scroll {
         overflow-y: auto;
         flex: 1;
         min-height: 0;
-        border: 1px solid var(--border);
-        border-radius: 0.45rem;
+        border: 1px solid var(--border-strong);
+        border-radius: 4px;
+        background: var(--card-bg-solid);
       }
 
       table {
@@ -985,69 +1026,76 @@
 
       th,
       td {
-        padding: 0.28rem 0.42rem;
+        padding: 0.3rem 0.44rem;
         border-bottom: 1px solid var(--border);
       }
 
       th {
         background: var(--card-header-bg);
-        color: var(--text-light);
-        font-weight: 700;
+        color: var(--text);
+        font-weight: 800;
         font-size: 0.65rem;
         text-transform: uppercase;
-        letter-spacing: 0.02em;
+        letter-spacing: 0.04em;
         position: sticky;
         top: 0;
         z-index: 2;
+        border-bottom: 2px solid var(--valero-gold);
       }
 
+      tbody tr:nth-child(even) {
+        background: rgba(14, 165, 233, 0.03);
+      }
       tbody tr:hover {
         background: var(--surface-hover);
       }
 
       .badge {
-        background: rgba(0, 128, 157, 0.14);
+        background: rgba(0, 128, 157, 0.15);
         color: var(--accent);
-        padding: 0.1rem 0.36rem;
-        border-radius: 0.3rem;
-        font-weight: 700;
-        font-size: 0.69rem;
+        border: 1px solid var(--border);
+        padding: 0.1rem 0.38rem;
+        border-radius: 3px;
+        font-weight: 800;
+        font-size: 0.68rem;
+        letter-spacing: 0.03em;
         display: inline-block;
       }
       body.dark-mode .badge {
-        background: rgba(56, 189, 248, 0.16);
+        background: rgba(56, 189, 248, 0.18);
         color: #38bdf8;
       }
 
       .high-tide {
-        color: var(--accent);
-        font-weight: 800;
+        color: var(--valero-gold);
+        font-weight: 900;
       }
       .low-tide {
-        color: var(--text-light);
+        color: var(--accent);
+        font-weight: 800;
       }
 
       .alert-wind {
         background: rgba(239, 68, 68, 0.18) !important;
-        color: #ef4444 !important;
-        font-weight: 800;
-        border: 1px solid rgba(239, 68, 68, 0.4);
+        color: #ff3366 !important;
+        font-weight: 900;
+        border: 1px solid rgba(239, 68, 68, 0.5) !important;
       }
       .alert-cape {
         background: rgba(245, 158, 11, 0.2) !important;
-        color: #f59e0b !important;
-        font-weight: 800;
-        border: 1px solid rgba(245, 158, 11, 0.4);
+        color: #ffb300 !important;
+        font-weight: 900;
+        border: 1px solid rgba(245, 158, 11, 0.5) !important;
       }
 
-      /* --- TRAFFIC LIGHTS & OPÉRATIONS TEMPS RÉEL (COMPACT BENTO) --- */
+      /* --- OPÉRATIONS, COURANTS & ACCOSTAGE SECTIONS 86 & 87 --- */
       .river-state-strip {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 0.38rem;
         background: var(--surface-subtle);
-        padding: 0.32rem 0.5rem;
-        border-radius: 0.45rem;
+        padding: 0.34rem 0.52rem;
+        border-radius: 4px;
         border: 1px solid var(--border);
         flex-shrink: 0;
       }
@@ -1071,21 +1119,23 @@
       }
       .status-block {
         background: var(--surface-subtle);
-        padding: 0.36rem 0.5rem;
-        border-radius: 0.45rem;
-        border: 1px solid var(--border);
+        padding: 0.38rem 0.52rem;
+        border-radius: 4px;
+        border: 1px solid var(--border-strong);
+        border-top: 2px solid var(--accent);
         display: flex;
         flex-direction: column;
         justify-content: space-between;
       }
       .status-block h3 {
-        margin: 0 0 0.26rem 0;
-        font-size: 0.7rem;
+        margin: 0 0 0.28rem 0;
+        font-size: 0.71rem;
+        font-weight: 900;
         text-transform: uppercase;
-        letter-spacing: 0.03em;
-        color: var(--text-light);
+        letter-spacing: 0.04em;
+        color: var(--text);
         border-bottom: 1px solid var(--border);
-        padding-bottom: 0.18rem;
+        padding-bottom: 0.2rem;
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -1102,14 +1152,14 @@
         margin-bottom: 0;
       }
       .tl-label {
-        font-weight: 600;
+        font-weight: 700;
         color: var(--text);
         white-space: nowrap;
       }
       .tl-right {
         display: flex;
         align-items: center;
-        gap: 0.32rem;
+        gap: 0.34rem;
         text-align: right;
       }
       .tl-meta {
@@ -1119,54 +1169,60 @@
         line-height: 1.08;
       }
       .tl-next {
-        font-size: 0.66rem;
+        font-size: 0.67rem;
         color: var(--text);
-        font-weight: 700;
+        font-weight: 800;
       }
       .tl-countdown {
         font-size: 0.6rem;
         color: var(--text-light);
-        font-weight: 600;
+        font-weight: 700;
       }
 
+      /* FEUX DE SIGNALISATION MARITIMES (LENTILLES DE FRESNEL) */
       .light {
-        width: 11px;
-        height: 11px;
+        width: 12px;
+        height: 12px;
         border-radius: 50%;
         display: inline-block;
-        background: #64748b;
+        background: #334155;
+        border: 1.5px solid #1e293b;
         flex-shrink: 0;
+        box-shadow: inset 0 1px 2px rgba(0,0,0,0.8);
       }
       .light.green {
-        background: #10b981;
-        box-shadow: 0 0 10px #10b981;
-        animation: pulse-green 2s infinite;
+        background: radial-gradient(circle at 35% 35%, #ffffff 0%, #00f59b 50%, #059669 100%);
+        border-color: #00f59b;
+        box-shadow: 0 0 12px #00f59b, inset 0 0 4px #ffffff;
+        animation: pulse-green 1.8s infinite;
       }
       .light.red {
-        background: #ef4444;
-        box-shadow: 0 0 10px #ef4444;
-        animation: pulse-red 2s infinite;
+        background: radial-gradient(circle at 35% 35%, #ffffff 0%, #ff3366 50%, #dc2626 100%);
+        border-color: #ff3366;
+        box-shadow: 0 0 12px #ff3366, inset 0 0 4px #ffffff;
+        animation: pulse-red 1.8s infinite;
       }
       .light.amber {
-        background: #fbbf24;
-        box-shadow: 0 0 10px #fbbf24;
-        animation: pulse-amber 2s infinite;
+        background: radial-gradient(circle at 35% 35%, #ffffff 0%, #ffb300 50%, #d97706 100%);
+        border-color: #ffb300;
+        box-shadow: 0 0 12px #ffb300, inset 0 0 4px #ffffff;
+        animation: pulse-amber 1.8s infinite;
       }
 
       @keyframes pulse-green {
-        0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-        70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        0% { box-shadow: 0 0 0 0 rgba(0, 245, 155, 0.7); }
+        70% { box-shadow: 0 0 0 6px rgba(0, 245, 155, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(0, 245, 155, 0); }
       }
       @keyframes pulse-red {
-        0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
-        70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        0% { box-shadow: 0 0 0 0 rgba(255, 51, 102, 0.7); }
+        70% { box-shadow: 0 0 0 6px rgba(255, 51, 102, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(255, 51, 102, 0); }
       }
       @keyframes pulse-amber {
-        0% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.7); }
-        70% { box-shadow: 0 0 0 6px rgba(251, 191, 36, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0); }
+        0% { box-shadow: 0 0 0 0 rgba(255, 179, 0, 0.7); }
+        70% { box-shadow: 0 0 0 6px rgba(255, 179, 0, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(255, 179, 0, 0); }
       }
 
       /* Résumé des prochaines marées (Extrema strip) */
@@ -1179,15 +1235,17 @@
       .extrema-pill {
         background: var(--surface-subtle);
         border: 1px solid var(--border);
-        border-radius: 0.38rem;
-        padding: 0.2rem 0.32rem;
+        border-top: 2px solid var(--valero-teal);
+        border-radius: 3px;
+        padding: 0.22rem 0.34rem;
         text-align: center;
         line-height: 1.15;
       }
       .extrema-pill .ep-type {
         font-size: 0.59rem;
-        font-weight: 800;
+        font-weight: 900;
         text-transform: uppercase;
+        letter-spacing: 0.04em;
       }
       .extrema-pill .ep-time {
         font-size: 0.72rem;
@@ -1195,19 +1253,19 @@
         color: var(--text);
       }
       .extrema-pill .ep-lvl {
-        font-size: 0.66rem;
+        font-size: 0.67rem;
         color: var(--accent);
-        font-weight: 700;
+        font-weight: 800;
       }
 
-      /* --- MODALS --- */
+      /* --- MODALS (FENÊTRES SCADA DE MANŒUVRE & CALCUL) --- */
       .modal-overlay {
         position: fixed;
         top: 0;
         left: 0;
         width: 100vw;
         height: 100vh;
-        background: rgba(2, 6, 23, 0.72);
+        background: rgba(2, 6, 23, 0.78);
         backdrop-filter: blur(8px);
         -webkit-backdrop-filter: blur(8px);
         display: none;
@@ -1222,15 +1280,16 @@
 
       .modal-content {
         background: var(--card-bg-solid);
-        border: 1px solid var(--border-strong);
-        border-radius: 0.85rem;
+        border: 2px solid var(--border-strong);
+        border-top: 3px solid var(--valero-teal);
+        border-radius: 6px;
         width: 95%;
-        max-width: 460px;
+        max-width: 480px;
         max-height: 92vh;
         display: flex;
         flex-direction: column;
-        padding: 1.25rem;
-        box-shadow: var(--shadow-lg);
+        padding: 1.15rem;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255,255,255,0.08);
         color: var(--text);
         overflow: hidden;
       }
@@ -1239,15 +1298,17 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        border-bottom: 1px solid var(--border);
+        border-bottom: 2px solid var(--valero-gold);
         padding-bottom: 0.75rem;
         margin-bottom: 0.9rem;
         flex-shrink: 0;
       }
       .modal-header h3 {
         margin: 0;
-        font-size: 1.15rem;
-        font-weight: 800;
+        font-size: 1.12rem;
+        font-weight: 900;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
         color: var(--text);
       }
 
@@ -1262,7 +1323,7 @@
         border: 1px solid var(--border);
         width: 32px;
         height: 32px;
-        border-radius: 0.45rem;
+        border-radius: 4px;
         font-size: 1rem;
         cursor: pointer;
         color: var(--text-light);
@@ -1292,7 +1353,7 @@
       .input-group textarea {
         width: 100%;
         padding: 0.52rem 0.65rem;
-        border-radius: 0.45rem;
+        border-radius: 4px;
         border: 1px solid var(--border-strong);
         background: var(--input-bg);
         color: var(--text);
@@ -1310,24 +1371,29 @@
         padding: 0.68rem 1rem;
         background: var(--valero-teal);
         color: #ffffff;
-        border: none;
-        border-radius: 0.5rem;
+        border: 1px solid var(--valero-gold);
+        border-radius: 4px;
         font-size: 0.92rem;
-        font-weight: 800;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
         cursor: pointer;
         transition: all 0.2s;
+        box-shadow: 0 4px 14px var(--accent-glow);
       }
       .btn-calc:hover {
         background: var(--valero-navy);
         transform: translateY(-1px);
+        box-shadow: 0 6px 18px var(--accent-glow);
       }
 
       .calc-results {
         margin-top: 1rem;
         padding: 0.9rem;
         background: var(--surface-subtle);
-        border-radius: 0.6rem;
+        border-radius: 4px;
         border: 1px solid var(--border);
+        border-left: 3px solid var(--valero-gold);
       }
       .res-item {
         display: flex;
@@ -1340,9 +1406,10 @@
         padding-top: 0.45rem;
         border-top: 1px dashed var(--border);
         font-size: 1.02rem;
+        font-weight: 900;
       }
 
-      /* --- MODE CINÉMA (HIDE UI) & COMPASS & BATTLE SIM --- */
+      /* --- MODE CINÉMA (HIDE UI) & GYROCOMPAS & BATTLE SIM --- */
       body.hide-ui .main-dashboard {
         visibility: hidden;
         pointer-events: none;
@@ -1363,14 +1430,9 @@
         left: 0;
         width: 100%;
         z-index: 1005 !important;
-        background: rgba(15, 23, 42, 0.55) !important;
+        background: rgba(8, 20, 36, 0.75) !important;
       }
 
-      #battle-sim-btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.35rem;
-      }
 
       #compass-container {
         display: none;
@@ -1380,13 +1442,13 @@
         transform: translateX(-50%);
         width: 320px;
         height: 36px;
-        background: rgba(15, 23, 42, 0.76);
-        border: 1px solid rgba(255, 255, 255, 0.22);
-        border-radius: 20px;
+        background: rgba(6, 16, 28, 0.88);
+        border: 1px solid rgba(56, 189, 248, 0.4);
+        border-radius: 4px;
         overflow: hidden;
         z-index: 19;
-        backdrop-filter: blur(6px);
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.35);
+        backdrop-filter: blur(8px);
+        box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5);
         pointer-events: none;
       }
       #compass-container.visible,
@@ -1439,7 +1501,7 @@
         z-index: 2;
       }
 
-      /* --- ÉDITEUR DE QUART DE TRAVAIL RICHE --- */
+      /* --- ÉDITEUR DE QUART DE TRAVAIL RICHE (LOGBOOK OFFICIEL) --- */
       .rich-editor-toolbar {
         display: flex;
         flex-wrap: wrap;
@@ -1448,16 +1510,16 @@
         background: var(--surface-subtle);
         border: 1px solid var(--border-strong);
         border-bottom: none;
-        border-radius: 0.5rem 0.5rem 0 0;
+        border-radius: 4px 4px 0 0;
       }
       .rich-editor-btn {
         background: var(--card-bg);
         border: 1px solid var(--border);
         color: var(--text);
         padding: 0.25rem 0.55rem;
-        border-radius: 0.35rem;
+        border-radius: 3px;
         font-size: 0.76rem;
-        font-weight: 700;
+        font-weight: 800;
         cursor: pointer;
       }
       .rich-editor-btn:hover {
@@ -1470,7 +1532,7 @@
         overflow-y: auto;
         padding: 1rem;
         border: 1px solid var(--border-strong);
-        border-radius: 0 0 0.5rem 0.5rem;
+        border-radius: 0 0 4px 4px;
         background: var(--input-bg);
         color: var(--text);
         font-size: 0.9rem;
@@ -1480,11 +1542,14 @@
       .rich-editor-surface h3 {
         color: var(--accent);
         margin-bottom: 0.4rem;
+        font-weight: 900;
+        text-transform: uppercase;
       }
       .rich-editor-surface h4 {
         margin-top: 0.75rem;
         margin-bottom: 0.25rem;
         color: var(--text);
+        font-weight: 800;
       }
       .rich-editor-surface ul {
         padding-left: 1.35rem;
@@ -1517,15 +1582,11 @@
         z-index: 4 !important;
         pointer-events: none;
       }
-      #animation-window.mode-3d-active #battle-container,
-      #animation-window.mode-3d-active #battle-fx {
-        z-index: 12 !important;
-      }
       .hud-pill-btn.active-cam {
-        background: rgba(14, 165, 233, 0.85) !important;
+        background: rgba(14, 165, 233, 0.88) !important;
         border-color: #7dd3fc !important;
         color: #ffffff !important;
-        box-shadow: 0 0 10px rgba(56, 189, 248, 0.45);
+        box-shadow: 0 0 12px rgba(56, 189, 248, 0.5);
       }
 
       /* Responsive */
@@ -1550,6 +1611,76 @@
         .card {
           min-height: 360px;
         }
+      }
+    
+      /* --- WIDGET ET MODAL BRAS DE CHARGEMENT CHIKSAN (PALIER 12 POUCES) --- */
+      .arms-widget-container {
+        transition: all 0.25s ease;
+      }
+      .arms-widget-container.alert-imminent {
+        border-color: #f59e0b !important;
+        box-shadow: 0 0 10px rgba(245, 158, 11, 0.45);
+      }
+      .arms-widget-container.alert-overdue {
+        border-color: #ef4444 !important;
+        box-shadow: 0 0 14px rgba(239, 68, 68, 0.65);
+        animation: armsPulseAlert 1.5s infinite;
+      }
+      @keyframes armsPulseAlert {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+        50% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+      }
+      .arms-thresh-btn {
+        padding: 0.16rem 0.38rem;
+        font-size: 0.68rem;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      .arms-thresh-btn.active {
+        background: var(--valero-teal) !important;
+        color: #ffffff !important;
+        border-color: var(--valero-gold) !important;
+        font-weight: 900;
+      }
+      /* --- SIMULATEUR DE MANOEUVRES DE REMORQUAGE (GROUPE OCEAN) --- */
+      .tug-maneuver-hud {
+        position: absolute;
+        bottom: 8px;
+        left: 8px;
+        right: 8px;
+        z-index: 35;
+        background: rgba(10, 20, 35, 0.92);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid var(--border-strong);
+        border-left: 3px solid var(--accent);
+        border-radius: 4px;
+        padding: 0.4rem 0.65rem;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.55);
+        transition: opacity 0.25s ease, transform 0.25s ease;
+      }
+      .tug-maneuver-hud.minimized {
+        display: none !important;
+      }
+      .tug-action-btn {
+        background: rgba(14, 165, 233, 0.2);
+        color: #38bdf8;
+        border: 1px solid #38bdf8;
+        border-radius: 3px;
+        font-size: 0.66rem;
+        font-weight: 700;
+        padding: 0.18rem 0.48rem;
+        cursor: pointer;
+        transition: all 0.15s ease;
+      }
+      .tug-action-btn:hover {
+        background: #0284c7;
+        color: #fff;
+      }
+      .tug-action-btn.active {
+        background: #0284c7;
+        color: #fff;
+        border-color: #38bdf8;
       }
     </style>
   </head>
@@ -1631,6 +1762,10 @@
         <button id="template-toggle" class="theme-toggle" title="Template Quart de Travail (Sections 86, 87 &amp; Divers)">
           📝 Template
         </button>
+                <!-- ESTIMATEUR & TIMER BRAS DE CHARGEMENT (PALIER 12") -->
+        <button id="loading-arms-toggle" class="theme-toggle" style="border-color: #00f59b; font-weight: 800; display: inline-flex; align-items: center; gap: 0.35rem" title="Minuterie & Estimateur d'Ajustement des Bras de Chargement (Palier 12 pouces)">
+          &#x23F1;&#xFE0F; Bras 12": <span id="hdr-arms-time" class="mono" style="color: #00f59b;">--:--</span>
+        </button>
         <button id="pwa-install-btn" class="theme-toggle" style="border-color: #10b981; color: #10b981; font-weight: 700; display: inline-flex; align-items: center; gap: 0.35rem" title="Installer l'application sur Android (WebAPK)">
           📲 Installer l'App
         </button>
@@ -1697,12 +1832,7 @@
               <button id="compass-toggle-btn" class="theme-toggle" title="Afficher/Masquer le ruban de boussole">
                 🧭 Boussole
               </button>
-              <button id="battle-sim-btn" class="theme-toggle" title="Mini-jeu : Défense du pétrolier Cap Quebec">
-                🎮 Defense
-              </button>
-              <button id="sensor-toggle" class="theme-toggle" style="display: none">
-                📱 Capteur: OFF
-              </button>
+              <button id="tug-sim-toggle-btn" class="theme-toggle" title="Afficher/Masquer le panneau de manœuvre des remorqueurs">🚤 Tugs</button>
               <button id="left-split-ratio-btn" class="theme-toggle" title="Ajuster la répartition verticale 360° / Carte">
                 ⇕ Ratio
               </button>
@@ -1747,7 +1877,7 @@
 
             <!-- BARRE DE RACCOURCIS AZIMUT (LANDMARKS 3D) -->
             <div class="viewport-landmarks-bar">
-              <button type="button" class="landmark-jump-btn active" data-target-az="135" data-target-alt="-8">
+              <button type="button" class="landmark-jump-btn active" data-target-az="128" data-target-alt="-8">
                 🚢 Quai Valero (135°)
               </button>
               <button type="button" class="landmark-jump-btn" data-target-az="150" data-target-alt="-5">
@@ -1777,6 +1907,41 @@
               <button type="button" class="landmark-jump-btn" data-target-az="88" data-target-alt="-5">
                 🏗️ Chantier Davie (88°)
               </button>
+            </div>
+                        <!-- PANNEAU TACTIQUE MANŒUVRES DE REMORQUAGE GROUPE OCÉAN -->
+            <div id="tug-maneuver-hud" class="tug-maneuver-hud">
+              <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 0.4rem;">
+                  <span style="font-size: 0.74rem; font-weight: 900; letter-spacing: 0.03em; color: var(--text);">⚓ MANŒUVRES GROUPE OCÉAN</span>
+                  <span id="tug-status-pill" class="badge mono" style="font-size: 0.62rem; background: rgba(16, 185, 129, 0.2); color: #10b981; padding: 0.08rem 0.32rem;">À QUAI (SEC. 87)</span>
+                </div>
+                <div style="display: flex; gap: 0.28rem; align-items: center; flex-wrap: wrap;">
+                  <button type="button" id="btn-maneuver-arrive" class="tug-action-btn" title="Faire arriver le navire assisté des remorqueurs">
+                    🚢 Faire Arriver (Accostage)
+                  </button>
+                  <button type="button" id="btn-maneuver-depart" class="tug-action-btn" title="Faire appareiller le navire assisté des remorqueurs">
+                    🚢 Faire Partir (Appareillage)
+                  </button>
+                  <button type="button" id="btn-maneuver-reset" class="theme-toggle" style="padding: 0.16rem 0.42rem; font-size: 0.65rem;" title="Réinitialiser le navire amarré à quai">
+                    ⏹️ À quai
+                  </button>
+                  <button type="button" id="btn-maneuver-cam" class="theme-toggle" style="padding: 0.16rem 0.42rem; font-size: 0.65rem;" title="Activer/Désactiver la caméra poursuite manœuvre">
+                    🎥 Suivi Tugs
+                  </button>
+                  <button type="button" id="btn-maneuver-close" class="btn-close" style="font-size: 0.68rem; padding: 0.1rem 0.3rem;" title="Masquer le panneau">✕</button>
+                </div>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.22rem; font-size: 0.66rem;">
+                <div id="tug-narrative-lbl" class="mono" style="color: var(--accent); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80%;">
+                  Cap Québec amarré à la Section 87 • Remorqueurs Océan Taiga &amp; K. Rusby en veille
+                </div>
+                <div id="tug-speed-readout" class="mono" style="color: var(--text-light); font-size: 0.62rem; font-weight: 700;">
+                  0.0 nds
+                </div>
+              </div>
+              <div id="tug-progress-container" style="height: 3px; background: rgba(3, 10, 20, 0.7); border-radius: 2px; overflow: hidden; margin-top: 0.25rem; border: 1px solid var(--border); display: none;">
+                <div id="tug-progress-bar" style="height: 100%; width: 0%; background: linear-gradient(90deg, #38bdf8, #10b981); transition: width 0.1s linear;"></div>
+              </div>
             </div>
             <canvas id="webgl-3d-canvas" class="webgl-3d-canvas"></canvas>
             <div id="dynamic-bg" class="dynamic-bg"></div>
@@ -11322,16 +11487,6 @@
     </div>
 
     <canvas id="weather-fx" class="weather-fx"></canvas>
-    <!-- battle-sim-btn moved to card header -->
-    <div id="battle-container">
-      <canvas id="battle-fx"></canvas>
-      <div id="battle-enemies"></div>
-      <div id="battle-hud">
-        <div>SCORE: <span id="game-score">0</span></div>
-        <div>AMMO: <span id="game-ammo">30</span>/30</div>
-        <div>HEALTH: <span id="game-health">5.0</span>/5</div>
-      </div>
-    </div>
 
     <div id="boat-container" class="boat-container">
       <!-- Cap Quebec Suezmax Tanker (Highly Detailed) -->
@@ -11541,31 +11696,6 @@
         <line x1="65" y1="5" x2="85" y2="5" stroke="#cbd5e1" stroke-width="2" />
         <!-- Spinning Radar Effect handled via CSS would be cool, but static is fine -->
 
-        <!-- Defense Turret (Midship) - Kept for the mini-game -->
-        <g id="boat-turret" transform="translate(400, 110)">
-          <!-- Turret Base -->
-          <circle
-            cx="0"
-            cy="0"
-            r="12"
-            fill="#334155"
-            stroke="#1e293b"
-            stroke-width="2"
-          />
-          <circle cx="0" cy="0" r="6" fill="#475569" />
-          <!-- Turret Barrel group (rotates) -->
-          <g id="turret-barrel">
-            <rect
-              x="-4"
-              y="-35"
-              width="8"
-              height="35"
-              fill="#cbd5e1"
-              stroke="#1e293b"
-              stroke-width="1.5"
-            />
-          </g>
-        </g>
         <g class="whitecaps" style="opacity: 0">
           <use
             xlink:href="#steep-wave"
@@ -12110,6 +12240,45 @@
                     </div>
                     <span class="light" id="tl-sec87-large"></span>
                   </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- WIDGET ESTIMATEUR & MINUTERIE BRAS DE CHARGEMENT CHIKSAN (12 POUCES) -->
+            <div id="arms-widget" class="arms-widget-container" style="background: var(--surface-subtle); border: 1px solid var(--border-strong); border-left: 3px solid var(--valero-gold); border-radius: 4px; padding: 0.36rem 0.52rem; display: flex; flex-direction: column; gap: 0.28rem; margin-top: 0.35rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 0.22rem;">
+                <div style="display: flex; align-items: center; gap: 0.35rem;">
+                  <span style="font-size: 0.72rem; font-weight: 900; letter-spacing: 0.03em; color: var(--text);">&#x23F1;&#xFE0F; BRAS 12" (CHIKSAN)</span>
+                  <span id="arms-mode-pill" class="badge mono" style="font-size: 0.62rem; background: rgba(56, 189, 248, 0.2); color: #38bdf8; padding: 0.08rem 0.32rem;">D&Eacute;CHARGE</span>
+                </div>
+                <div style="display: flex; gap: 0.25rem; align-items: center;">
+                  <button type="button" id="arms-quick-reset-btn" class="theme-toggle" style="padding: 0.12rem 0.45rem; font-size: 0.65rem; background: rgba(16, 185, 129, 0.2); color: #10b981; border-color: #10b981; font-weight: 800;" title="Réinitialiser le palier après avoir ajusté les bras au quai">
+                    &#x2705; Ajust&eacute; (Reset)
+                  </button>
+                  <button type="button" id="arms-config-btn" class="theme-toggle" style="padding: 0.12rem 0.4rem; font-size: 0.65rem;" title="Ouvrir la configuration complète de l'estimateur de bras">
+                    &#x2699;&#xFE0F;
+                  </button>
+                </div>
+              </div>
+
+              <!-- Jauge de débattement et compte à rebours -->
+              <div style="display: grid; grid-template-columns: 1fr auto; gap: 0.5rem; align-items: center;">
+                <div>
+                  <div style="display: flex; justify-content: space-between; font-size: 0.66rem; font-weight: 700; margin-bottom: 0.15rem;">
+                    <span id="arms-displacement-lbl" class="mono" style="color: var(--text);">Course: <strong id="arms-current-disp" style="font-size: 0.74rem;">0.0"</strong> / 12.0"</span>
+                    <span id="arms-rate-lbl" class="mono" style="color: var(--text-light); font-size: 0.63rem;">+0.0 po/h &#9650;</span>
+                  </div>
+                  <!-- Barre de progression 0 à 12 pouces -->
+                  <div style="height: 7px; background: rgba(3, 10, 20, 0.6); border-radius: 3px; overflow: hidden; border: 1px solid var(--border); position: relative;">
+                    <div id="arms-progress-fill" style="height: 100%; width: 0%; background: linear-gradient(90deg, #10b981, #f59e0b); transition: width 0.3s ease, background 0.3s ease;"></div>
+                  </div>
+                </div>
+
+                <!-- Timer compte à rebours numérique -->
+                <div style="text-align: right; min-width: 90px; line-height: 1.1;">
+                  <div style="font-size: 0.58rem; color: var(--text-light); text-transform: uppercase; font-weight: 700;">PROCHAINE SORTIE</div>
+                  <div id="arms-countdown-timer" class="mono" style="font-size: 0.88rem; font-weight: 900; color: #00f59b; letter-spacing: 0.02em;">--:--:--</div>
+                  <div id="arms-eta-time" class="mono" style="font-size: 0.62rem; color: var(--text-muted); font-weight: 700;">&agrave; --:--</div>
                 </div>
               </div>
             </div>
@@ -12725,6 +12894,217 @@
             <!-- Fiche de Contexte Opérationnel et Maritime (Beaufort, Règles Valero, Navires MR2) -->
             <div id="conv-context-box" style="background: var(--surface-subtle); border-radius: 0.5rem; padding: 0.75rem 0.95rem; border-left: 3px solid #38bdf8; font-size: 0.75rem; color: var(--text-light); line-height: 1.45">
               <!-- Dynamiquement peuplé selon la catégorie choisie -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- MODAL ESTIMATEUR & MINUTERIE AJUSTEMENT DES BRAS DE CHARGEMENT CHIKSAN -->
+    <div id="loading-arms-modal" class="modal-overlay">
+      <div class="modal-content" style="max-width: 680px; width: 96%; max-height: 92vh; display: flex; flex-direction: column;">
+        <div class="modal-header">
+          <div style="display: flex; align-items: center; gap: 0.6rem;">
+            <h3>⏱️ Ajustement des Bras de Chargement</h3>
+            <span class="badge mono" style="font-size: 0.7rem; background: rgba(0, 128, 157, 0.2); color: var(--accent);">Palier 12" • Quai Valero</span>
+          </div>
+          <button id="close-loading-arms" class="btn-close" type="button">✕</button>
+        </div>
+
+        <div class="modal-body" style="overflow-y: auto; flex: 1; padding-right: 4px; display: flex; flex-direction: column; gap: 0.85rem;">
+          <!-- Bandeau Statut Immédiat & Compte à Rebours Géant -->
+          <div style="background: var(--surface-subtle); border-radius: 6px; padding: 0.85rem 1rem; border: 1px solid var(--border-strong); border-left: 4px solid var(--valero-gold); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.8rem;">
+            <div>
+              <div style="font-size: 0.72rem; text-transform: uppercase; font-weight: 800; color: var(--text-light); letter-spacing: 0.04em;">Temps restant avant palier de débattement :</div>
+              <div id="modal-arms-timer" class="mono" style="font-size: 1.85rem; font-weight: 900; color: #00f59b; line-height: 1.15; margin: 0.15rem 0;">--:--:--</div>
+              <div style="font-size: 0.74rem; font-weight: 700; color: var(--text);">
+                Prochaine sortie au quai requise à : <span id="modal-arms-target-time" class="mono" style="color: var(--accent); font-weight: 900;">--:--</span>
+              </div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 0.4rem; align-items: flex-end;">
+              <button type="button" id="modal-arms-reset-btn" class="btn-calc" style="padding: 0.5rem 1.1rem; font-size: 0.84rem; background: #059669; border-color: #10b981; display: inline-flex; align-items: center; gap: 0.4rem;">
+                ✅ BRAS AJUSTÉS (RESET 0")
+              </button>
+              <div style="display: flex; gap: 0.4rem; align-items: center;">
+                <label style="font-size: 0.68rem; font-weight: 700; color: var(--text-light); display: flex; align-items: center; gap: 0.3rem; cursor: pointer;">
+                  <input type="checkbox" id="arms-sound-alert-cb" checked style="accent-color: var(--accent);" />
+                  🔔 Alarme sonore
+                </label>
+                <button type="button" id="arms-sound-test-btn" class="theme-toggle" style="padding: 0.12rem 0.38rem; font-size: 0.64rem;">Test bip</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Jauge Graphique de Course des Bras (0 à 12 pouces) -->
+          <div style="background: var(--surface-subtle); border-radius: 6px; padding: 0.75rem 0.9rem; border: 1px solid var(--border);">
+            <div style="display: flex; justify-content: space-between; font-size: 0.74rem; font-weight: 800; margin-bottom: 0.35rem;">
+              <span>Débattement cumulé depuis dernier réglage :</span>
+              <span id="modal-arms-disp-readout" class="mono" style="font-size: 0.82rem; color: var(--text);">0.0 po / 12.0 po (0.0 cm)</span>
+            </div>
+            <!-- Barre de jauge -->
+            <div style="height: 14px; background: rgba(3, 10, 20, 0.7); border-radius: 4px; overflow: hidden; border: 1px solid var(--border-strong); position: relative;">
+              <!-- Graduations 3", 6", 9", 12" -->
+              <div style="position: absolute; left: 25%; top: 0; bottom: 0; width: 1px; background: rgba(255,255,255,0.25); z-index: 2;"></div>
+              <div style="position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: rgba(255,255,255,0.25); z-index: 2;"></div>
+              <div style="position: absolute; left: 75%; top: 0; bottom: 0; width: 1px; background: rgba(255,255,255,0.25); z-index: 2;"></div>
+              <div id="modal-arms-bar-fill" style="height: 100%; width: 0%; background: linear-gradient(90deg, #10b981, #f59e0b 70%, #ef4444 95%); transition: width 0.3s ease;"></div>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.62rem; color: var(--text-muted); font-weight: 700; margin-top: 0.2rem;" class="mono">
+              <span>0" (Réglé)</span>
+              <span>3"</span>
+              <span>6" (Mi-course)</span>
+              <span>9" (Alerte)</span>
+              <span style="color: #ef4444;">12" (SEUIL REQUIS)</span>
+            </div>
+          </div>
+
+          <!-- Configuration : Déchargement vs Chargement & Paramètres -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+            <!-- Colonne Gauche : Opération & Section -->
+            <div style="display: flex; flex-direction: column; gap: 0.65rem; background: var(--surface-subtle); padding: 0.75rem; border-radius: 5px; border: 1px solid var(--border);">
+              <h4 style="margin: 0; font-size: 0.78rem; font-weight: 800; text-transform: uppercase; color: var(--accent); letter-spacing: 0.03em;">
+                1. Type d'Opération Navire
+              </h4>
+              
+              <!-- Boutons Choix Opération : Déchargement / Chargement / Pause -->
+              <div style="display: flex; flex-direction: column; gap: 0.35rem;">
+                <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 700; color: var(--text); cursor: pointer; padding: 0.3rem 0.5rem; border-radius: 4px; border: 1px solid var(--border); background: var(--card-bg-solid);">
+                  <input type="radio" name="arms-op-type" value="discharge" checked style="accent-color: #38bdf8;" />
+                  <span>🔵 <strong>Déchargement</strong> — Navire monte (déjauge)</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 700; color: var(--text); cursor: pointer; padding: 0.3rem 0.5rem; border-radius: 4px; border: 1px solid var(--border); background: var(--card-bg-solid);">
+                  <input type="radio" name="arms-op-type" value="load" style="accent-color: #ef4444;" />
+                  <span>🔴 <strong>Chargement</strong> — Navire calle (s'enfonce)</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 700; color: var(--text); cursor: pointer; padding: 0.3rem 0.5rem; border-radius: 4px; border: 1px solid var(--border); background: var(--card-bg-solid);">
+                  <input type="radio" name="arms-op-type" value="idle" style="accent-color: #94a3b8;" />
+                  <span>⚪ <strong>À quai / Pause</strong> — Marée seule</span>
+                </label>
+              </div>
+
+              <!-- Choix Section de Quai -->
+              <div style="margin-top: 0.2rem;">
+                <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-light); margin-bottom: 0.2rem; display: block;">Poste à quai :</label>
+                <div style="display: flex; gap: 0.4rem;">
+                  <button type="button" id="arms-sec87-btn" class="theme-toggle active" style="flex: 1; padding: 0.24rem 0.45rem; font-size: 0.72rem; font-weight: 800; justify-content: center;">
+                    Section 87 (Valero)
+                  </button>
+                  <button type="button" id="arms-sec86-btn" class="theme-toggle" style="flex: 1; padding: 0.24rem 0.45rem; font-size: 0.72rem; font-weight: 800; justify-content: center;">
+                    Section 86 (Chimiquiers)
+                  </button>
+                </div>
+              </div>
+
+              <!-- Seuil de débattement en pouces -->
+              <div style="margin-top: 0.2rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.2rem;">
+                  <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-light);">Palier de réajustement :</label>
+                  <span id="arms-threshold-val-lbl" class="mono" style="font-size: 0.74rem; font-weight: 900; color: var(--valero-gold);">12.0 po (30.5 cm)</span>
+                </div>
+                <div style="display: flex; gap: 0.25rem;">
+                  <button type="button" class="theme-toggle arms-thresh-btn" data-thresh="6">6 po</button>
+                  <button type="button" class="theme-toggle arms-thresh-btn" data-thresh="8">8 po</button>
+                  <button type="button" class="theme-toggle arms-thresh-btn" data-thresh="10">10 po</button>
+                  <button type="button" class="theme-toggle arms-thresh-btn active" data-thresh="12">12 po</button>
+                  <button type="button" class="theme-toggle arms-thresh-btn" data-thresh="15">15 po</button>
+                  <button type="button" class="theme-toggle arms-thresh-btn" data-thresh="18">18 po</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Colonne Droite : Débit, Navire & Taux de Déplacement -->
+            <div style="display: flex; flex-direction: column; gap: 0.65rem; background: var(--surface-subtle); padding: 0.75rem; border-radius: 5px; border: 1px solid var(--border);">
+              <h4 style="margin: 0; font-size: 0.78rem; font-weight: 800; text-transform: uppercase; color: var(--accent); letter-spacing: 0.03em;">
+                2. Gabarit du Navire &amp; Débit
+              </h4>
+
+              <!-- Préréglages Navires -->
+              <div>
+                <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-light); margin-bottom: 0.2rem; display: block;">Type / Gabarit navire :</label>
+                <select id="arms-vessel-preset" class="weather-select" style="width: 100%; font-size: 0.75rem; padding: 0.32rem 0.5rem;">
+                  <option value="suezmax" selected>Suezmax / Cap Québec (~150k DWT — TPC 105 t/cm)</option>
+                  <option value="aframax">Aframax / LR2 (~110k DWT — TPC 85 t/cm)</option>
+                  <option value="panamax">Panamax / LR1 (~75k DWT — TPC 65 t/cm)</option>
+                  <option value="mr2">MR2 Product (~50k DWT — TPC 52 t/cm)</option>
+                  <option value="mr1">MR1 Product (~37k DWT — TPC 45 t/cm)</option>
+                  <option value="barge">Barge pétrolière (~10k DWT — TPC 22 t/cm)</option>
+                  <option value="custom">Personnalisé (Saisie manuelle)</option>
+                </select>
+              </div>
+
+              <!-- Débit de pompage (m3/h) -->
+              <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.2rem;">
+                  <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-light);">Débit de transfert moyen :</label>
+                  <span id="arms-rate-equiv-lbl" class="mono" style="font-size: 0.68rem; color: var(--accent);">~2 125 t/h</span>
+                </div>
+                <div style="display: flex; gap: 0.35rem; align-items: center;">
+                  <input type="number" id="arms-pumping-rate" value="2500" step="100" min="50" max="15000" class="weather-search-input" style="flex: 1; font-weight: 800; font-family: monospace; font-size: 0.8rem;" />
+                  <select id="arms-pumping-unit" class="weather-select" style="font-size: 0.72rem;">
+                    <option value="m3h" selected>m³/h</option>
+                    <option value="bblh">bbl/h</option>
+                    <option value="th">t/h</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Taux calculé navire -->
+              <div style="background: var(--card-bg-solid); padding: 0.45rem 0.6rem; border-radius: 4px; border: 1px solid var(--border); font-size: 0.72rem; display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-weight: 700; color: var(--text-light);">Vitesse navire estimée :</span>
+                <span id="arms-vessel-speed-lbl" class="mono" style="font-weight: 900; color: var(--text);">+20.2 cm/h (+8.0 po/h)</span>
+              </div>
+
+              <!-- Bilan combiné actuel avec la marée de Lauzon -->
+              <div style="background: rgba(0, 128, 157, 0.12); padding: 0.45rem 0.6rem; border-radius: 4px; border: 1px solid var(--valero-teal); font-size: 0.72rem; line-height: 1.35;">
+                <div style="font-weight: 800; color: var(--accent); margin-bottom: 0.15rem;">Bilan combiné actuel (Marée + Navire) :</div>
+                <div id="arms-breakdown-lbl" class="mono" style="font-size: 0.68rem; color: var(--text);">
+                  Marée : +0.0 cm/h | Navire : +20.2 cm/h<br>
+                  <strong>Total Débattement : +20.2 cm/h (+8.0 po/h ▲)</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tableau Prévisionnel des Ajustements du Quart (Planning 8h - 12h) -->
+          <div style="background: var(--surface-subtle); border-radius: 5px; padding: 0.75rem; border: 1px solid var(--border);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+              <h4 style="margin: 0; font-size: 0.76rem; font-weight: 800; text-transform: uppercase; color: var(--text);">
+                📅 Planning Prévisionnel des Ajustements sur le Quart
+              </h4>
+              <button type="button" id="arms-insert-template-btn" class="theme-toggle" style="padding: 0.16rem 0.48rem; font-size: 0.67rem; background: var(--valero-navy); color: var(--valero-gold); border-color: var(--valero-gold); font-weight: 800;">
+                📋 Insérer dans Template Quart
+              </button>
+            </div>
+            <div style="overflow-x: auto; max-height: 155px; border: 1px solid var(--border); border-radius: 4px; background: var(--card-bg-solid);">
+              <table style="width: 100%; border-collapse: collapse; font-size: 0.72rem;">
+                <thead>
+                  <tr style="background: var(--card-header-bg); border-bottom: 2px solid var(--valero-gold);">
+                    <th style="padding: 0.28rem 0.45rem;">Ajustement</th>
+                    <th style="padding: 0.28rem 0.45rem;">Heure Estimée</th>
+                    <th style="padding: 0.28rem 0.45rem;">Délai</th>
+                    <th style="padding: 0.28rem 0.45rem;">Niveau Marée</th>
+                    <th style="padding: 0.28rem 0.45rem;">Sens Course</th>
+                    <th style="padding: 0.28rem 0.45rem;">Course Cumulée</th>
+                  </tr>
+                </thead>
+                <tbody id="arms-schedule-tbody">
+                  <!-- Peuplé dynamiquement -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Historique des Ajustements de Bras effectués pendant le quart -->
+          <div style="background: var(--surface-subtle); border-radius: 5px; padding: 0.65rem 0.75rem; border: 1px solid var(--border);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.3rem;">
+              <span style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: var(--text-light);">
+                Historique des Réajustements Effectués (Ce Quart) :
+              </span>
+              <button type="button" id="arms-clear-history-btn" style="background: transparent; border: none; font-size: 0.65rem; color: #ef4444; cursor: pointer; text-decoration: underline;">
+                Effacer historique
+              </button>
+            </div>
+            <div id="arms-history-list" style="font-size: 0.71rem; color: var(--text); max-height: 80px; overflow-y: auto;" class="mono">
+              <span style="color: var(--text-muted); font-style: italic;">Aucun ajustement enregistré pour le moment.</span>
             </div>
           </div>
         </div>
@@ -21257,7 +21637,6 @@
       let viewFOV = 95;
       let viewAltitude = -8;
       let starsModeActive = false;
-      let sensorModeActive = false;
       window.mode3DActive = true;
 
       // --- GESTION DU THÈME (AUTO / NUIT / JOUR) ---
@@ -22910,7 +23289,7 @@
       if (hudResetCam) {
         hudResetCam.addEventListener("click", (e) => {
           e.stopPropagation();
-          camTargetAz = 135;
+          camTargetAz = 128;
           camTargetAlt = -5;
           viewFOV = 100;
         });
@@ -22987,67 +23366,6 @@
         });
       }
 
-      // Capteur Gyroscope Mobile
-      const sensorToggleBtn = document.getElementById("sensor-toggle");
-      if (
-        window.DeviceOrientationEvent &&
-        ("ontouchstart" in window || navigator.maxTouchPoints > 0) &&
-        sensorToggleBtn
-      ) {
-        sensorToggleBtn.style.display = "inline-flex";
-      }
-
-      function handleOrientation(event) {
-        if (!sensorModeActive) return;
-        let compass = event.webkitCompassHeading || Math.abs(event.alpha - 360);
-        if (compass !== undefined && compass !== null) viewAzimuth = compass;
-        if (event.beta !== null) {
-          let tilt = event.beta - 90;
-          viewAltitude = Math.max(-5, Math.min(85, tilt));
-        }
-      }
-
-      if (sensorToggleBtn) {
-        sensorToggleBtn.addEventListener("click", () => {
-          if (!sensorModeActive) {
-            if (
-              typeof DeviceOrientationEvent !== "undefined" &&
-              typeof DeviceOrientationEvent.requestPermission === "function"
-            ) {
-              DeviceOrientationEvent.requestPermission()
-                .then((permissionState) => {
-                  if (permissionState === "granted") {
-                    sensorModeActive = true;
-                    window.addEventListener(
-                      "deviceorientation",
-                      handleOrientation,
-                      true
-                    );
-                    sensorToggleBtn.textContent = "📱 Capteur: ON";
-                  }
-                })
-                .catch(console.error);
-            } else {
-              sensorModeActive = true;
-              window.addEventListener(
-                "deviceorientation",
-                handleOrientation,
-                true
-              );
-              sensorToggleBtn.textContent = "📱 Capteur: ON";
-            }
-          } else {
-            sensorModeActive = false;
-            window.removeEventListener(
-              "deviceorientation",
-              handleOrientation,
-              true
-            );
-            sensorToggleBtn.textContent = "📱 Capteur: OFF";
-            viewAltitude = -5;
-          }
-        });
-      }
 
       // Drag-to-pan 360° (uniquement à l'intérieur de #animation-window)
       if (animWinEl) {
@@ -23111,7 +23429,7 @@
               let dy = e.touches[0].clientY - e.touches[1].clientY;
               initialPinchDistance = Math.hypot(dx, dy);
               initialFOV = viewFOV;
-            } else if (e.touches.length === 1 && !sensorModeActive) {
+            } else if (e.touches.length === 1) {
               isDraggingSky = true;
               camTargetAz = null;
               camTargetAlt = null;
@@ -23136,8 +23454,7 @@
               viewFOV = Math.max(30, Math.min(120, initialFOV * scale));
             } else if (
               isDraggingSky &&
-              e.touches.length === 1 &&
-              !sensorModeActive
+              e.touches.length === 1
             ) {
               e.preventDefault();
               let dx = e.touches[0].clientX - startDragX;
@@ -23160,789 +23477,6 @@
         });
       }
 
-      // =========================================================================
-      // MINI-JEU : TANKER DEFENSE SIMULATOR ("START DEFENSE")
-      // =========================================================================
-      let battleSimActive = false;
-      let battleSimScore = 0;
-      let tankerHP = 100;
-      let maxTankerHP = 100;
-      let projectiles = [];
-      let enemies = [];
-      let particles = [];
-      let floatingTexts = [];
-      let powerups = [];
-      let lastEnemySpawn = 0;
-      let enemySpawnInterval = 3000;
-      let battleAnimId = null;
-
-      let rapidFireTimer = 0;
-      let tripleShotTimer = 0;
-      let lastFireTime = 0;
-      let isMouseDown = false;
-      let aimX = 0;
-      let aimY = 0;
-
-      const battleBtn = document.getElementById("battle-sim-btn");
-      const battleHud = document.getElementById("battle-hud");
-      const battleScoreEl = document.getElementById("game-score");
-      const battleAmmoEl = document.getElementById("game-ammo");
-      const battleHealthEl = document.getElementById("game-health");
-      const turretGroup = document.getElementById("boat-turret");
-      const turretBarrel = document.getElementById("turret-barrel");
-      const battleContainer = document.getElementById("battle-container");
-      const boatSvg = document.querySelector("#boat-container svg");
-
-      let battleCanvas = document.getElementById("battle-fx");
-      let bCtx = battleCanvas ? battleCanvas.getContext("2d") : null;
-
-      function resizeBattleCanvas() {
-        if (!battleCanvas) return;
-        battleCanvas.width = getAnimW();
-        battleCanvas.height = getAnimH();
-      }
-      window.addEventListener("resize", resizeBattleCanvas);
-      resizeBattleCanvas();
-
-      if (battleBtn) {
-        battleBtn.addEventListener("click", () => {
-          battleSimActive = !battleSimActive;
-          if (battleSimActive) {
-            document.body.classList.add("game-active");
-            battleBtn.innerHTML = "🛑 Stop Defense";
-            battleBtn.style.background = "#ef4444";
-            battleBtn.style.color = "white";
-            if (battleHud) battleHud.style.display = "block";
-            if (turretGroup) turretGroup.style.display = "block";
-            camTargetAz = 135;
-            camTargetAlt = -5;
-            startBattleSim();
-          } else {
-            stopBattleSim();
-          }
-        });
-      }
-
-      function startBattleSim() {
-        resizeBattleCanvas();
-        battleSimScore = 0;
-        tankerHP = 100;
-        projectiles = [];
-        enemies = [];
-        particles = [];
-        floatingTexts = [];
-        powerups = [];
-        enemySpawnInterval = 2500;
-        rapidFireTimer = 0;
-        tripleShotTimer = 0;
-        updateBattleHUD();
-        lastEnemySpawn = performance.now();
-        if (battleAnimId) cancelAnimationFrame(battleAnimId);
-        battleLoop(performance.now());
-      }
-
-      function stopBattleSim() {
-        battleSimActive = false;
-        isMouseDown = false;
-        document.body.classList.remove("game-active");
-        if (battleBtn) {
-          battleBtn.innerHTML = "🎮 Start Defense";
-          battleBtn.style.background = "";
-          battleBtn.style.color = "";
-        }
-        if (battleHud) battleHud.style.display = "none";
-        if (turretGroup) turretGroup.style.display = "none";
-        if (battleAnimId) cancelAnimationFrame(battleAnimId);
-        if (bCtx) bCtx.clearRect(0, 0, battleCanvas.width, battleCanvas.height);
-      }
-
-      function updateBattleHUD() {
-        if (battleScoreEl) battleScoreEl.textContent = battleSimScore;
-        if (battleAmmoEl) battleAmmoEl.textContent = "∞";
-        if (battleHealthEl) {
-          battleHealthEl.textContent = ((tankerHP / maxTankerHP) * 5).toFixed(1);
-        }
-      }
-
-      function getTurretScreenPos() {
-        if (
-          window.mode3DActive &&
-          typeof window.getTurretScreenPos3D === "function"
-        ) {
-          return window.getTurretScreenPos3D();
-        }
-        if (!boatSvg)
-          return { x: battleCanvas.width / 2, y: battleCanvas.height * 0.8 };
-        const rect = boatSvg.getBoundingClientRect();
-        const animRect = animWinEl.getBoundingClientRect();
-        const scaleX = rect.width / 800;
-        const scaleY = rect.height / 220;
-        return {
-          x: rect.left - animRect.left + 400 * scaleX,
-          y: rect.top - animRect.top + 110 * scaleY,
-        };
-      }
-
-      window.addEventListener("mousemove", (e) => {
-        if (!battleSimActive || !animWinEl) return;
-        const animRect = animWinEl.getBoundingClientRect();
-        aimX = e.clientX - animRect.left;
-        aimY = e.clientY - animRect.top;
-        if (!turretBarrel) return;
-        const tPos = getTurretScreenPos();
-        const dx = aimX - tPos.x;
-        const dy = aimY - tPos.y;
-        let angle = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
-        turretBarrel.setAttribute("transform", `rotate(${angle})`);
-      });
-
-      window.addEventListener("mousedown", (e) => {
-        if (!battleSimActive) return;
-        if (
-          e.target.closest(".header") ||
-          e.target.closest(".card-header") ||
-          e.target.closest(".viewport-landmarks-bar") ||
-          e.target.closest(".viewport-hud-top")
-        )
-          return;
-        isMouseDown = true;
-        tryFireWeapon(performance.now());
-      });
-
-      window.addEventListener("mouseup", () => {
-        isMouseDown = false;
-      });
-
-      function tryFireWeapon( timestamp ) {
-        let fireDelay = rapidFireTimer > timestamp ? 120 : 300;
-        if (timestamp - lastFireTime < fireDelay) return;
-        lastFireTime = timestamp;
-
-        const tPos = getTurretScreenPos();
-        const dx = aimX - tPos.x;
-        const dy = aimY - tPos.y;
-        const baseAngle = Math.atan2(dy, dx);
-        const speed = 18;
-
-        let angles = [baseAngle];
-        if (tripleShotTimer > timestamp) {
-          angles.push(baseAngle - 0.15, baseAngle + 0.15);
-        }
-
-        angles.forEach((angle) => {
-          projectiles.push({
-            x: tPos.x + Math.cos(angle) * 25,
-            y: tPos.y + Math.sin(angle) * 25,
-            vx: Math.cos(angle) * speed,
-            vy: Math.sin(angle) * speed,
-            radius: 3.5,
-            isPlayer: true,
-            trail: [],
-          });
-        });
-
-        for (let i = 0; i < 6; i++) {
-          let spread = baseAngle + (Math.random() - 0.5) * 0.6;
-          let s = Math.random() * 5 + 2;
-          particles.push({
-            x: tPos.x + Math.cos(baseAngle) * 25,
-            y: tPos.y + Math.sin(baseAngle) * 25,
-            vx: Math.cos(spread) * s,
-            vy: Math.sin(spread) * s,
-            radius: Math.random() * 3 + 2,
-            color: Math.random() > 0.3 ? "#fef08a" : "#f97316",
-            alpha: 1,
-            decay: 0.1,
-          });
-        }
-      }
-
-      function spawnPowerup(x, y) {
-        if (Math.random() > 0.25) return;
-        const types = ["heal", "rapid", "triple"];
-        const type = types[Math.floor(Math.random() * types.length)];
-        powerups.push({
-          x,
-          y,
-          vy: -1.5,
-          type,
-          radius: 14,
-          bobPhase: Math.random() * Math.PI * 2,
-        });
-      }
-
-      function addFloatingText(text, x, y, color = "#fff", size = 16) {
-        floatingTexts.push({ text, x, y, vy: -1.5, alpha: 1.0, color, size });
-      }
-
-      function spawnEnemy() {
-        const isAir = Math.random() > 0.45;
-        const fromLeft = Math.random() > 0.5;
-        const startX = fromLeft ? -60 : battleCanvas.width + 60;
-
-        let isBoss =
-          battleSimScore > 150 &&
-          battleSimScore % 200 === 0 &&
-          !enemies.some((e) => e.type === "boss");
-
-        let startY, speed, hp, radius, type, maxHp;
-        let waterSurfaceY =
-          battleCanvas.height *
-          (1 - (currentConditions.tideHeight || 12) / 100);
-
-        if (isBoss) {
-          type = "boss";
-          startY =
-            waterSurfaceY + Math.random() * (battleCanvas.height - waterSurfaceY - 40);
-          speed = (Math.random() * 0.4 + 0.4) * (fromLeft ? 1 : -1);
-          hp = 25 + Math.floor(battleSimScore / 100) * 10;
-          maxHp = hp;
-          radius = 35;
-        } else if (isAir) {
-          type = "drone";
-          startY = Math.random() * (battleCanvas.height * 0.45) + 60;
-          speed = (Math.random() * 2 + 2.0) * (fromLeft ? 1 : -1);
-          hp = 2;
-          maxHp = 2;
-          radius = 14;
-        } else {
-          type = "boat";
-          startY =
-            waterSurfaceY +
-            Math.random() * (battleCanvas.height - waterSurfaceY - 20);
-          speed = (Math.random() * 1.2 + 0.8) * (fromLeft ? 1 : -1);
-          hp = 5;
-          maxHp = 5;
-          radius = 20;
-        }
-
-        enemies.push({
-          x: startX,
-          y: startY,
-          vx: speed,
-          vy: 0,
-          hp,
-          maxHp,
-          radius,
-          type,
-          lastShot: performance.now() + Math.random() * 1000,
-          bobPhase: Math.random() * Math.PI * 2,
-          rotorAngle: 0,
-        });
-      }
-
-      function createExplosion(x, y, color = "#f97316", count = 25, isBig = false) {
-        particles.push({
-          x,
-          y,
-          vx: 0,
-          vy: 0,
-          radius: 5,
-          maxRadius: isBig ? 60 : 30,
-          color: "#ffffff",
-          alpha: 0.9,
-          decay: 0.06,
-          isShockwave: true,
-        });
-        for (let i = 0; i < count; i++) {
-          const angle = Math.random() * Math.PI * 2;
-          const speed = Math.random() * (isBig ? 9 : 5) + 1;
-          particles.push({
-            x,
-            y,
-            vx: Math.cos(angle) * speed,
-            vy: Math.sin(angle) * speed - (isBig ? 2 : 0),
-            radius: Math.random() * (isBig ? 6 : 4) + 2,
-            color:
-              Math.random() > 0.6
-                ? "#ef4444"
-                : Math.random() > 0.3
-                  ? color
-                  : "#fef08a",
-            alpha: 1,
-            decay: Math.random() * 0.02 + 0.015,
-            hasGravity: true,
-          });
-        }
-      }
-
-      function createWaterSplash(x, y) {
-        for (let i = 0; i < 12; i++) {
-          const angle = -Math.PI / 2 + (Math.random() - 0.5) * 1.2;
-          const speed = Math.random() * 5 + 2;
-          particles.push({
-            x,
-            y,
-            vx: Math.cos(angle) * speed,
-            vy: Math.sin(angle) * speed,
-            radius: Math.random() * 2.5 + 1,
-            color: "#e0f2fe",
-            alpha: 0.8,
-            decay: 0.03,
-            hasGravity: true,
-          });
-        }
-      }
-
-      function drawDetailedBoat(ctx, e, isMovingRight) {
-        ctx.save();
-        ctx.translate(e.x, e.y);
-        let bob = Math.sin(e.bobPhase) * 2;
-        ctx.translate(0, bob);
-        if (!isMovingRight) ctx.scale(-1, 1);
-
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(-22, 5);
-        ctx.quadraticCurveTo(-35, 5, -45, 10);
-        ctx.stroke();
-
-        ctx.fillStyle = "#334155";
-        ctx.beginPath();
-        ctx.moveTo(-20, -2);
-        ctx.lineTo(15, -2);
-        ctx.lineTo(25, -6);
-        ctx.lineTo(18, 6);
-        ctx.lineTo(-18, 6);
-        ctx.closePath();
-        ctx.fill();
-
-        ctx.fillStyle = "#475569";
-        ctx.fillRect(-8, -10, 12, 8);
-        ctx.fillStyle = "#38bdf8";
-        ctx.fillRect(0, -8, 4, 4);
-
-        ctx.fillStyle = "#1e293b";
-        ctx.fillRect(12, -6, 4, 4);
-        ctx.strokeStyle = "#0f172a";
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(14, -6);
-        ctx.lineTo(22, -9);
-        ctx.stroke();
-        ctx.restore();
-      }
-
-      function drawBossShip(ctx, e, isMovingRight) {
-        ctx.save();
-        ctx.translate(e.x, e.y);
-        let bob = Math.sin(e.bobPhase) * 1.5;
-        ctx.translate(0, bob);
-        if (!isMovingRight) ctx.scale(-1, 1);
-
-        ctx.fillStyle = "#1e293b";
-        ctx.beginPath();
-        ctx.moveTo(-45, -5);
-        ctx.lineTo(35, -5);
-        ctx.lineTo(50, -12);
-        ctx.lineTo(40, 10);
-        ctx.lineTo(-40, 10);
-        ctx.closePath();
-        ctx.fill();
-        ctx.strokeStyle = "#475569";
-        ctx.lineWidth = 1;
-        ctx.stroke();
-
-        ctx.fillStyle = "#334155";
-        ctx.beginPath();
-        ctx.moveTo(-25, -5);
-        ctx.lineTo(-15, -22);
-        ctx.lineTo(10, -22);
-        ctx.lineTo(15, -5);
-        ctx.closePath();
-        ctx.fill();
-
-        ctx.strokeStyle = "#64748b";
-        ctx.beginPath();
-        ctx.moveTo(-5, -22);
-        ctx.lineTo(-5, -35);
-        ctx.stroke();
-
-        ctx.save();
-        ctx.translate(-5, -35);
-        ctx.rotate(e.rotorAngle);
-        ctx.fillStyle = "#ef4444";
-        ctx.fillRect(-6, -1, 12, 2);
-        ctx.restore();
-
-        ctx.fillStyle = "#0f172a";
-        ctx.fillRect(22, -10, 10, 5);
-        ctx.strokeStyle = "#0f172a";
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(32, -8);
-        ctx.lineTo(45, -14);
-        ctx.stroke();
-        ctx.restore();
-      }
-
-      function drawDetailedDrone(ctx, e) {
-        ctx.save();
-        ctx.translate(e.x, e.y);
-        ctx.rotate(e.vx * 0.08);
-        ctx.strokeStyle = "#1e293b";
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(-14, -4);
-        ctx.lineTo(14, -4);
-        ctx.stroke();
-
-        ctx.fillStyle = "#dc2626";
-        ctx.beginPath();
-        ctx.ellipse(0, 0, 8, 5, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = "#fef08a";
-        ctx.shadowBlur = 5;
-        ctx.shadowColor = "#fef08a";
-        ctx.beginPath();
-        ctx.arc(e.vx > 0 ? 5 : -5, 1, 2, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.shadowBlur = 0;
-
-        ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
-        let rWidth = Math.sin(e.rotorAngle * 5) * 8;
-        ctx.fillRect(-14 - rWidth / 2, -7, rWidth, 2);
-        ctx.fillRect(14 - rWidth / 2, -7, rWidth, 2);
-        ctx.restore();
-      }
-
-      function battleLoop(timestamp) {
-        if (!battleSimActive) return;
-        bCtx.clearRect(0, 0, battleCanvas.width, battleCanvas.height);
-
-        if (isMouseDown) tryFireWeapon(timestamp);
-
-        if (timestamp - lastEnemySpawn > enemySpawnInterval) {
-          spawnEnemy();
-          lastEnemySpawn = timestamp;
-          enemySpawnInterval = Math.max(700, enemySpawnInterval - 25);
-        }
-
-        const tPos = getTurretScreenPos();
-        const waterSurfaceY =
-          battleCanvas.height *
-          (1 - (currentConditions.tideHeight || 12) / 100);
-
-        // Powerups
-        for (let i = powerups.length - 1; i >= 0; i--) {
-          let p = powerups[i];
-          p.bobPhase += 0.05;
-          p.y += Math.sin(p.bobPhase) * 0.5;
-
-          bCtx.save();
-          bCtx.translate(p.x, p.y);
-          bCtx.beginPath();
-          bCtx.arc(0, 0, p.radius, 0, Math.PI * 2);
-          if (p.type === "heal") {
-            bCtx.fillStyle = "rgba(34, 197, 94, 0.2)";
-            bCtx.strokeStyle = "#22c55e";
-          } else if (p.type === "rapid") {
-            bCtx.fillStyle = "rgba(234, 179, 8, 0.2)";
-            bCtx.strokeStyle = "#eab308";
-          } else {
-            bCtx.fillStyle = "rgba(56, 189, 248, 0.2)";
-            bCtx.strokeStyle = "#38bdf8";
-          }
-          bCtx.lineWidth = 2;
-          bCtx.fill();
-          bCtx.stroke();
-
-          bCtx.fillStyle = "#fff";
-          bCtx.font = "12px Inter, sans-serif";
-          bCtx.textAlign = "center";
-          bCtx.textBaseline = "middle";
-          let icon = p.type === "heal" ? "🔧" : p.type === "rapid" ? "⚡" : "🔱";
-          bCtx.fillText(icon, 0, 1);
-          bCtx.restore();
-
-          for (let j = projectiles.length - 1; j >= 0; j--) {
-            let proj = projectiles[j];
-            if (
-              proj.isPlayer &&
-              Math.hypot(proj.x - p.x, proj.y - p.y) < p.radius + proj.radius
-            ) {
-              if (p.type === "heal") {
-                tankerHP = Math.min(maxTankerHP, tankerHP + 25);
-                addFloatingText("+25 HP", p.x, p.y, "#22c55e", 18);
-                updateBattleHUD();
-              } else if (p.type === "rapid") {
-                rapidFireTimer = timestamp + 8000;
-                addFloatingText("RAPID FIRE!", p.x, p.y, "#eab308", 18);
-              } else if (p.type === "triple") {
-                tripleShotTimer = timestamp + 8000;
-                addFloatingText("TRIPLE SHOT!", p.x, p.y, "#38bdf8", 18);
-              }
-              createExplosion(p.x, p.y, "#ffffff", 10);
-              powerups.splice(i, 1);
-              projectiles.splice(j, 1);
-              break;
-            }
-          }
-        }
-
-        // Projectiles
-        for (let i = projectiles.length - 1; i >= 0; i--) {
-          let p = projectiles[i];
-          p.trail.push({ x: p.x, y: p.y });
-          if (p.trail.length > 5) p.trail.shift();
-
-          p.x += p.vx;
-          p.y += p.vy;
-          if (!p.isPlayer) p.vy += 0.06;
-
-          if (p.trail.length > 1) {
-            bCtx.beginPath();
-            bCtx.moveTo(p.trail[0].x, p.trail[0].y);
-            for (let t = 1; t < p.trail.length; t++)
-              bCtx.lineTo(p.trail[t].x, p.trail[t].y);
-            bCtx.strokeStyle = p.isPlayer
-              ? "rgba(254, 240, 138, 0.4)"
-              : "rgba(239, 68, 68, 0.4)";
-            bCtx.lineWidth = p.radius * 1.5;
-            bCtx.stroke();
-          }
-
-          bCtx.beginPath();
-          bCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-          bCtx.fillStyle = p.isPlayer ? "#fef08a" : "#ef4444";
-          bCtx.fill();
-
-          if (p.vy > 0 && p.y >= waterSurfaceY && p.y - p.vy < waterSurfaceY) {
-            createWaterSplash(p.x, waterSurfaceY);
-            if (p.isPlayer) {
-              projectiles.splice(i, 1);
-              continue;
-            }
-          }
-
-          if (
-            p.x < -50 ||
-            p.x > battleCanvas.width + 50 ||
-            p.y < -50 ||
-            p.y > battleCanvas.height + 50
-          ) {
-            projectiles.splice(i, 1);
-            continue;
-          }
-
-          if (!p.isPlayer) {
-            if (
-              Math.abs(p.x - tPos.x) < 140 &&
-              Math.abs(p.y - (tPos.y + 20)) < 35
-            ) {
-              tankerHP -= p.damage || 5;
-              updateBattleHUD();
-              createExplosion(p.x, p.y, "#ef4444", 15);
-              addFloatingText(
-                `-${p.damage || 5}`,
-                p.x,
-                p.y - 10,
-                "#ef4444",
-                14
-              );
-              projectiles.splice(i, 1);
-
-              if (tankerHP <= 0) {
-                createExplosion(tPos.x, tPos.y, "#ef4444", 100, true);
-                addFloatingText(
-                  "NAVIRE DÉTRUIT! SCORE: " + battleSimScore,
-                  battleCanvas.width / 2,
-                  battleCanvas.height / 2,
-                  "#ef4444",
-                  26
-                );
-                setTimeout(() => stopBattleSim(), 1800);
-                return;
-              }
-            }
-          }
-        }
-
-        // Enemies
-        for (let i = enemies.length - 1; i >= 0; i--) {
-          let e = enemies[i];
-          e.bobPhase += 0.08;
-          e.rotorAngle += 0.2;
-
-          let distToTanker = Math.hypot(tPos.x - e.x, tPos.y - e.y);
-          let stopDist =
-            e.type === "boss" ? 350 : e.type === "boat" ? 260 : 0;
-
-          if (e.type !== "drone") {
-            if (distToTanker > stopDist) e.x += e.vx;
-          } else {
-            let angle = Math.atan2(tPos.y - e.y, tPos.x - e.x);
-            e.x += Math.cos(angle) * Math.abs(e.vx);
-            e.y += Math.sin(angle) * Math.abs(e.vx) * 0.6;
-          }
-
-          let isMovingRight = tPos.x > e.x;
-          if (e.type === "boat") drawDetailedBoat(bCtx, e, isMovingRight);
-          else if (e.type === "boss") drawBossShip(bCtx, e, isMovingRight);
-          else drawDetailedDrone(bCtx, e);
-
-          if (e.hp < e.maxHp) {
-            let barW = e.radius * 2;
-            bCtx.fillStyle = "rgba(0,0,0,0.6)";
-            bCtx.fillRect(e.x - barW / 2, e.y - e.radius - 15, barW, 4);
-            bCtx.fillStyle = "#ef4444";
-            bCtx.fillRect(
-              e.x - barW / 2,
-              e.y - e.radius - 15,
-              barW * (e.hp / e.maxHp),
-              4
-            );
-          }
-
-          if (e.type === "boat" || e.type === "boss") {
-            let fireRate = e.type === "boss" ? 1800 : 2500;
-            if (timestamp - e.lastShot > fireRate) {
-              let dx = tPos.x - e.x;
-              let dy = tPos.y - e.y - Math.abs(dx) * 0.25;
-              let angle = Math.atan2(dy, dx);
-              let speed = e.type === "boss" ? 9 : 7;
-              projectiles.push({
-                x: e.x,
-                y: e.y - 10,
-                vx: Math.cos(angle) * speed,
-                vy: Math.sin(angle) * speed,
-                radius: e.type === "boss" ? 6 : 4,
-                isPlayer: false,
-                damage: e.type === "boss" ? 12 : 5,
-                trail: [],
-              });
-              e.lastShot = timestamp;
-            }
-          } else if (e.type === "drone") {
-            if (distToTanker < 45) {
-              tankerHP -= 12;
-              updateBattleHUD();
-              createExplosion(e.x, e.y, "#ef4444", 35, true);
-              addFloatingText("-12", e.x, e.y, "#ef4444", 18);
-              enemies.splice(i, 1);
-              if (tankerHP <= 0) {
-                stopBattleSim();
-                return;
-              }
-              continue;
-            }
-          }
-
-          for (let j = projectiles.length - 1; j >= 0; j--) {
-            let p = projectiles[j];
-            if (!p.isPlayer) continue;
-            if (Math.hypot(p.x - e.x, p.y - e.y) < e.radius + p.radius + 4) {
-              e.hp -= 1;
-              createExplosion(p.x, p.y, "#fef08a", 6);
-              projectiles.splice(j, 1);
-
-              if (e.hp <= 0) {
-                let pts =
-                  e.type === "boss" ? 100 : e.type === "boat" ? 20 : 10;
-                battleSimScore += pts;
-                updateBattleHUD();
-                createExplosion(
-                  e.x,
-                  e.y,
-                  "#f97316",
-                  e.type === "boss" ? 80 : 35,
-                  e.type === "boss"
-                );
-                addFloatingText(`+${pts}`, e.x, e.y - 15, "#fde047", 16);
-                spawnPowerup(e.x, e.y);
-                enemies.splice(i, 1);
-                break;
-              }
-            }
-          }
-        }
-
-        // Particles
-        for (let i = particles.length - 1; i >= 0; i--) {
-          let pt = particles[i];
-          if (pt.isShockwave) {
-            pt.radius += (pt.maxRadius - pt.radius) * 0.2;
-            pt.alpha -= pt.decay;
-            if (pt.alpha <= 0) {
-              particles.splice(i, 1);
-              continue;
-            }
-            bCtx.save();
-            bCtx.beginPath();
-            bCtx.arc(pt.x, pt.y, pt.radius, 0, Math.PI * 2);
-            bCtx.strokeStyle = pt.color;
-            bCtx.globalAlpha = Math.max(0, pt.alpha);
-            bCtx.lineWidth = 3;
-            bCtx.stroke();
-            bCtx.restore();
-            continue;
-          }
-
-          pt.x += pt.vx;
-          pt.y += pt.vy;
-          if (pt.hasGravity) pt.vy += 0.15;
-          pt.alpha -= pt.decay;
-          if (pt.alpha <= 0) {
-            particles.splice(i, 1);
-            continue;
-          }
-          bCtx.save();
-          bCtx.globalAlpha = Math.max(0, pt.alpha);
-          bCtx.beginPath();
-          bCtx.arc(pt.x, pt.y, pt.radius, 0, Math.PI * 2);
-          bCtx.fillStyle = pt.color;
-          bCtx.fill();
-          bCtx.restore();
-        }
-
-        // Floating Texts
-        for (let i = floatingTexts.length - 1; i >= 0; i--) {
-          let ft = floatingTexts[i];
-          ft.y += ft.vy;
-          ft.alpha -= 0.02;
-          if (ft.alpha <= 0) {
-            floatingTexts.splice(i, 1);
-            continue;
-          }
-          bCtx.save();
-          bCtx.globalAlpha = Math.max(0, ft.alpha);
-          bCtx.font = `bold ${ft.size}px Inter, monospace`;
-          bCtx.fillStyle = ft.color;
-          bCtx.shadowColor = "black";
-          bCtx.shadowBlur = 4;
-          bCtx.textAlign = "center";
-          bCtx.fillText(ft.text, ft.x, ft.y);
-          bCtx.restore();
-        }
-
-        // Powerup active bars
-        let barY = 75;
-        if (rapidFireTimer > timestamp) {
-          let rem = (rapidFireTimer - timestamp) / 8000;
-          bCtx.fillStyle = "rgba(0,0,0,0.5)";
-          bCtx.fillRect(10, barY, 120, 8);
-          bCtx.fillStyle = "#eab308";
-          bCtx.fillRect(10, barY, 120 * rem, 8);
-          bCtx.fillStyle = "#fff";
-          bCtx.font = "10px monospace";
-          bCtx.fillText("RAPID FIRE", 15, barY + 7);
-          barY += 14;
-        }
-        if (tripleShotTimer > timestamp) {
-          let rem = (tripleShotTimer - timestamp) / 8000;
-          bCtx.fillStyle = "rgba(0,0,0,0.5)";
-          bCtx.fillRect(10, barY, 120, 8);
-          bCtx.fillStyle = "#38bdf8";
-          bCtx.fillRect(10, barY, 120 * rem, 8);
-          bCtx.fillStyle = "#fff";
-          bCtx.font = "10px monospace";
-          bCtx.fillText("TRIPLE SHOT", 15, barY + 7);
-        }
-
-        battleAnimId = requestAnimationFrame(battleLoop);
-      }
       // =========================================================================
       // MOTEUR MÉTÉO MULTI-SOURCES (OPEN-METEO / MET.NO / WTTR.IN + CACHE)
       // =========================================================================
@@ -25569,6 +25103,7 @@
           renderTideExtremaStrip(processed);
           renderTidesChart(processed);
           updateRealtimeState();
+        if (typeof updateLoadingArmsUI === "function") { updateLoadingArmsUI(); }
         } catch (err) {
           console.warn("Utilisation des éphémérides officielles certifiées SHC Lauzon:", err);
           updateTelemetryStatus(false);
@@ -26184,7 +25719,77 @@
           const w = window.open("", "_blank");
           if (!w) return;
           w.document.write(
-            `<html><head><title>Template Quart de Travail — Terminal St-Romuald</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#111;line-height:1.6}h3{color:#00809d;margin-top:16px;border-bottom:1px solid #ccc;padding-bottom:4px}ul{padding-left:20px}</style></head><body>${templateSurface.innerHTML}</body></html>`
+            `<html><head><title>Template Quart de Travail — Terminal St-Romuald</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#111;line-height:1.6}h3{color:#00809d;margin-top:16px;border-bottom:1px solid #ccc;padding-bottom:4px}ul{padding-left:20px}
+      /* --- WIDGET ET MODAL BRAS DE CHARGEMENT CHIKSAN (PALIER 12 POUCES) --- */
+      .arms-widget-container {
+        transition: all 0.25s ease;
+      }
+      .arms-widget-container.alert-imminent {
+        border-color: #f59e0b !important;
+        box-shadow: 0 0 10px rgba(245, 158, 11, 0.45);
+      }
+      .arms-widget-container.alert-overdue {
+        border-color: #ef4444 !important;
+        box-shadow: 0 0 14px rgba(239, 68, 68, 0.65);
+        animation: armsPulseAlert 1.5s infinite;
+      }
+      @keyframes armsPulseAlert {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+        50% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+      }
+      .arms-thresh-btn {
+        padding: 0.16rem 0.38rem;
+        font-size: 0.68rem;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      .arms-thresh-btn.active {
+        background: var(--valero-teal) !important;
+        color: #ffffff !important;
+        border-color: var(--valero-gold) !important;
+        font-weight: 900;
+      }
+      /* --- SIMULATEUR DE MANOEUVRES DE REMORQUAGE (GROUPE OCEAN) --- */
+      .tug-maneuver-hud {
+        position: absolute;
+        bottom: 8px;
+        left: 8px;
+        right: 8px;
+        z-index: 35;
+        background: rgba(10, 20, 35, 0.92);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid var(--border-strong);
+        border-left: 3px solid var(--accent);
+        border-radius: 4px;
+        padding: 0.4rem 0.65rem;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.55);
+        transition: opacity 0.25s ease, transform 0.25s ease;
+      }
+      .tug-maneuver-hud.minimized {
+        display: none !important;
+      }
+      .tug-action-btn {
+        background: rgba(14, 165, 233, 0.2);
+        color: #38bdf8;
+        border: 1px solid #38bdf8;
+        border-radius: 3px;
+        font-size: 0.66rem;
+        font-weight: 700;
+        padding: 0.18rem 0.48rem;
+        cursor: pointer;
+        transition: all 0.15s ease;
+      }
+      .tug-action-btn:hover {
+        background: #0284c7;
+        color: #fff;
+      }
+      .tug-action-btn.active {
+        background: #0284c7;
+        color: #fff;
+        border-color: #38bdf8;
+      }
+    </style></head><body>${templateSurface.innerHTML}</body></html>`
           );
           w.document.close();
           w.print();
@@ -26269,7 +25874,77 @@
           if (!w) return;
           w.document.write(`
             <html><head><title>Plan de Transfert Maritime — Terminal St-Romuald</title>
-            <style>body{font-family:Inter,Arial,sans-serif;padding:24px;color:#0f172a} .res-item{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #cbd5e1}</style>
+            <style>body{font-family:Inter,Arial,sans-serif;padding:24px;color:#0f172a} .res-item{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #cbd5e1}
+      /* --- WIDGET ET MODAL BRAS DE CHARGEMENT CHIKSAN (PALIER 12 POUCES) --- */
+      .arms-widget-container {
+        transition: all 0.25s ease;
+      }
+      .arms-widget-container.alert-imminent {
+        border-color: #f59e0b !important;
+        box-shadow: 0 0 10px rgba(245, 158, 11, 0.45);
+      }
+      .arms-widget-container.alert-overdue {
+        border-color: #ef4444 !important;
+        box-shadow: 0 0 14px rgba(239, 68, 68, 0.65);
+        animation: armsPulseAlert 1.5s infinite;
+      }
+      @keyframes armsPulseAlert {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+        50% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+      }
+      .arms-thresh-btn {
+        padding: 0.16rem 0.38rem;
+        font-size: 0.68rem;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      .arms-thresh-btn.active {
+        background: var(--valero-teal) !important;
+        color: #ffffff !important;
+        border-color: var(--valero-gold) !important;
+        font-weight: 900;
+      }
+      /* --- SIMULATEUR DE MANOEUVRES DE REMORQUAGE (GROUPE OCEAN) --- */
+      .tug-maneuver-hud {
+        position: absolute;
+        bottom: 8px;
+        left: 8px;
+        right: 8px;
+        z-index: 35;
+        background: rgba(10, 20, 35, 0.92);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid var(--border-strong);
+        border-left: 3px solid var(--accent);
+        border-radius: 4px;
+        padding: 0.4rem 0.65rem;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.55);
+        transition: opacity 0.25s ease, transform 0.25s ease;
+      }
+      .tug-maneuver-hud.minimized {
+        display: none !important;
+      }
+      .tug-action-btn {
+        background: rgba(14, 165, 233, 0.2);
+        color: #38bdf8;
+        border: 1px solid #38bdf8;
+        border-radius: 3px;
+        font-size: 0.66rem;
+        font-weight: 700;
+        padding: 0.18rem 0.48rem;
+        cursor: pointer;
+        transition: all 0.15s ease;
+      }
+      .tug-action-btn:hover {
+        background: #0284c7;
+        color: #fff;
+      }
+      .tug-action-btn.active {
+        background: #0284c7;
+        color: #fff;
+        border-color: #38bdf8;
+      }
+    </style>
             </head><body>
             <h2>⚓ Plan de Transfert Maritime — Terminal St-Romuald (DWT: ${dwt} T)</h2>
             ${loadRes ? `<h3>Séquence de Chargement</h3>${loadRes}` : ""}
@@ -27369,6 +27044,618 @@
       });
 
       // =========================================================================
+      // ESTIMATEUR & MINUTERIE D'AJUSTEMENT DES BRAS DE CHARGEMENT CHIKSAN (12")
+      // =========================================================================
+      const ARMS_CONFIG_KEY = "valero_arms_config_v1";
+
+      const loadingArmsState = {
+        opType: "discharge", // 'discharge' (navire monte), 'load' (navire calle), 'idle'
+        section: "sec87",    // 'sec87' (Valero brut) ou 'sec86' (Chimiquiers)
+        thresholdInches: 12.0, // palier 12 po par défaut
+        vesselPreset: "suezmax",
+        pumpingRate: 2500,
+        pumpingUnit: "m3h",
+        soundAlert: true,
+        lastAdjustedTimeMs: Date.now(),
+        lastAdjustedTideMeters: null,
+        history: [],
+        lastChimeAlertTime: 0
+      };
+
+      // Charger la configuration sauvegardée si présente
+      try {
+        const savedArms = localStorage.getItem(ARMS_CONFIG_KEY);
+        if (savedArms) {
+          const parsed = JSON.parse(savedArms);
+          Object.assign(loadingArmsState, parsed);
+          if (Date.now() - loadingArmsState.lastAdjustedTimeMs > 48 * 3600000) {
+            loadingArmsState.lastAdjustedTimeMs = Date.now();
+            loadingArmsState.lastAdjustedTideMeters = null;
+          }
+        }
+      } catch (e) {
+        console.warn("Erreur chargement config bras:", e);
+      }
+
+      function saveLoadingArmsState() {
+        try {
+          localStorage.setItem(ARMS_CONFIG_KEY, JSON.stringify(loadingArmsState));
+        } catch (e) {}
+      }
+
+      // Gabarits et TPC (Tonnes par Centimètre d'immersion moyen)
+      const VESSEL_TPC_MAP = {
+        suezmax: 105, // Cap Québec (~150 000 DWT)
+        aframax: 85,  // ~110 000 DWT
+        panamax: 65,  // ~75 000 DWT
+        mr2: 52,      // ~50 000 DWT
+        mr1: 45,      // ~37 000 DWT
+        barge: 22,    // ~10 000 DWT
+        custom: 60
+      };
+
+      // Calcule le taux de variation du tirant d'eau du navire (cm/h)
+      function getVesselSpeedCmH() {
+        if (loadingArmsState.opType === "idle") return 0;
+        let rateM3h = parseFloat(loadingArmsState.pumpingRate) || 0;
+        if (loadingArmsState.pumpingUnit === "bblh") rateM3h *= 0.158987;
+        else if (loadingArmsState.pumpingUnit === "th") rateM3h /= 0.85;
+
+        const density = 0.85; // brut/produit moyen t/m³
+        const tonPerHour = rateM3h * density;
+        const tpc = VESSEL_TPC_MAP[loadingArmsState.vesselPreset] || 60;
+        return tpc > 0 ? (tonPerHour / tpc) : 0; // cm/h
+      }
+
+      // Obtient le niveau de marée Lauzon (03250) à un instant quelconque t
+      function getTideMetersAt(timeMs) {
+        const processed = window.lastProcessedTides;
+        if (!processed || processed.length === 0) {
+          return (typeof currentConditions !== "undefined" && currentConditions.tideMeters !== null)
+            ? currentConditions.tideMeters
+            : 3.2;
+        }
+        let prev = null, next = null;
+        for (let i = 0; i < processed.length; i++) {
+          if (processed[i].date.getTime() <= timeMs) prev = processed[i];
+          if (processed[i].date.getTime() > timeMs && !next) next = processed[i];
+        }
+        if (!prev && next) return next.val;
+        if (prev && !next) return prev.val;
+        if (!prev && !next) return 3.2;
+        const dur = next.date.getTime() - prev.date.getTime();
+        const el = timeMs - prev.date.getTime();
+        const prog = Math.max(0, Math.min(1, el / dur));
+        const cos = (1 - Math.cos(prog * Math.PI)) / 2;
+        return prev.val + (next.val - prev.val) * cos;
+      }
+
+      // Calcule la vitesse instantanée de la marée en cm/h à l'instant t
+      function getTideSpeedCmH(timeMs) {
+        const dt = 30000; // 30 sec
+        const h1 = getTideMetersAt(timeMs - dt);
+        const h2 = getTideMetersAt(timeMs + dt);
+        const dhMeters = h2 - h1;
+        return (dhMeters / (2 * dt / 3600000)) * 100; // cm/h
+      }
+
+      // Calcule le débattement cumulé (en pouces) entre tStart et tNow
+      function calculateArmsDisplacement(fromMs, toMs) {
+        const hStart = getTideMetersAt(fromMs);
+        const hNow = getTideMetersAt(toMs);
+        const deltaTideM = hNow - hStart; // + si marée a monté, - si descendu
+
+        const hours = Math.max(0, (toMs - fromMs) / 3600000);
+        const vesselCmH = getVesselSpeedCmH();
+        let deltaVesselM = 0;
+        if (loadingArmsState.opType === "discharge") {
+          deltaVesselM = (vesselCmH * hours) / 100; // navire monte
+        } else if (loadingArmsState.opType === "load") {
+          deltaVesselM = -(vesselCmH * hours) / 100; // navire calle
+        }
+
+        const netDeltaM = deltaTideM + deltaVesselM;
+        const netInches = Math.abs(netDeltaM) / 0.0254;
+        const signedInches = netDeltaM / 0.0254;
+
+        return {
+          netInches,
+          signedInches,
+          netDeltaM,
+          deltaTideM,
+          deltaVesselM,
+          direction: netDeltaM >= 0 ? "up" : "down"
+        };
+      }
+
+      // Simulation prévisionnelle pour trouver le prochain franchissement du seuil (12")
+      function predictNextArmsSchedule(fromMs, count = 4) {
+        const targetInches = loadingArmsState.thresholdInches || 12.0;
+        const targetM = targetInches * 0.0254;
+        const vesselCmH = getVesselSpeedCmH();
+        const op = loadingArmsState.opType;
+
+        const results = [];
+        let simStartMs = fromMs;
+        let cumulativeInches = 0;
+
+        for (let step = 1; step <= count; step++) {
+          let found = false;
+          const hRef = getTideMetersAt(simStartMs);
+
+          let prevNetM = 0;
+          for (let m = 1; m <= 720; m++) { // jusqu'a 12h max
+            const tSim = simStartMs + m * 60000;
+            const hSim = getTideMetersAt(tSim);
+            const dTideM = hSim - hRef;
+            const hours = m / 60;
+            let dVesselM = 0;
+            if (op === "discharge") dVesselM = (vesselCmH * hours) / 100;
+            else if (op === "load") dVesselM = -(vesselCmH * hours) / 100;
+
+            const netM = dTideM + dVesselM;
+            const absNet = Math.abs(netM);
+            if (absNet >= targetM) {
+              cumulativeInches += targetInches;
+              const dir = netM >= 0 ? "\u25B2 Haut" : "\u25BC Bas";
+              const denom = absNet - prevNetM;
+              const frac = denom > 0.0001 ? Math.max(0, Math.min(1, (targetM - prevNetM) / denom)) : 1;
+              const exactSimMs = simStartMs + ((m - 1) + frac) * 60000;
+              results.push({
+                step,
+                targetTimeMs: Math.round(exactSimMs),
+                deltaMins: m,
+                tideMeters: hSim,
+                direction: dir,
+                cumulativeInches
+              });
+              simStartMs = exactSimMs;
+              found = true;
+              break;
+            }
+            prevNetM = absNet;
+          }
+          if (!found) break;
+        }
+        return results;
+      }
+
+      // Joue le carillon sonore Web Audio API (Double carillon D5 -> A5)
+      function playArmsChime() {
+        try {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (!AudioContext) return;
+          const ctx = new AudioContext();
+          const now = ctx.currentTime;
+          
+          const osc1 = ctx.createOscillator();
+          const gain1 = ctx.createGain();
+          osc1.type = "sine";
+          osc1.frequency.setValueAtTime(587.33, now);
+          gain1.gain.setValueAtTime(0.18, now);
+          gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+          osc1.connect(gain1);
+          gain1.connect(ctx.destination);
+          osc1.start(now);
+          osc1.stop(now + 0.35);
+
+          const osc2 = ctx.createOscillator();
+          const gain2 = ctx.createGain();
+          osc2.type = "sine";
+          osc2.frequency.setValueAtTime(880, now + 0.18);
+          gain2.gain.setValueAtTime(0.22, now + 0.18);
+          gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+          osc2.connect(gain2);
+          gain2.connect(ctx.destination);
+          osc2.start(now + 0.18);
+          osc2.stop(now + 0.7);
+        } catch (e) {
+          console.warn("Audio non disponible:", e);
+        }
+      }
+
+      // Réinitialise le palier (bras ajustés à 0")
+      function resetLoadingArmsPalier(logHistory = true) {
+        const nowMs = getEffectiveTimeMs();
+        const disp = calculateArmsDisplacement(loadingArmsState.lastAdjustedTimeMs, nowMs);
+
+        if (logHistory && disp.netInches >= 0.5) {
+          const dateStr = new Date(nowMs).toLocaleTimeString("fr-CA", { hour: "2-digit", minute: "2-digit" });
+          const opFr = loadingArmsState.opType === "discharge" ? "Décharge" : (loadingArmsState.opType === "load" ? "Charge" : "Pause");
+          const entry = `${dateStr} — Réglage effectué à ${disp.netInches.toFixed(1)}" (${disp.direction === "up" ? "▲ Haut" : "▼ Bas"}) [${opFr}]`;
+          loadingArmsState.history.unshift(entry);
+          if (loadingArmsState.history.length > 20) loadingArmsState.history.pop();
+        }
+
+        loadingArmsState.lastAdjustedTimeMs = nowMs;
+        loadingArmsState.lastAdjustedTideMeters = getTideMetersAt(nowMs);
+        loadingArmsState.lastChimeAlertTime = 0;
+        saveLoadingArmsState();
+        updateLoadingArmsUI();
+        renderArmsHistory();
+      }
+
+      function renderArmsHistory() {
+        const histEl = document.getElementById("arms-history-list");
+        if (!histEl) return;
+        if (!loadingArmsState.history || loadingArmsState.history.length === 0) {
+          histEl.innerHTML = `<span style="color: var(--text-muted); font-style: italic;">Aucun ajustement enregistré pour le moment.</span>`;
+          return;
+        }
+        histEl.innerHTML = loadingArmsState.history
+          .map((item) => `<div style="padding: 0.12rem 0; border-bottom: 1px dashed var(--border);">✔ ${item}</div>`)
+          .join("");
+      }
+
+      // Mise à jour complète de l'interface en direct
+      function updateLoadingArmsUI() {
+        const nowMs = getEffectiveTimeMs();
+        const tStart = loadingArmsState.lastAdjustedTimeMs || nowMs;
+        const targetInches = loadingArmsState.thresholdInches || 12.0;
+
+        // Débattement actuel
+        const disp = calculateArmsDisplacement(tStart, nowMs);
+        const currInches = disp.netInches;
+        const pct = Math.min(100, (currInches / targetInches) * 100);
+
+        // Vitesses instantanées
+        const tideCmH = getTideSpeedCmH(nowMs);
+        const vesselCmH = getVesselSpeedCmH();
+        let netCmH = tideCmH;
+        if (loadingArmsState.opType === "discharge") netCmH += vesselCmH;
+        else if (loadingArmsState.opType === "load") netCmH -= vesselCmH;
+        const netPoH = netCmH / 2.54;
+
+        // Prévision du prochain ajustement
+        const schedule = predictNextArmsSchedule(tStart, 4);
+        let remSec = 0;
+        let targetTimeMs = null;
+        if (schedule.length > 0) {
+          targetTimeMs = schedule[0].targetTimeMs;
+          remSec = Math.max(0, Math.round((targetTimeMs - nowMs) / 1000));
+        }
+
+        // 1. Mettre à jour le widget dans la Carte 1 (Colonne 3)
+        const dispLbl = document.getElementById("arms-current-disp");
+        if (dispLbl) dispLbl.textContent = `${currInches.toFixed(1)}"`;
+
+        const rateLbl = document.getElementById("arms-rate-lbl");
+        if (rateLbl) {
+          const arrow = netCmH >= 0 ? "\u25B2" : "\u25BC";
+          rateLbl.textContent = `${netPoH >= 0 ? "+" : ""}${netPoH.toFixed(1)} po/h ${arrow}`;
+        }
+
+        const progFill = document.getElementById("arms-progress-fill");
+        if (progFill) {
+          progFill.style.width = `${pct}%`;
+          if (currInches >= targetInches) {
+            progFill.style.background = "#ef4444";
+          } else if (pct >= 75) {
+            progFill.style.background = "linear-gradient(90deg, #f59e0b, #ef4444)";
+          } else {
+            progFill.style.background = "linear-gradient(90deg, #10b981, #f59e0b)";
+          }
+        }
+
+        const cdTimerEl = document.getElementById("arms-countdown-timer");
+        const etaTimeEl = document.getElementById("arms-eta-time");
+        const widgetBox = document.getElementById("arms-widget");
+        const hdrArmsTime = document.getElementById("hdr-arms-time");
+
+        // Format compte à rebours
+        let timerStr = "--:--:--";
+        let etaStr = "\u00E0 --:--";
+        let isOverdue = currInches >= targetInches;
+        let isImminent = remSec > 0 && remSec <= 600; // <= 10 min
+
+        if (targetTimeMs) {
+          const targetDate = new Date(targetTimeMs);
+          etaStr = "\u00E0 " + targetDate.toLocaleTimeString("fr-CA", { hour: "2-digit", minute: "2-digit" });
+
+          if (isOverdue) {
+            timerStr = "AJUSTER!";
+          } else {
+            const h = Math.floor(remSec / 3600);
+            const m = Math.floor((remSec % 3600) / 60);
+            const s = remSec % 60;
+            timerStr = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+          }
+        }
+
+        if (cdTimerEl) {
+          cdTimerEl.textContent = timerStr;
+          cdTimerEl.style.color = isOverdue ? "#ef4444" : (isImminent ? "#f59e0b" : "#00f59b");
+        }
+        if (etaTimeEl) etaTimeEl.textContent = etaStr;
+
+        if (hdrArmsTime) {
+          if (isOverdue) {
+            hdrArmsTime.textContent = "ALERTE!";
+            hdrArmsTime.style.color = "#ef4444";
+          } else if (targetTimeMs) {
+            const h = Math.floor(remSec / 3600);
+            const m = Math.floor((remSec % 3600) / 60);
+            hdrArmsTime.textContent = h > 0 ? `${h}h${String(m).padStart(2, "0")}` : `${m}m`;
+            hdrArmsTime.style.color = isImminent ? "#f59e0b" : "#00f59b";
+          } else {
+            hdrArmsTime.textContent = "--:--";
+          }
+        }
+
+        if (widgetBox) {
+          widgetBox.classList.toggle("alert-overdue", isOverdue);
+          widgetBox.classList.toggle("alert-imminent", !isOverdue && isImminent);
+        }
+
+        // Pill mode opération
+        const modePill = document.getElementById("arms-mode-pill");
+        if (modePill) {
+          if (loadingArmsState.opType === "discharge") {
+            modePill.textContent = "D\u00C9CHARGE \u25B2";
+            modePill.style.background = "rgba(56, 189, 248, 0.2)";
+            modePill.style.color = "#38bdf8";
+          } else if (loadingArmsState.opType === "load") {
+            modePill.textContent = "CHARGE \u25BC";
+            modePill.style.background = "rgba(239, 68, 68, 0.2)";
+            modePill.style.color = "#ef4444";
+          } else {
+            modePill.textContent = "PAUSE";
+            modePill.style.background = "rgba(148, 163, 184, 0.2)";
+            modePill.style.color = "#94a3b8";
+          }
+        }
+
+        // 2. Mettre à jour le Modal complet
+        const modalTimer = document.getElementById("modal-arms-timer");
+        if (modalTimer) {
+          modalTimer.textContent = timerStr;
+          modalTimer.style.color = isOverdue ? "#ef4444" : (isImminent ? "#f59e0b" : "#00f59b");
+        }
+
+        const modalTarget = document.getElementById("modal-arms-target-time");
+        if (modalTarget) {
+          modalTarget.textContent = targetTimeMs
+            ? `${new Date(targetTimeMs).toLocaleTimeString("fr-CA", { hour: "2-digit", minute: "2-digit", second: "2-digit" })} (${isOverdue ? "Dépassé" : `dans ${Math.round(remSec / 60)} min`})`
+            : "--:--";
+        }
+
+        const modalDispReadout = document.getElementById("modal-arms-disp-readout");
+        if (modalDispReadout) {
+          const cmVal = currInches * 2.54;
+          modalDispReadout.textContent = `${currInches.toFixed(1)} po / ${targetInches.toFixed(1)} po (${cmVal.toFixed(1)} cm)`;
+        }
+
+        const modalBarFill = document.getElementById("modal-arms-bar-fill");
+        if (modalBarFill) {
+          modalBarFill.style.width = `${pct}%`;
+        }
+
+        const threshLbl = document.getElementById("arms-threshold-val-lbl");
+        if (threshLbl) {
+          threshLbl.textContent = `${targetInches.toFixed(1)} po (${(targetInches * 2.54).toFixed(1)} cm)`;
+        }
+
+        const rateEquivLbl = document.getElementById("arms-rate-equiv-lbl");
+        if (rateEquivLbl) {
+          let r = parseFloat(loadingArmsState.pumpingRate) || 0;
+          if (loadingArmsState.pumpingUnit === "bblh") r *= 0.158987;
+          else if (loadingArmsState.pumpingUnit === "th") r /= 0.85;
+          const tH = r * 0.85;
+          rateEquivLbl.textContent = `~${Math.round(tH).toLocaleString("fr-CA")} t/h (${Math.round(r).toLocaleString("fr-CA")} m³/h)`;
+        }
+
+        const vesselSpeedLbl = document.getElementById("arms-vessel-speed-lbl");
+        if (vesselSpeedLbl) {
+          const vCm = getVesselSpeedCmH();
+          const vPo = vCm / 2.54;
+          const sign = loadingArmsState.opType === "discharge" ? "+" : (loadingArmsState.opType === "load" ? "-" : "");
+          const dirWord = loadingArmsState.opType === "discharge" ? "Monte" : (loadingArmsState.opType === "load" ? "Calle" : "Nul");
+          vesselSpeedLbl.textContent = `${sign}${vCm.toFixed(1)} cm/h (${sign}${vPo.toFixed(1)} po/h) [${dirWord}]`;
+        }
+
+        const breakdownLbl = document.getElementById("arms-breakdown-lbl");
+        if (breakdownLbl) {
+          const tideDir = tideCmH >= 0 ? "Flot" : "Jusant";
+          const opDir = loadingArmsState.opType === "discharge" ? "D\u00E9charge monte" : (loadingArmsState.opType === "load" ? "Charge calle" : "Pause");
+          breakdownLbl.innerHTML = `
+            Mar&eacute;e : ${tideCmH >= 0 ? "+" : ""}${tideCmH.toFixed(1)} cm/h (${tideDir}) | Navire : ${loadingArmsState.opType === "load" ? "-" : "+"}${vesselCmH.toFixed(1)} cm/h (${opDir})<br>
+            <strong>Total D&eacute;battement : ${netCmH >= 0 ? "+" : ""}${netCmH.toFixed(1)} cm/h (${netPoH >= 0 ? "+" : ""}${netPoH.toFixed(1)} po/h ${netCmH >= 0 ? "\u25B2 Haut" : "\u25BC Bas"})</strong>
+          `;
+        }
+
+        // Table prévisionnelle du quart
+        const tbody = document.getElementById("arms-schedule-tbody");
+        if (tbody && schedule) {
+          tbody.innerHTML = schedule
+            .map((s, idx) => {
+              const timeStr = new Date(s.targetTimeMs).toLocaleTimeString("fr-CA", { hour: "2-digit", minute: "2-digit" });
+              const minLeft = Math.round((s.targetTimeMs - nowMs) / 60000);
+              const isFirst = idx === 0;
+              const rowBg = isFirst ? "background: rgba(0, 128, 157, 0.12);" : "";
+              return `
+                <tr style="${rowBg} border-bottom: 1px solid var(--border);">
+                  <td style="padding: 0.26rem 0.45rem; font-weight: 800;">#${s.step} (+${(s.step * targetInches).toFixed(0)}")</td>
+                  <td style="padding: 0.26rem 0.45rem; font-weight: 800; color: var(--accent);">${timeStr}</td>
+                  <td style="padding: 0.26rem 0.45rem;">dans ${minLeft} min</td>
+                  <td style="padding: 0.26rem 0.45rem;">${s.tideMeters.toFixed(2)} m</td>
+                  <td style="padding: 0.26rem 0.45rem; font-weight: 700;">${s.direction}</td>
+                  <td style="padding: 0.26rem 0.45rem; font-weight: 800;" class="mono">${s.cumulativeInches.toFixed(0)}" (${(s.cumulativeInches * 2.54).toFixed(0)} cm)</td>
+                </tr>
+              `;
+            })
+            .join("");
+        }
+
+        // Carillon sonore si seuil franchi
+        if (isOverdue && loadingArmsState.soundAlert) {
+          if (!loadingArmsState.lastChimeAlertTime || (Date.now() - loadingArmsState.lastChimeAlertTime > 120000)) {
+            loadingArmsState.lastChimeAlertTime = Date.now();
+            playArmsChime();
+          }
+        }
+      }
+
+      // Initialiser les écouteurs d'événements pour les bras de chargement
+      function initLoadingArmsListeners() {
+        // Modal setup
+        setupModal("loading-arms-modal", "loading-arms-toggle", "close-loading-arms");
+
+        document.getElementById("arms-config-btn")?.addEventListener("click", () => {
+          document.getElementById("loading-arms-modal")?.classList.add("active");
+          updateLoadingArmsUI();
+        });
+
+        // Boutons de réinitialisation (Bras ajustés)
+        document.getElementById("arms-quick-reset-btn")?.addEventListener("click", () => {
+          resetLoadingArmsPalier(true);
+        });
+        document.getElementById("modal-arms-reset-btn")?.addEventListener("click", () => {
+          resetLoadingArmsPalier(true);
+        });
+
+        // Type d'opération (Déchargement vs Chargement vs Pause)
+        document.querySelectorAll('input[name="arms-op-type"]').forEach((radio) => {
+          radio.addEventListener("change", (e) => {
+            loadingArmsState.opType = e.target.value;
+            saveLoadingArmsState();
+            updateLoadingArmsUI();
+          });
+        });
+
+        // Section Quai
+        const sec87Btn = document.getElementById("arms-sec87-btn");
+        const sec86Btn = document.getElementById("arms-sec86-btn");
+        sec87Btn?.addEventListener("click", () => {
+          loadingArmsState.section = "sec87";
+          sec87Btn.classList.add("active");
+          sec86Btn?.classList.remove("active");
+          saveLoadingArmsState();
+          updateLoadingArmsUI();
+        });
+        sec86Btn?.addEventListener("click", () => {
+          loadingArmsState.section = "sec86";
+          sec86Btn.classList.add("active");
+          sec87Btn?.classList.remove("active");
+          saveLoadingArmsState();
+          updateLoadingArmsUI();
+        });
+
+        // Seuils de débattement
+        document.querySelectorAll(".arms-thresh-btn").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const val = parseFloat(btn.getAttribute("data-thresh")) || 12.0;
+            loadingArmsState.thresholdInches = val;
+            document.querySelectorAll(".arms-thresh-btn").forEach((b) => b.classList.remove("active"));
+            btn.classList.add("active");
+            saveLoadingArmsState();
+            updateLoadingArmsUI();
+          });
+        });
+
+        // Gabarit navire
+        const vesselSel = document.getElementById("arms-vessel-preset");
+        vesselSel?.addEventListener("change", (e) => {
+          loadingArmsState.vesselPreset = e.target.value;
+          saveLoadingArmsState();
+          updateLoadingArmsUI();
+        });
+
+        // Débit de pompage
+        const pumpInput = document.getElementById("arms-pumping-rate");
+        const pumpUnit = document.getElementById("arms-pumping-unit");
+        pumpInput?.addEventListener("input", (e) => {
+          loadingArmsState.pumpingRate = parseFloat(e.target.value) || 0;
+          saveLoadingArmsState();
+          updateLoadingArmsUI();
+        });
+        pumpUnit?.addEventListener("change", (e) => {
+          loadingArmsState.pumpingUnit = e.target.value;
+          saveLoadingArmsState();
+          updateLoadingArmsUI();
+        });
+
+        // Sonore
+        const soundCb = document.getElementById("arms-sound-alert-cb");
+        soundCb?.addEventListener("change", (e) => {
+          loadingArmsState.soundAlert = e.target.checked;
+          saveLoadingArmsState();
+        });
+        document.getElementById("arms-sound-test-btn")?.addEventListener("click", () => {
+          playArmsChime();
+        });
+
+        // Effacer historique
+        document.getElementById("arms-clear-history-btn")?.addEventListener("click", () => {
+          if (confirm("Effacer l'historique des ajustements de ce quart ?")) {
+            loadingArmsState.history = [];
+            saveLoadingArmsState();
+            renderArmsHistory();
+          }
+        });
+
+        // Insérer dans le template de quart
+        document.getElementById("arms-insert-template-btn")?.addEventListener("click", () => {
+          const surface = document.getElementById("template-editor-surface");
+          if (!surface) return;
+          const nowMs = getEffectiveTimeMs();
+          const disp = calculateArmsDisplacement(loadingArmsState.lastAdjustedTimeMs, nowMs);
+          const opFr = loadingArmsState.opType === "discharge" ? "D\u00E9chargement (Navire monte)" : (loadingArmsState.opType === "load" ? "Chargement (Navire calle)" : "Pause / Inactif");
+          const secFr = loadingArmsState.section === "sec87" ? "Section 87 (Grand Quai Valero)" : "Section 86 (Chimiquiers)";
+          const sched = predictNextArmsSchedule(loadingArmsState.lastAdjustedTimeMs, 3);
+          const nextStr = sched.length > 0
+            ? sched.map((s) => `${new Date(s.targetTimeMs).toLocaleTimeString("fr-CA", { hour: "2-digit", minute: "2-digit" })} (+${s.cumulativeInches}")`).join(", ")
+            : "Non déterminé";
+
+          const blockHtml = `
+            <div style="background: rgba(0, 128, 157, 0.1); border-left: 3px solid #00809d; padding: 8px 12px; margin: 8px 0; border-radius: 4px; font-size: 0.85rem">
+              <strong>⏱️ Relevé Bras de Chargement Chiksan (${new Date(nowMs).toLocaleTimeString("fr-CA", { hour: "2-digit", minute: "2-digit" })}) :</strong><br>
+              <strong>Poste :</strong> ${secFr} | <strong>Opération :</strong> ${opFr} (${loadingArmsState.pumpingRate} ${loadingArmsState.pumpingUnit})<br>
+              <strong>Course actuelle :</strong> ${disp.netInches.toFixed(1)}" / ${loadingArmsState.thresholdInches.toFixed(0)}" (${(disp.netInches * 2.54).toFixed(1)} cm ${disp.direction === "up" ? "▲" : "▼"})<br>
+              <strong>Prochains réglages prévus :</strong> ${nextStr}
+            </div>
+          `;
+          surface.innerHTML = blockHtml + surface.innerHTML;
+          if (typeof saveCurrentShiftTemplate === "function") saveCurrentShiftTemplate();
+          alert("Relevé des bras inséré avec succès dans le Template de Quart !");
+        });
+
+        // Synchroniser les valeurs initiales dans le DOM
+        if (soundCb) soundCb.checked = loadingArmsState.soundAlert;
+        if (vesselSel) vesselSel.value = loadingArmsState.vesselPreset;
+        if (pumpInput) pumpInput.value = loadingArmsState.pumpingRate;
+        if (pumpUnit) pumpUnit.value = loadingArmsState.pumpingUnit;
+
+        const activeRadio = document.querySelector(`input[name="arms-op-type"][value="${loadingArmsState.opType}"]`);
+        if (activeRadio) activeRadio.checked = true;
+
+        if (loadingArmsState.section === "sec86") {
+          sec86Btn?.classList.add("active");
+          sec87Btn?.classList.remove("active");
+        } else {
+          sec87Btn?.classList.add("active");
+          sec86Btn?.classList.remove("active");
+        }
+
+        document.querySelectorAll(".arms-thresh-btn").forEach((b) => {
+          const val = parseFloat(b.getAttribute("data-thresh"));
+          b.classList.toggle("active", val === loadingArmsState.thresholdInches);
+        });
+
+        renderArmsHistory();
+        updateLoadingArmsUI();
+
+        // Minuterie en direct 1 seconde pour le compte a rebours des bras
+        if (window.loadingArmsIntervalId) {
+          clearInterval(window.loadingArmsIntervalId);
+        }
+        window.loadingArmsIntervalId = setInterval(updateLoadingArmsUI, 1000);
+      }
+
+      // Initialiser immédiatement après le chargement des scripts
+      setTimeout(initLoadingArmsListeners, 150);
+
+
+      // =========================================================================
       // HORLOGE EN DIRECT & INITIALISATION
       // =========================================================================
       function updateLiveClock() {
@@ -27388,6 +27675,7 @@
         if (clockEl) {
           clockEl.textContent = `${dateStr} • ${timeStr}`;
         }
+        if (typeof updateLoadingArmsUI === "function") { updateLoadingArmsUI(); }
       }
       setInterval(updateLiveClock, 1000);
       updateLiveClock();
@@ -27566,10 +27854,10 @@
 
         // --- 2. PÉTROLIER SUEZMAX 3D "CAP QUEBEC" (AZIMUT 135°, DIST 132m) ---
         const tankerGroup = new THREE.Group();
-        const tankerBasePos = azDistToVec3(135, 132, 0);
+        const tankerBasePos = new THREE.Vector3(76.44, 0, 60.52); // Section 87 Valero (cote fleuve, az ~128.4 deg, dist 97.5m)
         tankerGroup.position.copy(tankerBasePos);
-        // Aligner le navire parallèlement au quai Valero (cap ~68° ENE)
-        tankerGroup.rotation.y = (22 * Math.PI) / 180;
+        // Aligner le navire parallelement au quai Valero (nez vers les Ponts de Quebec, timonerie vers l'Ile d'Orleans)
+        tankerGroup.rotation.y = (202 * Math.PI) / 180;
         scene.add(tankerGroup);
 
         // Sillage / anneau d'écume blanche autour de la coque dans l'eau
@@ -27739,23 +28027,6 @@
         shipNightLight.position.set(-10, 22, 0);
         tankerGroup.add(shipNightLight);
 
-        // Tourelle de défense 3D au milieu du pont (active pendant Start Defense)
-        const turret3DGroup = new THREE.Group();
-        turret3DGroup.position.set(8, 10.5, 0);
-        turret3DGroup.visible = false;
-        const tBase = new THREE.Mesh(
-          new THREE.CylinderGeometry(2.6, 3.2, 2.2, 12),
-          new THREE.MeshLambertMaterial({ color: 0x334155 })
-        );
-        const tBarrel = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.45, 0.55, 8.5, 8),
-          new THREE.MeshBasicMaterial({ color: 0x38bdf8 })
-        );
-        tBarrel.rotation.z = -Math.PI / 2;
-        tBarrel.position.set(4.0, 0.8, 0);
-        turret3DGroup.add(tBase);
-        turret3DGroup.add(tBarrel);
-        tankerGroup.add(turret3DGroup);
 
         // Fumée 3D sortant de la cheminée du navire
         const shipSmokePuffs = [];
@@ -29401,57 +29672,307 @@
         ferryWakeMesh.position.set(0, 0.15, 0);
         ferryGroup.add(ferryWakeMesh);
 
-        // --- 15. REMORQUEUR DE PORT OCÉAN VALERO 3D (GROUPE OCÉAN, AZIMUT 139°, DIST 96m) ---
-        const tugGroup = new THREE.Group();
-        const tugBasePos = azDistToVec3(139, 96, 0);
-        tugGroup.position.copy(tugBasePos);
-        tugGroup.rotation.y = (24 * Math.PI) / 180;
-        scene.add(tugGroup);
-
+        // --- 15. SIMULATEUR DE MANŒUVRES DE REMORQUAGE 3D (GROUPE OCÉAN) ---
         const oceanBlueMat = new THREE.MeshLambertMaterial({ color: 0x0f2b5c }); // Bleu Marine Groupe Océan
         const oceanOrangeMat = new THREE.MeshLambertMaterial({ color: 0xea580c }); // Orange Océan
         const rubberFenderMat = new THREE.MeshLambertMaterial({ color: 0x09090b });
+        const towLineMat = new THREE.LineBasicMaterial({ color: 0xfacc15, linewidth: 2 });
+        const foamWashMat = new THREE.MeshBasicMaterial({ color: 0xe0f2fe, transparent: true, opacity: 0.65, side: THREE.DoubleSide });
 
-        const tugHull = new THREE.Mesh(new THREE.BoxGeometry(20, 3.2, 8.2), oceanBlueMat);
-        tugHull.position.set(0, 1.4, 0);
-        tugGroup.add(tugHull);
+        function createOceanTugboat(name, baseColor = 0x0f2b5c) {
+          const grp = new THREE.Group();
+          const hullMat = new THREE.MeshLambertMaterial({ color: baseColor });
 
-        const tugBow = new THREE.Mesh(new THREE.CylinderGeometry(4.1, 4.1, 3.4, 12), oceanBlueMat);
-        tugBow.position.set(9.5, 1.4, 0);
-        tugGroup.add(tugBow);
+          // Coque principale
+          const hull = new THREE.Mesh(new THREE.BoxGeometry(20, 3.2, 8.2), hullMat);
+          hull.position.set(0, 1.4, 0);
+          grp.add(hull);
 
-        const pushKnee1 = new THREE.Mesh(new THREE.BoxGeometry(1.6, 3.8, 2.2), rubberFenderMat);
-        pushKnee1.position.set(13.2, 2.0, -2.0);
-        tugGroup.add(pushKnee1);
+          // Étrave arrondie
+          const bow = new THREE.Mesh(new THREE.CylinderGeometry(4.1, 4.1, 3.4, 12), hullMat);
+          bow.position.set(9.5, 1.4, 0);
+          grp.add(bow);
 
-        const pushKnee2 = new THREE.Mesh(new THREE.BoxGeometry(1.6, 3.8, 2.2), rubberFenderMat);
-        pushKnee2.position.set(13.2, 2.0, 2.0);
-        tugGroup.add(pushKnee2);
+          // Dents de poussée (push knees en caoutchouc noir)
+          const pk1 = new THREE.Mesh(new THREE.BoxGeometry(1.6, 3.8, 2.2), rubberFenderMat);
+          pk1.position.set(13.2, 2.0, -2.0);
+          grp.add(pk1);
+          const pk2 = new THREE.Mesh(new THREE.BoxGeometry(1.6, 3.8, 2.2), rubberFenderMat);
+          pk2.position.set(13.2, 2.0, 2.0);
+          grp.add(pk2);
 
-        const tugHouse = new THREE.Mesh(new THREE.BoxGeometry(8.5, 3.8, 5.8), bridgeWhiteMat);
-        tugHouse.position.set(0, 4.2, 0);
-        tugGroup.add(tugHouse);
+          // Superstructure & Passerelle blanche
+          const house = new THREE.Mesh(new THREE.BoxGeometry(8.5, 3.8, 5.8), bridgeWhiteMat);
+          house.position.set(0, 4.2, 0);
+          grp.add(house);
 
-        const tugWheelhouse = new THREE.Mesh(new THREE.BoxGeometry(6.2, 2.6, 5.2), bridgeWhiteMat);
-        tugWheelhouse.position.set(0.5, 7.0, 0);
-        tugGroup.add(tugWheelhouse);
+          const wheelhouse = new THREE.Mesh(new THREE.BoxGeometry(6.2, 2.6, 5.2), bridgeWhiteMat);
+          wheelhouse.position.set(0.5, 7.0, 0);
+          grp.add(wheelhouse);
 
-        const tugWindows = new THREE.Mesh(new THREE.BoxGeometry(6.4, 1.1, 5.4), new THREE.MeshBasicMaterial({ color: 0x0284c7 }));
-        tugWindows.position.set(0.5, 7.2, 0);
-        tugGroup.add(tugWindows);
+          const windows = new THREE.Mesh(new THREE.BoxGeometry(6.4, 1.1, 5.4), new THREE.MeshBasicMaterial({ color: 0x0284c7 }));
+          windows.position.set(0.5, 7.2, 0);
+          grp.add(windows);
 
-        const tugFunnel = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 1.1, 3.6, 8), oceanOrangeMat);
-        tugFunnel.position.set(-3.2, 6.2, 0);
-        tugGroup.add(tugFunnel);
+          // Cheminée orange Groupe Océan
+          const funnel = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 1.1, 3.6, 8), oceanOrangeMat);
+          funnel.position.set(-3.2, 6.2, 0);
+          grp.add(funnel);
 
-        const tugMast = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.3, 5.5, 6), bridgeWhiteMat);
-        tugMast.position.set(1.5, 10.5, 0);
-        tugGroup.add(tugMast);
+          // Mât et feux
+          const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.3, 5.5, 6), bridgeWhiteMat);
+          mast.position.set(1.5, 10.5, 0);
+          grp.add(mast);
 
-        const towLight = new THREE.Mesh(new THREE.SphereGeometry(0.4, 6, 6), new THREE.MeshBasicMaterial({ color: 0xfacc15 }));
-        towLight.position.set(1.5, 13.0, 0);
-        tugGroup.add(towLight);
+          const towLight = new THREE.Mesh(new THREE.SphereGeometry(0.4, 6, 6), new THREE.MeshBasicMaterial({ color: 0xfacc15 }));
+          towLight.position.set(1.5, 13.0, 0);
+          grp.add(towLight);
 
+          // Treuil de remorquage sur le pont arrière
+          const winch = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.1, 2.2, 8), rubberFenderMat);
+          winch.rotation.z = Math.PI / 2;
+          winch.position.set(-5.5, 3.2, 0);
+          grp.add(winch);
+
+          // Écume d'hélice / remous des propulseurs azimutaux
+          const washGeo = new THREE.PlaneGeometry(16, 7);
+          washGeo.rotateX(-Math.PI / 2);
+          const washMesh = new THREE.Mesh(washGeo, foamWashMat.clone());
+          washMesh.position.set(-14.0, 0.15, 0);
+          grp.add(washMesh);
+
+          return { group: grp, wash: washMesh, name: name };
+        }
+
+        const tugBow = createOceanTugboat("Océan Taiga", 0x0f2b5c);
+        const tugStern = createOceanTugboat("Océan K. Rusby", 0x1e3a8a);
+        const tugGroup = tugBow.group; // compatibilité référence existante
+        const tugBasePos = azDistToVec3(139, 96, 0);
+        scene.add(tugBow.group);
+        scene.add(tugStern.group);
+
+        // Lignes de remorquage 3D dynamiques (Aussières haute résistance)
+        const towLineBowGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+        const towLineBow = new THREE.Line(towLineBowGeo, towLineMat);
+        towLineBow.visible = false;
+        scene.add(towLineBow);
+
+        const towLineSternGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+        const towLineStern = new THREE.Line(towLineSternGeo, towLineMat);
+        towLineStern.visible = false;
+        scene.add(towLineStern);
+
+        // Positions de repère maritime (Waypoints du Chenal des Grands Navires)
+        const TANKER_DOCKED_POS = tankerBasePos.clone(); // Section 87 Valero cote fleuve (76.44, 0, 60.52)
+        const TANKER_DOCKED_ROT = (202 * Math.PI) / 180; // Nez vers les Ponts de Quebec (248 deg Az), Timonerie vers l'Ile d'Orleans (68 deg Az)
+        const TANKER_CLEAR_POS = new THREE.Vector3(72.44, 0, 21.02); // Degagement au large dans le fleuve (az ~106 deg, dist ~75m)
+        const TANKER_CLEAR_ROT = (200 * Math.PI) / 180;
+        const TANKER_TURN_POS = new THREE.Vector3(115.0, 0, -95.0); // Bassin d'evitage en eau profonde (az ~50 deg, dist ~149m)
+        const TANKER_TURN_ROT = (130 * Math.PI) / 180; // Pivotement vers l'aval
+        const TANKER_CHANNEL_POS = azDistToVec3(38, 430, 0); // Chenal maritime entre Québec et Lévis vers l'Île d'Orléans (264.7, 0, -338.8)
+        const TANKER_CHANNEL_ROT = (60.7 * Math.PI) / 180; // Trajectoire aval vers l'Île d'Orléans
+        const TANKER_ARRIVE_CHAN_ROT = (240.7 * Math.PI) / 180; // Trajectoire amont depuis l'Île d'Orléans (nez vers les Ponts)
+        const TANKER_ARRIVE_TURN_ROT = (215 * Math.PI) / 180;
+
+        const TUG_STANDBY_BOW = new THREE.Vector3(55.0, 0, 5.0); // Standby dans le fleuve au large de la Section 87
+        const TUG_STANDBY_STERN = new THREE.Vector3(30.0, 0, 25.0);
+
+        // Helper pour positionner un remorqueur en coordonnées relatives au navire
+        function getShipRelativeVec3(centerPos, rotY, localX, localZ) {
+          const cosR = Math.cos(rotY);
+          const sinR = Math.sin(rotY);
+          return new THREE.Vector3(
+            centerPos.x + localX * cosR + localZ * sinR,
+            0,
+            centerPos.z - localX * sinR + localZ * cosR
+          );
+        }
+
+        // Synthèse sonore réaliste Web Audio API (Corne de brume pétrolier & sifflet de remorqueur)
+        function playShipHorn(type = "depart") {
+          try {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (!AudioCtx) return;
+            const ctx = new AudioCtx();
+            const now = ctx.currentTime;
+            if (type === "depart") {
+              const osc1 = ctx.createOscillator();
+              const osc2 = ctx.createOscillator();
+              const gain = ctx.createGain();
+              const filter = ctx.createBiquadFilter();
+              osc1.type = "sawtooth";
+              osc1.frequency.setValueAtTime(116, now);
+              osc2.type = "sine";
+              osc2.frequency.setValueAtTime(174, now);
+              filter.type = "lowpass";
+              filter.frequency.setValueAtTime(450, now);
+              gain.gain.setValueAtTime(0.001, now);
+              gain.gain.linearRampToValueAtTime(0.25, now + 0.35);
+              gain.gain.setValueAtTime(0.25, now + 2.4);
+              gain.gain.exponentialRampToValueAtTime(0.001, now + 3.2);
+              osc1.connect(filter);
+              osc2.connect(filter);
+              filter.connect(gain);
+              gain.connect(ctx.destination);
+              osc1.start(now);
+              osc2.start(now);
+              osc1.stop(now + 3.2);
+              osc2.stop(now + 3.2);
+
+              setTimeout(() => {
+                try {
+                  const tCtx = new AudioCtx();
+                  const tNow = tCtx.currentTime;
+                  const tOsc = tCtx.createOscillator();
+                  const tGain = tCtx.createGain();
+                  tOsc.type = "triangle";
+                  tOsc.frequency.setValueAtTime(540, tNow);
+                  tGain.gain.setValueAtTime(0.12, tNow);
+                  tGain.gain.exponentialRampToValueAtTime(0.001, tNow + 0.6);
+                  tOsc.connect(tGain);
+                  tGain.connect(tCtx.destination);
+                  tOsc.start(tNow);
+                  tOsc.stop(tNow + 0.6);
+                } catch (e) {}
+              }, 3200);
+            } else if (type === "arrive") {
+              const osc = ctx.createOscillator();
+              const gain = ctx.createGain();
+              osc.type = "sawtooth";
+              osc.frequency.setValueAtTime(130, now);
+              gain.gain.setValueAtTime(0.2, now);
+              gain.gain.exponentialRampToValueAtTime(0.001, now + 1.8);
+              osc.connect(gain);
+              gain.connect(ctx.destination);
+              osc.start(now);
+              osc.stop(now + 1.8);
+            }
+          } catch (e) {
+            console.warn("Audio navire non disponible:", e);
+          }
+        }
+
+        // Contrôleur global de manœuvre
+        window.tugManeuver = {
+          state: "docked",
+          progress: 0.0,
+          speedMultiplier: 1.0,
+          isCameraTracking: false,
+          currentShipPos: TANKER_DOCKED_POS.clone(),
+          currentShipRotY: TANKER_DOCKED_ROT,
+          speedKnots: 0.0,
+
+          startDeparture: function () {
+            if (this.state === "departing") return;
+            this.state = "departing";
+            this.progress = 0.0;
+            playShipHorn("depart");
+            this.updateUI();
+          },
+
+          startArrival: function () {
+            if (this.state === "arriving") return;
+            this.state = "arriving";
+            this.progress = 0.0;
+            playShipHorn("arrive");
+            this.updateUI();
+          },
+
+          resetToDock: function () {
+            this.state = "docked";
+            this.progress = 0.0;
+            this.speedKnots = 0.0;
+            this.currentShipPos.copy(TANKER_DOCKED_POS);
+            this.currentShipRotY = TANKER_DOCKED_ROT;
+            tankerGroup.position.x = TANKER_DOCKED_POS.x;
+            tankerGroup.position.z = TANKER_DOCKED_POS.z;
+            tankerGroup.rotation.y = TANKER_DOCKED_ROT;
+            tugBow.group.position.set(TUG_STANDBY_BOW.x, waterLevelY, TUG_STANDBY_BOW.z);
+            tugBow.group.rotation.set(0, (24 * Math.PI) / 180, 0);
+            tugStern.group.position.set(TUG_STANDBY_STERN.x, waterLevelY, TUG_STANDBY_STERN.z);
+            tugStern.group.rotation.set(0, (24 * Math.PI) / 180, 0);
+            towLineBow.visible = false;
+            towLineStern.visible = false;
+            if (this.isCameraTracking) {
+              viewAzimuth = 128;
+            }
+            this.updateUI();
+          },
+
+          toggleCameraTracking: function () {
+            this.isCameraTracking = !this.isCameraTracking;
+            const btn = document.getElementById("btn-maneuver-cam");
+            if (btn) btn.classList.toggle("active", this.isCameraTracking);
+          },
+
+          updateUI: function () {
+            const pill = document.getElementById("tug-status-pill");
+            const narrativeEl = document.getElementById("tug-narrative-lbl");
+            const speedEl = document.getElementById("tug-speed-readout");
+            const barWrap = document.getElementById("tug-progress-container");
+            const barFill = document.getElementById("tug-progress-bar");
+            const arriveBtn = document.getElementById("btn-maneuver-arrive");
+            const departBtn = document.getElementById("btn-maneuver-depart");
+
+            if (arriveBtn) arriveBtn.classList.toggle("active", this.state === "arriving");
+            if (departBtn) departBtn.classList.toggle("active", this.state === "departing");
+
+            let statusTxt = "À QUAI (SEC. 87)";
+            let statusColor = "#10b981";
+            let statusBg = "rgba(16, 185, 129, 0.2)";
+            let isMoving = this.state === "departing" || this.state === "arriving";
+
+            if (this.state === "departing") {
+              statusTxt = "APPAREILLAGE (" + Math.round(this.progress * 100) + "%)";
+              statusColor = "#f59e0b";
+              statusBg = "rgba(245, 158, 11, 0.2)";
+            } else if (this.state === "arriving") {
+              statusTxt = "ACCOSTAGE (" + Math.round(this.progress * 100) + "%)";
+              statusColor = "#38bdf8";
+              statusBg = "rgba(56, 189, 248, 0.2)";
+            } else if (this.state === "departed") {
+              statusTxt = "AU LARGE (CHENAL)";
+              statusColor = "#94a3b8";
+              statusBg = "rgba(148, 163, 184, 0.2)";
+            }
+
+            if (pill) {
+              pill.textContent = statusTxt;
+              pill.style.color = statusColor;
+              pill.style.background = statusBg;
+            }
+
+            if (speedEl) {
+              speedEl.textContent = this.speedKnots.toFixed(1) + " nds";
+            }
+
+            if (barWrap && barFill) {
+              barWrap.style.display = isMoving ? "block" : "none";
+              barFill.style.width = Math.min(100, Math.round(this.progress * 100)) + "%";
+            }
+
+            if (narrativeEl) {
+              if (this.state === "docked") {
+                narrativeEl.textContent = "Cap Québec amarré à la Section 87 • Remorqueurs Océan Taiga & K. Rusby en veille";
+              } else if (this.state === "departed") {
+                narrativeEl.textContent = "Appareillage terminé • Navire en route dans le chenal vers l'Île d'Orléans";
+              }
+            }
+          }
+        };
+
+        // Écouteurs pour le simulateur de remorquage
+        document.getElementById("btn-maneuver-arrive")?.addEventListener("click", () => window.tugManeuver?.startArrival());
+        document.getElementById("btn-maneuver-depart")?.addEventListener("click", () => window.tugManeuver?.startDeparture());
+        document.getElementById("btn-maneuver-reset")?.addEventListener("click", () => window.tugManeuver?.resetToDock());
+        document.getElementById("btn-maneuver-cam")?.addEventListener("click", () => window.tugManeuver?.toggleCameraTracking());
+
+        document.getElementById("btn-maneuver-close")?.addEventListener("click", () => {
+          document.getElementById("tug-maneuver-hud")?.classList.add("minimized");
+        });
+        document.getElementById("tug-sim-toggle-btn")?.addEventListener("click", () => {
+          document.getElementById("tug-maneuver-hud")?.classList.toggle("minimized");
+        });
         // --- 16. PHARE HISTORIQUE DE LA POINTE-LÉVY (AZIMUT 82°, DIST 350m) ---
         const lighthouseGroup = new THREE.Group();
         const lhPos = azDistToVec3(82, 350, 28);
@@ -29602,17 +30123,6 @@
           return { x: sx, y: sy };
         };
 
-        // Position écran de la tourelle 3D pour le mini-jeu Tanker Defense
-        window.getTurretScreenPos3D = function () {
-          const worldPos = new THREE.Vector3();
-          turret3DGroup.getWorldPosition(worldPos);
-          worldPos.y += 1.5;
-          worldPos.project(camera3D);
-          return {
-            x: (worldPos.x * 0.5 + 0.5) * getAnimW(),
-            y: (-worldPos.y * 0.5 + 0.5) * getAnimH(),
-          };
-        };
 
         function handleResize3D() {
           const w = getAnimW();
@@ -29785,9 +30295,247 @@
           );
           const rollAmp = 0.015 + Math.min(windKnots / 30, 1) * 0.065;
           const pitchAmp = 0.008 + Math.min(windKnots / 30, 1) * 0.032;
+          // -------------------------------------------------------------
+          // CALCUL DES TRAJECTOIRES DE MANOEUVRE (APPAREILLAGE & ACCOSTAGE)
+          // -------------------------------------------------------------
+          const tm = window.tugManeuver;
+          if (tm && (tm.state === "departing" || tm.state === "arriving")) {
+            const deltaProg = 0.001 * tm.speedMultiplier;
+            tm.progress += deltaProg;
+
+            if (tm.state === "departing") {
+              if (tm.progress >= 1.0) {
+                tm.progress = 1.0;
+                tm.state = "departed";
+              }
+            } else if (tm.state === "arriving") {
+              if (tm.progress >= 1.0) {
+                tm.progress = 1.0;
+                tm.state = "docked";
+              }
+            }
+            tm.updateUI();
+          }
+
+          let sP = TANKER_DOCKED_POS.clone();
+          let sRot = TANKER_DOCKED_ROT;
+          let bowTugTarget = TUG_STANDBY_BOW.clone();
+          let sternTugTarget = TUG_STANDBY_STERN.clone();
+          let bowTugRot = (24 * Math.PI) / 180;
+          let sternTugRot = (24 * Math.PI) / 180;
+          let thrustIntensity = 0.15;
+          let linesActive = false;
+
+          const tmP = tm ? tm.progress : 0;
+          const tmState = tm ? tm.state : "docked";
+
+          if (tmState === "docked") {
+            sP = TANKER_DOCKED_POS;
+            sRot = TANKER_DOCKED_ROT;
+            bowTugTarget = TUG_STANDBY_BOW;
+            sternTugTarget = TUG_STANDBY_STERN;
+            linesActive = false;
+            thrustIntensity = 0.1;
+            if (tm) tm.speedKnots = 0.0;
+          } else if (tmState === "departed") {
+            sP = TANKER_CHANNEL_POS;
+            sRot = TANKER_CHANNEL_ROT;
+            bowTugTarget = getShipRelativeVec3(sP, sRot, 58, 14);
+            sternTugTarget = getShipRelativeVec3(sP, sRot, -46, -16);
+            bowTugRot = sRot;
+            sternTugRot = sRot;
+            linesActive = false;
+            thrustIntensity = 0.35;
+            if (tm) tm.speedKnots = 8.5;
+          } else if (tmState === "departing") {
+            linesActive = tmP >= 0.08;
+            if (tmP < 0.16) {
+              const u = tmP / 0.16;
+              sP = TANKER_DOCKED_POS;
+              sRot = TANKER_DOCKED_ROT;
+              const bowStation = getShipRelativeVec3(sP, sRot, 46, 26);
+              const sternStation = getShipRelativeVec3(sP, sRot, -38, 26);
+              bowTugTarget.lerpVectors(TUG_STANDBY_BOW, bowStation, u);
+              sternTugTarget.lerpVectors(TUG_STANDBY_STERN, sternStation, u);
+              bowTugRot = (24 * Math.PI) / 180 + (sRot - (24 * Math.PI) / 180) * u;
+              sternTugRot = (24 * Math.PI) / 180 + (sRot - (24 * Math.PI) / 180) * u;
+              thrustIntensity = 0.35 + u * 0.35;
+              if (tm) {
+                tm.speedKnots = 0.4;
+                const nEl = document.getElementById("tug-narrative-lbl");
+                if (nEl) nEl.textContent = "Phase 1/4 : Approche des remorqueurs Océan Taiga & K. Rusby • Aussières capelées";
+              }
+            } else if (tmP < 0.46) {
+              const u = (tmP - 0.16) / 0.30;
+              const s = u * u * (3 - 2 * u);
+              sP.lerpVectors(TANKER_DOCKED_POS, TANKER_CLEAR_POS, s);
+              sRot = TANKER_DOCKED_ROT + (TANKER_CLEAR_ROT - TANKER_DOCKED_ROT) * s;
+              // Remorqueurs en pleine traction latérale vers le fleuve (direction tribord +Z)
+              bowTugTarget = getShipRelativeVec3(sP, sRot, 36, 34);
+              sternTugTarget = getShipRelativeVec3(sP, sRot, -36, 34);
+              bowTugRot = sRot + Math.PI / 2;
+              sternTugRot = sRot + Math.PI / 2;
+              thrustIntensity = 0.95;
+              if (tm) {
+                tm.speedKnots = 1.8;
+                const nEl = document.getElementById("tug-narrative-lbl");
+                if (nEl) nEl.textContent = "Phase 2/4 : Écartement du quai • Pleine traction des remorqueurs (Dégagement 43m)";
+              }
+            } else if (tmP < 0.74) {
+              const u = (tmP - 0.46) / 0.28;
+              const s = u * u * (3 - 2 * u);
+              sP.lerpVectors(TANKER_CLEAR_POS, TANKER_TURN_POS, s);
+              sRot = TANKER_CLEAR_ROT + (TANKER_TURN_ROT - TANKER_CLEAR_ROT) * s;
+              // Pivotement dans le bassin d'évitage vers le chenal maritime aval
+              bowTugTarget = getShipRelativeVec3(sP, sRot, 46, 20);
+              sternTugTarget = getShipRelativeVec3(sP, sRot, -40, 18);
+              bowTugRot = sRot - 0.35;
+              sternTugRot = sRot + 0.25;
+              thrustIntensity = 0.85;
+              if (tm) {
+                tm.speedKnots = 3.6;
+                const nEl = document.getElementById("tug-narrative-lbl");
+                if (nEl) nEl.textContent = "Phase 3/4 : Évitage du Suezmax • Pivotement dans le courant vers le chenal";
+              }
+            } else {
+              const u = (tmP - 0.74) / 0.26;
+              const s = u * u * (3 - 2 * u);
+              sP.lerpVectors(TANKER_TURN_POS, TANKER_CHANNEL_POS, s);
+              sRot = TANKER_TURN_ROT + (TANKER_CHANNEL_ROT - TANKER_TURN_ROT) * s;
+              // Escorte dans le chenal des Grands Navires vers l'Île d'Orléans
+              bowTugTarget = getShipRelativeVec3(sP, sRot, 58, 14);
+              sternTugTarget = getShipRelativeVec3(sP, sRot, -46, -16);
+              bowTugRot = sRot;
+              sternTugRot = sRot;
+              thrustIntensity = 0.6;
+              linesActive = tmP < 0.90;
+              if (tm) {
+                tm.speedKnots = 4.0 + u * 4.5;
+                const nEl = document.getElementById("tug-narrative-lbl");
+                if (nEl) nEl.textContent = "Phase 4/4 : Route dans le chenal maritime vers l'Île d'Orléans • Escorte active";
+              }
+            }
+          } else if (tmState === "arriving") {
+            linesActive = tmP < 0.88;
+            if (tmP < 0.26) {
+              const u = tmP / 0.26;
+              const s = u * u * (3 - 2 * u);
+              sP.lerpVectors(TANKER_CHANNEL_POS, TANKER_TURN_POS, s);
+              sRot = TANKER_ARRIVE_CHAN_ROT + (TANKER_ARRIVE_TURN_ROT - TANKER_ARRIVE_CHAN_ROT) * s;
+              bowTugTarget = getShipRelativeVec3(sP, sRot, 56, 14);
+              sternTugTarget = getShipRelativeVec3(sP, sRot, -44, -16);
+              bowTugRot = sRot;
+              sternTugRot = sRot;
+              thrustIntensity = 0.65;
+              if (tm) {
+                tm.speedKnots = 7.0 - u * 3.2;
+                const nEl = document.getElementById("tug-narrative-lbl");
+                if (nEl) nEl.textContent = "Phase 1/4 : Approche dans le chenal maritime depuis l'Île d'Orléans • Prise en charge par 2 remorqueurs";
+              }
+            } else if (tmP < 0.54) {
+              const u = (tmP - 0.26) / 0.28;
+              const s = u * u * (3 - 2 * u);
+              sP.lerpVectors(TANKER_TURN_POS, TANKER_CLEAR_POS, s);
+              sRot = TANKER_ARRIVE_TURN_ROT + (TANKER_CLEAR_ROT - TANKER_ARRIVE_TURN_ROT) * s;
+              bowTugTarget = getShipRelativeVec3(sP, sRot, 42, 24);
+              sternTugTarget = getShipRelativeVec3(sP, sRot, -38, 24);
+              bowTugRot = sRot + Math.PI / 2;
+              sternTugRot = sRot + Math.PI / 2;
+              thrustIntensity = 0.8;
+              if (tm) {
+                tm.speedKnots = 3.8 - u * 2.2;
+                const nEl = document.getElementById("tug-narrative-lbl");
+                if (nEl) nEl.textContent = "Phase 2/4 : Freinage & alignement d'évitage en face de la Section 87";
+              }
+            } else if (tmP < 0.88) {
+              const u = (tmP - 0.54) / 0.34;
+              const s = u * u * (3 - 2 * u);
+              sP.lerpVectors(TANKER_CLEAR_POS, TANKER_DOCKED_POS, s);
+              sRot = TANKER_CLEAR_ROT + (TANKER_DOCKED_ROT - TANKER_CLEAR_ROT) * s;
+              bowTugTarget = getShipRelativeVec3(sP, sRot, 32, 18);
+              sternTugTarget = getShipRelativeVec3(sP, sRot, -32, 18);
+              bowTugRot = sRot - Math.PI / 2;
+              sternTugRot = sRot - Math.PI / 2;
+              thrustIntensity = 0.9;
+              if (tm) {
+                tm.speedKnots = 1.4 - u * 1.2;
+                const nEl = document.getElementById("tug-narrative-lbl");
+                if (nEl) nEl.textContent = "Phase 3/4 : Poussée latérale des remorqueurs • Rapprochement en douceur du quai";
+              }
+            } else {
+              const u = (tmP - 0.88) / 0.12;
+              sP = TANKER_DOCKED_POS;
+              sRot = TANKER_DOCKED_ROT;
+              const bowRelease = getShipRelativeVec3(sP, sRot, 32, 22);
+              const sternRelease = getShipRelativeVec3(sP, sRot, -32, 22);
+              bowTugTarget.lerpVectors(bowRelease, TUG_STANDBY_BOW, u);
+              sternTugTarget.lerpVectors(sternRelease, TUG_STANDBY_STERN, u);
+              bowTugRot = (24 * Math.PI) / 180;
+              sternTugRot = (24 * Math.PI) / 180;
+              thrustIntensity = 0.2;
+              if (tm) {
+                tm.speedKnots = 0.0;
+                const nEl = document.getElementById("tug-narrative-lbl");
+                if (nEl) nEl.textContent = "Phase 4/4 : Navire amarré • Défenses en contact • Bras Chiksan parés";
+              }
+            }
+          }
+
+          // Mise à jour de la position et de l'orientation du pétrolier CAP QUEBEC
+          tankerGroup.position.x = sP.x;
+          tankerGroup.position.z = sP.z;
+          tankerGroup.rotation.y = sRot;
           tankerGroup.position.y = waterLevelY + shipWaveY * 0.45;
           tankerGroup.rotation.x = Math.sin(t * 1.45) * rollAmp;
           tankerGroup.rotation.z = Math.cos(t * 1.1) * pitchAmp;
+          if (tm) {
+            tm.currentShipPos.copy(sP);
+            tm.currentShipRotY = sRot;
+          }
+
+          // Mise à jour 3D des remorqueurs Groupe Océan (Taiga & K. Rusby)
+          const bowWave = sampleWaveHeight(bowTugTarget.x, bowTugTarget.z, t, windKnots, flowSign);
+          tugBow.group.position.set(bowTugTarget.x, waterLevelY + bowWave * 0.45, bowTugTarget.z);
+          tugBow.group.rotation.y = bowTugRot;
+          tugBow.group.rotation.z = Math.sin(t * 2.2) * 0.035;
+          tugBow.group.rotation.x = Math.cos(t * 1.8) * 0.02;
+
+          const sternWave = sampleWaveHeight(sternTugTarget.x, sternTugTarget.z, t, windKnots, flowSign);
+          tugStern.group.position.set(sternTugTarget.x, waterLevelY + sternWave * 0.45, sternTugTarget.z);
+          tugStern.group.rotation.y = sternTugRot;
+          tugStern.group.rotation.z = Math.sin(t * 2.0 + 1.2) * 0.035;
+          tugStern.group.rotation.x = Math.cos(t * 1.6 + 0.8) * 0.02;
+
+          // Mettre à jour l'écume des propulseurs Z-Drive
+          const washPulse = 0.8 + Math.sin(t * 12) * 0.25;
+          tugBow.wash.scale.set(washPulse * thrustIntensity * 2.0, 1, washPulse * thrustIntensity * 1.5);
+          tugBow.wash.material.opacity = Math.min(0.85, thrustIntensity * 0.9);
+          tugStern.wash.scale.set(washPulse * thrustIntensity * 2.0, 1, washPulse * thrustIntensity * 1.5);
+          tugStern.wash.material.opacity = Math.min(0.85, thrustIntensity * 0.9);
+
+          // Mettre à jour les lignes de remorquage 3D (Aussières haute résistance)
+          towLineBow.visible = linesActive;
+          towLineStern.visible = linesActive;
+          if (linesActive) {
+            const tBowBitt = tankerGroup.localToWorld(new THREE.Vector3(48, 5.5, 6.5));
+            const tSternBitt = tankerGroup.localToWorld(new THREE.Vector3(-38, 5.5, 6.5));
+            const tugBowAttach = tugBow.group.localToWorld(new THREE.Vector3(-8.5, 3.2, 0));
+            const tugSternAttach = tugStern.group.localToWorld(new THREE.Vector3(-8.5, 3.2, 0));
+
+            towLineBowGeo.setFromPoints([tugBowAttach, tBowBitt]);
+            towLineBowGeo.attributes.position.needsUpdate = true;
+            towLineSternGeo.setFromPoints([tugSternAttach, tSternBitt]);
+            towLineSternGeo.attributes.position.needsUpdate = true;
+          }
+
+          // Suivi automatique caméra 3D si activé
+          if (tm && tm.isCameraTracking && !isDraggingSky) {
+            const desiredAz = (Math.atan2(sP.x, -sP.z) * 180 / Math.PI + 360) % 360;
+            let diffAz = desiredAz - viewAzimuth;
+            if (diffAz > 180) diffAz -= 360;
+            if (diffAz < -180) diffAz += 360;
+            viewAzimuth = (viewAzimuth + diffAz * 0.06 + 360) % 360;
+          }
 
           wakeRingMesh.scale.x = 1.92 + Math.sin(t * 2.6) * 0.06;
           wakeRingMesh.scale.z = 0.35 + Math.cos(t * 2.6) * 0.03;
@@ -29804,14 +30552,6 @@
             sp.mesh.material.opacity = (1 - sp.age) * 0.32;
           });
 
-          // Tourelle 3D pendant le mini-jeu Tanker Defense
-          turret3DGroup.visible = !!battleSimActive;
-          if (battleSimActive) {
-            const tPos = window.getTurretScreenPos3D();
-            const dx = aimX - tPos.x;
-            const dy = aimY - tPos.y;
-            turret3DGroup.rotation.y = -Math.atan2(dy, dx);
-          }
 
           // 6. Bouées du chenal, voiliers et glaces/débris dérivants sur l'eau
           buoys3D.forEach((b) => {
@@ -29873,11 +30613,7 @@
           ferryGroup.rotation.y = Math.atan2(fDirVec.x, fDirVec.z);
           ferryGroup.rotation.z = Math.sin(t * 1.8) * 0.025; // léger roulis
 
-          // B. Remorqueur de port Océan Valero (oscillation sur les vagues)
-          const tugWave = sampleWaveHeight(tugBasePos.x, tugBasePos.z, t, windKnots, flowSign);
-          tugGroup.position.y = waterLevelY + tugWave * 0.45;
-          tugGroup.rotation.z = Math.sin(t * 2.2) * 0.035;
-          tugGroup.rotation.x = Math.cos(t * 1.8) * 0.02;
+          // B. Remorqueurs Groupe Océan déjà animés dynamiquement dans la boucle de manœuvre
 
           // C. Phare de la Pointe-Lévy (faisceau lumineux rotatif 360°)
           lighthouseBeam.rotation.y = t * 1.4;
