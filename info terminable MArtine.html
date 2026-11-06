@@ -2094,6 +2094,214 @@
         border-color: rgba(245, 158, 11, 0.65);
       }
 
+      /* --- PANNEAU SIMULATION DE TEMPERATURE (AIR, EAU DU FLEUVE, GLACES & BRUT) --- */
+      .temp-simulation-hud {
+        position: absolute;
+        top: 40px;
+        right: 8px;
+        width: 310px;
+        max-width: calc(100% - 16px);
+        z-index: 28;
+        background: rgba(7, 14, 26, 0.93);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        border: 1px solid rgba(249, 115, 22, 0.45);
+        border-radius: 8px;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.75);
+        color: #f8fafc;
+        overflow: hidden;
+        transition: opacity 0.2s ease, transform 0.2s ease;
+        user-select: none;
+      }
+      .temp-simulation-hud.hidden-temp-hud {
+        display: none !important;
+      }
+      .temp-simulation-hud.collapsed-temp-hud .ts-body {
+        display: none !important;
+      }
+      .ts-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.35rem;
+        padding: 0.32rem 0.52rem;
+        background: linear-gradient(90deg, rgba(15, 23, 42, 0.96), rgba(124, 45, 18, 0.75));
+        border-bottom: 1px solid rgba(249, 115, 22, 0.35);
+      }
+      .ts-title {
+        font-size: 0.66rem;
+        font-weight: 800;
+        letter-spacing: 0.02em;
+        color: #ffedd5;
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+      }
+      .ts-mode-badge {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.55rem;
+        font-weight: 800;
+        padding: 0.08rem 0.32rem;
+        border-radius: 4px;
+        background: rgba(16, 185, 129, 0.2);
+        color: #34d399;
+        border: 1px solid rgba(16, 185, 129, 0.45);
+      }
+      .ts-mode-badge.sim-active {
+        background: rgba(249, 115, 22, 0.28);
+        color: #fb923c;
+        border-color: rgba(249, 115, 22, 0.7);
+        box-shadow: 0 0 8px rgba(249, 115, 22, 0.35);
+      }
+      .ts-body {
+        padding: 0.48rem 0.55rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.45rem;
+        background: rgba(4, 11, 22, 0.96);
+      }
+      .ts-slider-row {
+        display: flex;
+        flex-direction: column;
+        gap: 0.18rem;
+      }
+      .ts-slider-hdr {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.62rem;
+        color: #cbd5e1;
+      }
+      .ts-val-pill {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.64rem;
+        font-weight: 800;
+        padding: 0.08rem 0.34rem;
+        border-radius: 4px;
+        background: rgba(15, 23, 42, 0.9);
+        border: 1px solid rgba(249, 115, 22, 0.4);
+        color: #f8fafc;
+      }
+      .ts-slider-ctrls {
+        display: flex;
+        align-items: center;
+        gap: 0.28rem;
+      }
+      .ts-slider-ctrls input[type="range"] {
+        flex: 1;
+        height: 6px;
+        accent-color: #f97316;
+        cursor: pointer;
+      }
+      .ts-step-btn {
+        width: 22px;
+        height: 22px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        border: 1px solid rgba(249, 115, 22, 0.35);
+        background: rgba(30, 41, 59, 0.85);
+        color: #fed7aa;
+        font-size: 0.66rem;
+        font-weight: 800;
+        cursor: pointer;
+      }
+      .ts-step-btn:hover {
+        background: rgba(249, 115, 22, 0.35);
+        color: #fff;
+      }
+      .ts-presets-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.24rem;
+        margin-top: 0.1rem;
+      }
+      .ts-preset-chip {
+        padding: 0.22rem 0.26rem;
+        font-size: 0.58rem;
+        font-weight: 700;
+        border-radius: 4px;
+        border: 1px solid rgba(56, 189, 248, 0.25);
+        background: rgba(15, 23, 42, 0.85);
+        color: #cbd5e1;
+        cursor: pointer;
+        text-align: center;
+        white-space: nowrap;
+        transition: all 0.15s ease;
+      }
+      .ts-preset-chip:hover {
+        border-color: #f97316;
+        color: #ffedd5;
+        background: rgba(124, 45, 18, 0.4);
+      }
+      .ts-preset-chip.active-chip {
+        border-color: #f97316;
+        background: linear-gradient(135deg, rgba(234, 88, 12, 0.45), rgba(154, 52, 18, 0.65));
+        color: #ffffff;
+        box-shadow: 0 0 8px rgba(249, 115, 22, 0.35);
+      }
+      .ts-matrix-box {
+        border-radius: 5px;
+        border: 1px solid rgba(148, 163, 184, 0.16);
+        background: rgba(8, 19, 36, 0.9);
+        padding: 0.32rem 0.45rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.26rem;
+      }
+      .ts-matrix-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.58rem;
+        line-height: 1.25;
+      }
+      .ts-matrix-k {
+        color: #94a3b8;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.22rem;
+      }
+      .ts-matrix-v {
+        font-family: "JetBrains Mono", monospace;
+        font-weight: 800;
+        color: #e2e8f0;
+      }
+      .ts-action-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.3rem;
+        margin-top: 0.15rem;
+      }
+      .ts-action-btn {
+        flex: 1;
+        padding: 0.22rem 0.4rem;
+        font-size: 0.6rem;
+        font-weight: 800;
+        border-radius: 4px;
+        cursor: pointer;
+        text-align: center;
+        border: 1px solid rgba(239, 68, 68, 0.45);
+        background: rgba(239, 68, 68, 0.15);
+        color: #fca5a5;
+      }
+      .ts-action-btn:hover {
+        background: #ef4444;
+        color: #fff;
+      }
+
+      /* Responsive mobile pour panneau simulation temperature */
+      @media (max-width: 900px) {
+        .temp-simulation-hud {
+          width: 275px !important;
+          max-width: calc(100vw - 12px) !important;
+          top: 62px !important;
+          right: 6px !important;
+        }
+      }
+
       /* --- MINIMAP METEO & RADAR DOPPLER 3D (SUIT LE TEMPS SIMULE) --- */
       .weather-minimap-hud {
         position: absolute;
@@ -2583,6 +2791,9 @@
         <button id="langlois-calc-toggle" class="theme-toggle" style="border-color: var(--valero-gold); font-weight: 800" title="Calculateur Maritime Complet (1m, Chargement, Déchargement, Convertisseur)">
           🧮 Calculateur Maritime
         </button>
+        <button id="temp-sim-toggle" class="theme-toggle" style="border-color: #f97316; font-weight: 700; display: inline-flex; align-items: center; gap: 0.3rem" title="Simulateur thermique maritime et mÃ©tÃ©o (Glaces, Brut, Dilatation, Hypothermie)">
+          &#x1F321;&#xFE0F; Sim. Temp&eacute;rature
+        </button>
         <button id="converter-toggle" class="theme-toggle" style="border-color: #38bdf8; font-weight: 700" title="Convertisseur universel (Vent, Débit, Quantités, Pression, Température)">
           🔄 Convertisseur
         </button>
@@ -2745,6 +2956,9 @@
                 <button type="button" class="hud-pill-btn active-cam" id="hud-toggle-labels" title="Afficher/Masquer les rep&egrave;res flottants AR 3D">
                   &#x1F3F7;&#xFE0F; Rep&egrave;res AR
                 </button>
+                <button type="button" class="hud-pill-btn" id="hud-toggle-temp-sim" title="Panneau de simulation de temp&eacute;rature (Air, Eau Saint-Laurent, Glaces, Brut)">
+                  &#x1F321;&#xFE0F; Sim. Temp
+                </button>
                 <button type="button" class="hud-pill-btn active-cam" id="hud-toggle-minimap" title="Afficher/Masquer la Minimap M&eacute;t&eacute;o &amp; Radar qui suit le temps simul&eacute;">
                   &#x1F326;&#xFE0F; Radar M&eacute;t&eacute;o
                 </button>
@@ -2754,6 +2968,91 @@
                 <button type="button" class="hud-pill-btn" id="hud-toggle-3d" title="Basculer entre le Monde 3D WebGL et le Panorama 2D Classique">
                   &#x1F310; 3D: ON
                 </button>
+              </div>
+            </div>
+
+            <!-- PANNEAU SIMULATION DE TEMPERATURE (AIR, EAU DU FLEUVE, GLACES & BRUT) -->
+            <div id="temp-simulation-hud" class="temp-simulation-hud hidden-temp-hud" aria-label="Panneau Simulation de TempÃ©rature">
+              <div class="ts-header">
+                <div class="ts-title">
+                  <span>&#x1F321;&#xFE0F; Simulation Temp&eacute;rature</span>
+                  <span id="temp-sim-badge" class="ts-mode-badge">LIVE</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.18rem;">
+                  <button type="button" id="temp-sim-collapse-btn" class="tl-ctrl-btn" style="padding: 0.05rem 0.25rem; font-size: 0.56rem;" title="R&eacute;duire / Agrandir le panneau">&#x2013;</button>
+                  <button type="button" id="temp-sim-close-btn" class="tl-ctrl-btn" style="padding: 0.05rem 0.25rem; font-size: 0.56rem;" title="Fermer le panneau">&#x2715;</button>
+                </div>
+              </div>
+              <div class="ts-body">
+                <!-- Slider Temperature Air -->
+                <div class="ts-slider-row">
+                  <div class="ts-slider-hdr">
+                    <span>&#x1F32C;&#xFE0F; Temp&eacute;rature Air :</span>
+                    <span id="temp-sim-air-lbl" class="ts-val-pill">15.0&deg;C (59&deg;F)</span>
+                  </div>
+                  <div class="ts-slider-ctrls">
+                    <button type="button" id="ts-air-minus" class="ts-step-btn" title="Diminuer de 1&deg;C">-1</button>
+                    <input type="range" id="temp-sim-air-slider" min="-35" max="42" step="0.5" value="15" />
+                    <button type="button" id="ts-air-plus" class="ts-step-btn" title="Augmenter de 1&deg;C">+1</button>
+                  </div>
+                </div>
+
+                <!-- Slider Temperature Eau du Fleuve -->
+                <div class="ts-slider-row">
+                  <div class="ts-slider-hdr">
+                    <span>&#x1F30A; Eau St-Laurent :</span>
+                    <span id="temp-sim-water-lbl" class="ts-val-pill">12.0&deg;C (54&deg;F)</span>
+                  </div>
+                  <div class="ts-slider-ctrls">
+                    <button type="button" id="ts-water-minus" class="ts-step-btn" title="Diminuer de 1&deg;C">-1</button>
+                    <input type="range" id="temp-sim-water-slider" min="-2.0" max="24.0" step="0.5" value="12" />
+                    <button type="button" id="ts-water-plus" class="ts-step-btn" title="Augmenter de 1&deg;C">+1</button>
+                  </div>
+                </div>
+
+                <!-- Scenarios Predefinis (1 clic) -->
+                <div style="font-size: 0.58rem; color: #94a3b8; font-weight: 700; margin-top: 0.08rem;">Sc&eacute;narios Pr&eacute;d&eacute;finis :</div>
+                <div class="ts-presets-grid">
+                  <button type="button" class="ts-preset-chip" data-air="-24" data-water="-1.2" title="Gel polaire extr&ecirc;me avec banquise &amp; frasil">&#x2744;&#xFE0F; Grand Gel (-24&deg;)</button>
+                  <button type="button" class="ts-preset-chip" data-air="-8" data-water="0.0" title="Hiver qu&eacute;b&eacute;cois avec plaques de glace &amp; neige">&#x1F328;&#xFE0F; Hiver (-8&deg;)</button>
+                  <button type="button" class="ts-preset-chip" data-air="4" data-water="1.8" title="D&eacute;gel printanier &amp; d&eacute;b&acirc;cle des glaces">&#x1F9CA; D&eacute;gel (+4&deg;)</button>
+                  <button type="button" class="ts-preset-chip" data-air="16" data-water="4.5" title="Air chaud sur eau froide : condensation &amp; brouillard marin">&#x1F32B;&#xFE0F; Brouillard (+16&deg;)</button>
+                  <button type="button" class="ts-preset-chip" data-air="22" data-water="18.0" title="Conditions estivales standard eau libre">&#x2600;&#xFE0F; &Eacute;t&eacute; (+22&deg;)</button>
+                  <button type="button" class="ts-preset-chip" data-air="34" data-water="21.5" title="Canicule intense : dilatation du brut &amp; vapeur">&#x1F525; Canicule (+34&deg;)</button>
+                </div>
+
+                <!-- Matrice d'Impact Maritime & Physique -->
+                <div class="ts-matrix-box">
+                  <div class="ts-matrix-item">
+                    <span class="ts-matrix-k">&#x1F9CA; Glaces St-Laurent :</span>
+                    <span id="ts-matrix-ice" class="ts-matrix-v" style="color: #38bdf8;">Eau libre (0/10)</span>
+                  </div>
+                  <div class="ts-matrix-item">
+                    <span class="ts-matrix-k">&#x1F6E2;&#xFE0F; Brut Sec. 87 (Viscosit&eacute;) :</span>
+                    <span id="ts-matrix-visc" class="ts-matrix-v">48 cSt &bull; Fluide</span>
+                  </div>
+                  <div class="ts-matrix-item">
+                    <span class="ts-matrix-k">&#x1F4CF; Dilatation VCF (ASTM 54B) :</span>
+                    <span id="ts-matrix-vcf" class="ts-matrix-v">1.000 (R&eacute;f. 15&deg;C)</span>
+                  </div>
+                  <div class="ts-matrix-item">
+                    <span class="ts-matrix-k">&#x2668;&#xFE0F; Tra&ccedil;age Vapeur (Steam) :</span>
+                    <span id="ts-matrix-steam" class="ts-matrix-v" style="color: #10b981;">Inactif (Veille)</span>
+                  </div>
+                  <div class="ts-matrix-item">
+                    <span class="ts-matrix-k">&#x1F9BA; Survie Immersion (SOLAS) :</span>
+                    <span id="ts-matrix-solas" class="ts-matrix-v">2h &agrave; 6h (Mod&eacute;r&eacute;)</span>
+                  </div>
+                  <div class="ts-matrix-item">
+                    <span class="ts-matrix-k">&#x1F321;&#xFE0F; &Eacute;cart Air / Eau (&Delta;T) :</span>
+                    <span id="ts-matrix-delta" class="ts-matrix-v">+3.0&deg;C &bull; Normal</span>
+                  </div>
+                </div>
+
+                <!-- Barre d'Action -->
+                <div class="ts-action-bar">
+                  <button type="button" id="ts-reset-live-btn" class="ts-action-btn">&#x1F534; R&eacute;tablir Temps R&eacute;el (LIVE)</button>
+                </div>
               </div>
             </div>
 
@@ -24296,7 +24595,7 @@
         animWinEl.addEventListener(
           "touchstart",
           (e) => {
-            if (e.target.closest("button") || e.target.closest("#weather-minimap-hud") || e.target.closest(".tug-maneuver-hud")) return;
+            if (e.target.closest("button") || e.target.closest("#weather-minimap-hud") || e.target.closest(".tug-maneuver-hud") || e.target.closest("#temp-simulation-hud")) return;
             touchVelAz = 0;
             touchVelAlt = 0;
 
@@ -24882,7 +25181,34 @@
 
         let temp, feels, windKmh, gustKmh, windDir, code, visMeters, pressHpa, rhPct, dewPoint, precipMm, precipProb, cloudCover, uvIndex;
 
-        if (!window.scrubberOffsetMins) {
+        if (window.tempSimState && window.tempSimState.active) {
+          temp = window.tempSimState.airTemp;
+          feels = calculateFeelsLike(temp, typeof c.wind_speed_10m === "number" ? c.wind_speed_10m : 10, typeof c.relative_humidity_2m === "number" ? c.relative_humidity_2m : 65);
+          windKmh = typeof c.wind_speed_10m === "number" ? c.wind_speed_10m : 10;
+          gustKmh = typeof c.wind_gusts_10m === "number" ? c.wind_gusts_10m : windKmh;
+          windDir = typeof c.wind_direction_10m === "number" ? c.wind_direction_10m : 220;
+          code = temp <= 0 ? 71 : (c.weather_code || 0);
+          pressHpa = typeof c.surface_pressure === "number" ? c.surface_pressure : 1013;
+          rhPct = typeof c.relative_humidity_2m === "number" ? c.relative_humidity_2m : 65;
+          dewPoint = calculateDewPoint(temp, rhPct);
+          precipMm = typeof c.precipitation === "number" ? c.precipitation : 0;
+          cloudCover = typeof c.cloud_cover === "number" ? c.cloud_cover : 30;
+          visMeters = 15000;
+          precipProb = precipMm > 0 ? 80 : 0;
+          uvIndex = 0;
+
+          currentConditions.temp = temp;
+          currentConditions.waterTemp = window.tempSimState.waterTemp;
+          currentConditions.wind = windKmh;
+          currentConditions.windGust = gustKmh;
+          currentConditions.windDir = windDir;
+          currentConditions.weatherCode = code;
+          currentConditions.pressure = pressHpa;
+          currentConditions.humidity = rhPct;
+          currentConditions.cloudCover = cloudCover;
+          currentConditions.rain = temp > 0 ? precipMm : 0;
+          currentConditions.snow = temp <= 0 ? (precipMm || 0.5) : 0;
+        } else if (!window.scrubberOffsetMins) {
           temp = typeof c.temperature_2m === "number" ? c.temperature_2m : 15;
           feels = typeof c.apparent_temperature === "number" ? c.apparent_temperature : temp;
           windKmh = typeof c.wind_speed_10m === "number" ? c.wind_speed_10m : 10;
@@ -25347,7 +25673,323 @@
         5: { lat: 50.21, lon: -66.38, name: "Sept-Îles" },
       };
 
-      let weatherPresets =
+      let       // =========================================================================
+      // MOTEUR DU PANNEAU DE SIMULATION DE TEMPERATURE (AIR, EAU, GLACES & BRUT)
+      // =========================================================================
+      window.tempSimState = {
+        active: false,
+        airTemp: 15.0,
+        waterTemp: 12.0,
+        mode: "live" // "live" | "sim"
+      };
+
+      function updateTempSimUI(airT, waterT, isSimActive) {
+        const hudEl = document.getElementById("temp-simulation-hud");
+        const badgeEl = document.getElementById("temp-sim-badge");
+        const airLbl = document.getElementById("temp-sim-air-lbl");
+        const waterLbl = document.getElementById("temp-sim-water-lbl");
+        const airSlider = document.getElementById("temp-sim-air-slider");
+        const waterSlider = document.getElementById("temp-sim-water-slider");
+        const hudBtn = document.getElementById("hud-toggle-temp-sim");
+        const topBtn = document.getElementById("temp-sim-toggle");
+
+        if (airSlider) airSlider.value = airT.toFixed(1);
+        if (waterSlider) waterSlider.value = waterT.toFixed(1);
+
+        const airF = Math.round(airT * 1.8 + 32);
+        const waterF = Math.round(waterT * 1.8 + 32);
+
+        if (airLbl) {
+          airLbl.textContent = `${airT >= 0 ? "+" : ""}${airT.toFixed(1)}Â°C (${airF}Â°F)`;
+          if (airT <= -10) airLbl.style.color = "#93c5fd";
+          else if (airT <= 0) airLbl.style.color = "#38bdf8";
+          else if (airT >= 30) airLbl.style.color = "#f87171";
+          else if (airT >= 22) airLbl.style.color = "#fbbf24";
+          else airLbl.style.color = "#34d399";
+        }
+
+        if (waterLbl) {
+          waterLbl.textContent = `${waterT >= 0 ? "+" : ""}${waterT.toFixed(1)}Â°C (${waterF}Â°F)`;
+          waterLbl.style.color = waterT <= 0.5 ? "#7dd3fc" : (waterT >= 20 ? "#f87171" : "#a7f3d0");
+        }
+
+        if (badgeEl) {
+          if (isSimActive) {
+            badgeEl.textContent = `SIM: ${airT >= 0 ? "+" : ""}${Math.round(airT)}Â°C`;
+            badgeEl.classList.add("sim-active");
+          } else {
+            badgeEl.textContent = "LIVE";
+            badgeEl.classList.remove("sim-active");
+          }
+        }
+
+        if (hudBtn) hudBtn.classList.toggle("active-cam", isSimActive);
+        if (topBtn) {
+          topBtn.style.background = isSimActive ? "rgba(249, 115, 22, 0.28)" : "";
+          topBtn.style.color = isSimActive ? "#ffedd5" : "";
+        }
+
+        // Matrice maritime
+        const deltaT = airT - waterT;
+        const deltaEl = document.getElementById("ts-matrix-delta");
+        if (deltaEl) {
+          const deltaSign = deltaT >= 0 ? "+" : "";
+          let deltaDesc = "Normal";
+          if (deltaT >= 8 && airT >= 12) deltaDesc = "Brouillard Marin (Advection)";
+          else if (deltaT <= -14 && waterT >= 0) deltaDesc = "FumÃ©e Arctique (Sea Smoke)";
+          deltaEl.textContent = `${deltaSign}${deltaT.toFixed(1)}Â°C â€¢ ${deltaDesc}`;
+          deltaEl.style.color = Math.abs(deltaT) >= 10 ? "#f59e0b" : "#e2e8f0";
+        }
+
+        // Glaces St-Laurent
+        const iceEl = document.getElementById("ts-matrix-ice");
+        if (iceEl) {
+          if (waterT <= -0.5 || airT <= -18) {
+            iceEl.textContent = "Banquise cÃ´tiÃ¨re & frasil (8-10/10)";
+            iceEl.style.color = "#38bdf8";
+          } else if (waterT <= 1.0 || airT <= -2) {
+            iceEl.textContent = "Glaces de dÃ©rive & frasil (4-7/10)";
+            iceEl.style.color = "#7dd3fc";
+          } else if (waterT <= 3.5 || airT <= 3) {
+            iceEl.textContent = "Plaques rÃ©siduelles & dÃ©bÃ¢cle (2/10)";
+            iceEl.style.color = "#bae6fd";
+          } else {
+            iceEl.textContent = "Eau libre navigable (0/10)";
+            iceEl.style.color = "#34d399";
+          }
+        }
+
+        // Viscosite du brut lourd/moyen Valero (Sec. 87)
+        const viscEl = document.getElementById("ts-matrix-visc");
+        const steamEl = document.getElementById("ts-matrix-steam");
+        const vcfEl = document.getElementById("ts-matrix-vcf");
+
+        // Modele viscosite cinematique ASTM
+        const kelvin = airT + 273.15;
+        const viscEstimate = Math.max(8, Math.min(2500, Math.round(18 * Math.exp(1600 * (1 / Math.max(230, kelvin) - 1 / 293.15)))));
+        if (viscEl) {
+          let viscDesc = "Fluide";
+          let viscCol = "#34d399";
+          if (viscEstimate >= 500) {
+            viscDesc = "TrÃ¨s visqueux (Pertes de charge)";
+            viscCol = "#ef4444";
+          } else if (viscEstimate >= 140) {
+            viscDesc = "PÃ¢teux (DÃ©bit rÃ©duit requis)";
+            viscCol = "#f59e0b";
+          } else if (viscEstimate >= 60) {
+            viscDesc = "ModÃ©rÃ©";
+            viscCol = "#fbbf24";
+          }
+          viscEl.textContent = `${viscEstimate} cSt â€¢ ${viscDesc}`;
+          viscEl.style.color = viscCol;
+        }
+
+        // VCF ASTM 54B
+        if (vcfEl) {
+          const alphaCoeff = 0.00084;
+          const dtRef = airT - 15.0;
+          const vcfVal = Math.exp(-alphaCoeff * dtRef * (1 + 0.8 * alphaCoeff * dtRef));
+          const vcfPct = ((vcfVal - 1) * 100).toFixed(2);
+          vcfEl.textContent = `${vcfVal.toFixed(4)} (${vcfPct >= 0 ? "+" : ""}${vcfPct}%)`;
+          vcfEl.style.color = Math.abs(dtRef) >= 15 ? "#fb923c" : "#e2e8f0";
+        }
+
+        // Tracage vapeur
+        if (steamEl) {
+          if (airT < 0 || viscEstimate >= 180) {
+            steamEl.textContent = "ACTIF (Vapeur haute pression)";
+            steamEl.style.color = "#f97316";
+          } else if (airT < 8) {
+            steamEl.textContent = "ModÃ©rÃ© (Maintien ligne chaude)";
+            steamEl.style.color = "#fbbf24";
+          } else {
+            steamEl.textContent = "Inactif (Veille)";
+            steamEl.style.color = "#10b981";
+          }
+        }
+
+        // Survie en eau froide (Regle 1-10-1)
+        const solasEl = document.getElementById("ts-matrix-solas");
+        if (solasEl) {
+          if (waterT <= 2) {
+            solasEl.textContent = "Choc <1 min â€¢ IncapacitÃ© <10 min â€¢ Survie <30 min";
+            solasEl.style.color = "#ef4444";
+          } else if (waterT <= 6) {
+            solasEl.textContent = "Choc <2 min â€¢ IncapacitÃ© <15 min â€¢ Survie 45 min";
+            solasEl.style.color = "#f97316";
+          } else if (waterT <= 12) {
+            solasEl.textContent = "IncapacitÃ© ~30 min â€¢ Survie 1h Ã  3h";
+            solasEl.style.color = "#fbbf24";
+          } else if (waterT <= 18) {
+            solasEl.textContent = "Survie 3h Ã  8h â€¢ Risque modÃ©rÃ©";
+            solasEl.style.color = "#34d399";
+          } else {
+            solasEl.textContent = "Survie > 12h â€¢ Risque faible";
+            solasEl.style.color = "#10b981";
+          }
+        }
+      }
+
+      function applyTemperatureSimulation(airT, waterT, isManual = true) {
+        window.tempSimState.active = isManual;
+        window.tempSimState.airTemp = airT;
+        window.tempSimState.waterTemp = waterT;
+        window.tempSimState.mode = isManual ? "sim" : "live";
+
+        // Affecter les conditions courantes
+        currentConditions.temp = airT;
+        currentConditions.waterTemp = waterT;
+        if (airT <= 0) {
+          if (currentConditions.rain > 0) {
+            currentConditions.snow = Math.max(currentConditions.snow, currentConditions.rain);
+            currentConditions.rain = 0;
+          }
+        } else {
+          if (currentConditions.snow > 0) {
+            currentConditions.rain = Math.max(currentConditions.rain, currentConditions.snow);
+            currentConditions.snow = 0;
+          }
+        }
+
+        // Mettre a jour les tuiles meteo, le badge temperature eau et le radar
+        updateWeatherBarForEffectiveTime();
+        const wtVal = document.getElementById("water-temp-val");
+        if (wtVal) wtVal.textContent = waterT.toFixed(1);
+        const wtBadge = document.getElementById("water-temp-badge");
+        if (wtBadge) wtBadge.style.display = "inline-block";
+
+        updateTempSimUI(airT, waterT, isManual);
+      }
+
+      function initTempSimulationEvents() {
+        const hudEl = document.getElementById("temp-simulation-hud");
+        const toggleTopBtn = document.getElementById("temp-sim-toggle");
+        const toggleHudBtn = document.getElementById("hud-toggle-temp-sim");
+        const closeBtn = document.getElementById("temp-sim-close-btn");
+        const collapseBtn = document.getElementById("temp-sim-collapse-btn");
+        const airSlider = document.getElementById("temp-sim-air-slider");
+        const waterSlider = document.getElementById("temp-sim-water-slider");
+        const airMinus = document.getElementById("ts-air-minus");
+        const airPlus = document.getElementById("ts-air-plus");
+        const waterMinus = document.getElementById("ts-water-minus");
+        const waterPlus = document.getElementById("ts-water-plus");
+        const resetLiveBtn = document.getElementById("ts-reset-live-btn");
+
+        const togglePanel = () => {
+          if (!hudEl) return;
+          const isHidden = hudEl.classList.toggle("hidden-temp-hud");
+          if (!isHidden) {
+            hudEl.classList.remove("collapsed-temp-hud");
+            if (collapseBtn) collapseBtn.textContent = "â€“";
+            // Initialiser les curseurs avec la temperature courante si pas encore actif
+            if (!window.tempSimState.active) {
+              const curAir = typeof currentConditions.temp === "number" ? currentConditions.temp : 15;
+              const curWater = typeof currentConditions.waterTemp === "number" ? currentConditions.waterTemp : 12;
+              updateTempSimUI(curAir, curWater, false);
+            }
+          }
+        };
+
+        if (toggleTopBtn) toggleTopBtn.addEventListener("click", togglePanel);
+        if (toggleHudBtn) toggleHudBtn.addEventListener("click", togglePanel);
+        if (closeBtn) closeBtn.addEventListener("click", () => hudEl && hudEl.classList.add("hidden-temp-hud"));
+        if (collapseBtn) {
+          collapseBtn.addEventListener("click", () => {
+            if (!hudEl) return;
+            const isCol = hudEl.classList.toggle("collapsed-temp-hud");
+            collapseBtn.textContent = isCol ? "+" : "â€“";
+          });
+        }
+
+        if (airSlider) {
+          airSlider.addEventListener("input", (e) => {
+            const newAir = parseFloat(e.target.value);
+            const curWater = waterSlider ? parseFloat(waterSlider.value) : (newAir > 0 ? Math.max(1, newAir * 0.75) : 0);
+            document.querySelectorAll(".ts-preset-chip").forEach(c => c.classList.remove("active-chip"));
+            applyTemperatureSimulation(newAir, curWater, true);
+          });
+        }
+
+        if (waterSlider) {
+          waterSlider.addEventListener("input", (e) => {
+            const newWater = parseFloat(e.target.value);
+            const curAir = airSlider ? parseFloat(airSlider.value) : newWater;
+            document.querySelectorAll(".ts-preset-chip").forEach(c => c.classList.remove("active-chip"));
+            applyTemperatureSimulation(curAir, newWater, true);
+          });
+        }
+
+        if (airMinus && airSlider) {
+          airMinus.addEventListener("click", () => {
+            const v = Math.max(parseFloat(airSlider.min), parseFloat(airSlider.value) - 1);
+            airSlider.value = v;
+            applyTemperatureSimulation(v, parseFloat(waterSlider.value), true);
+          });
+        }
+        if (airPlus && airSlider) {
+          airPlus.addEventListener("click", () => {
+            const v = Math.min(parseFloat(airSlider.max), parseFloat(airSlider.value) + 1);
+            airSlider.value = v;
+            applyTemperatureSimulation(v, parseFloat(waterSlider.value), true);
+          });
+        }
+
+        if (waterMinus && waterSlider) {
+          waterMinus.addEventListener("click", () => {
+            const v = Math.max(parseFloat(waterSlider.min), parseFloat(waterSlider.value) - 1);
+            waterSlider.value = v;
+            applyTemperatureSimulation(parseFloat(airSlider.value), v, true);
+          });
+        }
+        if (waterPlus && waterSlider) {
+          waterPlus.addEventListener("click", () => {
+            const v = Math.min(parseFloat(waterSlider.max), parseFloat(waterSlider.value) + 1);
+            waterSlider.value = v;
+            applyTemperatureSimulation(parseFloat(airSlider.value), v, true);
+          });
+        }
+
+        // Puces de scenarios predefinis
+        document.querySelectorAll(".ts-preset-chip").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            document.querySelectorAll(".ts-preset-chip").forEach(c => c.classList.remove("active-chip"));
+            btn.classList.add("active-chip");
+            const a = parseFloat(btn.getAttribute("data-air"));
+            const w = parseFloat(btn.getAttribute("data-water"));
+            applyTemperatureSimulation(a, w, true);
+          });
+        });
+
+        // Bouton Retablir Temps Reel (LIVE)
+        if (resetLiveBtn) {
+          resetLiveBtn.addEventListener("click", () => {
+            document.querySelectorAll(".ts-preset-chip").forEach(c => c.classList.remove("active-chip"));
+            window.tempSimState.active = false;
+            window.tempSimState.mode = "live";
+
+            // Retablir depuis les donnees meteo reelles
+            if (weatherDataCache && weatherDataCache.current) {
+              const liveAir = weatherDataCache.current.temperature_2m || 15;
+              currentConditions.temp = liveAir;
+              const liveWater = (typeof currentConditions.realWaterTemp === "number") ? currentConditions.realWaterTemp : (liveAir > 0 ? Math.max(2, liveAir * 0.8) : 0);
+              currentConditions.waterTemp = liveWater;
+              updateWeatherBarForEffectiveTime();
+              updateTempSimUI(liveAir, liveWater, false);
+            } else {
+              applyTemperatureSimulation(15, 12, false);
+            }
+          });
+        }
+      }
+
+      // Initialiser le panneau au chargement
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initTempSimulationEvents);
+      } else {
+        initTempSimulationEvents();
+      }
+
+weatherPresets =
         JSON.parse(localStorage.getItem("terminal_weather_presets")) ||
         defaultPresets;
 
@@ -33600,9 +34242,14 @@
             sb.group.rotation.z = Math.sin(t * 1.7 + sb.phase) * 0.1;
           });
 
-          const isWinterIce = (c.temp || 10) <= 0;
+          const effectiveAirTemp = (window.tempSimState && window.tempSimState.active) ? window.tempSimState.airTemp : (typeof c.temp === "number" ? c.temp : 10);
+          const effectiveWaterTemp = (window.tempSimState && window.tempSimState.active) ? window.tempSimState.waterTemp : (typeof c.waterTemp === "number" ? c.waterTemp : (effectiveAirTemp > 0 ? 12 : 0));
+          const isWinterIce = effectiveAirTemp <= 0 || effectiveWaterTemp <= 0.8;
+          const iceScaleFactor = effectiveAirTemp <= -15 ? 1.85 : (effectiveAirTemp <= -5 ? 1.45 : (isWinterIce ? 1.15 : 0.85));
+
           floes3D.forEach((fl) => {
             fl.mesh.material = isWinterIce ? iceMat : logMat;
+            fl.mesh.scale.set(iceScaleFactor, isWinterIce ? 1.2 : 0.9, iceScaleFactor);
             fl.az = (fl.az + fl.speed * flowSign + 360) % 360;
             const p = azDistToVec3(fl.az, fl.dist, 0);
             const wy = sampleWaveHeight(p.x, p.z, t, windKnots, flowSign);
