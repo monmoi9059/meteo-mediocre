@@ -3871,7 +3871,7 @@
               <button type="button" class="landmark-jump-btn active" data-target-az="130" data-target-alt="-8" title="Quai Section 87 — Azimut 130° • Distance 110m">
                 &#x1F6A2; Quai 87 &middot; 130&deg;
               </button>
-              <button type="button" class="landmark-jump-btn" data-target-az="133" data-target-alt="-4" title="Batman sur le Quai Valero — Patrouille nocturne • Azimut 133° • Distance 110m">
+              <button type="button" class="landmark-jump-btn" data-target-az="133" data-target-alt="-4" title="Batman sur le Quai Valero — Patrouille panoramique sur tout le terminal (Ducs-d'Albe Ouest/Est &amp; passerelles) • Azimut 133° • Distance 110m">
                 🦇 Batman &middot; 133&deg;
               </button>
               <button type="button" class="landmark-jump-btn" data-target-az="175" data-target-alt="21" title="Bat-Signal projeté dans les nuages au-dessus de la Rive-Sud (Saint-Romuald / Lévis) — Azimut 175° • Élévation +21°">
@@ -34248,231 +34248,283 @@
         batmanCapeLower.position.set(0, -1.05, -0.1);
         batmanCapeGroup.add(batmanCapeLower);
 
-        // Fonction d'animation de Batman (Patrouille cinématographique multi-actions sur le quai)
+        // Fonction d'animation de Batman : Grande patrouille panoramique sur l'ensemble du Quai Valero
+        // (Ducs-d'Albe Ouest à -34m, passerelles suspendues, front de mer, Duc-d'Albe Est à +34m)
+        // Toutes les actions clés (vigie, saut acrobatique, accroupi héroïque, tir grappin) sont positionnées
+        // sur le bord d'eau et les îlots ouverts, 100% dégagées de toute cabane ou obstacle visuel !
         function updateBatman3D(timeSec, nightFlag) {
           const isSignal = (typeof isBatSignalActive === "function" && isBatSignalActive());
           const isAct = nightFlag || !!window.forceBatman3D || isSignal;
           batmanGroup.visible = isAct;
           if (!isAct) return;
 
-          // Cycle multi-actions de 32 secondes pour une patrouille vivante et cinématographique
-          const cycleTime = 32.0;
+          const cycleTime = 64.0;
           const tau = (timeSec % cycleTime);
 
-          // Récupération de la force du vent météo pour l'ondulation physique de la cape
+          // Force du vent pour la physique de la cape
           const windKmh = (typeof currentConditions !== "undefined" && currentConditions.wind) ? currentConditions.wind : 16;
           const windKnots = windKmh / 1.852;
           const windFactor = Math.min(1.5, Math.max(0.3, windKnots / 15.0));
 
-          // -------------------------------------------------------------------------
-          // PHASE 1 : SPRINT TACTIQUE OUEST -> EST (0.0s à 8.0s)
-          // -------------------------------------------------------------------------
-          if (tau < 8.0) {
-            const u = tau / 8.0;
-            const pX = -10.5 + u * 19.0; // De -10.5 à +8.5
-            batmanGroup.position.set(pX, 7.35, 0.5);
-            batmanGroup.rotation.y = Math.PI / 2; // Regard vers l'Est
-
-            const strideFreq = 14.5;
-            const stride = Math.sin(tau * strideFreq);
-
-            // Foulées et pompage athlétique des bras
-            batLegLeftGroup.rotation.x = stride * 0.85;
+          // Helper pour la foulée athlétique de course
+          function runGait(freq, dirFactor) {
+            const stride = Math.sin(tau * freq);
+            batLegLeftGroup.rotation.x = stride * 0.88;
             batLegLeftGroup.rotation.y = 0;
-            batLegLeftGroup.rotation.z = 0;
+            batLegLeftGroup.rotation.z = -0.04;
             batLegLeftGroup.position.set(-0.2, 0.88, 0);
 
-            batLegRightGroup.rotation.x = -stride * 0.85;
+            batLegRightGroup.rotation.x = -stride * 0.88;
             batLegRightGroup.rotation.y = 0;
-            batLegRightGroup.rotation.z = 0;
+            batLegRightGroup.rotation.z = 0.04;
             batLegRightGroup.position.set(0.2, 0.88, 0);
 
             batArmLeftGroup.rotation.x = -stride * 0.95;
             batArmLeftGroup.rotation.y = 0;
-            batArmLeftGroup.rotation.z = 0.08;
+            batArmLeftGroup.rotation.z = 0.12 * dirFactor;
+            batArmLeftGroup.position.set(-0.46, 1.68, 0);
 
             batArmRightGroup.rotation.x = stride * 0.95;
             batArmRightGroup.rotation.y = 0;
-            batArmRightGroup.rotation.z = -0.08;
+            batArmRightGroup.rotation.z = -0.12 * dirFactor;
+            batArmRightGroup.position.set(0.46, 1.68, 0);
 
-            const runBounce = Math.abs(stride) * 0.13;
-            batmanGroup.position.y = 7.35 + runBounce;
-
-            batTorso.rotation.x = 0.18;
+            batTorso.rotation.x = 0.20;
             batTorso.rotation.y = 0;
-            batHead.rotation.x = -0.10;
+            batHead.rotation.x = -0.12;
             batHead.rotation.y = 0;
 
-            // Cape claquante en arrière au vent
-            const capeWind = Math.sin(tau * 13.0) * 0.18 + Math.cos(tau * 19.0) * 0.12;
-            batmanCapeGroup.rotation.x = -0.65 - Math.abs(stride) * 0.40 - windFactor * 0.15 + capeWind;
-            batmanCapeLower.rotation.x = -0.40 + Math.sin(tau * 17.0) * 0.30;
+            const capeWind = Math.sin(tau * 13.0) * 0.20 + Math.cos(tau * 19.0) * 0.14;
+            batmanCapeGroup.rotation.x = -0.70 - Math.abs(stride) * 0.42 - windFactor * 0.18 + capeWind;
+            batmanCapeLower.rotation.x = -0.42 + Math.sin(tau * 16.0) * 0.32;
+            return Math.abs(stride) * 0.14;
           }
+
           // -------------------------------------------------------------------------
-          // PHASE 2 : DÉCÉLÉRATION & ARRÊT D'OBSERVATION FACE AU FLEUVE (8.0s à 13.0s)
+          // PHASE 1 : DUC-D'ALBE OUEST EXTRÊME (-34m) — VIGIE & SUPERHERO LANDING (0.0s à 9.0s)
+          // Emplacement totalement dégagé au-dessus des eaux face aux ponts de Québec
           // -------------------------------------------------------------------------
-          else if (tau < 13.0) {
-            const u = (tau - 8.0) / 5.0;
-            batmanGroup.position.set(8.5, 7.35, 0.5 - Math.min(1.0, u * 2.5) * 1.8);
+          if (tau < 9.0) {
+            window.batmanActionStatus = "Vigie & Accroupi héroïque (Duc-d'Albe Ouest • -34m)";
+            batmanGroup.position.set(-34.0, 7.35, -2.8);
+            batmanGroup.rotation.y = -Math.PI / 2; // Regard vers l'Ouest (Ponts de Québec)
 
-            // Rotation fluide face au fleuve et au Cap Québec
-            const rotYProg = Math.min(1.0, u * 2.0);
-            batmanGroup.rotation.y = (Math.PI / 2) + rotYProg * (Math.PI / 2);
+            if (tau < 5.0) {
+              // Accroupi tactique héroïque (Superhero Crouch)
+              const u = tau / 5.0;
+              const crouchProg = u < 0.22 ? (u / 0.22) : (u > 0.80 ? ((1.0 - u) / 0.20) : 1.0);
+              batmanGroup.position.y = 7.35 - crouchProg * 0.48;
 
-            const settle = Math.max(0, 1.0 - u * 2.5);
-            batLegLeftGroup.rotation.x = Math.sin(tau * 6.0) * 0.3 * settle;
-            batLegRightGroup.rotation.x = -Math.sin(tau * 6.0) * 0.3 * settle;
-            batLegLeftGroup.rotation.z = -0.08;
-            batLegRightGroup.rotation.z = 0.08;
+              batLegRightGroup.rotation.x = 1.15 * crouchProg;
+              batLegLeftGroup.rotation.x = 0.45 * crouchProg;
+              batLegRightGroup.position.y = 0.88 - crouchProg * 0.18;
+              batLegLeftGroup.position.y = 0.88 - crouchProg * 0.10;
 
-            // Bras au repos sur les hanches
-            batArmLeftGroup.rotation.x = -0.12;
-            batArmLeftGroup.rotation.z = -0.25;
-            batArmRightGroup.rotation.x = -0.12;
-            batArmRightGroup.rotation.z = 0.25;
+              batTorso.rotation.x = 0.48 * crouchProg;
+              batHead.rotation.x = -0.42 * crouchProg + Math.sin(tau * 1.5) * 0.08;
+              batHead.rotation.y = Math.sin(tau * 1.2) * 0.25;
 
-            // Scan radar / surveillance de la baie (la tête balaie l'horizon)
-            const scan = Math.sin((tau - 8.0) * 1.8);
-            batHead.rotation.y = scan * 0.42;
-            batHead.rotation.x = -0.05 + Math.sin(tau * 1.2) * 0.06;
+              // Poing droit au sol, bras gauche en appui
+              batArmRightGroup.rotation.x = 0.85 * crouchProg;
+              batArmRightGroup.rotation.z = 0.18 * crouchProg;
+              batArmRightGroup.position.y = 1.68 - crouchProg * 0.22;
 
-            batTorso.rotation.x = 0.04;
-            batTorso.rotation.y = scan * 0.08;
-            batmanGroup.position.y = 7.35 + Math.sin(tau * 2.0) * 0.02;
+              batArmLeftGroup.rotation.x = 0.40 * crouchProg;
+              batArmLeftGroup.rotation.z = -0.32 * crouchProg;
+              batArmLeftGroup.position.y = 1.68 - crouchProg * 0.12;
 
-            // Cape qui ondule au vent du fleuve
-            const capeFlap = Math.sin(tau * 4.5) * 0.14 + Math.cos(tau * 6.2) * 0.08;
-            batmanCapeGroup.rotation.x = -0.22 - windFactor * 0.20 + capeFlap;
-            batmanCapeLower.rotation.x = -0.28 - windFactor * 0.28 + Math.sin(tau * 5.0) * 0.16;
-          }
-          // -------------------------------------------------------------------------
-          // PHASE 3 : ACCROUPI TACTIQUE / SUPERHERO CROUCH AU BORD DU QUAI (13.0s à 18.0s)
-          // -------------------------------------------------------------------------
-          else if (tau < 18.0) {
-            const u = (tau - 13.0) / 5.0;
-            batmanGroup.position.set(8.5, 7.35, -1.3);
-            batmanGroup.rotation.y = Math.PI;
-
-            // Descente fluide dans la posture accroupie héroïque
-            const crouchProg = u < 0.2 ? (u / 0.2) : (u > 0.85 ? ((1.0 - u) / 0.15) : 1.0);
-            batmanGroup.position.y = 7.35 - crouchProg * 0.48;
-
-            // Genou droit fléchi à terre, jambe gauche en appui
-            batLegRightGroup.rotation.x = 1.15 * crouchProg;
-            batLegLeftGroup.rotation.x = 0.45 * crouchProg;
-            batLegRightGroup.position.y = 0.88 - crouchProg * 0.18;
-            batLegLeftGroup.position.y = 0.88 - crouchProg * 0.10;
-
-            batTorso.rotation.x = 0.48 * crouchProg;
-            batHead.rotation.x = -0.40 * crouchProg + Math.sin(tau * 1.5) * 0.08;
-            batHead.rotation.y = Math.sin(tau * 1.1) * 0.25;
-
-            // Main droite posée au sol en appui d'attaque
-            batArmRightGroup.rotation.x = 0.85 * crouchProg;
-            batArmRightGroup.rotation.z = 0.18 * crouchProg;
-            batArmRightGroup.position.y = 1.68 - crouchProg * 0.22;
-
-            batArmLeftGroup.rotation.x = 0.40 * crouchProg;
-            batArmLeftGroup.rotation.z = -0.32 * crouchProg;
-            batArmLeftGroup.position.y = 1.68 - crouchProg * 0.12;
-
-            // Cape qui drape le corps comme des ailes fermées
-            batmanCapeGroup.rotation.x = -0.06 - Math.sin(tau * 3.0) * 0.08;
-            batmanCapeLower.rotation.x = -0.10 + Math.sin(tau * 3.8) * 0.12;
-          }
-          // -------------------------------------------------------------------------
-          // PHASE 4 : REDRESSEMENT & VISÉE AU GRAPPIN VERS LE BAT-SIGNAL / CIEL (18.0s à 23.0s)
-          // -------------------------------------------------------------------------
-          else if (tau < 23.0) {
-            const u = (tau - 18.0) / 5.0;
-            batmanGroup.position.set(8.5, 7.35, -1.3 + Math.min(1.0, u * 2.0) * 1.8);
-            batmanGroup.rotation.y = Math.PI + Math.min(1.0, u * 1.8) * (Math.PI * 0.35);
-
-            batmanGroup.position.y = 7.35;
-            batLegLeftGroup.position.set(-0.2, 0.88, 0);
-            batLegRightGroup.position.set(0.2, 0.88, 0);
-            batLegLeftGroup.rotation.set(0.08, 0, -0.06);
-            batLegRightGroup.rotation.set(-0.12, 0, 0.06);
-
-            batTorso.rotation.x = -0.10;
-            // Tête levée admirant le Bat-Signal dans les nuages
-            batHead.rotation.x = -0.52 + Math.sin(tau * 2.0) * 0.06;
-            batHead.rotation.y = 0.12;
-
-            // Bras droit tendu pointant le grappin vers le ciel !
-            const aimProg = Math.min(1.0, Math.max(0, (u - 0.15) / 0.25));
-            batArmRightGroup.position.set(0.46, 1.68, 0);
-            batArmRightGroup.rotation.x = -2.35 * aimProg;
-            batArmRightGroup.rotation.z = -0.28 * aimProg;
-
-            batArmLeftGroup.position.set(-0.46, 1.68, 0);
-            batArmLeftGroup.rotation.x = -0.25;
-            batArmLeftGroup.rotation.z = -0.22;
-
-            const capeSnap = Math.sin(tau * 8.0) * 0.22;
-            batmanCapeGroup.rotation.x = -0.45 - windFactor * 0.22 + capeSnap;
-            batmanCapeLower.rotation.x = -0.38 + Math.cos(tau * 10.0) * 0.25;
-          }
-          // -------------------------------------------------------------------------
-          // PHASE 5 : SPRINT RETOUR OUEST AVEC SAUT ACROBATIQUE / PARKOUR (23.0s à 32.0s)
-          // -------------------------------------------------------------------------
-          else {
-            const u = (tau - 23.0) / 9.0;
-            batmanGroup.rotation.y = -Math.PI / 2; // Regard vers l'Ouest
-            const pX = 8.5 - u * 19.0; // De +8.5 à -10.5
-            batmanGroup.position.set(pX, 7.35, 0.5);
-
-            // Grand saut acrobatique / Parkour Jump au centre du quai (tau entre 26.5s et 28.5s)
-            const isJumping = (tau >= 26.5 && tau <= 28.5);
-            if (isJumping) {
-              const jumpU = (tau - 26.5) / 2.0;
-              const jumpHeight = Math.sin(jumpU * Math.PI) * 1.45; // Impulsion de 1.45m au-dessus du sol !
-              batmanGroup.position.y = 7.35 + jumpHeight;
-
-              batLegLeftGroup.rotation.x = -0.95;
-              batLegRightGroup.rotation.x = -0.75;
-              batArmLeftGroup.rotation.z = -0.65;
-              batArmLeftGroup.rotation.x = -0.35;
-              batArmRightGroup.rotation.z = 0.65;
-              batArmRightGroup.rotation.x = -0.35;
-
-              batTorso.rotation.x = 0.32;
-              batHead.rotation.x = -0.25;
-
-              batmanCapeGroup.rotation.x = -1.15;
-              batmanCapeLower.rotation.x = -0.85;
+              batmanCapeGroup.rotation.x = -0.06 - Math.sin(tau * 3.0) * 0.08;
+              batmanCapeLower.rotation.x = -0.10 + Math.sin(tau * 3.8) * 0.12;
             } else {
-              const strideFreq = 14.5;
-              const stride = Math.sin(tau * strideFreq);
-
-              batLegLeftGroup.rotation.x = stride * 0.85;
-              batLegLeftGroup.rotation.y = 0;
-              batLegLeftGroup.rotation.z = 0;
+              // Se relève fièrement, mains à la ceinture, cape au vent
+              const u = (tau - 5.0) / 4.0;
+              batmanGroup.position.y = 7.35;
+              batLegLeftGroup.rotation.set(0, 0, -0.06);
+              batLegRightGroup.rotation.set(0, 0, 0.06);
               batLegLeftGroup.position.set(-0.2, 0.88, 0);
-
-              batLegRightGroup.rotation.x = -stride * 0.85;
-              batLegRightGroup.rotation.y = 0;
-              batLegRightGroup.rotation.z = 0;
               batLegRightGroup.position.set(0.2, 0.88, 0);
 
-              batArmLeftGroup.rotation.x = -stride * 0.95;
-              batArmLeftGroup.rotation.z = -0.08;
+              batArmLeftGroup.rotation.set(-0.16, 0, -0.26);
+              batArmRightGroup.rotation.set(-0.16, 0, 0.26);
               batArmLeftGroup.position.set(-0.46, 1.68, 0);
-
-              batArmRightGroup.rotation.x = stride * 0.95;
-              batArmRightGroup.rotation.z = 0.08;
               batArmRightGroup.position.set(0.46, 1.68, 0);
 
-              const runBounce = Math.abs(stride) * 0.13;
-              batmanGroup.position.y = 7.35 + runBounce;
+              batTorso.rotation.x = 0.04;
+              batHead.rotation.x = -0.06;
+              batHead.rotation.y = Math.sin((tau - 5.0) * 1.8) * 0.35;
 
-              batTorso.rotation.x = 0.18;
-              batHead.rotation.x = -0.10;
+              const capeFlap = Math.sin(tau * 5.0) * 0.16 + Math.cos(tau * 7.2) * 0.10;
+              batmanCapeGroup.rotation.x = -0.32 - windFactor * 0.22 + capeFlap;
+              batmanCapeLower.rotation.x = -0.36 - windFactor * 0.30 + Math.sin(tau * 5.5) * 0.18;
 
-              const capeWind = Math.sin(tau * 13.0) * 0.18 + Math.cos(tau * 19.0) * 0.12;
-              batmanCapeGroup.rotation.x = -0.65 - Math.abs(stride) * 0.40 - windFactor * 0.15 + capeWind;
-              batmanCapeLower.rotation.x = -0.40 + Math.sin(tau * 17.0) * 0.30;
+              // Rotation progressive vers l'Est avant le départ
+              if (u > 0.7) {
+                const turnProg = (u - 0.7) / 0.3;
+                batmanGroup.rotation.y = -Math.PI / 2 + turnProg * Math.PI;
+              }
             }
+          }
+          // -------------------------------------------------------------------------
+          // PHASE 2 : SPRINT SUR LES PASSERELLES SUSPENDUES OUEST (-34m -> -2m) (9.0s à 19.0s)
+          // Course au-dessus de l'eau reliant les ducs-d'Albe à la plateforme centrale
+          // -------------------------------------------------------------------------
+          else if (tau < 19.0) {
+            window.batmanActionStatus = "Sprint sur passerelle suspendue Ouest (Fleuve)";
+            const u = (tau - 9.0) / 10.0;
+            const curX = -34.0 + u * 32.0; // De -34m à -2m
+            const curZ = -2.8 - u * 1.0;   // S'aligne vers le bord frontal -3.8m
+            batmanGroup.position.set(curX, 7.35, curZ);
+            batmanGroup.rotation.y = Math.PI / 2; // Course vers l'Est
+
+            const bounce = runGait(15.2, 1.0);
+            batmanGroup.position.y = 7.35 + bounce;
+          }
+          // -------------------------------------------------------------------------
+          // PHASE 3 : BORD FRONTAL DU QUAI & GRAND SAUT ACROBATIQUE / PARKOUR (19.0s à 25.0s)
+          // En plein front de mer (-2m -> +2m à z = -3.8m), 100% visible devant les bras Chiksan
+          // -------------------------------------------------------------------------
+          else if (tau < 25.0) {
+            window.batmanActionStatus = "Saut acrobatique / Parkour (Front du Quai)";
+            const u = (tau - 19.0) / 6.0;
+            batmanGroup.rotation.y = Math.PI / 2;
+
+            if (tau >= 20.5 && tau <= 23.2) {
+              // Saut spectaculaire au-dessus des tuyauteries et bordures de quai
+              const ju = (tau - 20.5) / 2.7;
+              const curX = -1.0 + ju * 2.8;
+              const jumpH = Math.sin(ju * Math.PI) * 1.55; // 1.55m de détente verticale !
+              batmanGroup.position.set(curX, 7.35 + jumpH, -3.8);
+
+              batLegLeftGroup.rotation.x = -1.15;
+              batLegRightGroup.rotation.x = -0.92;
+              batArmLeftGroup.rotation.set(-0.35, 0, -0.72);
+              batArmRightGroup.rotation.set(-0.35, 0, 0.72);
+              batTorso.rotation.x = 0.35;
+              batHead.rotation.x = -0.28;
+
+              // Cape flottant horizontalement comme des ailes déployées
+              batmanCapeGroup.rotation.x = -1.25;
+              batmanCapeLower.rotation.x = -0.95;
+            } else {
+              const curX = tau < 20.5 ? (-2.0 + ((tau - 19.0) / 1.5) * 1.0) : (1.8 + ((tau - 23.2) / 1.8) * 0.4);
+              batmanGroup.position.set(curX, 7.35, -3.8);
+              const bounce = runGait(14.0, 1.0);
+              batmanGroup.position.y = 7.35 + bounce;
+            }
+          }
+          // -------------------------------------------------------------------------
+          // PHASE 4 : VIGIE AU BORD DE L'EAU & VISÉE AU GRAPPIN (BAT-SIGNAL) (25.0s à 37.0s)
+          // Emplacement : x = 2.0m, z = -3.8m (Bord jaune ouvert, devant toutes les cabanes !)
+          // -------------------------------------------------------------------------
+          else if (tau < 37.0) {
+            batmanGroup.position.set(2.2, 7.35, -3.8);
+
+            if (tau < 30.5) {
+              window.batmanActionStatus = "Vigie au bord du quai (Face au chenal maritime)";
+              const u = (tau - 25.0) / 5.5;
+              // Rotation face au fleuve
+              batmanGroup.rotation.y = Math.PI / 2 + Math.min(1.0, u * 2.5) * (Math.PI / 2);
+
+              batLegLeftGroup.rotation.set(0, 0, -0.06);
+              batLegRightGroup.rotation.set(0, 0, 0.06);
+              batArmLeftGroup.rotation.set(-0.14, 0, -0.24);
+              batArmRightGroup.rotation.set(-0.14, 0, 0.24);
+              batTorso.rotation.x = 0.04;
+
+              // Balayage de la baie par le regard
+              const scan = Math.sin((tau - 25.0) * 1.6);
+              batHead.rotation.y = scan * 0.45;
+              batHead.rotation.x = -0.08 + Math.sin(tau * 1.2) * 0.05;
+
+              const capeFlap = Math.sin(tau * 4.2) * 0.14;
+              batmanCapeGroup.rotation.x = -0.26 - windFactor * 0.20 + capeFlap;
+              batmanCapeLower.rotation.x = -0.32 - windFactor * 0.26 + Math.sin(tau * 5.0) * 0.16;
+            } else {
+              window.batmanActionStatus = "Visée au pistolet-grappin (Bat-Signal Rive-Sud)";
+              const u = (tau - 30.5) / 6.5;
+              // Batman pivote vers le ciel de la Rive-Sud
+              batmanGroup.rotation.y = Math.PI + 0.22;
+
+              batLegLeftGroup.rotation.set(0.08, 0, -0.06);
+              batLegRightGroup.rotation.set(-0.12, 0, 0.06);
+              batTorso.rotation.x = -0.10;
+
+              // Tête levée vers le Bat-Signal dans les nuages
+              batHead.rotation.x = -0.56 + Math.sin(tau * 2.0) * 0.05;
+              batHead.rotation.y = 0.10;
+
+              // Dégainé et visée dynamique au grappin
+              const aimProg = Math.min(1.0, Math.max(0, (u - 0.08) / 0.25));
+              batArmRightGroup.position.set(0.46, 1.68, 0);
+              batArmRightGroup.rotation.x = -2.42 * aimProg;
+              batArmRightGroup.rotation.z = -0.28 * aimProg;
+
+              batArmLeftGroup.position.set(-0.46, 1.68, 0);
+              batArmLeftGroup.rotation.x = -0.26;
+              batArmLeftGroup.rotation.z = -0.22;
+
+              const capeSnap = Math.sin(tau * 8.5) * 0.24;
+              batmanCapeGroup.rotation.x = -0.46 - windFactor * 0.22 + capeSnap;
+              batmanCapeLower.rotation.x = -0.40 + Math.cos(tau * 9.5) * 0.25;
+            }
+          }
+          // -------------------------------------------------------------------------
+          // PHASE 5 : SPRINT VERS LES PASSERELLES & DUCS-D'ALBE EST (+2m -> +34m) (37.0s à 47.0s)
+          // Batman traverse toute l'aile est du terminal maritime en courant sur les passerelles
+          // -------------------------------------------------------------------------
+          else if (tau < 47.0) {
+            window.batmanActionStatus = "Sprint sur passerelle suspendue Est (+34m)";
+            const u = (tau - 37.0) / 10.0;
+            const curX = 2.2 + u * 31.8; // De +2.2m à +34.0m
+            const curZ = -3.8 + u * 1.0;  // Rejoint l'axe de la passerelle est à -2.8m
+            batmanGroup.position.set(curX, 7.35, curZ);
+            batmanGroup.rotation.y = Math.PI / 2; // Course vers l'Est
+
+            const bounce = runGait(15.2, 1.0);
+            batmanGroup.position.y = 7.35 + bounce;
+          }
+          // -------------------------------------------------------------------------
+          // PHASE 6 : DUC-D'ALBE EST EXTRÊME (+34m) — VIGIE D'OBSERVATION AVAL (47.0s à 54.0s)
+          // Posté sur l'îlot est en pleine eau, observant l'Île d'Orléans et les remorqueurs
+          // -------------------------------------------------------------------------
+          else if (tau < 54.0) {
+            window.batmanActionStatus = "Vigie d'observation aval (Duc-d'Albe Est • +34m)";
+            const u = (tau - 47.0) / 7.0;
+            batmanGroup.position.set(34.0, 7.35, -2.8);
+            batmanGroup.rotation.y = Math.PI / 4; // Regard vers l'aval (Île d'Orléans)
+
+            batLegLeftGroup.rotation.set(0, 0, -0.06);
+            batLegRightGroup.rotation.set(0, 0, 0.06);
+            batArmLeftGroup.rotation.set(-0.15, 0, -0.26);
+            batArmRightGroup.rotation.set(-0.15, 0, 0.26);
+            batTorso.rotation.x = 0.05;
+
+            const scan = Math.sin((tau - 47.0) * 1.5);
+            batHead.rotation.y = scan * 0.40;
+            batHead.rotation.x = -0.08 + Math.sin(tau * 1.3) * 0.05;
+
+            const capeFlap = Math.sin(tau * 4.8) * 0.16 + Math.cos(tau * 6.5) * 0.10;
+            batmanCapeGroup.rotation.x = -0.34 - windFactor * 0.24 + capeFlap;
+            batmanCapeLower.rotation.x = -0.38 - windFactor * 0.32 + Math.sin(tau * 5.2) * 0.18;
+
+            if (u > 0.75) {
+              const turnProg = (u - 0.75) / 0.25;
+              batmanGroup.rotation.y = Math.PI / 4 - turnProg * (Math.PI * 0.75); // Pivote vers l'Ouest
+            }
+          }
+          // -------------------------------------------------------------------------
+          // PHASE 7 : GRANDE RONDE RETOUR OUEST TRAVERSANT TOUT LE QUAI (+34m -> -34m) (54.0s à 64.0s)
+          // Sprint d'un bout à l'autre du terminal (68 mètres) pour boucler le circuit !
+          // -------------------------------------------------------------------------
+          else {
+            window.batmanActionStatus = "Sprint de ronde générale (Retour Est -> Ouest • 68m)";
+            const u = (tau - 54.0) / 10.0;
+            const curX = 34.0 - u * 68.0; // De +34m à -34m
+            batmanGroup.position.set(curX, 7.35, -2.8);
+            batmanGroup.rotation.y = -Math.PI / 2; // Regard vers l'Ouest
+
+            const bounce = runGait(15.8, -1.0);
+            batmanGroup.position.y = 7.35 + bounce;
           }
         }
         window.updateBatman3D = updateBatman3D;
@@ -38105,7 +38157,7 @@
             id: "batman_valero",
             icon: "🦇",
             label: "Batman (Quai Valero)",
-            sub: "Chevalier Noir en patrouille nocturne sur la plateforme centrale",
+            sub: "Chevalier Noir en patrouille sur les ducs-d'Albe et passerelles du terminal",
             draft: "1.88m / Wayne Enterprises",
             getPos: () => {
               if (window.batmanGroup) {
@@ -38117,7 +38169,7 @@
               return new THREE.Vector3(dockGroup.position.x, 9.5, dockGroup.position.z);
             },
             getRealDist: () => "110 m",
-            getStatus: () => (window.batmanGroup && window.batmanGroup.visible ? "Patrouille nocturne active (Sprint)" : "En veille"),
+            getStatus: () => (window.batmanGroup && window.batmanGroup.visible ? (window.batmanActionStatus || "Patrouille nocturne active") : "En veille"),
             isVisible: () => !!(window.batmanGroup && window.batmanGroup.visible),
           },
           {
