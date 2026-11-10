@@ -3874,8 +3874,8 @@
               <button type="button" class="landmark-jump-btn" data-target-az="133" data-target-alt="-4" title="Batman sur le Quai Valero — Patrouille nocturne • Azimut 133° • Distance 110m">
                 🦇 Batman &middot; 133&deg;
               </button>
-              <button type="button" class="landmark-jump-btn" data-target-az="338" data-target-alt="28" title="Bat-Signal projeté dans les nuages au-dessus de Québec et du fleuve — Azimut 338° • Élévation +28°">
-                🦇 Bat-Signal &middot; 338&deg;
+              <button type="button" class="landmark-jump-btn" data-target-az="175" data-target-alt="21" title="Bat-Signal projeté dans les nuages au-dessus de la Rive-Sud (Saint-Romuald / Lévis) — Azimut 175° • Élévation +21°">
+                🦇 Bat-Signal &middot; 175&deg;
               </button>
               <button type="button" class="landmark-jump-btn" data-target-az="120" data-target-alt="-8" title="Glaces dérivantes et banquise du Saint-Laurent — Azimut 120°">
                 ❄️ Glaces &middot; 120&deg;
@@ -24850,10 +24850,10 @@
           if (!alive) fireworks.splice(i, 1);
         }
 
-        // Bat-Signal 2D projeté dans les nuages (Actif de 17h00 à 05h30 ou forcé ON)
-        if (typeof isBatSignalActive === "function" && isBatSignalActive() && typeof window.projectAzAlt === "function") {
-          const pt = window.projectAzAlt(338, 28, W, H, viewAzimuth, viewAltitude, viewFOV);
-          const pb = window.projectAzAlt(195, -2, W, H, viewAzimuth, viewAltitude, viewFOV);
+        // Bat-Signal 2D : actif UNIQUEMENT en mode 2D (en mode 3D, Three.js gère le projecteur 3D unique sans aucun dédoublement)
+        if (!window.mode3DActive && typeof isBatSignalActive === "function" && isBatSignalActive() && typeof window.projectAzAlt === "function") {
+          const pt = window.projectAzAlt(175, 21, W, H, viewAzimuth, viewAltitude, viewFOV);
+          const pb = window.projectAzAlt(133, 2, W, H, viewAzimuth, viewAltitude, viewFOV);
           if (pt && pt.y < H && pt.y > -80 && pt.x > -120 && pt.x < W + 120) {
             sCtx.save();
             const beamX = pb ? pb.x : (W * 0.45);
@@ -25603,12 +25603,16 @@
           if (btn.textContent.includes("Batman") || Math.abs(camTargetAz - 133) < 0.5) {
             window.forceBatman3D = true;
           }
-          if (btn.textContent.includes("Bat-Signal") || Math.abs(camTargetAz - 338) < 0.5) {
+          if (btn.textContent.includes("Bat-Signal") || Math.abs(camTargetAz - 175) < 0.5 || Math.abs(camTargetAz - 338) < 0.5) {
             window.batSignalMode = "on";
-            const bBtn = document.getElementById("hud-toggle-batsignal");
-            if (bBtn) {
-              bBtn.classList.add("active", "batsignal-active");
-              bBtn.innerHTML = "🦇 Bat-Signal : ON";
+            if (typeof window.updateBatSignalHUDButton === "function") {
+              window.updateBatSignalHUDButton();
+            } else {
+              const bBtn = document.getElementById("hud-toggle-batsignal");
+              if (bBtn) {
+                bBtn.classList.add("active", "batsignal-active");
+                bBtn.innerHTML = "🦇 Bat-Signal : FORCÉ ON";
+              }
             }
           }
           if (btn.textContent.includes("Glaces") || Math.abs(camTargetAz - 120) < 0.5) {
@@ -36644,11 +36648,11 @@
         const batSignal3DGroup = new THREE.Group();
         scene.add(batSignal3DGroup);
 
-        // Position physique du projecteur sur la superstructure du quai Valero (près de la passerelle d'accès)
-        const batProjectorOrigin = new THREE.Vector3(9.5, 13.8, -2.6);
+        // Position physique du projecteur sur la superstructure du quai Valero (Rive-Sud, Section 87)
+        const batProjectorOrigin = azDistToVec3(133, 110, 13.5);
 
-        // Emplacement de la projection dans la couverture nuageuse (Az 338° au-dessus de Québec / Cap Diamant, Alt 28°, Dist 745m)
-        const batTargetBase = azDistToVec3(338, 745, 360);
+        // Emplacement de la projection dans la couverture nuageuse au-dessus de la Rive-Sud (Az 175° au-dessus de Saint-Romuald / Lévis, Alt ~21°, Dist 620m)
+        const batTargetBase = azDistToVec3(175, 620, 260);
 
         // A. Base et fût du projecteur de DCA / Bat-Signal
         const batMetalMat = new THREE.MeshLambertMaterial({ color: 0x1e293b });
@@ -36682,11 +36686,11 @@
 
         // B. Cône volumétrique du faisceau lumineux géant (THREE.CylinderGeometry ouvert aux extrémités avec AdditiveBlending)
         const beamDist = batProjectorOrigin.distanceTo(batTargetBase);
-        const batBeamGeo = new THREE.CylinderGeometry(46, 1.1, beamDist, 24, 1, true);
+        const batBeamGeo = new THREE.CylinderGeometry(44, 1.1, beamDist, 24, 1, true);
         const batBeamMat = new THREE.MeshBasicMaterial({
           color: 0xfef08a,
           transparent: true,
-          opacity: 0.35,
+          opacity: 0.32,
           blending: THREE.AdditiveBlending,
           side: THREE.DoubleSide,
           depthWrite: false
@@ -36694,34 +36698,19 @@
         const batBeamMesh = new THREE.Mesh(batBeamGeo, batBeamMat);
         batSignal3DGroup.add(batBeamMesh);
 
-        // C. Emblème projeté sur les nuages (Disque avec silhouette de la chauve-souris)
+        // C. Emblème UNIQUE projeté sur les nuages de la Rive-Sud (Disque haute définition avec silhouette de la chauve-souris)
         const batCloudTex = createBatSignalCloudTexture();
         const batCloudMat = new THREE.MeshBasicMaterial({
           map: batCloudTex,
           transparent: true,
-          opacity: 0.92,
-          blending: THREE.AdditiveBlending,
-          side: THREE.DoubleSide,
-          depthWrite: false
+          opacity: 0.94,
+          depthWrite: false,
+          side: THREE.DoubleSide
         });
         const batCloudMesh = new THREE.Mesh(new THREE.PlaneGeometry(130, 130), batCloudMat);
         batCloudMesh.position.copy(batTargetBase);
         batCloudMesh.lookAt(batProjectorOrigin);
         batSignal3DGroup.add(batCloudMesh);
-
-        // Halo diffus d'arrière-plan dans les nuages pour un effet cinématique saisissant
-        const batAuraMat = new THREE.MeshBasicMaterial({
-          map: batCloudTex,
-          transparent: true,
-          opacity: 0.42,
-          blending: THREE.AdditiveBlending,
-          side: THREE.DoubleSide,
-          depthWrite: false
-        });
-        const batAuraMesh = new THREE.Mesh(new THREE.PlaneGeometry(280, 280), batAuraMat);
-        batAuraMesh.position.copy(batTargetBase).add(new THREE.Vector3(0, 5, -8));
-        batAuraMesh.lookAt(batProjectorOrigin);
-        batSignal3DGroup.add(batAuraMesh);
 
         batSignal3DGroup.visible = false;
 
@@ -40074,18 +40063,16 @@
           if (batSignal3DGroup) {
             batSignal3DGroup.visible = batSignalOn;
             if (batSignalOn) {
-              // Balayage doux et atmosphérique du projecteur au-dessus du fleuve et de Québec
-              const sweepX = Math.sin(t * 0.28) * 22.0;
-              const sweepY = Math.cos(t * 0.22) * 10.0;
-              const sweepZ = Math.sin(t * 0.18) * 16.0;
+              // Balayage doux et atmosphérique du projecteur au-dessus de la Rive-Sud
+              const sweepX = Math.sin(t * 0.28) * 16.0;
+              const sweepY = Math.cos(t * 0.22) * 8.0;
+              const sweepZ = Math.sin(t * 0.18) * 12.0;
               const curBatTarget = batTargetBase.clone().add(new THREE.Vector3(sweepX, sweepY, sweepZ));
 
-              // Orientation du tambour et positionnement du disque nuageux
+              // Orientation du tambour et positionnement de l'emblème nuageux UNIQUE
               batDrumGroup.lookAt(curBatTarget);
               batCloudMesh.position.copy(curBatTarget);
               batCloudMesh.lookAt(batProjectorOrigin);
-              batAuraMesh.position.copy(curBatTarget).add(new THREE.Vector3(0, 4, -6));
-              batAuraMesh.lookAt(batProjectorOrigin);
 
               // Orientation et centrage du faisceau volumétrique
               const beamMid = new THREE.Vector3().addVectors(batProjectorOrigin, curBatTarget).multiplyScalar(0.5);
@@ -40095,9 +40082,8 @@
 
               // Scintillement atmosphérique et brume nuageuse
               const batFlicker = 0.92 + Math.sin(t * 6.8) * 0.05 + Math.cos(t * 11.4) * 0.03;
-              batBeamMat.opacity = 0.35 * batFlicker;
-              batCloudMat.opacity = 0.92 * batFlicker;
-              batAuraMat.opacity = 0.38 * batFlicker;
+              batBeamMat.opacity = 0.32 * batFlicker;
+              batCloudMat.opacity = 0.94 * batFlicker;
             }
           }
           if (typeof updateBatSignalHUDButton === "function" && Math.floor(t * 10) % 15 === 0) {
