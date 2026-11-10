@@ -15049,29 +15049,55 @@
               </div>
             </div>
 
-            <!-- Configuration des Alertes Sonores (Options de sons variés) -->
-            <div style="background: rgba(0, 128, 157, 0.1); border-radius: 6px; padding: 0.75rem 0.9rem; border: 1px solid var(--valero-teal); display: flex; flex-direction: column; gap: 0.45rem;">
-              <div style="font-size: 0.75rem; font-weight: 800; color: var(--accent);">
-                🔔 Options Sonores &amp; Alarme de Fin de Temps :
-              </div>
-              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+            <!-- Configuration des Alertes Sonores (Options de sons variés & Volume fort) -->
+            <div style="background: rgba(0, 128, 157, 0.1); border-radius: 6px; padding: 0.75rem 0.9rem; border: 1px solid var(--valero-teal); display: flex; flex-direction: column; gap: 0.55rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.35rem;">
+                <span style="font-size: 0.76rem; font-weight: 800; color: var(--accent);">
+                  🔔 Options Sonores, Volume &amp; Durée de l'Alarme :
+                </span>
                 <label style="font-size: 0.74rem; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 0.4rem; cursor: pointer;">
                   <input type="checkbox" id="univ-sound-alert-cb" checked style="accent-color: var(--accent);" />
                   Activer le signal sonore à l'échéance
                 </label>
-                <div style="display: flex; gap: 0.4rem; align-items: center;">
-                  <select id="univ-sound-select" class="weather-select" style="font-size: 0.74rem; padding: 0.26rem 0.5rem; font-weight: 700;">
-                    <option value="chime">🔔 Carillon mélodique doux (D5 ➔ A5)</option>
-                    <option value="alarm">🚨 Alarme industrielle quai (Bips modulés)</option>
-                    <option value="foghorn" selected>📯 Sirène de brume maritime (Foghorn 110 Hz)</option>
-                    <option value="bell">⚓ Cloche de navire (Ship's Bell double coup)</option>
-                    <option value="sonar">📡 Sonar / Ping sous-marin (Écho résonant)</option>
-                    <option value="triple_beep">⚡ Bip d'urgence (3 bips staccato)</option>
-                    <option value="whistle">🎺 Sifflet de manœuvre remorqueur</option>
+              </div>
+
+              <!-- Ligne 1 : Choix de la tonalité & Bouton Test/Arrêt -->
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                <div style="display: flex; gap: 0.4rem; align-items: center; flex: 1; min-width: 250px;">
+                  <span style="font-size: 0.72rem; font-weight: 700; color: var(--text-light); white-space: nowrap;">Sonnerie :</span>
+                  <select id="univ-sound-select" class="weather-select" style="font-size: 0.74rem; padding: 0.28rem 0.5rem; font-weight: 700; flex: 1;">
+                    <option value="chime">🔔 Carillon mélodique Westminster (D5 ➔ A5)</option>
+                    <option value="alarm">🚨 Alarme industrielle quai (Sirène puissante modulée)</option>
+                    <option value="foghorn" selected>📯 Sirène de brume maritime (Foghorn 110 Hz profonde)</option>
+                    <option value="bell">⚓ Cloche de navire (Ship's Bell 8 coups maritimes)</option>
+                    <option value="sonar">📡 Sonar / Ping sous-marin (Pings résonants)</option>
+                    <option value="triple_beep">⚡ Bip d'urgence (Salves de 3 bips stridents)</option>
+                    <option value="whistle">🎺 Sifflet de manœuvre remorqueur (3 coups puissants)</option>
                   </select>
-                  <button type="button" id="univ-sound-test-btn" class="btn-calc" style="padding: 0.26rem 0.65rem; font-size: 0.72rem; display: inline-flex; align-items: center; gap: 0.3rem;">
+                </div>
+                <div style="display: flex; gap: 0.35rem;">
+                  <button type="button" id="univ-sound-test-btn" class="btn-calc" style="padding: 0.28rem 0.8rem; font-size: 0.75rem; font-weight: 800; display: inline-flex; align-items: center; gap: 0.35rem;" title="Tester le son à plein volume ou arrêter">
                     🔊 Tester
                   </button>
+                </div>
+              </div>
+
+              <!-- Ligne 2 : Réglages Volume Fort & Durée Longue -->
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.6rem; padding-top: 0.4rem; border-top: 1px dashed rgba(0, 128, 157, 0.35);">
+                <!-- Volume fort -->
+                <div style="display: flex; align-items: center; gap: 0.45rem;">
+                  <span style="font-size: 0.72rem; font-weight: 700; color: var(--text-light);">🔊 Volume :</span>
+                  <input type="range" id="univ-sound-volume" min="30" max="100" value="100" style="width: 85px; accent-color: var(--accent); cursor: pointer;" title="Niveau sonore de l'alarme" />
+                  <span id="univ-sound-volume-lbl" class="mono" style="font-size: 0.72rem; font-weight: 800; color: var(--accent); min-width: 42px;">100% (Max)</span>
+                </div>
+                <!-- Durée prolongée -->
+                <div style="display: flex; align-items: center; gap: 0.4rem;">
+                  <span style="font-size: 0.72rem; font-weight: 700; color: var(--text-light);">⏱️ Durée :</span>
+                  <select id="univ-sound-duration" class="weather-select" style="font-size: 0.72rem; padding: 0.22rem 0.45rem; font-weight: 700;" title="Durée de l'alerte sonore">
+                    <option value="medium" selected>Standard (~5 sec - Recommandé)</option>
+                    <option value="long">Longue alerte (~10 sec)</option>
+                    <option value="short">Courte (~2.5 sec)</option>
+                  </select>
                 </div>
               </div>
             </div>
@@ -15114,7 +15140,7 @@
                   <input type="checkbox" id="arms-sound-alert-cb" checked style="accent-color: var(--accent);" />
                   🔔 Alarme sonore
                 </label>
-                <button type="button" id="arms-sound-test-btn" class="theme-toggle" style="padding: 0.12rem 0.38rem; font-size: 0.64rem;">Test bip</button>
+                <button type="button" id="arms-sound-test-btn" class="theme-toggle" style="padding: 0.12rem 0.42rem; font-size: 0.65rem;">🔊 Test</button>
               </div>
             </div>
           </div>
@@ -30970,133 +30996,304 @@
       const ARMS_CONFIG_KEY = "valero_arms_config_v1";
       const UNIV_TIMER_CONFIG_KEY = "valero_univ_timer_v1";
 
-      // --- SYNTHÉTISEUR SONORE MULTI-ALARMES WEB AUDIO API ---
-      function playTimerSound(soundType = "foghorn") {
+      // --- SYNTHÉTISEUR SONORE MULTI-ALARMES WEB AUDIO API (VOLUME FORT & DURÉE PROLONGÉE) ---
+      let activeTimerAudioCtx = null;
+      let activeTimerStopTimeout = null;
+
+      function stopTimerSound() {
         try {
+          if (activeTimerStopTimeout) {
+            clearTimeout(activeTimerStopTimeout);
+            activeTimerStopTimeout = null;
+          }
+          if (activeTimerAudioCtx) {
+            activeTimerAudioCtx.close();
+            activeTimerAudioCtx = null;
+          }
+        } catch (e) {}
+        const testBtn = document.getElementById("univ-sound-test-btn");
+        if (testBtn) {
+          testBtn.innerHTML = "🔊 Tester";
+          testBtn.style.background = "";
+          testBtn.style.color = "";
+        }
+      }
+
+      function playTimerSound(soundType = "foghorn", customDuration = null) {
+        try {
+          stopTimerSound();
           const AudioContext = window.AudioContext || window.webkitAudioContext;
           if (!AudioContext) return;
           const ctx = new AudioContext();
+          activeTimerAudioCtx = ctx;
+
+          // Bouton test visuel actif (permet d'arrêter le son immédiatement au clic)
+          const testBtn = document.getElementById("univ-sound-test-btn");
+          if (testBtn) {
+            testBtn.innerHTML = "⏹️ Arrêter";
+            testBtn.style.background = "#dc2626";
+            testBtn.style.color = "#ffffff";
+          }
+
           const now = ctx.currentTime;
+          const volPct = Math.max(0.2, Math.min(1.0, ((typeof universalTimerState !== "undefined" && universalTimerState.soundVolume) || 100) / 100));
+          const durMode = customDuration || (typeof universalTimerState !== "undefined" && universalTimerState.soundDuration) || "medium";
+          // short: 1 cycle (~2.5s), medium: 2 cycles (~5s), long: 3 cycles (~8-10s)
+          const repeats = durMode === "short" ? 1 : (durMode === "long" ? 3 : 2);
+
+          // Compresseur dynamique de crête pour maximiser la puissance sonore sans saturation
+          const compressor = ctx.createDynamicsCompressor();
+          compressor.threshold.setValueAtTime(-12, now);
+          compressor.knee.setValueAtTime(4, now);
+          compressor.ratio.setValueAtTime(12, now);
+          compressor.attack.setValueAtTime(0.003, now);
+          compressor.release.setValueAtTime(0.25, now);
+
+          const masterGain = ctx.createGain();
+          masterGain.gain.setValueAtTime(volPct * 0.95, now);
+
+          compressor.connect(masterGain);
+          masterGain.connect(ctx.destination);
+
+          let totalEndSec = 2.5;
 
           if (soundType === "chime") {
-            // Carillon mélodique doux (D5 -> A5)
-            const osc1 = ctx.createOscillator();
-            const gain1 = ctx.createGain();
-            osc1.type = "sine";
-            osc1.frequency.setValueAtTime(587.33, now);
-            gain1.gain.setValueAtTime(0.2, now);
-            gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
-            osc1.connect(gain1);
-            gain1.connect(ctx.destination);
-            osc1.start(now);
-            osc1.stop(now + 0.4);
+            // Carillon mélodique Westminster complet (4 notes étagées répétées avec résonance de cloche)
+            const notes = [587.33, 739.99, 659.25, 440.0]; // D5, F#5, E5, A4
+            const noteDur = 0.45;
+            const cycleDur = notes.length * noteDur + 0.55;
 
-            const osc2 = ctx.createOscillator();
-            const gain2 = ctx.createGain();
-            osc2.type = "sine";
-            osc2.frequency.setValueAtTime(880, now + 0.2);
-            gain2.gain.setValueAtTime(0.25, now + 0.2);
-            gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
-            osc2.connect(gain2);
-            gain2.connect(ctx.destination);
-            osc2.start(now + 0.2);
-            osc2.stop(now + 0.8);
-          } else if (soundType === "alarm") {
-            // Alarme industrielle quai - 4 bips rapides modulés
-            for (let i = 0; i < 4; i++) {
-              const tStart = now + i * 0.18;
-              const osc = ctx.createOscillator();
-              const gain = ctx.createGain();
-              osc.type = "square";
-              osc.frequency.setValueAtTime(1174.66, tStart);
-              gain.gain.setValueAtTime(0.18, tStart);
-              gain.gain.exponentialRampToValueAtTime(0.001, tStart + 0.12);
-              osc.connect(gain);
-              gain.connect(ctx.destination);
-              osc.start(tStart);
-              osc.stop(tStart + 0.12);
-            }
-          } else if (soundType === "foghorn") {
-            // Sirène de brume maritime (Foghorn profonde 110 Hz avec harmoniques)
-            const oscMain = ctx.createOscillator();
-            const oscSub = ctx.createOscillator();
-            const gain = ctx.createGain();
-            oscMain.type = "sawtooth";
-            oscSub.type = "sine";
-            oscMain.frequency.setValueAtTime(110, now);
-            oscSub.frequency.setValueAtTime(55, now);
-            gain.gain.setValueAtTime(0.01, now);
-            gain.gain.linearRampToValueAtTime(0.28, now + 0.15);
-            gain.gain.setValueAtTime(0.28, now + 0.85);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + 1.25);
-            oscMain.connect(gain);
-            oscSub.connect(gain);
-            gain.connect(ctx.destination);
-            oscMain.start(now);
-            oscSub.start(now);
-            oscMain.stop(now + 1.25);
-            oscSub.stop(now + 1.25);
-          } else if (soundType === "bell") {
-            // Cloche de bord / Ship's Bell double coup métallique
-            [0, 0.24].forEach((dt) => {
-              const tBell = now + dt;
-              [1200, 2400, 3100].forEach((freq, fIdx) => {
+            for (let r = 0; r < repeats; r++) {
+              const rStart = now + r * cycleDur;
+              notes.forEach((freq, idx) => {
+                const tNote = rStart + idx * noteDur;
                 const osc = ctx.createOscillator();
                 const gain = ctx.createGain();
                 osc.type = "sine";
-                osc.frequency.setValueAtTime(freq, tBell);
-                const gVal = 0.22 / (fIdx + 1);
-                gain.gain.setValueAtTime(gVal, tBell);
-                gain.gain.exponentialRampToValueAtTime(0.0008, tBell + 0.45);
+                osc.frequency.setValueAtTime(freq, tNote);
+                gain.gain.setValueAtTime(0.001, tNote);
+                gain.gain.linearRampToValueAtTime(0.9, tNote + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.001, tNote + 0.85);
                 osc.connect(gain);
-                gain.connect(ctx.destination);
-                osc.start(tBell);
-                osc.stop(tBell + 0.45);
+                gain.connect(compressor);
+                osc.start(tNote);
+                osc.stop(tNote + 0.85);
+
+                const osc2 = ctx.createOscillator();
+                const gain2 = ctx.createGain();
+                osc2.type = "sine";
+                osc2.frequency.setValueAtTime(freq * 2, tNote);
+                gain2.gain.setValueAtTime(0.001, tNote);
+                gain2.gain.linearRampToValueAtTime(0.4, tNote + 0.02);
+                gain2.gain.exponentialRampToValueAtTime(0.001, tNote + 0.55);
+                osc2.connect(gain2);
+                gain2.connect(compressor);
+                osc2.start(tNote);
+                osc2.stop(tNote + 0.55);
               });
-            });
+            }
+            totalEndSec = repeats * cycleDur + 0.8;
+
+          } else if (soundType === "alarm") {
+            // Alarme industrielle quai - Rafales puissantes deux tons (1175 Hz et 880 Hz)
+            const burstBeeps = 4;
+            const beepPeriod = 0.22;
+            const cycleDur = burstBeeps * beepPeriod + 0.35;
+            const totalCycles = repeats * 2;
+
+            for (let r = 0; r < totalCycles; r++) {
+              const rStart = now + r * cycleDur;
+              for (let i = 0; i < burstBeeps; i++) {
+                const tStart = rStart + i * beepPeriod;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = i % 2 === 0 ? "sawtooth" : "square";
+                osc.frequency.setValueAtTime(i % 2 === 0 ? 1174.66 : 880.0, tStart);
+                gain.gain.setValueAtTime(0.01, tStart);
+                gain.gain.linearRampToValueAtTime(0.92, tStart + 0.015);
+                gain.gain.setValueAtTime(0.88, tStart + 0.13);
+                gain.gain.exponentialRampToValueAtTime(0.001, tStart + 0.18);
+                osc.connect(gain);
+                gain.connect(compressor);
+                osc.start(tStart);
+                osc.stop(tStart + 0.18);
+              }
+            }
+            totalEndSec = totalCycles * cycleDur + 0.2;
+
+          } else if (soundType === "foghorn") {
+            // Sirène de brume maritime (Foghorn profonde 110 Hz + sub-bass 55 Hz + 220 Hz)
+            const blastDur = 1.9;
+            const blastPause = 0.6;
+            const cycleDur = blastDur + blastPause;
+
+            for (let r = 0; r < repeats; r++) {
+              const rStart = now + r * cycleDur;
+
+              const oscMain = ctx.createOscillator();
+              const gainMain = ctx.createGain();
+              oscMain.type = "sawtooth";
+              oscMain.frequency.setValueAtTime(110, rStart);
+              gainMain.gain.setValueAtTime(0.01, rStart);
+              gainMain.gain.linearRampToValueAtTime(0.88, rStart + 0.2);
+              gainMain.gain.setValueAtTime(0.88, rStart + blastDur - 0.25);
+              gainMain.gain.exponentialRampToValueAtTime(0.001, rStart + blastDur);
+
+              const oscSub = ctx.createOscillator();
+              const gainSub = ctx.createGain();
+              oscSub.type = "sine";
+              oscSub.frequency.setValueAtTime(55, rStart);
+              gainSub.gain.setValueAtTime(0.01, rStart);
+              gainSub.gain.linearRampToValueAtTime(0.92, rStart + 0.25);
+              gainSub.gain.setValueAtTime(0.92, rStart + blastDur - 0.2);
+              gainSub.gain.exponentialRampToValueAtTime(0.001, rStart + blastDur);
+
+              const oscHarm = ctx.createOscillator();
+              const gainHarm = ctx.createGain();
+              oscHarm.type = "sawtooth";
+              oscHarm.frequency.setValueAtTime(220, rStart);
+              gainHarm.gain.setValueAtTime(0.01, rStart);
+              gainHarm.gain.linearRampToValueAtTime(0.45, rStart + 0.2);
+              gainHarm.gain.setValueAtTime(0.45, rStart + blastDur - 0.25);
+              gainHarm.gain.exponentialRampToValueAtTime(0.001, rStart + blastDur);
+
+              oscMain.connect(gainMain);
+              oscSub.connect(gainSub);
+              oscHarm.connect(gainHarm);
+
+              gainMain.connect(compressor);
+              gainSub.connect(compressor);
+              gainHarm.connect(compressor);
+
+              oscMain.start(rStart);
+              oscSub.start(rStart);
+              oscHarm.start(rStart);
+
+              oscMain.stop(rStart + blastDur);
+              oscSub.stop(rStart + blastDur);
+              oscHarm.stop(rStart + blastDur);
+            }
+            totalEndSec = repeats * cycleDur;
+
+          } else if (soundType === "bell") {
+            // Cloche de navire (Ship's Bell) - Séries authentiques de doubles coups maritimes
+            const pairPause = 0.85;
+            const pairDelta = 0.22;
+            const cycleDur = pairPause + pairDelta;
+            const totalPairs = repeats * 3;
+
+            for (let p = 0; p < totalPairs; p++) {
+              const pStart = now + p * cycleDur;
+              [0, pairDelta].forEach((dt) => {
+                const tBell = pStart + dt;
+                [1180, 2360, 3120, 4200].forEach((freq, fIdx) => {
+                  const osc = ctx.createOscillator();
+                  const gain = ctx.createGain();
+                  osc.type = "sine";
+                  osc.frequency.setValueAtTime(freq, tBell);
+                  const gVal = 0.88 / (fIdx * 0.7 + 1);
+                  gain.gain.setValueAtTime(0.01, tBell);
+                  gain.gain.linearRampToValueAtTime(gVal, tBell + 0.008);
+                  gain.gain.exponentialRampToValueAtTime(0.001, tBell + 0.65);
+                  osc.connect(gain);
+                  gain.connect(compressor);
+                  osc.start(tBell);
+                  osc.stop(tBell + 0.65);
+                });
+              });
+            }
+            totalEndSec = totalPairs * cycleDur + 0.7;
+
           } else if (soundType === "sonar") {
-            // Sonar / Ping sous-marin résonant (1760 Hz avec queue de réverb)
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.type = "sine";
-            osc.frequency.setValueAtTime(1760, now);
-            gain.gain.setValueAtTime(0.28, now);
-            gain.gain.exponentialRampToValueAtTime(0.0005, now + 1.2);
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.start(now);
-            osc.stop(now + 1.2);
-          } else if (soundType === "triple_beep") {
-            // 3 bips d'urgence staccato (950 Hz)
-            for (let i = 0; i < 3; i++) {
-              const tStart = now + i * 0.14;
+            // Sonar / Ping sous-marin résonant répété
+            const pingPeriod = 1.6;
+            const numPings = repeats * 2;
+
+            for (let p = 0; p < numPings; p++) {
+              const tPing = now + p * pingPeriod;
               const osc = ctx.createOscillator();
               const gain = ctx.createGain();
               osc.type = "sine";
-              osc.frequency.setValueAtTime(950, tStart);
-              gain.gain.setValueAtTime(0.22, tStart);
-              gain.gain.exponentialRampToValueAtTime(0.001, tStart + 0.08);
+              osc.frequency.setValueAtTime(1760, tPing);
+              osc.frequency.exponentialRampToValueAtTime(1640, tPing + 1.2);
+              gain.gain.setValueAtTime(0.01, tPing);
+              gain.gain.linearRampToValueAtTime(0.95, tPing + 0.015);
+              gain.gain.exponentialRampToValueAtTime(0.001, tPing + 1.4);
               osc.connect(gain);
-              gain.connect(ctx.destination);
-              osc.start(tStart);
-              osc.stop(tStart + 0.08);
+              gain.connect(compressor);
+              osc.start(tPing);
+              osc.stop(tPing + 1.4);
+
+              const oscSub = ctx.createOscillator();
+              const gainSub = ctx.createGain();
+              oscSub.type = "sine";
+              oscSub.frequency.setValueAtTime(880, tPing);
+              gainSub.gain.setValueAtTime(0.01, tPing);
+              gainSub.gain.linearRampToValueAtTime(0.5, tPing + 0.02);
+              gainSub.gain.exponentialRampToValueAtTime(0.001, tPing + 1.0);
+              oscSub.connect(gainSub);
+              gainSub.connect(compressor);
+              oscSub.start(tPing);
+              oscSub.stop(tPing + 1.0);
             }
+            totalEndSec = numPings * pingPeriod;
+
+          } else if (soundType === "triple_beep") {
+            // Bips d'urgence staccato répétés (salves de 3 bips stridents)
+            const burstCount = repeats * 2;
+            const burstPeriod = 1.0;
+
+            for (let b = 0; b < burstCount; b++) {
+              const bStart = now + b * burstPeriod;
+              for (let i = 0; i < 3; i++) {
+                const tStart = bStart + i * 0.15;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = "square";
+                osc.frequency.setValueAtTime(1046.5, tStart);
+                gain.gain.setValueAtTime(0.01, tStart);
+                gain.gain.linearRampToValueAtTime(0.92, tStart + 0.01);
+                gain.gain.setValueAtTime(0.88, tStart + 0.08);
+                gain.gain.exponentialRampToValueAtTime(0.001, tStart + 0.11);
+                osc.connect(gain);
+                gain.connect(compressor);
+                osc.start(tStart);
+                osc.stop(tStart + 0.11);
+              }
+            }
+            totalEndSec = burstCount * burstPeriod + 0.3;
+
           } else if (soundType === "whistle") {
-            // Sifflet de manœuvre remorqueur (440 Hz + 554 Hz bitonal)
-            [440, 554].forEach((freq) => {
-              const osc = ctx.createOscillator();
-              const gain = ctx.createGain();
-              osc.type = "sawtooth";
-              osc.frequency.setValueAtTime(freq, now);
-              gain.gain.setValueAtTime(0.01, now);
-              gain.gain.linearRampToValueAtTime(0.18, now + 0.06);
-              gain.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
-              osc.connect(gain);
-              gain.connect(ctx.destination);
-              osc.start(now);
-              osc.stop(now + 0.7);
-            });
+            // Sifflet bitonal puissant de remorqueur (440 Hz + 554 Hz)
+            const blastDur = 1.4;
+            const blastPause = 0.55;
+            const cycleDur = blastDur + blastPause;
+
+            for (let r = 0; r < repeats; r++) {
+              const rStart = now + r * cycleDur;
+              [440, 554.37, 659.25].forEach((freq, fIdx) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = "sawtooth";
+                osc.frequency.setValueAtTime(freq, rStart);
+                const gVal = fIdx === 2 ? 0.4 : 0.88;
+                gain.gain.setValueAtTime(0.01, rStart);
+                gain.gain.linearRampToValueAtTime(gVal, rStart + 0.08);
+                gain.gain.setValueAtTime(gVal, rStart + blastDur - 0.1);
+                gain.gain.exponentialRampToValueAtTime(0.001, rStart + blastDur);
+                osc.connect(gain);
+                gain.connect(compressor);
+                osc.start(rStart);
+                osc.stop(rStart + blastDur);
+              });
+            }
+            totalEndSec = repeats * cycleDur;
           }
+
+          activeTimerStopTimeout = setTimeout(() => {
+            stopTimerSound();
+          }, Math.max(1000, Math.round(totalEndSec * 1000)));
+
         } catch (e) {
           console.warn("Audio non disponible:", e);
         }
@@ -31116,6 +31313,8 @@
         isOverdue: false,
         soundAlert: true,
         soundType: "foghorn",
+        soundVolume: 100, // 30 à 100%
+        soundDuration: "medium", // "short" (~2.5s), "medium" (~5s), "long" (~10s)
         targetTimeMs: null,
         useArmsTiming: false,
         lastChimeAlertTime: 0
@@ -31139,6 +31338,8 @@
             universalTimerState.remainingSec = parsed.remainingSec !== undefined ? parsed.remainingSec : 1800;
             universalTimerState.soundAlert = parsed.soundAlert !== undefined ? parsed.soundAlert : true;
             universalTimerState.soundType = parsed.soundType || "foghorn";
+            universalTimerState.soundVolume = parsed.soundVolume !== undefined ? parsed.soundVolume : 100;
+            universalTimerState.soundDuration = parsed.soundDuration || "medium";
             universalTimerState.useArmsTiming = !!parsed.useArmsTiming;
             if (parsed.isRunning && parsed.targetTimeMs) {
               const diff = Math.round((parsed.targetTimeMs - Date.now()) / 1000);
@@ -31168,6 +31369,8 @@
             isRunning: universalTimerState.isRunning,
             soundAlert: universalTimerState.soundAlert,
             soundType: universalTimerState.soundType,
+            soundVolume: universalTimerState.soundVolume,
+            soundDuration: universalTimerState.soundDuration,
             targetTimeMs: universalTimerState.targetTimeMs,
             useArmsTiming: universalTimerState.useArmsTiming
           }));
@@ -31969,7 +32172,7 @@
           updateUniversalTimerUI();
         });
 
-        // Sélecteur de sons et test sonore
+        // Sélecteur de sons, volume fort et durée prolongée
         const soundSel = document.getElementById("univ-sound-select");
         if (soundSel) {
           soundSel.value = universalTimerState.soundType || "foghorn";
@@ -31979,9 +32182,35 @@
           });
         }
 
+        const soundVolSlider = document.getElementById("univ-sound-volume");
+        const soundVolLbl = document.getElementById("univ-sound-volume-lbl");
+        if (soundVolSlider) {
+          soundVolSlider.value = universalTimerState.soundVolume || 100;
+          if (soundVolLbl) soundVolLbl.textContent = `${soundVolSlider.value}%${soundVolSlider.value >= 90 ? ' (Max)' : ''}`;
+          soundVolSlider.addEventListener("input", (e) => {
+            const v = parseInt(e.target.value, 10) || 100;
+            universalTimerState.soundVolume = v;
+            if (soundVolLbl) soundVolLbl.textContent = `${v}%${v >= 90 ? ' (Max)' : ''}`;
+            saveUniversalTimerState();
+          });
+        }
+
+        const soundDurSel = document.getElementById("univ-sound-duration");
+        if (soundDurSel) {
+          soundDurSel.value = universalTimerState.soundDuration || "medium";
+          soundDurSel.addEventListener("change", (e) => {
+            universalTimerState.soundDuration = e.target.value;
+            saveUniversalTimerState();
+          });
+        }
+
         document.getElementById("univ-sound-test-btn")?.addEventListener("click", () => {
-          const type = soundSel ? soundSel.value : (universalTimerState.soundType || "foghorn");
-          playTimerSound(type);
+          if (activeTimerAudioCtx) {
+            stopTimerSound();
+          } else {
+            const type = soundSel ? soundSel.value : (universalTimerState.soundType || "foghorn");
+            playTimerSound(type);
+          }
         });
 
         const soundCbUniv = document.getElementById("univ-sound-alert-cb");
