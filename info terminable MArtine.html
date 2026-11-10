@@ -894,6 +894,12 @@
         color: #f0f9ff !important;
         box-shadow: 0 0 12px rgba(56, 189, 248, 0.6) !important;
       }
+      .hud-pill-btn.batsignal-active {
+        background: rgba(234, 179, 8, 0.45) !important;
+        border-color: #facc15 !important;
+        color: #fef08a !important;
+        box-shadow: 0 0 14px rgba(250, 204, 21, 0.7) !important;
+      }
 
       .viewport-landmarks-bar {
         position: absolute;
@@ -3482,6 +3488,9 @@
                 <button type="button" class="hud-pill-btn" id="hud-toggle-winter" title="Activer / Forcer la météo d'hiver québécois (Neige 3D &amp; poudrerie, banquise dérivante sur le fleuve, fumée de mer et paysages enneigés)">
                   ❄️ Hiver : OFF
                 </button>
+                <button type="button" class="hud-pill-btn" id="hud-toggle-batsignal" title="Activer / Désactiver le Bat-Signal (Automatique de 17h00 à 05h30 chaque nuit au-dessus du Saint-Laurent)">
+                  🦇 Bat-Signal : AUTO
+                </button>
                 <button type="button" class="hud-pill-btn" id="hud-toggle-minimap" title="Afficher/Masquer la Minimap M&eacute;t&eacute;o &amp; Radar qui suit le temps simul&eacute;">
                   &#x1F326;&#xFE0F; Radar 3D
                 </button>
@@ -3864,6 +3873,9 @@
               </button>
               <button type="button" class="landmark-jump-btn" data-target-az="133" data-target-alt="-4" title="Batman sur le Quai Valero — Patrouille nocturne • Azimut 133° • Distance 110m">
                 🦇 Batman &middot; 133&deg;
+              </button>
+              <button type="button" class="landmark-jump-btn" data-target-az="338" data-target-alt="28" title="Bat-Signal projeté dans les nuages au-dessus de Québec et du fleuve — Azimut 338° • Élévation +28°">
+                🦇 Bat-Signal &middot; 338&deg;
               </button>
               <button type="button" class="landmark-jump-btn" data-target-az="120" data-target-alt="-8" title="Glaces dérivantes et banquise du Saint-Laurent — Azimut 120°">
                 ❄️ Glaces &middot; 120&deg;
@@ -15345,6 +15357,24 @@
       function getEffectiveDate() {
         return new Date(getEffectiveTimeMs());
       }
+      // --- PLANIFICATION & ÉTAT DU BAT-SIGNAL (17h00 à 05h30 chaque jour avec option ON / OFF) ---
+      window.batSignalMode = "auto"; // "auto" (17h00 à 05h30), "on" (forcé), "off" (éteint)
+      function getEffectiveHourFraction() {
+        const d = typeof getEffectiveDate === "function" ? getEffectiveDate() : new Date();
+        return d.getHours() + d.getMinutes() / 60 + d.getSeconds() / 3600;
+      }
+      function isBatSignalScheduledTime() {
+        const h = getEffectiveHourFraction();
+        // Actif de 17h00 (17.0) jusqu'à 05h30 (5.5) à chaque jour
+        return (h >= 17.0 || h < 5.5);
+      }
+      function isBatSignalActive() {
+        if (window.batSignalMode === "on") return true;
+        if (window.batSignalMode === "off") return false;
+        return isBatSignalScheduledTime();
+      }
+      window.isBatSignalActive = isBatSignalActive;
+      window.isBatSignalScheduledTime = isBatSignalScheduledTime;
       const starCatalog = [
         { ra: 0.27, dec: -48.81, mag: 5.71 },
         { ra: 0.33, dec: -50.34, mag: 5.53 },
@@ -24820,6 +24850,65 @@
           if (!alive) fireworks.splice(i, 1);
         }
 
+        // Bat-Signal 2D projeté dans les nuages (Actif de 17h00 à 05h30 ou forcé ON)
+        if (typeof isBatSignalActive === "function" && isBatSignalActive() && typeof window.projectAzAlt === "function") {
+          const pt = window.projectAzAlt(338, 28, W, H, viewAzimuth, viewAltitude, viewFOV);
+          const pb = window.projectAzAlt(195, -2, W, H, viewAzimuth, viewAltitude, viewFOV);
+          if (pt && pt.y < H && pt.y > -80 && pt.x > -120 && pt.x < W + 120) {
+            sCtx.save();
+            const beamX = pb ? pb.x : (W * 0.45);
+            const beamY = pb ? pb.y : (H * 0.95);
+
+            // Faisceau volumétrique ascendant
+            const bGrad = sCtx.createLinearGradient(beamX, beamY, pt.x, pt.y);
+            bGrad.addColorStop(0, "rgba(254, 240, 138, 0.45)");
+            bGrad.addColorStop(0.65, "rgba(250, 204, 21, 0.25)");
+            bGrad.addColorStop(1, "rgba(234, 179, 8, 0.60)");
+            sCtx.strokeStyle = bGrad;
+            sCtx.lineWidth = Math.max(26, (85 / viewFOV) * 42);
+            sCtx.beginPath();
+            sCtx.moveTo(beamX, beamY);
+            sCtx.lineTo(pt.x, pt.y);
+            sCtx.stroke();
+
+            // Halo lumineux du Bat-Signal sur le plafond nuageux
+            const rSignal = Math.max(24, (100 / viewFOV) * 38);
+            const sigGrad = sCtx.createRadialGradient(pt.x, pt.y, 4, pt.x, pt.y, rSignal);
+            sigGrad.addColorStop(0, "rgba(255, 255, 255, 0.96)");
+            sigGrad.addColorStop(0.35, "rgba(254, 240, 138, 0.88)");
+            sigGrad.addColorStop(0.72, "rgba(234, 179, 8, 0.45)");
+            sigGrad.addColorStop(1, "rgba(202, 138, 4, 0.0)");
+            sCtx.fillStyle = sigGrad;
+            sCtx.beginPath();
+            sCtx.arc(pt.x, pt.y, rSignal, 0, Math.PI * 2);
+            sCtx.fill();
+
+            // Silhouette de la Chauve-Souris au centre du halo
+            sCtx.save();
+            sCtx.translate(pt.x, pt.y);
+            const bsc = rSignal * 0.70;
+            sCtx.fillStyle = "rgba(15, 23, 42, 0.95)";
+            sCtx.beginPath();
+            sCtx.moveTo(0, -0.22 * bsc);
+            sCtx.lineTo(0.08 * bsc, -0.38 * bsc);
+            sCtx.lineTo(0.14 * bsc, -0.24 * bsc);
+            sCtx.bezierCurveTo(0.28 * bsc, -0.30 * bsc, 0.65 * bsc, -0.25 * bsc, 0.95 * bsc, -0.06 * bsc);
+            sCtx.bezierCurveTo(0.82 * bsc, 0.08 * bsc, 0.70 * bsc, 0.14 * bsc, 0.66 * bsc, 0.06 * bsc);
+            sCtx.bezierCurveTo(0.56 * bsc, 0.22 * bsc, 0.44 * bsc, 0.26 * bsc, 0.38 * bsc, 0.14 * bsc);
+            sCtx.bezierCurveTo(0.28 * bsc, 0.32 * bsc, 0.14 * bsc, 0.36 * bsc, 0, 0.40 * bsc);
+            sCtx.bezierCurveTo(-0.14 * bsc, 0.36 * bsc, -0.28 * bsc, 0.32 * bsc, -0.38 * bsc, 0.14 * bsc);
+            sCtx.bezierCurveTo(-0.44 * bsc, 0.26 * bsc, -0.56 * bsc, 0.22 * bsc, -0.66 * bsc, 0.06 * bsc);
+            sCtx.bezierCurveTo(-0.70 * bsc, 0.14 * bsc, -0.82 * bsc, 0.08 * bsc, -0.95 * bsc, -0.06 * bsc);
+            sCtx.bezierCurveTo(-0.65 * bsc, -0.25 * bsc, -0.28 * bsc, -0.30 * bsc, -0.14 * bsc, -0.24 * bsc);
+            sCtx.lineTo(-0.08 * bsc, -0.38 * bsc);
+            sCtx.closePath();
+            sCtx.fill();
+            sCtx.restore();
+
+            sCtx.restore();
+          }
+        }
+
         // Les anciens nuages 2D plats ont ete supprimes et remplaces par le systeme
         // de nuages volumetriques 3D multi-couches et rubans de rafales (clouds3DGroup)
         // dans Three.js, integralement pilote par la vitesse et la direction reelles du vent.
@@ -25513,6 +25602,14 @@
           camTargetAlt = parseFloat(btn.getAttribute("data-target-alt") || "-5");
           if (btn.textContent.includes("Batman") || Math.abs(camTargetAz - 133) < 0.5) {
             window.forceBatman3D = true;
+          }
+          if (btn.textContent.includes("Bat-Signal") || Math.abs(camTargetAz - 338) < 0.5) {
+            window.batSignalMode = "on";
+            const bBtn = document.getElementById("hud-toggle-batsignal");
+            if (bBtn) {
+              bBtn.classList.add("active", "batsignal-active");
+              bBtn.innerHTML = "🦇 Bat-Signal : ON";
+            }
           }
           if (btn.textContent.includes("Glaces") || Math.abs(camTargetAz - 120) < 0.5) {
             window.forceWinter3D = true;
@@ -34092,6 +34189,21 @@
         batFinRight.position.set(0.12, -0.38, 0);
         batArmRightGroup.add(batFinRight);
 
+        // Grappin tactique (Grapnel Gun)
+        const grapnelGroup = new THREE.Group();
+        grapnelGroup.position.set(0, -0.62, 0.1);
+        const grapnelBody = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.16, 0.26), batArmorMat);
+        grapnelGroup.add(grapnelBody);
+        const grapnelBarrel = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.24, 8), batSuitDarkMat);
+        grapnelBarrel.rotation.x = Math.PI / 2;
+        grapnelBarrel.position.set(0, 0.04, 0.18);
+        grapnelGroup.add(grapnelBarrel);
+        const grapnelSpool = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.08, 12), batBeltMat);
+        grapnelSpool.rotation.z = Math.PI / 2;
+        grapnelSpool.position.set(0, -0.06, 0.02);
+        grapnelGroup.add(grapnelSpool);
+        batArmRightGroup.add(grapnelGroup);
+
         // Jambes gauche & droite articulées
         const batLegLeftGroup = new THREE.Group();
         batLegLeftGroup.position.set(-0.2, 0.88, 0);
@@ -34132,50 +34244,232 @@
         batmanCapeLower.position.set(0, -1.05, -0.1);
         batmanCapeGroup.add(batmanCapeLower);
 
-        // Fonction d'animation de Batman (Patrouille / Course sur le quai)
+        // Fonction d'animation de Batman (Patrouille cinématographique multi-actions sur le quai)
         function updateBatman3D(timeSec, nightFlag) {
-          const isAct = nightFlag || !!window.forceBatman3D;
+          const isSignal = (typeof isBatSignalActive === "function" && isBatSignalActive());
+          const isAct = nightFlag || !!window.forceBatman3D || isSignal;
           batmanGroup.visible = isAct;
           if (!isAct) return;
 
-          // Course aller-retour le long de la plateforme centrale (x entre -10.5 et +10.5)
-          const runSpeed = 0.24;
-          const u = (timeSec * runSpeed) % 2.0;
-          const isForward = u < 1.0;
-          const p = isForward ? u : (u - 1.0);
-          const sprintX = isForward ? (-10.5 + p * 21.0) : (10.5 - p * 21.0);
+          // Cycle multi-actions de 32 secondes pour une patrouille vivante et cinématographique
+          const cycleTime = 32.0;
+          const tau = (timeSec % cycleTime);
 
-          batmanGroup.position.x = sprintX;
-          batmanGroup.position.z = 0.5;
+          // Récupération de la force du vent météo pour l'ondulation physique de la cape
+          const windKmh = (typeof currentConditions !== "undefined" && currentConditions.wind) ? currentConditions.wind : 16;
+          const windKnots = windKmh / 1.852;
+          const windFactor = Math.min(1.5, Math.max(0.3, windKnots / 15.0));
 
-          // Orientation dans la direction de la course (+X ou -X)
-          const targetRotY = isForward ? (Math.PI / 2) : (-Math.PI / 2);
-          batmanGroup.rotation.y = targetRotY;
+          // -------------------------------------------------------------------------
+          // PHASE 1 : SPRINT TACTIQUE OUEST -> EST (0.0s à 8.0s)
+          // -------------------------------------------------------------------------
+          if (tau < 8.0) {
+            const u = tau / 8.0;
+            const pX = -10.5 + u * 19.0; // De -10.5 à +8.5
+            batmanGroup.position.set(pX, 7.35, 0.5);
+            batmanGroup.rotation.y = Math.PI / 2; // Regard vers l'Est
 
-          // Fréquence des foulées (sprint rapide et dynamique)
-          const strideFreq = 14.0;
-          const stride = Math.sin(timeSec * strideFreq);
+            const strideFreq = 14.5;
+            const stride = Math.sin(tau * strideFreq);
 
-          // Balancement des jambes
-          batLegLeftGroup.rotation.x = stride * 0.75;
-          batLegRightGroup.rotation.x = -stride * 0.75;
+            // Foulées et pompage athlétique des bras
+            batLegLeftGroup.rotation.x = stride * 0.85;
+            batLegLeftGroup.rotation.y = 0;
+            batLegLeftGroup.rotation.z = 0;
+            batLegLeftGroup.position.set(-0.2, 0.88, 0);
 
-          // Balancement synchronisé des bras
-          batArmLeftGroup.rotation.x = -stride * 0.85;
-          batArmRightGroup.rotation.x = stride * 0.85;
+            batLegRightGroup.rotation.x = -stride * 0.85;
+            batLegRightGroup.rotation.y = 0;
+            batLegRightGroup.rotation.z = 0;
+            batLegRightGroup.position.set(0.2, 0.88, 0);
 
-          // Rebond vertical athlétique (course)
-          const runBounce = Math.abs(Math.sin(timeSec * strideFreq)) * 0.12;
-          batmanGroup.position.y = 7.35 + runBounce;
+            batArmLeftGroup.rotation.x = -stride * 0.95;
+            batArmLeftGroup.rotation.y = 0;
+            batArmLeftGroup.rotation.z = 0.08;
 
-          // Inclinaison du buste en avant pour la course
-          batTorso.rotation.x = 0.16;
-          batHead.rotation.x = -0.10;
+            batArmRightGroup.rotation.x = stride * 0.95;
+            batArmRightGroup.rotation.y = 0;
+            batArmRightGroup.rotation.z = -0.08;
 
-          // Ondulation spectaculaire de la cape au vent
-          const capeWind = Math.sin(timeSec * 12.0) * 0.15 + Math.cos(timeSec * 18.0) * 0.1;
-          batmanCapeGroup.rotation.x = -0.55 - Math.abs(stride) * 0.35 + capeWind;
-          batmanCapeLower.rotation.x = -0.35 + Math.sin(timeSec * 16.0) * 0.25;
+            const runBounce = Math.abs(stride) * 0.13;
+            batmanGroup.position.y = 7.35 + runBounce;
+
+            batTorso.rotation.x = 0.18;
+            batTorso.rotation.y = 0;
+            batHead.rotation.x = -0.10;
+            batHead.rotation.y = 0;
+
+            // Cape claquante en arrière au vent
+            const capeWind = Math.sin(tau * 13.0) * 0.18 + Math.cos(tau * 19.0) * 0.12;
+            batmanCapeGroup.rotation.x = -0.65 - Math.abs(stride) * 0.40 - windFactor * 0.15 + capeWind;
+            batmanCapeLower.rotation.x = -0.40 + Math.sin(tau * 17.0) * 0.30;
+          }
+          // -------------------------------------------------------------------------
+          // PHASE 2 : DÉCÉLÉRATION & ARRÊT D'OBSERVATION FACE AU FLEUVE (8.0s à 13.0s)
+          // -------------------------------------------------------------------------
+          else if (tau < 13.0) {
+            const u = (tau - 8.0) / 5.0;
+            batmanGroup.position.set(8.5, 7.35, 0.5 - Math.min(1.0, u * 2.5) * 1.8);
+
+            // Rotation fluide face au fleuve et au Cap Québec
+            const rotYProg = Math.min(1.0, u * 2.0);
+            batmanGroup.rotation.y = (Math.PI / 2) + rotYProg * (Math.PI / 2);
+
+            const settle = Math.max(0, 1.0 - u * 2.5);
+            batLegLeftGroup.rotation.x = Math.sin(tau * 6.0) * 0.3 * settle;
+            batLegRightGroup.rotation.x = -Math.sin(tau * 6.0) * 0.3 * settle;
+            batLegLeftGroup.rotation.z = -0.08;
+            batLegRightGroup.rotation.z = 0.08;
+
+            // Bras au repos sur les hanches
+            batArmLeftGroup.rotation.x = -0.12;
+            batArmLeftGroup.rotation.z = -0.25;
+            batArmRightGroup.rotation.x = -0.12;
+            batArmRightGroup.rotation.z = 0.25;
+
+            // Scan radar / surveillance de la baie (la tête balaie l'horizon)
+            const scan = Math.sin((tau - 8.0) * 1.8);
+            batHead.rotation.y = scan * 0.42;
+            batHead.rotation.x = -0.05 + Math.sin(tau * 1.2) * 0.06;
+
+            batTorso.rotation.x = 0.04;
+            batTorso.rotation.y = scan * 0.08;
+            batmanGroup.position.y = 7.35 + Math.sin(tau * 2.0) * 0.02;
+
+            // Cape qui ondule au vent du fleuve
+            const capeFlap = Math.sin(tau * 4.5) * 0.14 + Math.cos(tau * 6.2) * 0.08;
+            batmanCapeGroup.rotation.x = -0.22 - windFactor * 0.20 + capeFlap;
+            batmanCapeLower.rotation.x = -0.28 - windFactor * 0.28 + Math.sin(tau * 5.0) * 0.16;
+          }
+          // -------------------------------------------------------------------------
+          // PHASE 3 : ACCROUPI TACTIQUE / SUPERHERO CROUCH AU BORD DU QUAI (13.0s à 18.0s)
+          // -------------------------------------------------------------------------
+          else if (tau < 18.0) {
+            const u = (tau - 13.0) / 5.0;
+            batmanGroup.position.set(8.5, 7.35, -1.3);
+            batmanGroup.rotation.y = Math.PI;
+
+            // Descente fluide dans la posture accroupie héroïque
+            const crouchProg = u < 0.2 ? (u / 0.2) : (u > 0.85 ? ((1.0 - u) / 0.15) : 1.0);
+            batmanGroup.position.y = 7.35 - crouchProg * 0.48;
+
+            // Genou droit fléchi à terre, jambe gauche en appui
+            batLegRightGroup.rotation.x = 1.15 * crouchProg;
+            batLegLeftGroup.rotation.x = 0.45 * crouchProg;
+            batLegRightGroup.position.y = 0.88 - crouchProg * 0.18;
+            batLegLeftGroup.position.y = 0.88 - crouchProg * 0.10;
+
+            batTorso.rotation.x = 0.48 * crouchProg;
+            batHead.rotation.x = -0.40 * crouchProg + Math.sin(tau * 1.5) * 0.08;
+            batHead.rotation.y = Math.sin(tau * 1.1) * 0.25;
+
+            // Main droite posée au sol en appui d'attaque
+            batArmRightGroup.rotation.x = 0.85 * crouchProg;
+            batArmRightGroup.rotation.z = 0.18 * crouchProg;
+            batArmRightGroup.position.y = 1.68 - crouchProg * 0.22;
+
+            batArmLeftGroup.rotation.x = 0.40 * crouchProg;
+            batArmLeftGroup.rotation.z = -0.32 * crouchProg;
+            batArmLeftGroup.position.y = 1.68 - crouchProg * 0.12;
+
+            // Cape qui drape le corps comme des ailes fermées
+            batmanCapeGroup.rotation.x = -0.06 - Math.sin(tau * 3.0) * 0.08;
+            batmanCapeLower.rotation.x = -0.10 + Math.sin(tau * 3.8) * 0.12;
+          }
+          // -------------------------------------------------------------------------
+          // PHASE 4 : REDRESSEMENT & VISÉE AU GRAPPIN VERS LE BAT-SIGNAL / CIEL (18.0s à 23.0s)
+          // -------------------------------------------------------------------------
+          else if (tau < 23.0) {
+            const u = (tau - 18.0) / 5.0;
+            batmanGroup.position.set(8.5, 7.35, -1.3 + Math.min(1.0, u * 2.0) * 1.8);
+            batmanGroup.rotation.y = Math.PI + Math.min(1.0, u * 1.8) * (Math.PI * 0.35);
+
+            batmanGroup.position.y = 7.35;
+            batLegLeftGroup.position.set(-0.2, 0.88, 0);
+            batLegRightGroup.position.set(0.2, 0.88, 0);
+            batLegLeftGroup.rotation.set(0.08, 0, -0.06);
+            batLegRightGroup.rotation.set(-0.12, 0, 0.06);
+
+            batTorso.rotation.x = -0.10;
+            // Tête levée admirant le Bat-Signal dans les nuages
+            batHead.rotation.x = -0.52 + Math.sin(tau * 2.0) * 0.06;
+            batHead.rotation.y = 0.12;
+
+            // Bras droit tendu pointant le grappin vers le ciel !
+            const aimProg = Math.min(1.0, Math.max(0, (u - 0.15) / 0.25));
+            batArmRightGroup.position.set(0.46, 1.68, 0);
+            batArmRightGroup.rotation.x = -2.35 * aimProg;
+            batArmRightGroup.rotation.z = -0.28 * aimProg;
+
+            batArmLeftGroup.position.set(-0.46, 1.68, 0);
+            batArmLeftGroup.rotation.x = -0.25;
+            batArmLeftGroup.rotation.z = -0.22;
+
+            const capeSnap = Math.sin(tau * 8.0) * 0.22;
+            batmanCapeGroup.rotation.x = -0.45 - windFactor * 0.22 + capeSnap;
+            batmanCapeLower.rotation.x = -0.38 + Math.cos(tau * 10.0) * 0.25;
+          }
+          // -------------------------------------------------------------------------
+          // PHASE 5 : SPRINT RETOUR OUEST AVEC SAUT ACROBATIQUE / PARKOUR (23.0s à 32.0s)
+          // -------------------------------------------------------------------------
+          else {
+            const u = (tau - 23.0) / 9.0;
+            batmanGroup.rotation.y = -Math.PI / 2; // Regard vers l'Ouest
+            const pX = 8.5 - u * 19.0; // De +8.5 à -10.5
+            batmanGroup.position.set(pX, 7.35, 0.5);
+
+            // Grand saut acrobatique / Parkour Jump au centre du quai (tau entre 26.5s et 28.5s)
+            const isJumping = (tau >= 26.5 && tau <= 28.5);
+            if (isJumping) {
+              const jumpU = (tau - 26.5) / 2.0;
+              const jumpHeight = Math.sin(jumpU * Math.PI) * 1.45; // Impulsion de 1.45m au-dessus du sol !
+              batmanGroup.position.y = 7.35 + jumpHeight;
+
+              batLegLeftGroup.rotation.x = -0.95;
+              batLegRightGroup.rotation.x = -0.75;
+              batArmLeftGroup.rotation.z = -0.65;
+              batArmLeftGroup.rotation.x = -0.35;
+              batArmRightGroup.rotation.z = 0.65;
+              batArmRightGroup.rotation.x = -0.35;
+
+              batTorso.rotation.x = 0.32;
+              batHead.rotation.x = -0.25;
+
+              batmanCapeGroup.rotation.x = -1.15;
+              batmanCapeLower.rotation.x = -0.85;
+            } else {
+              const strideFreq = 14.5;
+              const stride = Math.sin(tau * strideFreq);
+
+              batLegLeftGroup.rotation.x = stride * 0.85;
+              batLegLeftGroup.rotation.y = 0;
+              batLegLeftGroup.rotation.z = 0;
+              batLegLeftGroup.position.set(-0.2, 0.88, 0);
+
+              batLegRightGroup.rotation.x = -stride * 0.85;
+              batLegRightGroup.rotation.y = 0;
+              batLegRightGroup.rotation.z = 0;
+              batLegRightGroup.position.set(0.2, 0.88, 0);
+
+              batArmLeftGroup.rotation.x = -stride * 0.95;
+              batArmLeftGroup.rotation.z = -0.08;
+              batArmLeftGroup.position.set(-0.46, 1.68, 0);
+
+              batArmRightGroup.rotation.x = stride * 0.95;
+              batArmRightGroup.rotation.z = 0.08;
+              batArmRightGroup.position.set(0.46, 1.68, 0);
+
+              const runBounce = Math.abs(stride) * 0.13;
+              batmanGroup.position.y = 7.35 + runBounce;
+
+              batTorso.rotation.x = 0.18;
+              batHead.rotation.x = -0.10;
+
+              const capeWind = Math.sin(tau * 13.0) * 0.18 + Math.cos(tau * 19.0) * 0.12;
+              batmanCapeGroup.rotation.x = -0.65 - Math.abs(stride) * 0.40 - windFactor * 0.15 + capeWind;
+              batmanCapeLower.rotation.x = -0.40 + Math.sin(tau * 17.0) * 0.30;
+            }
+          }
         }
         window.updateBatman3D = updateBatman3D;
 
@@ -36296,6 +36590,142 @@
         seaSmoke3DGroup.visible = false;
 
         // =========================================================================
+        // BAT-SIGNAL 3D : PROJECTEUR GÉANT SUR LE QUAI VALERO & PROJECTION NUAGIQUE
+        // =========================================================================
+        function createBatSignalCloudTexture() {
+          const cnv = document.createElement("canvas");
+          cnv.width = 512;
+          cnv.height = 512;
+          const ctx = cnv.getContext("2d");
+
+          // Halo lumineux doré volumétrique projeté dans le ciel/nuages
+          const grad = ctx.createRadialGradient(256, 256, 15, 256, 256, 250);
+          grad.addColorStop(0.0, "rgba(255, 252, 210, 0.98)");
+          grad.addColorStop(0.22, "rgba(254, 240, 138, 0.92)");
+          grad.addColorStop(0.52, "rgba(245, 158, 11, 0.58)");
+          grad.addColorStop(0.8, "rgba(217, 119, 6, 0.22)");
+          grad.addColorStop(1.0, "rgba(180, 83, 9, 0.0)");
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.arc(256, 256, 250, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Anneau extérieur de lentille de Fresnel
+          ctx.strokeStyle = "rgba(254, 240, 138, 0.4)";
+          ctx.lineWidth = 5;
+          ctx.beginPath();
+          ctx.arc(256, 256, 238, 0, Math.PI * 2);
+          ctx.stroke();
+
+          // Silhouette iconique de Batman (Chauve-souris stylisée)
+          ctx.fillStyle = "rgba(10, 14, 20, 0.97)";
+          ctx.beginPath();
+          ctx.moveTo(256, 206); // Creux entre les oreilles
+          ctx.lineTo(246, 182); // Pointe oreille gauche
+          ctx.lineTo(236, 198); // Base extérieure oreille gauche
+          ctx.quadraticCurveTo(170, 180, 96, 185); // Haut aile gauche vers pointe
+          ctx.quadraticCurveTo(110, 222, 132, 242); // 1er feston inférieur gauche
+          ctx.quadraticCurveTo(148, 275, 182, 276); // 2e feston inférieur gauche
+          ctx.quadraticCurveTo(210, 292, 238, 290); // 3e feston vers queue
+          ctx.lineTo(256, 326); // Pointe inférieure de la queue
+          ctx.lineTo(274, 290); // Côté droit de la queue
+          ctx.quadraticCurveTo(302, 292, 330, 276); // 3e feston inférieur droit
+          ctx.quadraticCurveTo(364, 275, 380, 242); // 2e feston inférieur droit
+          ctx.quadraticCurveTo(402, 222, 416, 185); // 1er feston vers pointe aile droite
+          ctx.quadraticCurveTo(342, 180, 276, 198); // Haut aile droite vers oreille
+          ctx.lineTo(266, 182); // Pointe oreille droite
+          ctx.closePath();
+          ctx.fill();
+
+          const tex = new THREE.CanvasTexture(cnv);
+          return tex;
+        }
+
+        const batSignal3DGroup = new THREE.Group();
+        scene.add(batSignal3DGroup);
+
+        // Position physique du projecteur sur la superstructure du quai Valero (près de la passerelle d'accès)
+        const batProjectorOrigin = new THREE.Vector3(9.5, 13.8, -2.6);
+
+        // Emplacement de la projection dans la couverture nuageuse (Az 338° au-dessus de Québec / Cap Diamant, Alt 28°, Dist 745m)
+        const batTargetBase = azDistToVec3(338, 745, 360);
+
+        // A. Base et fût du projecteur de DCA / Bat-Signal
+        const batMetalMat = new THREE.MeshLambertMaterial({ color: 0x1e293b });
+        const batLensMat = new THREE.MeshBasicMaterial({ color: 0xfef08a, side: THREE.DoubleSide });
+
+        const batStand = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.75, 1.8, 12), batMetalMat);
+        batStand.position.copy(batProjectorOrigin).add(new THREE.Vector3(0, -0.9, 0));
+        batSignal3DGroup.add(batStand);
+
+        const batYoke = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.4, 0.8), batMetalMat);
+        batYoke.position.copy(batProjectorOrigin);
+        batSignal3DGroup.add(batYoke);
+
+        // Tambour mobile du projecteur orientable
+        const batDrumGroup = new THREE.Group();
+        batDrumGroup.position.copy(batProjectorOrigin);
+        batSignal3DGroup.add(batDrumGroup);
+
+        const batDrum = new THREE.Mesh(new THREE.CylinderGeometry(1.05, 0.95, 2.2, 18), batMetalMat);
+        batDrum.rotation.x = Math.PI / 2;
+        batDrumGroup.add(batDrum);
+
+        const batLens = new THREE.Mesh(new THREE.CircleGeometry(0.98, 18), batLensMat);
+        batLens.position.set(0, 0, 1.11);
+        batDrumGroup.add(batLens);
+
+        // Lampe ponctuelle locale pour illuminer le quai autour du projecteur
+        const batPointLight = new THREE.PointLight(0xfef08a, 2.6, 45);
+        batPointLight.position.copy(batProjectorOrigin);
+        batSignal3DGroup.add(batPointLight);
+
+        // B. Cône volumétrique du faisceau lumineux géant (THREE.CylinderGeometry ouvert aux extrémités avec AdditiveBlending)
+        const beamDist = batProjectorOrigin.distanceTo(batTargetBase);
+        const batBeamGeo = new THREE.CylinderGeometry(46, 1.1, beamDist, 24, 1, true);
+        const batBeamMat = new THREE.MeshBasicMaterial({
+          color: 0xfef08a,
+          transparent: true,
+          opacity: 0.35,
+          blending: THREE.AdditiveBlending,
+          side: THREE.DoubleSide,
+          depthWrite: false
+        });
+        const batBeamMesh = new THREE.Mesh(batBeamGeo, batBeamMat);
+        batSignal3DGroup.add(batBeamMesh);
+
+        // C. Emblème projeté sur les nuages (Disque avec silhouette de la chauve-souris)
+        const batCloudTex = createBatSignalCloudTexture();
+        const batCloudMat = new THREE.MeshBasicMaterial({
+          map: batCloudTex,
+          transparent: true,
+          opacity: 0.92,
+          blending: THREE.AdditiveBlending,
+          side: THREE.DoubleSide,
+          depthWrite: false
+        });
+        const batCloudMesh = new THREE.Mesh(new THREE.PlaneGeometry(130, 130), batCloudMat);
+        batCloudMesh.position.copy(batTargetBase);
+        batCloudMesh.lookAt(batProjectorOrigin);
+        batSignal3DGroup.add(batCloudMesh);
+
+        // Halo diffus d'arrière-plan dans les nuages pour un effet cinématique saisissant
+        const batAuraMat = new THREE.MeshBasicMaterial({
+          map: batCloudTex,
+          transparent: true,
+          opacity: 0.42,
+          blending: THREE.AdditiveBlending,
+          side: THREE.DoubleSide,
+          depthWrite: false
+        });
+        const batAuraMesh = new THREE.Mesh(new THREE.PlaneGeometry(280, 280), batAuraMat);
+        batAuraMesh.position.copy(batTargetBase).add(new THREE.Vector3(0, 5, -8));
+        batAuraMesh.lookAt(batProjectorOrigin);
+        batSignal3DGroup.add(batAuraMesh);
+
+        batSignal3DGroup.visible = false;
+
+        // =========================================================================
         // LANDMARKS & DETAILS HISTORIQUES DU FLEUVE SAINT-LAURENT CALIBRES EN PROFONDEUR
         // =========================================================================
 
@@ -37998,6 +38428,45 @@
           });
         }
 
+        // Bouton de commande du Bat-Signal 3D (Cycles : AUTO [17h-05h30] -> FORCÉ ON -> OFF)
+        const batsignalToggleBtn = document.getElementById("hud-toggle-batsignal");
+        function updateBatSignalHUDButton() {
+          if (!batsignalToggleBtn) return;
+          const currentMode = window.batSignalMode || "auto";
+          const isSched = typeof isBatSignalScheduledTime === "function" ? isBatSignalScheduledTime() : false;
+
+          if (currentMode === "auto") {
+            batsignalToggleBtn.innerHTML = isSched ? "🦇 Bat-Signal : AUTO (ON)" : "🦇 Bat-Signal : AUTO";
+            batsignalToggleBtn.classList.toggle("batsignal-active", isSched);
+            batsignalToggleBtn.classList.toggle("active", isSched);
+            batsignalToggleBtn.title = "Bat-Signal en mode AUTO (Actif de 17h00 à 05h30 chaque nuit). Cliquer pour FORCER l'activation (ON).";
+          } else if (currentMode === "on") {
+            batsignalToggleBtn.innerHTML = "🦇 Bat-Signal : FORCÉ ON";
+            batsignalToggleBtn.classList.add("batsignal-active", "active");
+            batsignalToggleBtn.title = "Bat-Signal FORCÉ EN CONTINU. Cliquer pour DÉSACTIVER (OFF).";
+          } else {
+            batsignalToggleBtn.innerHTML = "🦇 Bat-Signal : OFF";
+            batsignalToggleBtn.classList.remove("batsignal-active", "active");
+            batsignalToggleBtn.title = "Bat-Signal DÉSACTIVÉ. Cliquer pour réactiver le mode AUTO (17h00 à 05h30).";
+          }
+        }
+        window.updateBatSignalHUDButton = updateBatSignalHUDButton;
+
+        if (batsignalToggleBtn) {
+          batsignalToggleBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            if (window.batSignalMode === "auto") {
+              window.batSignalMode = "on";
+            } else if (window.batSignalMode === "on") {
+              window.batSignalMode = "off";
+            } else {
+              window.batSignalMode = "auto";
+            }
+            updateBatSignalHUDButton();
+          });
+          updateBatSignalHUDButton();
+        }
+
         // Variables d'état saisonnier et matériaux du paysage avec transition hivernale
         let currentWinterFactor = 0.0;
         let lastWinterFactor = -1.0;
@@ -39598,6 +40067,41 @@
           // Animation de Batman qui court sur le quai Valero la nuit
           if (typeof updateBatman3D === "function") {
             updateBatman3D(t, isNight);
+          }
+
+          // Bat-Signal 3D (Actif quotidiennement de 17h00 à 05h30 avec options AUTO / FORCÉ ON / OFF)
+          const batSignalOn = typeof isBatSignalActive === "function" ? isBatSignalActive() : false;
+          if (batSignal3DGroup) {
+            batSignal3DGroup.visible = batSignalOn;
+            if (batSignalOn) {
+              // Balayage doux et atmosphérique du projecteur au-dessus du fleuve et de Québec
+              const sweepX = Math.sin(t * 0.28) * 22.0;
+              const sweepY = Math.cos(t * 0.22) * 10.0;
+              const sweepZ = Math.sin(t * 0.18) * 16.0;
+              const curBatTarget = batTargetBase.clone().add(new THREE.Vector3(sweepX, sweepY, sweepZ));
+
+              // Orientation du tambour et positionnement du disque nuageux
+              batDrumGroup.lookAt(curBatTarget);
+              batCloudMesh.position.copy(curBatTarget);
+              batCloudMesh.lookAt(batProjectorOrigin);
+              batAuraMesh.position.copy(curBatTarget).add(new THREE.Vector3(0, 4, -6));
+              batAuraMesh.lookAt(batProjectorOrigin);
+
+              // Orientation et centrage du faisceau volumétrique
+              const beamMid = new THREE.Vector3().addVectors(batProjectorOrigin, curBatTarget).multiplyScalar(0.5);
+              const beamDir = new THREE.Vector3().subVectors(curBatTarget, batProjectorOrigin).normalize();
+              batBeamMesh.position.copy(beamMid);
+              batBeamMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), beamDir);
+
+              // Scintillement atmosphérique et brume nuageuse
+              const batFlicker = 0.92 + Math.sin(t * 6.8) * 0.05 + Math.cos(t * 11.4) * 0.03;
+              batBeamMat.opacity = 0.35 * batFlicker;
+              batCloudMat.opacity = 0.92 * batFlicker;
+              batAuraMat.opacity = 0.38 * batFlicker;
+            }
+          }
+          if (typeof updateBatSignalHUDButton === "function" && Math.floor(t * 10) % 15 === 0) {
+            updateBatSignalHUDButton();
           }
 
           // H. Projecteur de recherche maritime 3D (fermé par défaut, actif UNIQUEMENT si l'utilisateur clique sur l'option)
