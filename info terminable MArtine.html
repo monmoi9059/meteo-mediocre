@@ -23925,11 +23925,19 @@
       // --- CONDITIONS MÉTÉO & MARÉES ACTUELLES ---
       let currentConditions = {
         temp: 0,
+        apparentTemp: 0,
+        dewPoint: -2,
+        waterTemp: null,
+        realWaterTemp: null,
+        snowDepth: 0, // Épaisseur réelle de neige au sol (en mètres, Open-Meteo snow_depth)
+        precipitation: 0,
+        visibility: 15000,
         wind: 0,
         windGust: 0,
         windDir: 0,
         rain: 0,
         snow: 0,
+        isFreezingRain: false,
         cloudCover: 0,
         pressure: 0,
         humidity: 0,
@@ -23945,6 +23953,82 @@
         flowDirection: "none",
       };
       let lightningFlashAlpha = 0;
+
+      // Climatologie thermique réelle du fleuve Saint-Laurent à Québec / Lévis (MPO Lauzon)
+      // Utilisée uniquement en secours si la sonde temps réel wt1 du MPO ne répond pas, afin d'avoir
+      // une température d'eau 100% réaliste toute l'année sans saut artificiel à 0°C.
+      const ST_LAWRENCE_MONTHLY_WATER_C = [
+        0.1,  // Jan
+        0.1,  // Fév
+        0.8,  // Mar
+        4.4,  // Avr
+        10.6, // Mai
+        16.4, // Juin
+        20.4, // Juil
+        20.8, // Août
+        17.2, // Sep
+        11.2, // Oct
+        4.9,  // Nov
+        0.9,  // Déc
+      ];
+      function estimateStLawrenceWaterTemp(dateObj, airTempC) {
+        const d = dateObj instanceof Date && !isNaN(dateObj) ? dateObj : new Date();
+        const m = d.getMonth();
+        const dayFrac = (d.getDate() - 1 + d.getHours() / 24) / 30.4375;
+        // Ancrage au milieu du mois (jour ~15)
+        const shifted = dayFrac - 0.5;
+        const idx0 = shifted >= 0 ? m : (m + 11) % 12;
+        const idx1 = shifted >= 0 ? (m + 1) % 12 : m;
+        const t = shifted >= 0 ? shifted : shifted + 1.0;
+        // Interpolation cosinus lisse entre deux mois consécutifs
+        const mu = (1 - Math.cos(Math.max(0, Math.min(1, t)) * Math.PI)) * 0.5;
+        let climWater = ST_LAWRENCE_MONTHLY_WATER_C[idx0] * (1 - mu) + ST_LAWRENCE_MONTHLY_WATER_C[idx1] * mu;
+        if (typeof airTempC === "number" && !isNaN(airTempC)) {
+          // Inertie thermique énorme du fleuve : faible inflexion (±1.1°C max) selon l'anomalie de l'air
+          const anomaly = Math.max(-1.1, Math.min(1.1, (airTempC - climWater) * 0.07));
+          climWater += anomaly;
+          // L'eau fluviale douce/saumâtre à Québec ne descend pas sous -0.4°C
+          if (climWater < 0.2 && airTempC > 4.0) climWater = Math.min(1.8, climWater + (airTempC - 4.0) * 0.08);
+        }
+        return parseFloat(Math.max(-0.4, Math.min(23.5, climWater)).toFixed(1));
+      }
+
+      // Séparation physique pluie / neige / pluie verglaçante selon les mesures API et la température réelle
+      function splitRainAndSnowRates(precipMm, rawRainMm, rawSnowCm, weatherCode, tempC) {
+        const p = Math.max(0, Number(precipMm) || 0);
+        const rRaw = Math.max(0, Number(rawRainMm) || 0);
+        const sRaw = Math.max(0, Number(rawSnowCm) || 0); // Open-Meteo snowfall en cm/h (1 cm ~ 1 mm eq. eau)
+        const wCode = Number(weatherCode) || 0;
+        const t = typeof tempC === "number" && !isNaN(tempC) ? tempC : 10;
+
+        const isFreezingCode = wCode === 56 || wCode === 57 || wCode === 66 || wCode === 67;
+        const isSnowCode = (wCode >= 71 && wCode <= 77) || wCode === 85 || wCode === 86;
+
+        if (isFreezingCode || (t <= 0.1 && rRaw > 0.04 && sRaw <= 0.02 && !isSnowCode)) {
+          const liq = Math.max(rRaw, p);
+          return { rain: liq, snow: 0, isFreezingRain: liq > 0.01 };
+        }
+        if (rRaw > 0.01 || sRaw > 0.01) {
+          // Préserver les taux réels mesurés par le modèle météo (ex: neige fondante à +1.0°C ou mélange pluie-neige à 0°C)
+          return {
+            rain: rRaw,
+            snow: sRaw > 0.01 ? Math.max(sRaw, isSnowCode ? p : 0) : 0,
+            isFreezingRain: isFreezingCode || (!isSnowCode && sRaw <= 0.02 && t <= 0.0 && rRaw > 0.04),
+          };
+        }
+        if (p <= 0.005) {
+          return { rain: 0, snow: 0, isFreezingRain: false };
+        }
+        if (isSnowCode || t <= -0.4) {
+          return { rain: 0, snow: p, isFreezingRain: false };
+        }
+        if (t < 1.1) {
+          // Zone de transition pluie-neige fondante (-0.4°C .. +1.1°C)
+          const snowFrac = (1.1 - t) / 1.5;
+          return { rain: p * (1 - snowFrac), snow: p * snowFrac, isFreezingRain: false };
+        }
+        return { rain: p, snow: 0, isFreezingRain: false };
+      }
 
       function lerpColor(a, b, amount) {
         var ah = parseInt(a.replace(/#/g, ""), 16),
@@ -24132,6 +24216,23 @@
           color1 = lerpColor(color1, stormColorTop, stormCloudCover * 0.8);
           color2 = lerpColor(color2, stormColorMid, stormCloudCover * 0.8);
           color3 = lerpColor(color3, stormColorBot, stormCloudCover * 0.8);
+        }
+
+        // Modulation thermique subtile du ciel selon la vraie température extérieure :
+        // Froid polaire sec (<= -8°C) -> zénith cobalt profond et horizon cristallin glacé
+        // Chaleur estivale (>= 26°C) -> légère brume dorée ambrée à l'horizon
+        const effSkyTemp = typeof c.temp === "number" ? c.temp : 12;
+        if (!c.isNight && stormCloudCover < 0.72) {
+          const clearWeight = 1.0 - stormCloudCover * 0.85;
+          if (effSkyTemp <= -8) {
+            const coldAmt = Math.min(0.28, ((-8 - effSkyTemp) / 22) * 0.28) * clearWeight;
+            color1 = lerpColor(color1, "#1d4ed8", coldAmt * 0.75);
+            color3 = lerpColor(color3, "#f0f9ff", coldAmt);
+          } else if (effSkyTemp >= 26) {
+            const warmAmt = Math.min(0.24, ((effSkyTemp - 26) / 12) * 0.24) * clearWeight;
+            color2 = lerpColor(color2, "#0ea5e9", warmAmt * 0.45);
+            color3 = lerpColor(color3, "#fef3c7", warmAmt);
+          }
         }
 
         function hexToRgba(hex, alpha) {
@@ -25349,10 +25450,11 @@
         }
 
         // Gouttes de pluie locales (incluant les premieres/dernieres gouttes si un front arrive ou finit de passer)
+        const curTempVal = typeof c.temp === "number" ? c.temp : 10;
         let effectiveRain = c.rain || 0;
         if (effectiveRain <= 0.05 && (c.rainPhase === "incoming" || c.rainPhase === "passing") && (c.rainFrontIntensity || 0) > 0.2) {
           const prox = 1 - Math.min(1, Math.abs(c.rainFrontProgress || 0.6));
-          if (prox > 0.35 && (c.temp || 10) > 0) {
+          if (prox > 0.35 && (curTempVal > 0.3 || c.isFreezingRain)) {
             effectiveRain = prox * 0.35; // Gouttes eparses avant-coureuses ou de fin d'averse
           }
         }
@@ -25362,7 +25464,7 @@
             drops.length,
             Math.floor(effectiveRain * 82) + (effectiveRain > 0.15 ? 28 : 10)
           );
-          const isFreezingRain = (c.temp !== undefined && c.temp >= -2.5 && c.temp <= 0.5);
+          const isFreezingRain = !!c.isFreezingRain || (curTempVal >= -3.5 && curTempVal <= 0.5);
           wCtx.strokeStyle = isFreezingRain
             ? "rgba(186, 230, 253, 0.78)"
             : c.isNight
@@ -25386,15 +25488,19 @@
           wCtx.stroke();
         }
 
-        const isWinterSnow2D = (c.snow || 0) > 0 || !!window.forceWinter3D || (typeof c.temp === "number" && c.temp <= 0.5 && ((c.rain || 0) > 0 || (c.precipitation || 0) > 0));
+        const isWinterSnow2D =
+          !!window.forceWinter3D ||
+          (c.snow || 0) > 0.015 ||
+          (!c.isFreezingRain && curTempVal <= 0.4 && (c.precipitation || 0) > 0.03);
         if (isWinterSnow2D) {
           const snowAmt = (c.snow || 0) > 0 ? c.snow : (window.forceWinter3D ? 1.4 : (c.precipitation || 0.8));
+          const mode3DFactor = window.mode3DActive ? 0.36 : 1.0; // En 3D, les 2400 flocons volumétriques Three.js assurent le volume principal
           const activeFlakes = Math.min(
             flakes.length,
-            Math.floor(snowAmt * 120) + 140
+            Math.max(24, Math.floor((snowAmt * 120 + 95) * mode3DFactor))
           );
           const windKmh = c.wind || 0;
-          const isPoudrerie = windKmh >= 22;
+          const isPoudrerie = windKmh >= 28 && (snowAmt > 0.25 || (c.snowDepth || 0) >= 0.02 || !!window.forceWinter3D);
 
           for (let l = 2; l >= 0; l--) {
             wCtx.beginPath();
@@ -25446,15 +25552,16 @@
         }
 
         // Brouillard meteorologique, Brouillard marin d'advection (Air chaud humide sur eau froide) ou Fumee de mer arctique (Air glacial sur eau plus douce)
-        const airT = typeof c.temp === "number" ? c.temp : 12;
-        const waterT = typeof c.waterTemp === "number" ? c.waterTemp : 10;
+        const airT = curTempVal;
+        const waterT = typeof c.waterTemp === "number" ? c.waterTemp : estimateStLawrenceWaterTemp(getEffectiveDate(), airT);
         const deltaT = airT - waterT;
-        const isSeaSmoke = deltaT <= -12 && waterT >= -1.8;
-        const isAdvectionFog = deltaT >= 8 && (c.humidity || 65) >= 78;
+        const isSeaSmoke = airT <= -5.0 && deltaT <= -10.5 && waterT >= -1.8;
+        const isAdvectionFog = deltaT >= 8.5 && (c.humidity || 65) >= 78 && waterT <= 15;
         let isFoggy =
           c.weatherCode === 45 ||
           c.weatherCode === 48 ||
-          ((c.humidity || 0) > 94 && (c.wind || 0) < 14) ||
+          (typeof c.visibility === "number" && c.visibility < 2800) ||
+          ((c.humidity || 0) > 95 && (c.wind || 0) < 12) ||
           isAdvectionFog ||
           isSeaSmoke;
 
@@ -26062,13 +26169,14 @@
         const data = {
           current: {
             temperature_2m: cur.air_temperature,
-            apparent_temperature: cur.air_temperature,
+            apparent_temperature: calculateFeelsLike(cur.air_temperature, cur.wind_speed * 3.6, cur.relative_humidity ?? 65),
             wind_speed_10m: cur.wind_speed * 3.6,
             wind_gusts_10m: (cur.wind_speed_of_gust || cur.wind_speed * 1.3) * 3.6,
             wind_direction_10m: cur.wind_from_direction,
             precipitation: precip,
             rain: isSnow ? 0 : precip,
             snowfall: isSnow ? precip : 0,
+            snow_depth: isSnow && cur.air_temperature <= 0 ? 0.04 : 0,
             cloud_cover: cur.cloud_area_fraction,
             cloud_cover_low: cur.cloud_area_fraction_low ?? cur.cloud_area_fraction,
             cloud_cover_mid: cur.cloud_area_fraction_medium ?? cur.cloud_area_fraction * 0.6,
@@ -26081,6 +26189,9 @@
             time: [],
             temperature_2m: [],
             precipitation: [],
+            rain: [],
+            snowfall: [],
+            snow_depth: [],
             wind_speed_10m: [],
             wind_gusts_10m: [],
             wind_direction_10m: [],
@@ -26107,6 +26218,7 @@
         };
 
         const dailyMap = {};
+        let runningSnowM = data.current.snow_depth || 0;
         ts.forEach((item) => {
           const t = item.time;
           const d = item.data.instant.details;
@@ -26114,10 +26226,16 @@
           const p = n1?.details?.precipitation_amount || 0;
           const c = mapSymbol(n1?.summary?.symbol_code);
           const cc = typeof d.cloud_area_fraction === "number" ? d.cloud_area_fraction : (c >= 3 ? 85 : c === 2 ? 50 : 15);
+          const hIsSnow = c === 71 || (d.air_temperature <= -0.2 && p > 0);
+          if (hIsSnow && d.air_temperature <= 0.5) runningSnowM = Math.min(0.8, runningSnowM + p * 0.008);
+          else if (d.air_temperature > 2.0) runningSnowM = Math.max(0, runningSnowM - (d.air_temperature - 2.0) * 0.003);
 
           data.hourly.time.push(t);
           data.hourly.temperature_2m.push(d.air_temperature);
           data.hourly.precipitation.push(p);
+          data.hourly.rain.push(hIsSnow ? 0 : p);
+          data.hourly.snowfall.push(hIsSnow ? p : 0);
+          data.hourly.snow_depth.push(runningSnowM);
           data.hourly.wind_speed_10m.push(d.wind_speed * 3.6);
           data.hourly.wind_gusts_10m.push(
             (d.wind_speed_of_gust || d.wind_speed * 1.3) * 3.6
@@ -26191,6 +26309,7 @@
         const precip = parseFloat(cur.precipMM);
         const isSnow = wCode === 71;
         const curCloud = parseFloat(cur.cloudcover);
+        const day0SnowCm = raw.weather && raw.weather[0] ? parseFloat(raw.weather[0].totalSnow_cm || 0) : 0;
 
         const data = {
           current: {
@@ -26202,6 +26321,7 @@
             precipitation: precip,
             rain: isSnow ? 0 : precip,
             snowfall: isSnow ? precip : 0,
+            snow_depth: day0SnowCm > 0 ? day0SnowCm / 100 : 0,
             cloud_cover: curCloud,
             cloud_cover_low: curCloud * 0.85,
             cloud_cover_mid: curCloud * 0.65,
@@ -26214,6 +26334,9 @@
             time: [],
             temperature_2m: [],
             precipitation: [],
+            rain: [],
+            snowfall: [],
+            snow_depth: [],
             wind_speed_10m: [],
             wind_gusts_10m: [],
             wind_direction_10m: [],
@@ -26241,6 +26364,7 @@
 
         raw.weather.forEach((day) => {
           const dStr = day.date;
+          const daySnowM = parseFloat(day.totalSnow_cm || 0) / 100;
           data.daily.time.push(dStr + "T00:00");
           data.daily.sunrise.push(dStr + "T06:00");
           data.daily.sunset.push(dStr + "T19:30");
@@ -26259,6 +26383,8 @@
             const g = parseFloat(h.WindGustKmph || w * 1.3);
             const hCloud = parseFloat(h.cloudcover ?? curCloud);
             const hRh = parseFloat(h.humidity ?? 65);
+            const hTemp = parseFloat(h.tempC);
+            const hIsSnow = c === 71 || (hTemp <= -0.2 && p > 0);
 
             dPrecip += p;
             if (w > dWind) dWind = w;
@@ -26268,8 +26394,11 @@
             for (let i = 0; i < 3; i++) {
               const hourStr = String(hTime + i).padStart(2, "0") + ":00";
               data.hourly.time.push(`${dStr}T${hourStr}`);
-              data.hourly.temperature_2m.push(parseFloat(h.tempC));
+              data.hourly.temperature_2m.push(hTemp);
               data.hourly.precipitation.push(p / 3);
+              data.hourly.rain.push(hIsSnow ? 0 : p / 3);
+              data.hourly.snowfall.push(hIsSnow ? p / 3 : 0);
+              data.hourly.snow_depth.push(hTemp <= 1.5 ? daySnowM : 0);
               data.hourly.wind_speed_10m.push(w);
               data.hourly.wind_gusts_10m.push(g);
               data.hourly.wind_direction_10m.push(parseFloat(h.winddirDegree));
@@ -26545,6 +26674,27 @@
 
         const manualPhase = isSimAtmo ? (sim.rainPhase || "auto") : "auto";
         const simPrecipVal = isSimAtmo && typeof sim.precipMm === "number" ? sim.precipMm : pNow;
+        const effTempForFront = typeof currentConditions.temp === "number" ? currentConditions.temp : 12;
+        const wCodeNow = currentConditions.weatherCode || 0;
+        const isFreezingFront =
+          !!currentConditions.isFreezingRain ||
+          wCodeNow === 56 ||
+          wCodeNow === 57 ||
+          wCodeNow === 66 ||
+          wCodeNow === 67;
+        const isSnowFront =
+          !isFreezingFront &&
+          ((currentConditions.snow || 0) > (currentConditions.rain || 0) ||
+            (wCodeNow >= 71 && wCodeNow <= 77) ||
+            wCodeNow === 85 ||
+            wCodeNow === 86 ||
+            effTempForFront <= 0.2);
+
+        const pIconMain = isSnowFront ? "❄️" : isFreezingFront ? "🧊" : "🌧️";
+        const pIconPass = isSnowFront ? "🌨️" : isFreezingFront ? "🧊" : "🌦️";
+        const pNounCap = isSnowFront ? "Neige" : isFreezingFront ? "Verglas" : "Pluie";
+        const pShowerCap = isSnowFront ? "Averse de neige" : isFreezingFront ? "Pluie verglaçante" : "Averse";
+        const pUnitStr = isSnowFront ? "cm/h" : "mm/h";
 
         if (isSimAtmo && manualPhase !== "auto") {
           const effIntensity = Math.max(simPrecipVal, 1.8);
@@ -26554,7 +26704,7 @@
             rainFrontProgress = -0.52;
             rainEtaMins = 18;
             rainTargetAz = upwindAz;
-            rainStatusText = `🌧️ Pluie en approche du ${upwindCard} (~18 min)`;
+            rainStatusText = `${pIconMain} ${pNounCap} en approche du ${upwindCard} (~18 min)`;
             pNow = simPrecipVal * 0.15;
             pNext15 = effIntensity * 0.85;
             pNext30 = effIntensity;
@@ -26564,7 +26714,7 @@
             rainFrontProgress = 0.0;
             rainEtaMins = 0;
             rainTargetAz = upwindAz;
-            rainStatusText = `🌧️ Averse sur quai (${effIntensity.toFixed(1)} mm/h)`;
+            rainStatusText = `${pIconMain} ${pShowerCap} sur quai (${effIntensity.toFixed(1)} ${pUnitStr})`;
             pNow = effIntensity;
             pNext15 = effIntensity * 0.8;
             pPast15 = effIntensity * 0.6;
@@ -26573,7 +26723,7 @@
             rainFrontProgress = 0.55;
             rainEtaMins = -20;
             rainTargetAz = downwindAz;
-            rainStatusText = `🌦️ Averse s'éloigne vers ${downwindCard}`;
+            rainStatusText = `${pIconPass} ${pShowerCap} s'éloigne vers ${downwindCard}`;
             pNow = simPrecipVal * 0.12;
             pPast15 = effIntensity * 0.85;
             pPast30 = effIntensity;
@@ -26584,7 +26734,7 @@
           rainFrontProgress = 0.0;
           rainFrontIntensity = simPrecipVal;
           rainTargetAz = upwindAz;
-          rainStatusText = `🌧️ Précip. sur quai (${simPrecipVal.toFixed(1)} mm/h)`;
+          rainStatusText = `${pIconMain} ${pNounCap} sur quai (${simPrecipVal.toFixed(1)} ${pUnitStr})`;
         } else {
           // Détection automatique sur les données météo réelles / scrubber
           const maxFuture = Math.max(pNext15, pNext30, pNext60, pNext90);
@@ -26597,18 +26747,18 @@
               rainPhase = "overhead";
               rainFrontProgress = -0.22;
               rainTargetAz = upwindAz;
-              rainStatusText = `🌧️ Pluie en renforcement (${pNow.toFixed(1)}→${maxFuture.toFixed(1)} mm/h)`;
+              rainStatusText = `${pIconMain} ${pNounCap} en renforcement (${pNow.toFixed(1)}→${maxFuture.toFixed(1)} ${pUnitStr})`;
             } else if (pNext30 < 0.08 && pNow >= 0.08) {
               // Fin d'averse sur le quai, dégagement visible
               rainPhase = "overhead";
               rainFrontProgress = 0.25;
               rainTargetAz = downwindAz;
-              rainStatusText = `🌦️ Pluie sur quai (Fin ~25 min vers ${downwindCard})`;
+              rainStatusText = `${pIconPass} ${pNounCap} sur quai (Fin ~25 min vers ${downwindCard})`;
             } else {
               rainPhase = "overhead";
               rainFrontProgress = 0.0;
               rainTargetAz = upwindAz;
-              rainStatusText = `🌧️ Pluie sur le terminal (${pNow.toFixed(1)} mm/h)`;
+              rainStatusText = `${pIconMain} ${pNounCap} sur le terminal (${pNow.toFixed(1)} ${pUnitStr})`;
             }
           } else if (maxFuture >= 0.08) {
             rainPhase = "incoming";
@@ -26627,7 +26777,7 @@
               rainEtaMins = 80;
               rainFrontProgress = -0.92;
             }
-            rainStatusText = `🌧️ Pluie en approche (${upwindCard} • ETA ~${rainEtaMins}m)`;
+            rainStatusText = `${pIconMain} ${pNounCap} en approche (${upwindCard} • ETA ~${rainEtaMins}m)`;
           } else if (maxPast >= 0.08) {
             rainPhase = "passing";
             rainFrontIntensity = maxPast;
@@ -26642,13 +26792,13 @@
               rainEtaMins = -55;
               rainFrontProgress = 0.86;
             }
-            rainStatusText = `🌦️ Averse s'éloigne vers ${downwindCard}`;
+            rainStatusText = `${pIconPass} ${pShowerCap} s'éloigne vers ${downwindCard}`;
           } else if (currentConditions.cloudCover >= 78 && (currentConditions.weatherCode >= 51 || (currentConditions.humidity || 65) >= 84)) {
             rainPhase = "vicinity";
             rainFrontIntensity = 0.6;
             rainFrontProgress = -0.68;
             rainTargetAz = upwindAz;
-            rainStatusText = `☁️ Rideau de virga / averse au loin (${upwindCard})`;
+            rainStatusText = `☁️ Rideau de ${isSnowFront ? "neige" : "virga"} au loin (${upwindCard})`;
           } else {
             rainPhase = "dry";
             rainFrontIntensity = 0;
@@ -26668,8 +26818,9 @@
         currentConditions.rainEtaMins = rainEtaMins;
         currentConditions.rainTargetAz = rainTargetAz;
         currentConditions.rainStatusText = rainStatusText;
+        currentConditions.isSnowFront = isSnowFront;
 
-        // Mettre à jour le badge HUD 360° en haut de l'aperçu (incluant le cisaillement Sol vs Ciel!)
+        // Mettre à jour le badge HUD 360° en haut de l'aperçu (Température réelle + Ressenti + Ciel + Cisaillement!)
         const skyPill = document.getElementById("hud-sky-weather-pill");
         if (skyPill) {
           const cc = currentConditions.cloudCover;
@@ -26679,30 +26830,53 @@
           else if (cc >= 45) skyIcon = "⛅";
           else if (cc >= 15) skyIcon = "🌤️";
 
+          const airTVal = typeof currentConditions.temp === "number" ? currentConditions.temp : 12;
+          const feelsTVal = typeof currentConditions.apparentTemp === "number"
+            ? currentConditions.apparentTemp
+            : calculateFeelsLike(airTVal, surfWindKmh, currentConditions.humidity || 65);
+          const waterTVal = typeof currentConditions.waterTemp === "number"
+            ? currentConditions.waterTemp
+            : estimateStLawrenceWaterTemp(new Date(effMs), airTVal);
+          const snowCmGround = Math.round((currentConditions.snowDepth || 0) * 100);
+
+          let tempHex = "#f8fafc";
+          if (airTVal <= -12) tempHex = "#67e8f9";
+          else if (airTVal <= 0) tempHex = "#7dd3fc";
+          else if (airTVal >= 27) tempHex = "#fb923c";
+          else if (airTVal >= 20) tempHex = "#fde047";
+
+          const signAir = airTVal > 0 ? "+" : "";
+          const signFeels = feelsTVal > 0 ? "+" : "";
+          const feelsSpan = Math.abs(feelsTVal - airTVal) >= 2.0
+            ? ` <span style="opacity:0.78;font-size:0.9em;">(Ress.${signFeels}${Math.round(feelsTVal)}°)</span>`
+            : "";
+
           const cloudKts = Math.round(cloudWindKmh / 1.852);
           const surfKts = Math.round(surfWindKmh / 1.852);
           const shearBadge = Math.abs(windShearDeg) >= 10
             ? ` • <span style="color:#c084fc;">Sol ${surfCard} ${surfKts}kt ≠ Ciel ${upwindCard} ${cloudKts}kt</span>`
             : ` • <span style="opacity:0.78;">Vent ${surfCard} ${surfKts}kt</span>`;
 
-          skyPill.title = `Couverture nuageuse réelle : ${cc}% (Bas: ${currentConditions.cloudCoverLow}% • Moyen: ${currentConditions.cloudCoverMid}% • Haut: ${currentConditions.cloudCoverHigh}%) | Vent Sol (10m): ${surfCard} ${surfKts} nds vs Vent Ciel (850 hPa): ${upwindCard} ${cloudKts} nds — Cliquer pour orienter la caméra 360° vers le front météo`;
+          const snowGroundInfo = snowCmGround > 0 ? ` | Neige au sol: ${snowCmGround} cm` : "";
+          skyPill.title = `Air réel : ${signAir}${airTVal.toFixed(1)}°C (Ressenti ${signFeels}${feelsTVal.toFixed(1)}°C) | Eau St-Laurent : ${waterTVal.toFixed(1)}°C${snowGroundInfo} | Nuages : ${cc}% (Bas:${currentConditions.cloudCoverLow}% Moy:${currentConditions.cloudCoverMid}% Haut:${currentConditions.cloudCoverHigh}%) | Vent Sol: ${surfCard} ${surfKts}kt vs Ciel: ${upwindCard} ${cloudKts}kt`;
 
-          let pillHtml = `${skyIcon} <strong>${cc}%</strong>${shearBadge}`;
+          let pillHtml = `${skyIcon} <strong style="color:${tempHex};">${signAir}${airTVal.toFixed(1)}°C</strong>${feelsSpan} • <strong>${cc}%</strong>${shearBadge}`;
           if (rainPhase === "incoming") {
-            pillHtml += ` • <span style="color:#38bdf8;font-weight:800;">🌧️ Approche ${upwindCard} (~${rainEtaMins}m)</span>`;
-            skyPill.style.borderColor = "rgba(56, 189, 248, 0.7)";
+            pillHtml += ` • <span style="color:${isSnowFront ? "#e0f2fe" : "#38bdf8"};font-weight:800;">${pIconMain} Approche ${upwindCard} (~${rainEtaMins}m)</span>`;
+            skyPill.style.borderColor = isSnowFront ? "rgba(224, 242, 254, 0.78)" : "rgba(56, 189, 248, 0.7)";
           } else if (rainPhase === "overhead") {
-            pillHtml += ` • <span style="color:#60a5fa;font-weight:800;">🌧️ ${Math.max(0.1, pNow).toFixed(1)} mm/h</span>`;
-            skyPill.style.borderColor = "rgba(96, 165, 250, 0.75)";
+            pillHtml += ` • <span style="color:${isSnowFront ? "#f0f9ff" : "#60a5fa"};font-weight:800;">${pIconMain} ${Math.max(0.1, pNow).toFixed(1)} ${pUnitStr}</span>`;
+            skyPill.style.borderColor = isSnowFront ? "rgba(240, 249, 255, 0.82)" : "rgba(96, 165, 250, 0.75)";
           } else if (rainPhase === "passing") {
-            pillHtml += ` • <span style="color:#a7f3d0;font-weight:800;">🌦️ Passe → ${downwindCard}</span>`;
+            pillHtml += ` • <span style="color:#a7f3d0;font-weight:800;">${pIconPass} Passe → ${downwindCard}</span>`;
             skyPill.style.borderColor = "rgba(52, 211, 153, 0.65)";
           } else if (rainPhase === "vicinity") {
-            pillHtml += ` • <span style="color:#93c5fd;">🌦️ Averse (${upwindCard})</span>`;
+            pillHtml += ` • <span style="color:#93c5fd;">${pIconPass} ${pNounCap} (${upwindCard})</span>`;
             skyPill.style.borderColor = "rgba(147, 197, 253, 0.45)";
           } else {
-            pillHtml += ` • <span style="opacity:0.75;">Sec</span>`;
-            skyPill.style.borderColor = "rgba(56, 189, 248, 0.3)";
+            const dryLbl = snowCmGround > 0 ? `Sec • ❄️${snowCmGround}cm` : "Sec";
+            pillHtml += ` • <span style="opacity:0.78;">${dryLbl}</span>`;
+            skyPill.style.borderColor = airTVal <= 0 ? "rgba(125, 211, 252, 0.48)" : "rgba(56, 189, 248, 0.3)";
           }
           skyPill.innerHTML = pillHtml;
 
@@ -26809,10 +26983,10 @@
             document.getElementById("weather-api-select")?.value || "openmeteo";
 
           const fetchOpenMeteo = async () => {
-            const upperUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,dew_point_2m,precipitation,rain,showers,snowfall,weather_code,cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high,wind_speed_10m,wind_direction_10m,wind_gusts_10m,surface_pressure,relative_humidity_2m&minutely_15=precipitation,rain,snowfall,weather_code,wind_speed_10m,wind_direction_10m&past_minutely_15=12&forecast_minutely_15=24&hourly=temperature_2m,apparent_temperature,dew_point_2m,relative_humidity_2m,precipitation,rain,showers,snowfall,precipitation_probability,cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high,wind_speed_10m,wind_direction_10m,wind_speed_80m,wind_direction_80m,wind_speed_180m,wind_direction_180m,wind_speed_850hPa,wind_direction_850hPa,wind_speed_500hPa,wind_direction_500hPa,wind_gusts_10m,surface_pressure,visibility,uv_index,cape,weather_code&past_hours=6&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_sum,uv_index_max,wind_speed_10m_max,wind_gusts_10m_max&timezone=America%2FToronto`;
+            const upperUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,dew_point_2m,precipitation,rain,showers,snowfall,snow_depth,weather_code,cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high,wind_speed_10m,wind_direction_10m,wind_gusts_10m,surface_pressure,relative_humidity_2m&minutely_15=precipitation,rain,snowfall,weather_code,wind_speed_10m,wind_direction_10m&past_minutely_15=12&forecast_minutely_15=24&hourly=temperature_2m,apparent_temperature,dew_point_2m,relative_humidity_2m,precipitation,rain,showers,snowfall,snow_depth,precipitation_probability,cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high,wind_speed_10m,wind_direction_10m,wind_speed_80m,wind_direction_80m,wind_speed_180m,wind_direction_180m,wind_speed_850hPa,wind_direction_850hPa,wind_speed_500hPa,wind_direction_500hPa,wind_gusts_10m,surface_pressure,visibility,uv_index,cape,weather_code&past_hours=6&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_sum,uv_index_max,wind_speed_10m_max,wind_gusts_10m_max&timezone=America%2FToronto`;
             const res = await fetch(upperUrl);
             if (res.ok) return await res.json();
-            const baseUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,dew_point_2m,precipitation,rain,showers,snowfall,weather_code,cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high,wind_speed_10m,wind_direction_10m,wind_gusts_10m,surface_pressure,relative_humidity_2m&minutely_15=precipitation,rain,snowfall,weather_code,wind_speed_10m,wind_direction_10m&past_minutely_15=12&forecast_minutely_15=24&hourly=temperature_2m,apparent_temperature,dew_point_2m,relative_humidity_2m,precipitation,rain,showers,snowfall,precipitation_probability,cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high,wind_speed_10m,wind_direction_10m,wind_gusts_10m,surface_pressure,visibility,uv_index,cape,weather_code&past_hours=6&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_sum,uv_index_max,wind_speed_10m_max,wind_gusts_10m_max&timezone=America%2FToronto`;
+            const baseUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,dew_point_2m,precipitation,rain,showers,snowfall,snow_depth,weather_code,cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high,wind_speed_10m,wind_direction_10m,wind_gusts_10m,surface_pressure,relative_humidity_2m&minutely_15=precipitation,rain,snowfall,weather_code,wind_speed_10m,wind_direction_10m&past_minutely_15=12&forecast_minutely_15=24&hourly=temperature_2m,apparent_temperature,dew_point_2m,relative_humidity_2m,precipitation,rain,showers,snowfall,snow_depth,precipitation_probability,cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high,wind_speed_10m,wind_direction_10m,wind_gusts_10m,surface_pressure,visibility,uv_index,cape,weather_code&past_hours=6&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_sum,uv_index_max,wind_speed_10m_max,wind_gusts_10m_max&timezone=America%2FToronto`;
             const resFallback = await fetch(baseUrl);
             if (!resFallback.ok) throw new Error("Open-Meteo HTTP error");
             return await resFallback.json();
@@ -26868,14 +27042,27 @@
 
           const c = data.current;
           currentConditions.temp = c.temperature_2m;
+          currentConditions.apparentTemp = typeof c.apparent_temperature === "number"
+            ? c.apparent_temperature
+            : calculateFeelsLike(c.temperature_2m, c.wind_speed_10m, c.relative_humidity_2m);
+          currentConditions.dewPoint = typeof c.dew_point_2m === "number"
+            ? c.dew_point_2m
+            : calculateDewPoint(c.temperature_2m, c.relative_humidity_2m);
+          currentConditions.precipitation = c.precipitation || 0;
+          currentConditions.snowDepth = typeof c.snow_depth === "number" ? Math.max(0, c.snow_depth) : 0;
+          if (!(window.tempSimState && window.tempSimState.active)) {
+            currentConditions.waterTemp = typeof currentConditions.realWaterTemp === "number"
+              ? currentConditions.realWaterTemp
+              : estimateStLawrenceWaterTemp(getEffectiveDate(), c.temperature_2m);
+          }
           currentConditions.wind = c.wind_speed_10m;
           currentConditions.windGust = c.wind_gusts_10m || c.wind_speed_10m;
           currentConditions.windDir = c.wind_direction_10m;
           const rawRain = (c.rain || 0) + (c.showers || 0);
-          currentConditions.rain =
-            rawRain || (c.temperature_2m > 0 ? c.precipitation : 0);
-          currentConditions.snow =
-            c.snowfall || (c.temperature_2m <= 0 ? c.precipitation : 0);
+          const phaseInit = splitRainAndSnowRates(c.precipitation, rawRain, c.snowfall, c.weather_code, c.temperature_2m);
+          currentConditions.rain = phaseInit.rain;
+          currentConditions.snow = phaseInit.snow;
+          currentConditions.isFreezingRain = phaseInit.isFreezingRain;
           currentConditions.cloudCover = c.cloud_cover;
           currentConditions.cloudCoverLow = c.cloud_cover_low ?? c.cloud_cover;
           currentConditions.cloudCoverMid = c.cloud_cover_mid ?? c.cloud_cover * 0.7;
@@ -26962,7 +27149,9 @@
           dewPoint = calculateDewPoint(temp, rhPct);
 
           if (precipMm >= 0.1) {
-            code = temp <= -0.5 ? 71 : (temp <= 0.5 ? 66 : (precipMm >= 4 ? 65 : 61));
+            // Scénario Verglas explicite (-1.8°C .. -0.8°C) vs Neige franche vs Pluie
+            const isExplicitVerglas = temp >= -1.8 && temp <= -0.8 && sim.cloudWindMode === "opposite";
+            code = isExplicitVerglas ? 66 : (temp <= 0.2 ? 71 : (precipMm >= 4 ? 65 : 61));
           } else if (cloudCover >= 85) {
             code = 3;
           } else if (cloudCover >= 45) {
@@ -26978,7 +27167,19 @@
           precipProb = precipMm > 0 ? Math.min(100, Math.round(50 + precipMm * 10)) : (cloudCover >= 80 ? 35 : 5);
           uvIndex = Math.max(0, Math.round((1 - cloudCover / 120) * 5));
 
+          const simSplit = splitRainAndSnowRates(precipMm, code === 66 ? precipMm : 0, code === 71 ? precipMm : 0, code, temp);
+          const liveSnowM = typeof c.snow_depth === "number" ? Math.max(0, c.snow_depth) : 0;
+          let simSnowDepthM = liveSnowM;
+          if (temp > 5.0) simSnowDepthM = Math.max(0, liveSnowM - (temp - 5.0) * 0.015);
+          else if (simSplit.snow > 0.05 && temp <= 0.6) simSnowDepthM = Math.max(liveSnowM, 0.015 + simSplit.snow * 0.012);
+          else if (temp <= -5.0 && sim.waterTemp <= 1.5) simSnowDepthM = Math.max(liveSnowM, Math.min(0.18, (-temp - 4.0) * 0.012));
+
           currentConditions.temp = temp;
+          currentConditions.apparentTemp = feels;
+          currentConditions.dewPoint = dewPoint;
+          currentConditions.visibility = visMeters;
+          currentConditions.precipitation = precipMm;
+          currentConditions.snowDepth = simSnowDepthM;
           currentConditions.waterTemp = sim.waterTemp;
           currentConditions.wind = windKmh;
           currentConditions.windGust = gustKmh;
@@ -26987,8 +27188,9 @@
           currentConditions.pressure = pressHpa;
           currentConditions.humidity = rhPct;
           currentConditions.cloudCover = cloudCover;
-          currentConditions.rain = temp > -0.5 ? precipMm : 0;
-          currentConditions.snow = temp <= -0.5 ? precipMm : 0;
+          currentConditions.rain = simSplit.rain;
+          currentConditions.snow = simSplit.snow;
+          currentConditions.isFreezingRain = simSplit.isFreezingRain;
         } else if (!window.scrubberOffsetMins) {
           temp = typeof c.temperature_2m === "number" ? c.temperature_2m : 15;
           feels = typeof c.apparent_temperature === "number" ? c.apparent_temperature : calculateFeelsLike(temp, c.wind_speed_10m, c.relative_humidity_2m);
@@ -27011,7 +27213,21 @@
           precipProb = h.precipitation_probability && h.precipitation_probability[nowIdx] !== undefined ? h.precipitation_probability[nowIdx] : (precipMm > 0 ? 80 : 0);
           uvIndex = h.uv_index && h.uv_index[nowIdx] !== undefined ? h.uv_index[nowIdx] : (d.uv_index_max && d.uv_index_max[0] ? d.uv_index_max[0] : 0);
 
+          const rawRainLive = (c.rain || 0) + (c.showers || 0);
+          const liveSplit = splitRainAndSnowRates(precipMm, rawRainLive, c.snowfall, code, temp);
+          const liveSnowDepth = typeof c.snow_depth === "number"
+            ? Math.max(0, c.snow_depth)
+            : (h.snow_depth && h.snow_depth[nowIdx] !== undefined ? Math.max(0, h.snow_depth[nowIdx]) : 0);
+
           currentConditions.temp = temp;
+          currentConditions.apparentTemp = feels;
+          currentConditions.dewPoint = dewPoint;
+          currentConditions.visibility = visMeters;
+          currentConditions.precipitation = precipMm;
+          currentConditions.snowDepth = liveSnowDepth;
+          currentConditions.waterTemp = typeof currentConditions.realWaterTemp === "number"
+            ? currentConditions.realWaterTemp
+            : estimateStLawrenceWaterTemp(effDate, temp);
           currentConditions.wind = windKmh;
           currentConditions.windGust = gustKmh;
           currentConditions.windDir = windDir;
@@ -27019,8 +27235,9 @@
           currentConditions.pressure = pressHpa;
           currentConditions.humidity = rhPct;
           currentConditions.cloudCover = cloudCover;
-          currentConditions.rain = temp > 0 ? precipMm : 0;
-          currentConditions.snow = temp <= 0 ? precipMm : 0;
+          currentConditions.rain = liveSplit.rain;
+          currentConditions.snow = liveSplit.snow;
+          currentConditions.isFreezingRain = liveSplit.isFreezingRain;
         } else {
           // Interpolation horaire continue (style site meteo) entre deux heures consecutives
           let idx0 = 0, idx1 = 0, alpha = 0;
@@ -27079,7 +27296,20 @@
           uvIndex = Math.max(0, lerpVal(h.uv_index, 0));
           cloudCover = Math.round(lerpVal(h.cloud_cover, code >= 51 ? 92 : code >= 3 ? 85 : code === 2 ? 55 : code === 1 ? 25 : (c.cloud_cover || 30)));
 
+          const rawRainScrub = Math.max(0, lerpVal(h.rain, 0)) + Math.max(0, lerpVal(h.showers, 0));
+          const rawSnowScrub = Math.max(0, lerpVal(h.snowfall, 0));
+          const scrubSplit = splitRainAndSnowRates(precipMm, rawRainScrub, rawSnowScrub, code, temp);
+          const scrubSnowDepth = Math.max(0, lerpVal(h.snow_depth, typeof c.snow_depth === "number" ? c.snow_depth : 0));
+
           currentConditions.temp = temp;
+          currentConditions.apparentTemp = feels;
+          currentConditions.dewPoint = dewPoint;
+          currentConditions.visibility = visMeters;
+          currentConditions.precipitation = precipMm;
+          currentConditions.snowDepth = scrubSnowDepth;
+          currentConditions.waterTemp = typeof currentConditions.realWaterTemp === "number"
+            ? currentConditions.realWaterTemp
+            : estimateStLawrenceWaterTemp(effDate, temp);
           currentConditions.wind = windKmh;
           currentConditions.windGust = gustKmh;
           currentConditions.windDir = windDir;
@@ -27087,8 +27317,9 @@
           currentConditions.pressure = pressHpa;
           currentConditions.humidity = rhPct;
           currentConditions.cloudCover = cloudCover;
-          currentConditions.rain = temp > 0 ? precipMm : 0;
-          currentConditions.snow = temp <= 0 ? precipMm : 0;
+          currentConditions.rain = scrubSplit.rain;
+          currentConditions.snow = scrubSplit.snow;
+          currentConditions.isFreezingRain = scrubSplit.isFreezingRain;
         }
 
         // Calculer la couverture nuageuse multi-couches et la trajectoire de pluie (approche / sur quai / passe)
@@ -28370,13 +28601,14 @@
               currentConditions.temp = liveAir;
               const liveWater = (typeof currentConditions.realWaterTemp === "number")
                 ? currentConditions.realWaterTemp
-                : (liveAir > 0 ? Math.max(2, liveAir * 0.8) : 0);
+                : estimateStLawrenceWaterTemp(getEffectiveDate(), liveAir);
               currentConditions.waterTemp = liveWater;
               updateWeatherBarForEffectiveTime();
               updateDynamicBackground();
               syncFromLiveWeather(false);
             } else {
-              applyTemperatureSimulation(15, 12, false);
+              const estWater = estimateStLawrenceWaterTemp(getEffectiveDate(), 15);
+              applyTemperatureSimulation(15, estWater, false);
             }
           });
         }
@@ -28492,25 +28724,73 @@
       // MOTEUR MARÉES & FENÊTRES D'OPÉRATIONS (MPO STATION 03250 LAUZON)
       // =========================================================================
       async function fetchWaterTemp() {
+        const applyWaterReading = (valNum, isLiveDfo) => {
+          if (typeof valNum !== "number" || isNaN(valNum)) return;
+          if (isLiveDfo) {
+            currentConditions.realWaterTemp = valNum;
+            try {
+              localStorage.setItem(
+                "terminal_water_temp_v1",
+                JSON.stringify({ val: valNum, ts: Date.now() })
+              );
+            } catch (_) {}
+          }
+          if (!(window.tempSimState && window.tempSimState.active)) {
+            currentConditions.waterTemp = valNum;
+          }
+          const valEl = document.getElementById("water-temp-val");
+          const badgeEl = document.getElementById("water-temp-badge");
+          if (valEl) valEl.textContent = valNum.toFixed(1);
+          if (badgeEl) {
+            badgeEl.style.display = "inline-block";
+            badgeEl.title = isLiveDfo
+              ? `Température réelle de l'eau du Saint-Laurent (Sonde MPO wt1 Québec/Lauzon) : ${valNum.toFixed(1)}°C`
+              : `Température estimée du Saint-Laurent (Climatologie MPO Québec/Lauzon) : ${valNum.toFixed(1)}°C`;
+          }
+          if (typeof computeRealSkyAndRainState === "function" && weatherDataCache) {
+            computeRealSkyAndRainState(getEffectiveTimeMs());
+          }
+        };
+
         try {
           const now = new Date();
-          const past = new Date(now.getTime() - 2 * 60 * 60 * 1000);
+          const past = new Date(now.getTime() - 12 * 60 * 60 * 1000);
           const fromStr = past.toISOString().split(".")[0] + "Z";
           const toStr = now.toISOString().split(".")[0] + "Z";
           const url = `https://api-iwls.dfo-mpo.gc.ca/api/v1/stations/5cebf1de3d0f4a073c4bbae6/data?time-series-code=wt1&from=${fromStr}&to=${toStr}`;
           const res = await fetch(url);
-          if (!res.ok) return;
-          const data = await res.json();
-          if (data && data.length > 0) {
-            const latest = data[data.length - 1];
-            const temp = latest.value.toFixed(1);
-            document.getElementById("water-temp-val").textContent = temp;
-            document.getElementById("water-temp-badge").style.display =
-              "inline-block";
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data) && data.length > 0) {
+              const latest = data[data.length - 1];
+              const parsed = parseFloat(latest.value);
+              if (!isNaN(parsed) && parsed >= -2.5 && parsed <= 32.0) {
+                applyWaterReading(parsed, true);
+                return;
+              }
+            }
           }
         } catch (err) {
-          console.warn("Température de l'eau indisponible:", err);
+          console.warn("Température de l'eau MPO indisponible, repli climatologique:", err);
         }
+
+        // Secours : lecture récente (< 18h) en cache local ou climatologie réelle du Saint-Laurent
+        try {
+          const rawCache = localStorage.getItem("terminal_water_temp_v1");
+          if (rawCache) {
+            const obj = JSON.parse(rawCache);
+            if (obj && typeof obj.val === "number" && Date.now() - (obj.ts || 0) < 18 * 3600000) {
+              applyWaterReading(obj.val, true);
+              return;
+            }
+          }
+        } catch (_) {}
+
+        const fallbackWater = estimateStLawrenceWaterTemp(
+          getEffectiveDate(),
+          typeof currentConditions.temp === "number" ? currentConditions.temp : null
+        );
+        applyWaterReading(fallbackWater, false);
       }
 
       function checkWindCurrentHazard() {
@@ -38828,12 +39108,33 @@
           {
             id: "weather_front",
             icon: "\uD83C\uDF27\uFE0F",
-            label: "Front de Pluie",
+            label: "Front M\u00e9t\u00e9o",
             sub: "Cellule de pr\u00e9cipitation Doppler \u2022 Couloir du Saint-Laurent",
             draft: "Base nuageuse ~165m \u2022 Rideau actif",
             isVisible: () => Boolean(currentConditions && currentConditions.rainPhase && currentConditions.rainPhase !== "dry"),
             getDynamicLabel: () => {
               const ph = currentConditions.rainPhase;
+              const isFrz = !!currentConditions.isFreezingRain;
+              const airT = (window.tempSimState && window.tempSimState.active)
+                ? window.tempSimState.airTemp
+                : (window.forceWinter3D ? -9.5 : (typeof currentConditions.temp === "number" ? currentConditions.temp : 10));
+              const isSnw = !isFrz && (
+                !!currentConditions.isSnowFront ||
+                (currentConditions.snow || 0) > (currentConditions.rain || 0) ||
+                (airT <= 0.4 && (currentConditions.rain || 0) === 0)
+              );
+              if (isFrz) {
+                if (ph === "incoming") return "\uD83E\uDDCA Verglas en approche";
+                if (ph === "overhead") return "\uD83E\uDDCA Verglas sur quai";
+                if (ph === "passing") return "\uD83E\uDDCA Verglas s'\u00e9loigne";
+                return "\uD83E\uDDCA Pluie vergla\u00e7ante";
+              }
+              if (isSnw) {
+                if (ph === "incoming") return "\u2744\uFE0F Neige en approche";
+                if (ph === "overhead") return "\u2744\uFE0F Neige sur quai";
+                if (ph === "passing") return "\uD83C\uDF28\uFE0F Neige s'\u00e9loigne";
+                return "\uD83C\uDF28\uFE0F Rideau de neige";
+              }
               if (ph === "incoming") return "\uD83C\uDF27\uFE0F Pluie en approche";
               if (ph === "overhead") return "\uD83C\uDF27\uFE0F Averse sur quai";
               if (ph === "passing") return "\uD83C\uDF26\uFE0F Averse s'\u00e9loigne";
@@ -38852,7 +39153,13 @@
               const dKm = Math.max(0.2, Math.hypot(leadCell.group.position.x, leadCell.group.position.z) / 320);
               return dKm < 1.0 ? `${Math.round(dKm * 1000)} m` : `${dKm.toFixed(1).replace(".", ",")} km`;
             },
-            getStatus: () => currentConditions.rainStatusText || "Cellule active",
+            getStatus: () => {
+              const airT = (window.tempSimState && window.tempSimState.active)
+                ? window.tempSimState.airTemp
+                : (typeof currentConditions.temp === "number" ? currentConditions.temp : 10);
+              const tSign = airT >= 0 ? "+" : "";
+              return `${currentConditions.rainStatusText || "Cellule active"} \u2022 Air ${tSign}${airT.toFixed(1)}\u00B0C`;
+            },
           },
         ];
 
@@ -39069,30 +39376,34 @@
           updateBatSignalHUDButton();
         }
 
-        // Variables d'état saisonnier et matériaux du paysage avec transition hivernale
-        let currentWinterFactor = 0.0;
-        let lastWinterFactor = -1.0;
+        // Variables d'état thermique/saisonnier (Été -> Automne -> Gel/Givre à sec -> Manteau neigeux réel)
+        let currentSnowpackFactor = 0.0;
+        let currentFrostFactor = 0.0;
+        let currentAutumnFactor = 0.0;
+        let currentDormantFactor = 0.0;
+        let currentWaterColdFactor = 0.0;
+        let lastLandscapeSig = "";
         const winterShadedMaterials = [
-          { mat: southTerrainMat, base: 0x1e3a2f, winter: 0xf1f5f9 },
-          { mat: southForestMat, base: 0x143725, winter: 0xdbeafe },
-          { mat: southHighlandMat, base: 0x193222, winter: 0xd0dbe5 },
-          { mat: southRidgeMat, base: 0x1f2e26, winter: 0xcfdce8 },
-          { mat: southCliffRockMat, base: 0x334155, winter: 0x788596 },
-          { mat: northCliffMat, base: 0x223328, winter: 0x8ba0b5 },
-          { mat: northBridgeRockMat, base: 0x334155, winter: 0x7b899a },
-          { mat: capDiamantRockMat, base: 0x2a3d32, winter: 0x8ba0b5 },
-          { mat: northPlateauMat, base: 0x1a3322, winter: 0xf1f5f9 },
-          { mat: northFoothillsMat, base: 0x142b1d, winter: 0xdbeafe },
-          { mat: northLaurentidesMat, base: 0x16222b, winter: 0xf8fafc },
-          { mat: pineDarkMat, base: 0x0f3923, winter: 0xa4b8ac },
-          { mat: mapleGreenMat, base: 0x1e4d2b, winter: 0xd5dde5 },
-          { mat: mapleAutumnMat, base: 0xb45309, winter: 0xd5dde5 },
-          { mat: qcRoofCopper, base: 0x0d9488, winter: 0xa8c8c2 },
-          { mat: qcRoofTin, base: 0xb0b8c1, winter: 0xf1f5f9 },
-          { mat: qcRoofRed, base: 0x991b1b, winter: 0xdba8a8 },
-          { mat: levisRoofRed, base: 0x991b1b, winter: 0xdba8a8 },
-          { mat: levisRoofBlue, base: 0x1e3a8a, winter: 0xa5b8de },
-          { mat: waterMat, base: 0x0369a1, winter: 0x0f273b }
+          { mat: southTerrainMat, role: "foliage", base: 0x1e3a2f, autumn: 0x5c4624, dormant: 0x333c32, frost: 0x627482, winter: 0xf1f5f9 },
+          { mat: southForestMat, role: "foliage", base: 0x143725, autumn: 0x6b3e1b, dormant: 0x2b362b, frost: 0x586b7a, winter: 0xdbeafe },
+          { mat: southHighlandMat, role: "foliage", base: 0x193222, autumn: 0x6e4720, dormant: 0x30382e, frost: 0x5d707f, winter: 0xd0dbe5 },
+          { mat: southRidgeMat, role: "foliage", base: 0x1f2e26, autumn: 0x5a4328, dormant: 0x313833, frost: 0x647585, winter: 0xcfdce8 },
+          { mat: southCliffRockMat, role: "rock", base: 0x334155, autumn: 0x394556, dormant: 0x364252, frost: 0x526275, winter: 0x788596 },
+          { mat: northCliffMat, role: "rock", base: 0x223328, autumn: 0x3d3c2c, dormant: 0x313936, frost: 0x56687a, winter: 0x8ba0b5 },
+          { mat: northBridgeRockMat, role: "rock", base: 0x334155, autumn: 0x3a4658, dormant: 0x364252, frost: 0x536376, winter: 0x7b899a },
+          { mat: capDiamantRockMat, role: "rock", base: 0x2a3d32, autumn: 0x424232, dormant: 0x353f3b, frost: 0x5a6d7f, winter: 0x8ba0b5 },
+          { mat: northPlateauMat, role: "foliage", base: 0x1a3322, autumn: 0x66441f, dormant: 0x2f382e, frost: 0x617382, winter: 0xf1f5f9 },
+          { mat: northFoothillsMat, role: "foliage", base: 0x142b1d, autumn: 0x5d3b1b, dormant: 0x283229, frost: 0x586a79, winter: 0xdbeafe },
+          { mat: northLaurentidesMat, role: "evergreen", base: 0x16222b, autumn: 0x222c34, dormant: 0x1d2730, frost: 0x4b5e70, winter: 0xf8fafc },
+          { mat: pineDarkMat, role: "evergreen", base: 0x0f3923, autumn: 0x123823, dormant: 0x133322, frost: 0x3d5c52, winter: 0xa4b8ac },
+          { mat: mapleGreenMat, role: "mapleGreen", base: 0x1e4d2b, autumn: 0xc2590c, dormant: 0x463d33, frost: 0x6b7783, winter: 0xd5dde5 },
+          { mat: mapleAutumnMat, role: "mapleAutumn", base: 0x2d5a2e, autumn: 0xb45309, dormant: 0x4d4035, frost: 0x6f7984, winter: 0xd5dde5 },
+          { mat: qcRoofCopper, role: "roof", base: 0x0d9488, autumn: 0x0d9488, dormant: 0x0f857b, frost: 0x4f9e98, winter: 0xa8c8c2 },
+          { mat: qcRoofTin, role: "roof", base: 0xb0b8c1, autumn: 0xb0b8c1, dormant: 0xa8b1bb, frost: 0xcad3dc, winter: 0xf1f5f9 },
+          { mat: qcRoofRed, role: "roof", base: 0x991b1b, autumn: 0x991b1b, dormant: 0x8c1d1d, frost: 0xb35c5c, winter: 0xdba8a8 },
+          { mat: levisRoofRed, role: "roof", base: 0x991b1b, autumn: 0x991b1b, dormant: 0x8c1d1d, frost: 0xb35c5c, winter: 0xdba8a8 },
+          { mat: levisRoofBlue, role: "roof", base: 0x1e3a8a, autumn: 0x1e3a8a, dormant: 0x1e367d, frost: 0x5670b0, winter: 0xa5b8de },
+          { mat: waterMat, role: "water", base: 0x0369a1, autumn: 0x04588a, dormant: 0x07466e, frost: 0x0b3555, winter: 0x0c2438 }
         ];
 
         // --- BOUCLE D'ANIMATION TEMPS RÉEL 3D (60 FPS) ---
@@ -39243,22 +39554,53 @@
           if (!wmmCtx || !wmmHudEl || wmmHudEl.classList.contains("hidden-minimap") || wmmHudEl.classList.contains("collapsed-minimap")) return;
           const W = 244, H = 142;
           const qx = 92, qy = 92; // Quai St-Romuald Sec. 87
-          const tempC = typeof c.temp === "number" ? c.temp : 12;
+          const simActiveWmm = Boolean(window.tempSimState && window.tempSimState.active);
+          const tempC = simActiveWmm
+            ? window.tempSimState.airTemp
+            : (window.forceWinter3D ? -9.5 : (typeof c.temp === "number" ? c.temp : 12));
+          const feelsC = simActiveWmm
+            ? tempC
+            : (typeof c.apparentTemp === "number" ? c.apparentTemp : tempC);
+          const waterC = simActiveWmm
+            ? window.tempSimState.waterTemp
+            : (window.forceWinter3D ? -0.5 : (typeof c.waterTemp === "number" ? c.waterTemp : estimateStLawrenceWaterTemp(new Date(effMs), tempC)));
           const precipMm = (c.rain || 0) + (c.snow || 0);
           const cloudPct = typeof c.cloudCover === "number" ? c.cloudCover : 35;
-          const isSnow = tempC <= 0.5;
+          const isFreezingRain = !!c.isFreezingRain;
+          const isSnow = !isFreezingRain && (
+            !!c.isSnowFront ||
+            (c.snow || 0) > (c.rain || 0) ||
+            (tempC <= 0.4 && (c.rain || 0) === 0)
+          );
 
           // 1. Fond de carte terrestre (Rive-Nord Quebec & Rive-Sud Levis/St-Romuald)
           wmmCtx.fillStyle = c.isNight ? "#071120" : "#0c192c";
           wmmCtx.fillRect(0, 0, W, H);
 
-          // Option Iso-Temperature ou Rafales en fond
+          // Option Iso-Temperature (Air Rives vs Eau Fleuve) ou Rafales en fond
           if (wmmLayerMode === "temp") {
-            const tNorm = Math.max(0, Math.min(1, (tempC + 15) / 45));
-            const rT = Math.round(30 + tNorm * 215);
-            const gT = Math.round(90 + (1 - Math.abs(tNorm - 0.5) * 2) * 120);
-            const bT = Math.round(235 - tNorm * 200);
-            wmmCtx.fillStyle = `rgba(${rT}, ${gT}, ${bT}, 0.24)`;
+            const tNorm = Math.max(0, Math.min(1, (tempC + 25) / 57)); // -25°C -> +32°C
+            let rT, gT, bT;
+            if (tNorm < 0.44) {
+              // Arctique (-25°C -> 0°C) : violet/indigo polaire -> cyan glacé
+              const u = tNorm / 0.44;
+              rT = Math.round(56 - u * 20);
+              gT = Math.round(78 + u * 118);
+              bT = Math.round(225 + u * 25);
+            } else if (tNorm < 0.72) {
+              // Tempéré (0°C -> +16°C) : cyan -> émeraude -> jaune doux
+              const u = (tNorm - 0.44) / 0.28;
+              rT = Math.round(36 + u * 184);
+              gT = Math.round(196 + u * 14);
+              bT = Math.round(250 - u * 175);
+            } else {
+              // Chaud / Canicule (+16°C -> +32°C+) : ambre -> corail ardent
+              const u = (tNorm - 0.72) / 0.28;
+              rT = Math.round(220 + u * 28);
+              gT = Math.round(210 - u * 128);
+              bT = Math.round(75 - u * 45);
+            }
+            wmmCtx.fillStyle = `rgba(${rT}, ${gT}, ${bT}, 0.30)`;
             wmmCtx.fillRect(0, 0, W, H);
           } else if (wmmLayerMode === "wind") {
             const wNorm = Math.min(1, gustKnots / 40);
@@ -39286,11 +39628,20 @@
           wmmCtx.lineTo(0, 118);
           wmmCtx.closePath();
           const riverGrad = wmmCtx.createLinearGradient(0, 20, 244, 110);
-          riverGrad.addColorStop(0, c.isNight ? "#082f49" : "#0369a1");
-          riverGrad.addColorStop(1, c.isNight ? "#0c4a6e" : "#0284c7");
+          if (wmmLayerMode === "temp") {
+            const wNormT = Math.max(0, Math.min(1, (waterC + 1.5) / 23.5)); // -1.5°C -> +22°C
+            const rW = Math.round(14 + wNormT * 26);
+            const gW = Math.round(72 + wNormT * 118);
+            const bW = Math.round(138 + (1 - Math.abs(wNormT - 0.55)) * 78);
+            riverGrad.addColorStop(0, `rgb(${rW}, ${gW}, ${bW})`);
+            riverGrad.addColorStop(1, `rgb(${Math.min(255, rW + 14)}, ${Math.min(255, gW + 20)}, ${Math.min(255, bW + 18)})`);
+          } else {
+            riverGrad.addColorStop(0, c.isNight ? "#082f49" : "#0369a1");
+            riverGrad.addColorStop(1, c.isNight ? "#0c4a6e" : "#0284c7");
+          }
           wmmCtx.fillStyle = riverGrad;
           wmmCtx.fill();
-          wmmCtx.strokeStyle = "rgba(125, 211, 252, 0.35)";
+          wmmCtx.strokeStyle = wmmLayerMode === "temp" ? "rgba(186, 230, 253, 0.62)" : "rgba(125, 211, 252, 0.35)";
           wmmCtx.lineWidth = 1;
           wmmCtx.stroke();
 
@@ -39307,7 +39658,29 @@
           wmmCtx.stroke();
           wmmCtx.restore();
 
-          // 3. Cellules Radar Doppler (Précipitations, Couverture Nuageuse & Front de Pluie poussés par le Vent en Altitude 850 hPa!)
+          // Cartouche thermique Air/Eau/ΔT en bas à droite lorsque le calque Température est actif
+          if (wmmLayerMode === "temp") {
+            const dT = tempC - waterC;
+            const dTSign = dT >= 0 ? "+" : "";
+            const wSign = waterC >= 0 ? "+" : "";
+            wmmCtx.save();
+            wmmCtx.fillStyle = "rgba(4, 12, 24, 0.84)";
+            wmmCtx.strokeStyle = "rgba(125, 211, 252, 0.45)";
+            wmmCtx.lineWidth = 1;
+            wmmCtx.beginPath();
+            if (wmmCtx.roundRect) wmmCtx.roundRect(128, 114, 112, 24, 5);
+            else wmmCtx.rect(128, 114, 112, 24);
+            wmmCtx.fill();
+            wmmCtx.stroke();
+            wmmCtx.font = "800 7px 'JetBrains Mono', monospace";
+            wmmCtx.fillStyle = "#7dd3fc";
+            wmmCtx.fillText(`Eau: ${wSign}${waterC.toFixed(1)}\u00B0C`, 133, 124);
+            wmmCtx.fillStyle = Math.abs(dT) >= 9.5 ? "#fde047" : "#cbd5e1";
+            wmmCtx.fillText(`\u0394T Air-Eau: ${dTSign}${dT.toFixed(1)}\u00B0`, 133, 134);
+            wmmCtx.restore();
+          }
+
+          // 3. Cellules Radar Doppler (Précipitations, Couverture Nuageuse & Front Météo poussés par le Vent en Altitude 850 hPa!)
           const rPhase = c.rainPhase || "dry";
           const rProg = typeof c.rainFrontProgress === "number" ? c.rainFrontProgress : 0;
           const rInt = Math.max(precipMm, c.rainFrontIntensity || 0);
@@ -39327,7 +39700,11 @@
               const radG = wmmCtx.createRadialGradient(cx, cy, 2, cx, cy, rx);
               if (precipMm > 0.05) {
                 const intensity = Math.min(1, precipMm / 4.5 + (ci % 3) * 0.18);
-                if (isSnow) {
+                if (isFreezingRain) {
+                  radG.addColorStop(0, `rgba(232, 121, 249, ${(0.62 * intensity).toFixed(2)})`);
+                  radG.addColorStop(0.5, `rgba(129, 140, 248, ${(0.46 * intensity).toFixed(2)})`);
+                  radG.addColorStop(1, "rgba(129, 140, 248, 0)");
+                } else if (isSnow) {
                   radG.addColorStop(0, `rgba(224, 242, 254, ${(0.55 * intensity).toFixed(2)})`);
                   radG.addColorStop(0.5, `rgba(56, 189, 248, ${(0.42 * intensity).toFixed(2)})`);
                   radG.addColorStop(1, "rgba(56, 189, 248, 0)");
@@ -39360,7 +39737,11 @@
               const bandRx = 46;
               const bandRy = 22;
               const fG = wmmCtx.createRadialGradient(fcx, fcy, 3, fcx, fcy, bandRx);
-              if (isSnow) {
+              if (isFreezingRain) {
+                fG.addColorStop(0, "rgba(232, 121, 249, 0.80)");
+                fG.addColorStop(0.55, "rgba(129, 140, 248, 0.52)");
+                fG.addColorStop(1, "rgba(129, 140, 248, 0)");
+              } else if (isSnow) {
                 fG.addColorStop(0, "rgba(224, 242, 254, 0.78)");
                 fG.addColorStop(0.55, "rgba(56, 189, 248, 0.48)");
                 fG.addColorStop(1, "rgba(56, 189, 248, 0)");
@@ -39390,9 +39771,13 @@
               wmmCtx.setLineDash([]);
 
               wmmCtx.font = "800 7px 'JetBrains Mono', monospace";
-              wmmCtx.fillStyle = "#fef08a";
-              const tagTxt = rPhase === "incoming" ? "🌧️ APPROCHE" : (rPhase === "overhead" ? "🌧️ SUR QUAI" : "🌦️ S'ÉLOIGNE");
-              wmmCtx.fillText(tagTxt, Math.max(4, Math.min(W - 58, fcx - 24)), Math.max(34, Math.min(H - 6, fcy - 8)));
+              wmmCtx.fillStyle = isFreezingRain ? "#f5d0fe" : (isSnow ? "#e0f2fe" : "#fef08a");
+              const leadIcon = isFreezingRain ? "\uD83E\uDDCA" : (isSnow ? "\u2744\uFE0F" : "\uD83C\uDF27\uFE0F");
+              const tailIcon = isFreezingRain ? "\uD83E\uDDCA" : (isSnow ? "\uD83C\uDF28\uFE0F" : "\uD83C\uDF26\uFE0F");
+              const tagTxt = rPhase === "incoming"
+                ? `${leadIcon} APPROCHE`
+                : (rPhase === "overhead" ? `${leadIcon} SUR QUAI` : `${tailIcon} S'\u00C9LOIGNE`);
+              wmmCtx.fillText(tagTxt, Math.max(4, Math.min(W - 62, fcx - 24)), Math.max(34, Math.min(H - 6, fcy - 8)));
             }
             wmmCtx.restore();
           }
@@ -39532,20 +39917,30 @@
           wmmCtx.fillText(`Ciel:${Math.round(cloudWindKnots)}kt ${cloudDirCard}`, 27, 23);
           wmmCtx.restore();
 
-          // 8. Mise a jour de la bande telemetrique au bas de la minimap
-          if (wmmValTemp) wmmValTemp.textContent = `${Math.round(tempC)}\u00B0C`;
+          // 8. Mise a jour de la bande telemetrique au bas de la minimap (precision 0.1°C)
+          if (wmmValTemp) {
+            const tSign = tempC >= 0 ? "+" : "";
+            wmmValTemp.textContent = `${tSign}${tempC.toFixed(1)}\u00B0C`;
+          }
           if (wmmValWind) wmmValWind.textContent = `${Math.round(windKnots)}kt ${dirCard} / \u2601\uFE0F${cloudDirCard}`;
           if (wmmValPrecip) {
             if (rPhase === "incoming") wmmValPrecip.textContent = `Approche (~${c.rainEtaMins || 15}m)`;
             else if (rPhase === "passing") wmmValPrecip.textContent = `Passe (${cloudDirCard})`;
+            else if ((c.snow || 0) > 0.02 && (c.snow || 0) >= (c.rain || 0)) wmmValPrecip.textContent = `${(c.snow || 0).toFixed(1)} cm/h`;
             else wmmValPrecip.textContent = `${precipMm.toFixed(1)} mm`;
           }
           if (wmmValTide) wmmValTide.textContent = `${tideM.toFixed(2)} m`;
           if (wmmLayerDesc) {
             const flowTxt = flowSign < 0 ? "Flot \u2B05\uFE0F" : flowSign > 0 ? "Jusant \u27A1\uFE0F" : "\u00C9tale";
-            const skySub = rPhase !== "dry" ? c.rainStatusText : `Ciel ${cloudPct}%`;
-            const shearSub = dirCard !== cloudDirCard ? `Sol ${dirCard}\u2260Ciel ${cloudDirCard}` : `Vent ${dirCard}`;
-            wmmLayerDesc.textContent = `${skySub} \u2022 ${shearSub} \u2022 ${flowTxt}`;
+            if (wmmLayerMode === "temp") {
+              const fSign = feelsC >= 0 ? "+" : "";
+              const wSign = waterC >= 0 ? "+" : "";
+              wmmLayerDesc.textContent = `Ress. ${fSign}${feelsC.toFixed(1)}\u00B0C \u2022 Eau ${wSign}${waterC.toFixed(1)}\u00B0C \u2022 ${flowTxt}`;
+            } else {
+              const skySub = rPhase !== "dry" ? c.rainStatusText : `Ciel ${cloudPct}%`;
+              const shearSub = dirCard !== cloudDirCard ? `Sol ${dirCard}\u2260Ciel ${cloudDirCard}` : `Vent ${dirCard}`;
+              wmmLayerDesc.textContent = `${skySub} \u2022 ${shearSub} \u2022 ${flowTxt}`;
+            }
           }
         }
 
@@ -39589,6 +39984,9 @@
         const scratchAttachBow = new THREE.Vector3();
         const scratchAttachStern = new THREE.Vector3();
         const scratchWinterColor = new THREE.Color();
+        const scratchSeasonColor = new THREE.Color();
+        const scratchTargetColor = new THREE.Color();
+        const scratchThermalColor = new THREE.Color();
         const scratchFerryPos = new THREE.Vector3();
         const scratchCargoPos = new THREE.Vector3();
         const scratchMoorDock = new THREE.Vector3();
@@ -39617,10 +40015,36 @@
 
           const t = curTimeMs * 0.001;
           const c = currentConditions || {};
+          const effDateNow = getEffectiveDate();
           const windKnots = Math.max(0, (c.wind || 8) / 1.852);
           const isNight = !!c.isNight;
           const isGolden = !!c.isGoldenHour;
           const tideM = typeof c.tideMeters === "number" && !isNaN(c.tideMeters) ? c.tideMeters : 3.2;
+
+          // État thermique réel unifié (Live Open-Meteo / MPO Lauzon, Scrubber -6h..+24h, Simulateur ou Forçage Hiver)
+          const forceWinter = !!window.forceWinter3D;
+          const simActive3D = Boolean(window.tempSimState && window.tempSimState.active);
+          const effectiveAirTemp = simActive3D
+            ? window.tempSimState.airTemp
+            : (forceWinter ? -9.5 : (typeof c.temp === "number" ? c.temp : 10));
+          const effectiveFeelsTemp = simActive3D
+            ? effectiveAirTemp
+            : (forceWinter ? -16.5 : (typeof c.apparentTemp === "number" ? c.apparentTemp : effectiveAirTemp));
+          const effectiveWaterTemp = simActive3D
+            ? window.tempSimState.waterTemp
+            : (forceWinter
+              ? -0.5
+              : (typeof c.waterTemp === "number"
+                ? c.waterTemp
+                : estimateStLawrenceWaterTemp(effDateNow, effectiveAirTemp)));
+          const effHumidity = typeof c.humidity === "number" ? c.humidity : 68;
+          const effectiveDewPoint = (!simActive3D && !forceWinter && typeof c.dewPoint === "number")
+            ? c.dewPoint
+            : (effectiveAirTemp - ((100 - effHumidity) / 5));
+          const manualIceTenths = (simActive3D && window.tempSimState.iceTenths >= 0)
+            ? window.tempSimState.iceTenths
+            : -1;
+          const airWaterDelta = effectiveAirTemp - effectiveWaterTemp;
 
           // 1. Niveau d'eau 3D dynamique selon la maree en direct de Lauzon (#03250)
           const targetWaterY = (tideM - 3.1) * 1.25;
@@ -39648,8 +40072,13 @@
                   ? "Jusant \u27A1\uFE0F"
                   : "\u00C9tale \uD83D\uDD04";
             const relStr = waterLevelY >= 0 ? `+${waterLevelY.toFixed(1)}m` : `${waterLevelY.toFixed(1)}m`;
-            const nextText = `Eau: ${tideM.toFixed(2)}m ${c.tideTrend || ""} • ${flowText}`;
-            const nextTitle = `Niveau d'eau 3D Lauzon (#03250) : ${tideM.toFixed(2)}m (${relStr} vs moyenne) • Courant : ${flowText}`;
+            const wSign = effectiveWaterTemp >= 0 ? "+" : "";
+            const dSign = airWaterDelta >= 0 ? "+" : "";
+            const wSrcLbl = (!simActive3D && !forceWinter && typeof c.realWaterTemp === "number")
+              ? "MPO temps r\u00e9el"
+              : (simActive3D ? "Simul\u00e9e" : "Normale saisonni\u00e8re MPO");
+            const nextText = `Eau: ${tideM.toFixed(2)}m ${c.tideTrend || ""} (${wSign}${effectiveWaterTemp.toFixed(1)}\u00B0C) \u2022 ${flowText}`;
+            const nextTitle = `Niveau d'eau 3D Lauzon (#03250) : ${tideM.toFixed(2)}m (${relStr} vs moyenne) \u2022 Temp. fleuve : ${wSign}${effectiveWaterTemp.toFixed(1)}\u00B0C (${wSrcLbl}) \u2022 \u0394T Air-Eau : ${dSign}${airWaterDelta.toFixed(1)}\u00B0C \u2022 Courant : ${flowText}`;
             if (nextText !== lastHudTideText3D) {
               lastHudTideText3D = nextText;
               hudTide3DEl.textContent = nextText;
@@ -39859,29 +40288,43 @@
             cb.mesh.scale.set(windStretch * 1.15, 1, 1);
           }
 
-          // Animation 3D des Rideaux de Pluie / Neige :
-          // La cellule de pluie se déplace avec les nuages en altitude (cloudDirX, cloudDirZ),
-          // tandis que l'inclinaison des gouttes près de l'eau subit le cisaillement du vent de surface!
+          // Animation 3D des Rideaux de Pluie / Verglas / Neige :
+          // La cellule se déplace avec les nuages en altitude (cloudDirX, cloudDirZ),
+          // tandis que sa phase (neige sèche/mouillée, verglas, pluie) obéit exactement à la température réelle!
           const showRainCells = rainPhaseNow !== "dry" || (c.rain || 0) > 0.05 || (c.snow || 0) > 0.05;
           rainCells3DGroup.visible = showRainCells;
           if (showRainCells) {
-            const isSnowCurtain = (typeof c.temp === "number" ? c.temp : 10) <= -0.2;
+            const isFreezingCurtain = !!c.isFreezingRain;
+            const isSnowCurtain = !isFreezingCurtain && (
+              !!c.isSnowFront ||
+              (c.snow || 0) > (c.rain || 0) ||
+              (effectiveAirTemp <= 0.3 && (c.rain || 0) === 0)
+            );
             const activeCurtainTex = isSnowCurtain ? snowCurtainTex : rainCurtainTex;
             if (rainCurtainMat.map !== activeCurtainTex) {
               rainCurtainMat.map = activeCurtainTex;
               rainCurtainMat.needsUpdate = true;
             }
-            // Défilement vertical des gouttes/flocons dans le rideau 3D
-            activeCurtainTex.offset.y = (activeCurtainTex.offset.y + dt3D * (isSnowCurtain ? 0.45 : 1.35)) % 1.0;
+            // Défilement vertical des gouttes/flocons dans le rideau 3D (plus lent et floconneux en neige)
+            const fallRate = isSnowCurtain
+              ? (effectiveAirTemp <= -8 ? 0.36 : 0.48)
+              : (isFreezingCurtain ? 1.45 : 1.35);
+            activeCurtainTex.offset.y = (activeCurtainTex.offset.y + dt3D * fallRate) % 1.0;
             activeCurtainTex.offset.x = (activeCurtainTex.offset.x + dt3D * (windKnots * 0.008)) % 1.0;
 
             const rIntensity = Math.max(0.4, c.rainFrontIntensity || (c.rain || 0) + (c.snow || 0) || 1.2);
             const intensityNorm = Math.min(1, rIntensity / 6.0);
-            rainCurtainMat.opacity = (isNight ? 0.48 : 0.72) * (0.45 + intensityNorm * 0.55);
-            rainCurtainMat.color.setHex(isSnowCurtain ? 0xf1f5f9 : (isNight ? 0x64748b : 0xcbd5e1));
-            rainCellCapMat.color.setHex(isNight ? 0x0f172a : 0x334155);
+            rainCurtainMat.opacity = (isNight ? 0.50 : 0.74) * (0.45 + intensityNorm * 0.55);
+            if (isSnowCurtain) {
+              rainCurtainMat.color.setHex(isNight ? 0xcbd5e1 : 0xf8fafc);
+            } else if (isFreezingCurtain) {
+              rainCurtainMat.color.setHex(isNight ? 0x93c5fd : 0xe0f2fe);
+            } else {
+              rainCurtainMat.color.setHex(isNight ? 0x64748b : 0xcbd5e1);
+            }
+            rainCellCapMat.color.setHex(isNight ? 0x0f172a : (isSnowCurtain ? 0x475569 : 0x334155));
             rainCellCapMat.opacity = isNight ? 0.72 : 0.90;
-            rainSplashMat.opacity = (0.18 + intensityNorm * 0.28) * (isSnowCurtain ? 0.4 : 1.0);
+            rainSplashMat.opacity = (0.18 + intensityNorm * 0.28) * (isSnowCurtain ? 0.25 : 1.0);
 
             // Progression le long de l'axe du vent en altitude (cloudDirX, cloudDirZ) :
             const baseProg = typeof c.rainFrontProgress === "number" ? c.rainFrontProgress : 0;
@@ -39937,14 +40380,17 @@
           // Rendu temps reel de la Minimap Meteo & Radar 3D (avec curTimeMs pour dt exact)
           renderWeatherMinimap(getEffectiveTimeMs(), c, windKnots, tideM, flowSign, curTimeMs);
 
-          // 2. Mise \u00e0 jour des vagues 3D et de la couleur dynamique de l'eau
-          const baseDeepR = isNight ? 0.015 : isGolden ? 0.06 : 0.025;
-          const baseDeepG = isNight ? 0.085 : isGolden ? 0.24 : 0.28;
-          const baseDeepB = isNight ? 0.165 : isGolden ? 0.36 : 0.46;
+          // 2. Mise à jour des vagues 3D et de la teinte thermique réelle de l'eau du Saint-Laurent
+          // Eau glaciale (~0°C) : ardoise/acier profond; Eau estivale (18-22°C) : céruléen-émeraude lumineux
+          const waterWarmth = Math.max(0, Math.min(1, (effectiveWaterTemp + 1.0) / 22.0));
+          const coldWaterTint = 1.0 - waterWarmth;
+          const baseDeepR = (isNight ? 0.015 : isGolden ? 0.06 : 0.022) * (1 - coldWaterTint * 0.18);
+          const baseDeepG = (isNight ? 0.085 : isGolden ? 0.24 : (0.21 + waterWarmth * 0.085));
+          const baseDeepB = (isNight ? 0.165 : isGolden ? 0.36 : (0.38 + waterWarmth * 0.095));
 
-          const crestR = isNight ? 0.12 : isGolden ? 0.85 : 0.18;
-          const crestG = isNight ? 0.32 : isGolden ? 0.58 : 0.62;
-          const crestB = isNight ? 0.48 : isGolden ? 0.42 : 0.82;
+          const crestR = isNight ? 0.12 : isGolden ? 0.85 : (0.16 + coldWaterTint * 0.04);
+          const crestG = isNight ? 0.32 : isGolden ? 0.58 : (0.54 + waterWarmth * 0.10);
+          const crestB = isNight ? 0.48 : isGolden ? 0.42 : (0.76 + waterWarmth * 0.07);
 
           const posArr = posAttr.array;
           const colArr = waterGeo.attributes.color.array;
@@ -39961,7 +40407,7 @@
             let g = baseDeepG + (crestG - baseDeepG) * normH;
             let b = baseDeepB + (crestB - baseDeepB) * normH;
 
-            // Moutons d'\u00e9cume blanche sur les cr\u00eates de vagues
+            // Moutons d'écume blanche sur les crêtes de vagues
             if (normH > foamThreshold) {
               const foam = Math.min(1, (normH - foamThreshold) * 3.2);
               r += (0.94 - r) * foam;
@@ -39998,8 +40444,7 @@
               ) + 0.16;
           }
 
-          // 4. Positionnement astronomique r\u00e9el du Soleil / de la Lune 3D et de son reflet sur le fleuve
-          const effDateNow = getEffectiveDate();
+          // 4. Positionnement astronomique réel du Soleil / de la Lune 3D et de son reflet sur le fleuve
           const dayFrac = (effDateNow.getHours() * 60 + effDateNow.getMinutes()) / 1440;
           let lightAz = isNight ? (110 + ((dayFrac * 360 + 180) % 260)) : (85 + dayFrac * 195);
           let lightAltDeg = isNight ? 24 : Math.max(8, Math.sin(Math.max(0.05, Math.min(0.95, (dayFrac - 0.22) / 0.56)) * Math.PI) * 58);
@@ -40333,15 +40778,22 @@
           wakeRingMesh.scale.z = 0.35 + Math.cos(t * 2.6) * 0.03;
           radarScanner.rotation.y = t * 2.8;
 
-          // Fumée 3D de la cheminée Valero
+          // Fumée & panache de condensation thermique 3D de la cheminée du pétrolier
+          // Air polaire (< 0°C à -25°C) : panache de vapeur blanche dense et flottabilité thermique accrue;
+          // Air chaud estival (+20°C+) : gaz d'échappement gris très ténus qui se dissipent vite.
+          const exhaustColdCondense = Math.max(0, Math.min(1, (14.0 - effectiveAirTemp) / 28.0));
+          const exhaustRhBoost = Math.max(0, (effHumidity - 55) / 45) * 0.22;
+          const condenseFactor = Math.min(1, exhaustColdCondense + exhaustRhBoost * exhaustColdCondense);
           shipSmokePuffs.forEach((sp) => {
-            sp.age += dt3D * (0.22 + windKnots * 0.038);
+            sp.age += dt3D * ((0.24 - condenseFactor * 0.06) + windKnots * 0.036);
             if (sp.age > 1) sp.age = 0;
-            sp.mesh.position.y = 24 + sp.age * Math.max(10, 24 - windKnots * 0.32);
+            const thermalRise = Math.max(10, (22 + condenseFactor * 11) - windKnots * 0.30);
+            sp.mesh.position.y = 24 + sp.age * thermalRise;
             sp.mesh.position.x = -33.5 - sp.age * (3 + windKnots * 0.85);
-            const s = 0.8 + sp.age * (2.2 + Math.min(1.6, windKnots * 0.06));
+            const s = (0.78 + condenseFactor * 0.28) + sp.age * ((1.95 + condenseFactor * 1.45) + Math.min(1.6, windKnots * 0.06));
             sp.mesh.scale.set(s, s, s);
-            sp.mesh.material.opacity = (1 - sp.age) * 0.32;
+            sp.mesh.material.color.setHex(0x94a3b8).lerp(scratchThermalColor.setHex(0xf8fafc), condenseFactor);
+            sp.mesh.material.opacity = (1 - sp.age) * (0.17 + condenseFactor * 0.40);
           });
 
 
@@ -40360,143 +40812,238 @@
           });
 
           // =========================================================================
-          // GESTION DU SYSTÈME HIVERNAL 3D (BANQUISE, NEIGE VOLUMÉTRIQUE, FUMÉE DE MER & PAYSAGE)
+          // SYSTÈME THERMIQUE & SAISONNIER 3D RÉEL (PAYSAGE, GIVRE, NEIGE AU SOL, GLACES, NEIGE 3D & FUMÉE DE MER)
           // =========================================================================
-          const forceWinter = !!window.forceWinter3D;
-          const effectiveAirTemp = (window.tempSimState && window.tempSimState.active)
-            ? window.tempSimState.airTemp
-            : (forceWinter ? -9.5 : (typeof c.temp === "number" ? c.temp : 10));
-          const effectiveWaterTemp = (window.tempSimState && window.tempSimState.active)
-            ? window.tempSimState.waterTemp
-            : (forceWinter ? -0.5 : (typeof c.waterTemp === "number" ? c.waterTemp : (effectiveAirTemp > 0 ? 12 : 0)));
-          const manualIceTenths = (window.tempSimState && window.tempSimState.active && window.tempSimState.iceTenths >= 0)
-            ? window.tempSimState.iceTenths
-            : -1;
+          const startOfYr3D = new Date(effDateNow.getFullYear(), 0, 0);
+          const doy3D = Math.floor((effDateNow - startOfYr3D) / 86400000);
+          const wCode3D = c.weatherCode || 0;
+          const liveSnowDepthCm = Math.max(0, (c.snowDepth || 0) * 100);
+          const activeSnowRateCm = !c.isFreezingRain ? Math.max(0, c.snow || 0) : 0;
 
-          const isWinterCondition = forceWinter || manualIceTenths > 0 ||
-            (manualIceTenths < 0 && (effectiveAirTemp <= 0.5 || effectiveWaterTemp <= 1.0)) ||
-            (c.snow || 0) > 0.05 ||
-            (c.weatherCode >= 71 && c.weatherCode <= 77) ||
-            c.weatherCode === 85 || c.weatherCode === 86;
+          // 1) État saisonnier du feuillage (Été verdoyant -> Couleurs d'automne Sep-Nov -> Dormance froide Nov-Avr)
+          let calAutumn = 0.0;
+          if (doy3D >= 258 && doy3D <= 320) {
+            calAutumn = Math.max(0, 1.0 - Math.abs(doy3D - 289) / 31.0);
+          }
+          const calDormant = (doy3D >= 315 || doy3D <= 112)
+            ? 1.0
+            : (doy3D > 295 ? (doy3D - 295) / 20.0 : (doy3D < 132 ? (132 - doy3D) / 20.0 : 0.0));
+          const coldDormant = effectiveAirTemp <= 4.5 ? Math.min(1, (4.5 - effectiveAirTemp) / 6.5) : 0.0;
+          const simSummerOverride = simActive3D && effectiveAirTemp >= 16.5
+            ? Math.max(0, 1.0 - (effectiveAirTemp - 16.5) / 6.5)
+            : 1.0;
 
-          const targetWinterFactor = isWinterCondition ? 1.0 : 0.0;
-          currentWinterFactor += (targetWinterFactor - currentWinterFactor) * (1 - Math.pow(1 - 0.05, dt60));
+          const targetAutumnFactor = forceWinter ? 0.0 : (calAutumn * (1.0 - calDormant * 0.65) * simSummerOverride);
+          const targetDormantFactor = forceWinter ? 1.0 : (Math.max(calDormant, coldDormant * 0.85) * simSummerOverride);
+
+          // 2) Manteau neigeux au sol (piloté par l'épaisseur réelle snow_depth d'Open-Meteo, et non par un simple froid sec!)
+          let targetSnowpackFactor = 0.0;
+          if (forceWinter) {
+            targetSnowpackFactor = 1.0;
+          } else if (simActive3D) {
+            const baseDepthPack = liveSnowDepthCm > 0.08 ? Math.min(1, Math.pow(liveSnowDepthCm / 6.0, 0.72)) : 0.0;
+            const simWarmMelt = effectiveAirTemp > 3.5 ? Math.max(0, 1.0 - (effectiveAirTemp - 3.5) / 5.5) : 1.0;
+            const simColdSnow = (effectiveAirTemp <= 0.6 && activeSnowRateCm > 0.03)
+              ? Math.min(1, 0.42 + activeSnowRateCm * 0.28)
+              : 0.0;
+            const simDeepFreezePack = (effectiveAirTemp <= -4.5 || manualIceTenths >= 4)
+              ? Math.min(1, Math.max((-effectiveAirTemp - 3.5) / 9.5, manualIceTenths >= 4 ? manualIceTenths / 9.0 : 0.0))
+              : 0.0;
+            targetSnowpackFactor = Math.min(1, Math.max(baseDepthPack * simWarmMelt, simColdSnow, simDeepFreezePack));
+          } else {
+            const depthPack = liveSnowDepthCm > 0.08 ? Math.min(1, Math.pow(liveSnowDepthCm / 6.0, 0.72)) : 0.0;
+            const freshDusting = (activeSnowRateCm > 0.03 && effectiveAirTemp <= 1.2)
+              ? Math.min(0.46, 0.14 + activeSnowRateCm * 0.18)
+              : 0.0;
+            const warmMeltMod = (effectiveAirTemp > 3.5 && liveSnowDepthCm < 1.0)
+              ? Math.max(0, 1.0 - (effectiveAirTemp - 3.5) / 4.0)
+              : 1.0;
+            targetSnowpackFactor = Math.min(1, Math.max(depthPack, freshDusting) * warmMeltMod);
+          }
+
+          // 3) Givre / Gelée blanche au sol et verglas (quand il gèle à sec sans neige au sol, ou sous pluie verglaçante)
+          const rawFrost = effectiveAirTemp <= 0.6 ? Math.min(1, (0.6 - effectiveAirTemp) / 9.5) : 0.0;
+          const rhFrostScale = 0.52 + 0.48 * Math.min(1, effHumidity / 85);
+          const freezingRainGlaze = c.isFreezingRain ? 0.88 : 0.0;
+          const targetFrostFactor = Math.max(freezingRainGlaze, rawFrost * rhFrostScale) * (1.0 - targetSnowpackFactor * 0.85);
+          const targetWaterColdFactor = Math.max(0, Math.min(1, (14.0 - effectiveWaterTemp) / 14.0));
+
+          const envLerp = 1 - Math.pow(1 - 0.06, dt60);
+          currentSnowpackFactor += (targetSnowpackFactor - currentSnowpackFactor) * envLerp;
+          currentFrostFactor += (targetFrostFactor - currentFrostFactor) * envLerp;
+          currentAutumnFactor += (targetAutumnFactor - currentAutumnFactor) * envLerp;
+          currentDormantFactor += (targetDormantFactor - currentDormantFactor) * envLerp;
+          currentWaterColdFactor += (targetWaterColdFactor - currentWaterColdFactor) * envLerp;
 
           // Transition douce des matériaux du paysage sans allocation GC
-          if (Math.abs(currentWinterFactor - lastWinterFactor) > 0.002) {
-            lastWinterFactor = currentWinterFactor;
+          const nextLandscapeSig = `${Math.round(currentSnowpackFactor * 400)}_${Math.round(currentFrostFactor * 250)}_${Math.round(currentAutumnFactor * 200)}_${Math.round(currentDormantFactor * 200)}_${Math.round(currentWaterColdFactor * 200)}_${c.isFreezingRain ? 1 : 0}`;
+          if (nextLandscapeSig !== lastLandscapeSig) {
+            lastLandscapeSig = nextLandscapeSig;
             for (let wi = 0; wi < winterShadedMaterials.length; wi++) {
               const item = winterShadedMaterials[wi];
-              item.mat.color.setHex(item.base).lerp(scratchWinterColor.setHex(item.winter), currentWinterFactor);
+              if (item.role === "water") {
+                item.mat.color.setHex(item.base).lerp(scratchWinterColor.setHex(item.winter), currentWaterColdFactor);
+                continue;
+              }
+              scratchSeasonColor.setHex(item.base);
+              if (item.role === "mapleAutumn") {
+                const autMix = Math.max(currentAutumnFactor, currentDormantFactor < 0.5 ? 0.38 : 0.0);
+                scratchSeasonColor.lerp(scratchTargetColor.setHex(item.autumn), autMix);
+                scratchSeasonColor.lerp(scratchTargetColor.setHex(item.dormant), currentDormantFactor * 0.90);
+              } else if (item.role === "mapleGreen" || item.role === "foliage") {
+                scratchSeasonColor.lerp(scratchTargetColor.setHex(item.autumn), currentAutumnFactor);
+                scratchSeasonColor.lerp(scratchTargetColor.setHex(item.dormant), currentDormantFactor * (item.role === "mapleGreen" ? 0.92 : 0.78));
+              } else {
+                scratchSeasonColor.lerp(scratchTargetColor.setHex(item.autumn), currentAutumnFactor * 0.30);
+                scratchSeasonColor.lerp(scratchTargetColor.setHex(item.dormant), currentDormantFactor * 0.45);
+              }
+              const frostWeight = item.role === "roof" ? 0.44 : (item.role === "rock" ? 0.36 : 0.30);
+              scratchSeasonColor.lerp(scratchTargetColor.setHex(item.frost), currentFrostFactor * frostWeight);
+              scratchSeasonColor.lerp(scratchWinterColor.setHex(item.winter), currentSnowpackFactor);
+              item.mat.color.copy(scratchSeasonColor);
             }
+            const frostSurfaceOpacity = currentFrostFactor * (c.isFreezingRain ? 0.36 : 0.16);
+            const surfaceTintHex = currentSnowpackFactor >= 0.18
+              ? 0xf8fafc
+              : (c.isFreezingRain ? 0xbae6fd : 0xcbd5e1);
             if (window.dockSnowMesh) {
-              window.dockSnowMesh.material.opacity = currentWinterFactor * 0.94;
-              window.dockSnowMesh.visible = currentWinterFactor > 0.02;
+              const dockCov = Math.max(currentSnowpackFactor * 0.94, frostSurfaceOpacity);
+              window.dockSnowMesh.material.color.setHex(surfaceTintHex);
+              window.dockSnowMesh.material.opacity = dockCov;
+              window.dockSnowMesh.visible = dockCov > 0.02;
             }
             if (window.tankerSnowMesh) {
-              window.tankerSnowMesh.material.opacity = currentWinterFactor * 0.90;
-              window.tankerSnowMesh.visible = currentWinterFactor > 0.02;
+              const shipCov = Math.max(currentSnowpackFactor * 0.90, frostSurfaceOpacity * 0.85);
+              window.tankerSnowMesh.material.color.setHex(surfaceTintHex);
+              window.tankerSnowMesh.material.opacity = shipCov;
+              window.tankerSnowMesh.visible = shipCov > 0.02;
             }
           }
 
-          // Concentration de la banquise du Saint-Laurent (effIceTenths sur 10)
+          // Concentration physique couplée Eau-Air des glaces du Saint-Laurent (effIceTenths sur 10)
+          // Aucune glace ne peut exister dans une eau > 2.2°C même si l'air passe sous 0°C la nuit!
+          let autoIceTenths = 0;
+          if (effectiveWaterTemp <= 0.9) {
+            if (effectiveWaterTemp <= -0.3 && effectiveAirTemp <= -15.0) autoIceTenths = 9;
+            else if (effectiveWaterTemp <= 0.2 && effectiveAirTemp <= -9.0) autoIceTenths = 7;
+            else if (effectiveWaterTemp <= 0.5 && effectiveAirTemp <= -3.0) autoIceTenths = 5;
+            else if (effectiveWaterTemp <= 0.8 && effectiveAirTemp <= 2.0) autoIceTenths = 3;
+            else if (effectiveWaterTemp <= 0.5 && effectiveAirTemp <= 6.0) autoIceTenths = 1; // Débâcle printanière
+          } else if (effectiveWaterTemp <= 2.2 && effectiveAirTemp <= -5.0) {
+            autoIceTenths = effectiveAirTemp <= -12.0 ? 2 : 1; // Frasil / crêpes de glace par grand froid
+          }
           const effIceTenths = manualIceTenths >= 0
             ? manualIceTenths
-            : (forceWinter ? 8 : (effectiveAirTemp <= -16 || effectiveWaterTemp <= -0.8 ? 9 : (effectiveAirTemp <= -5 || effectiveWaterTemp <= 0.6 ? 7 : (isWinterCondition ? 4 : 0))));
+            : (forceWinter ? 8 : autoIceTenths);
 
           // Vitesse d'écoulement le long du fleuve (m/s simulés)
-          // Courant marin + composante de vent au fil de l'eau
           const currentSpeedMps = (Math.abs(flowSign) * 0.9 + (windKnots / 35) * 0.35 + 0.3);
           const driftSign = flowSign !== 0 ? -flowSign : -1.0; // Par défaut vers l'aval (ENE) si étale
 
+          const showSummerLogs = effIceTenths === 0 && !forceWinter && manualIceTenths !== 0 && effectiveWaterTemp >= 3.0;
           const visibleFloesCount = effIceTenths > 0
-            ? Math.max(12, Math.min(floes3D.length, Math.round((effIceTenths / 10) * floes3D.length)))
-            : (currentWinterFactor > 0.1 ? 8 : 3); // 3 billots en été
+            ? Math.max(8, Math.min(floes3D.length, Math.round((effIceTenths / 10) * floes3D.length)))
+            : (showSummerLogs ? 3 : 0);
 
           floes3D.forEach((fl, fIdx) => {
-            if (manualIceTenths === 0 && !forceWinter) {
-              fl.group.visible = false;
-              return;
-            }
             const isVisible = fIdx < visibleFloesCount;
             fl.group.visible = isVisible;
             if (!isVisible) return;
 
-            const isSummerLog = effIceTenths === 0 && currentWinterFactor < 0.1;
+            const isSummerLog = showSummerLogs;
             fl.rimMesh.visible = !isSummerLog;
             fl.topMesh.visible = !isSummerLog;
             fl.logMesh.visible = isSummerLog;
 
             // Déplacement continu le long du couloir maritime
             fl.s += driftSign * currentSpeedMps * fl.speedMult * dt3D * 7.5;
-            // Bouclage torique parfait aux extrémités du fleuve (sans à-coup)
             if (fl.s < -920) fl.s += 1840;
             if (fl.s > 920) fl.s -= 1840;
 
-            // Ondulation transversale du courant
             const crossDrift = Math.sin(t * fl.vortFreq + fl.phase) * fl.vortAmp;
             const currentN = fl.baseN + crossDrift;
 
-            // Calcul de la position cartésienne réelle dans le fleuve Saint-Laurent
             const posX = riverP0.x + fl.s * riverTangent.x + currentN * riverNormal.x;
             const posZ = riverP0.z + fl.s * riverTangent.z + currentN * riverNormal.z;
 
-            // Houle et clapotis du fleuve sous la plaque
             const wy = sampleWaveHeight(posX, posZ, t, windKnots, flowSign);
             fl.group.position.set(posX, waterLevelY + wy + fl.yOffset, posZ);
 
-            // Rotation douce et tangage sur les vagues
             fl.group.rotation.y += fl.rotSpeed * dt3D * 10.0;
             fl.group.rotation.x = Math.sin(t * 1.6 + fl.phase) * 0.02;
             fl.group.rotation.z = Math.cos(t * 1.4 + fl.phase) * 0.02;
           });
 
-          // Animation du système de neige volumétrique 3D & poudrerie québécoise
+          // Animation du système de neige volumétrique 3D & poudrerie basse québécoise
+          // Ne tombe JAMAIS par froid sec dégagé : exige une vraie chute de neige OU de la poudrerie soulevée du manteau neigeux!
+          const isSnowWmo3D = (wCode3D >= 71 && wCode3D <= 77) || wCode3D === 85 || wCode3D === 86;
+          const isSnowingNow3D = forceWinter || (
+            !c.isFreezingRain && (
+              activeSnowRateCm > 0.015 ||
+              isSnowWmo3D ||
+              (effectiveAirTemp <= 0.4 && ((c.precipitation || 0) > 0.03 || (c.rain || 0) > 0.03))
+            )
+          );
+          const isBlowingGroundSnow3D = !isSnowingNow3D && currentSnowpackFactor > 0.30 && windKnots >= 22 && effectiveAirTemp <= -1.0;
+          const hasSnow3D = isSnowingNow3D || isBlowingGroundSnow3D;
+
           if (snowParticles3DGroup) {
-            const hasSnow3D = forceWinter || (c.snow || 0) > 0 || currentWinterFactor > 0.15 || (typeof c.temp === "number" && c.temp <= 0 && ((c.rain || 0) > 0 || (c.precipitation || 0) > 0));
             snowParticles3DGroup.visible = hasSnow3D;
             if (hasSnow3D) {
               const camP = camera3D.position;
-              const posAttr = snowGeo3D.attributes.position;
-              const posArray = posAttr.array;
-              const pCount = posAttr.count;
+              const snowPosAttr = snowGeo3D.attributes.position;
+              const posArray = snowPosAttr.array;
+              const totalCount = snowPosAttr.count;
+              const effSnowIntensity = forceWinter ? 1.8 : Math.max(0.18, activeSnowRateCm);
+              const activeSnowCount = forceWinter
+                ? totalCount
+                : (isSnowingNow3D
+                  ? Math.max(320, Math.min(totalCount, Math.round(360 + Math.min(1, effSnowIntensity / 2.6) * (totalCount - 360))))
+                  : Math.min(1400, Math.round(320 + Math.min(1, (windKnots - 22) / 18) * 1080)));
+              snowGeo3D.setDrawRange(0, activeSnowCount);
 
-              // Vecteur du vent horizontal 3D
-              const wRad = ((typeof c.windDir === "number" ? c.windDir : 220) * Math.PI) / 180;
+              // Cristaux fins et secs par grand froid (-12°C et moins) vs gros flocons humides près de 0°C
+              const wetFlakeNorm = Math.max(0, Math.min(1, (effectiveAirTemp + 12.0) / 13.0));
+              snowMat3D.size = isBlowingGroundSnow3D ? 1.55 : (1.72 + wetFlakeNorm * 1.05);
+              snowMat3D.opacity = isBlowingGroundSnow3D
+                ? Math.min(0.72, 0.32 + (windKnots - 20) * 0.02)
+                : Math.min(0.94, 0.64 + Math.min(0.30, effSnowIntensity * 0.16));
+
+              // Vecteur aval réel du vent de surface (windDirX, windDirZ)
               const windSpeedFactor = Math.max(0.2, windKnots / 18.0);
-              const windVx = Math.sin(wRad) * windSpeedFactor * 16.0;
-              const windVz = -Math.cos(wRad) * windSpeedFactor * 16.0;
-              const isPoudrerie3D = windKnots >= 20;
+              const windVx = windDirX * windSpeedFactor * 16.0;
+              const windVz = windDirZ * windSpeedFactor * 16.0;
+              const isPoudrerie3D = windKnots >= 20 || isBlowingGroundSnow3D;
+              const fallTempMult = isBlowingGroundSnow3D ? 0.35 : (0.82 + wetFlakeNorm * 0.38);
 
-              for (let pi = 0; pi < pCount; pi++) {
+              const minY = Math.max(waterLevelY - 1, camP.y - 18);
+              const maxY = isBlowingGroundSnow3D
+                ? Math.max(minY + 8, waterLevelY + 18)
+                : (camP.y + 65);
+              const boundH = 140;
+
+              for (let pi = 0; pi < activeSnowCount; pi++) {
                 const i3 = pi * 3;
                 let sx = posArray[i3];
                 let sy = posArray[i3 + 1];
                 let sz = posArray[i3 + 2];
 
-                // Chute gravitaire et turbulence
-                const flSpeed = snowParticleMeta[pi].speed;
+                const flSpeed = snowParticleMeta[pi].speed * fallTempMult;
                 const flPhase = snowParticleMeta[pi].phase + t * 2.2;
-                sy -= (flSpeed + Math.sin(flPhase) * 0.4) * dt3D * 4.5;
+                sy -= (flSpeed + Math.sin(flPhase) * 0.35) * dt3D * 4.5;
 
-                // Portance du vent
                 sx += (windVx + Math.cos(flPhase * 0.8) * 1.5) * dt3D;
                 sz += (windVz + Math.sin(flPhase * 0.7) * 1.5) * dt3D;
 
-                // En poudrerie (chasse-neige haute), les flocons rasants s'envolent horizontalement
-                if (isPoudrerie3D && sy < waterLevelY + 14) {
-                  sx += windVx * 1.8 * dt3D;
-                  sz += windVz * 1.8 * dt3D;
+                if (isPoudrerie3D && sy < waterLevelY + 15) {
+                  sx += windVx * 1.75 * dt3D;
+                  sz += windVz * 1.75 * dt3D;
                   sy += Math.sin(flPhase * 3.0) * 0.18;
                 }
 
-                // Recyclage dans le parallélépipède centré sur la caméra
-                const minY = Math.max(waterLevelY - 1, camP.y - 18);
-                const maxY = camP.y + 65;
                 if (sy < minY) sy = maxY - Math.random() * 4;
                 if (sy > maxY) sy = minY + Math.random() * 4;
 
-                const boundH = 140;
                 if (sx - camP.x > boundH) sx = camP.x - boundH + 2;
                 if (sx - camP.x < -boundH) sx = camP.x + boundH - 2;
                 if (sz - camP.z > boundH) sz = camP.z - boundH + 2;
@@ -40506,21 +41053,38 @@
                 posArray[i3 + 1] = sy;
                 posArray[i3 + 2] = sz;
               }
-              posAttr.needsUpdate = true;
+              snowPosAttr.needsUpdate = true;
             }
           }
 
-          // Animation de la fumée de mer arctique (Sea Smoke) sur le Saint-Laurent
+          // Fumée de mer arctique (ΔT Air-Eau <= -9.5°C) ET brume d'advection marine (air doux et humide sur fleuve froid)
+          const visMeters3D = (!simActive3D && typeof c.visibility === "number" && c.visibility > 50) ? c.visibility : 24000;
+          const dewSpread3D = Math.max(0, effectiveAirTemp - effectiveDewPoint);
           if (seaSmoke3DGroup) {
-            const isFrigid = (effectiveAirTemp <= -8.0 || (forceWinter && effectiveAirTemp <= 0));
-            seaSmoke3DGroup.visible = isFrigid && currentWinterFactor > 0.1;
+            const hasArcticSeaSmoke = (forceWinter && effectiveAirTemp <= -2.0) ||
+              (effectiveAirTemp <= -4.0 && airWaterDelta <= -9.5 && effIceTenths < 9.5);
+            const hasAdvectionMist = !hasArcticSeaSmoke && (
+              (airWaterDelta >= 8.0 && effHumidity >= 76 && effectiveWaterTemp <= 15.5) ||
+              wCode3D === 45 || wCode3D === 48 || visMeters3D < 4200
+            );
+            seaSmoke3DGroup.visible = hasArcticSeaSmoke || hasAdvectionMist;
             if (seaSmoke3DGroup.visible) {
-              const smokeWDirRad = ((typeof c.windDir === "number" ? c.windDir : 220) * Math.PI) / 180;
-              const smokeVx = Math.sin(smokeWDirRad) * (windKnots * 0.18 + 0.4);
-              const smokeVz = -Math.cos(smokeWDirRad) * (windKnots * 0.18 + 0.4);
+              const smokeIntensity = hasArcticSeaSmoke
+                ? (forceWinter && airWaterDelta > -9.5
+                  ? 0.65
+                  : Math.min(1, (-airWaterDelta - 8.5) / 12.5) * (1.0 - Math.max(0, effIceTenths - 6) * 0.15))
+                : Math.min(0.85, Math.max(
+                    visMeters3D < 4200 ? (4200 - visMeters3D) / 4200 : 0.25,
+                    ((airWaterDelta - 7.0) / 10.0) * (effHumidity / 100)
+                  ));
+              const smokeVx = windDirX * (windKnots * 0.22 + 0.45);
+              const smokeVz = windDirZ * (windKnots * 0.22 + 0.45);
+              const mistColorHex = hasArcticSeaSmoke ? 0xecfeff : 0xe2e8f0;
+              const yAspect = hasArcticSeaSmoke ? (0.65 + smokeIntensity * 0.28) : 0.36;
+              const baseLiftY = hasArcticSeaSmoke ? (1.25 + smokeIntensity * 0.85) : 0.78;
 
               seaSmokeParticles.forEach((sp, sIdx) => {
-                sp.s += driftSign * (currentSpeedMps * 0.45) * dt3D * 5.0 + (sp.dirX * smokeVx + sp.dirZ * smokeVz) * dt3D;
+                sp.s += driftSign * (currentSpeedMps * 0.45) * dt3D * 5.0 + (smokeVx * riverTangent.x + smokeVz * riverTangent.z) * dt3D * 3.2;
                 if (sp.s < -780) sp.s += 1560;
                 if (sp.s > 780) sp.s -= 1560;
 
@@ -40528,13 +41092,13 @@
                 const sPosZ = riverP0.z + sp.s * riverTangent.z + sp.baseN * riverNormal.z;
                 const wy = sampleWaveHeight(sPosX, sPosZ, t, windKnots, flowSign);
 
-                const sY = waterLevelY + wy + 1.2 + Math.sin(t * 0.8 + sIdx) * 0.7;
+                const sY = waterLevelY + wy + baseLiftY + Math.sin(t * (hasArcticSeaSmoke ? 0.95 : 0.45) + sIdx) * (hasArcticSeaSmoke ? 0.75 : 0.28);
                 sp.sprite.position.set(sPosX, sY, sPosZ);
 
-                // Expansion et pulsation vaporeuse
-                const puffSc = sp.baseScale * (1.0 + Math.sin(t * 1.1 + sp.phase) * 0.25);
-                sp.sprite.scale.set(puffSc, puffSc * 0.65, 1);
-                sp.sprite.material.opacity = (0.22 + Math.sin(t * 0.9 + sp.phase) * 0.12) * currentWinterFactor;
+                const puffSc = sp.baseScale * (hasArcticSeaSmoke ? 1.0 : 1.32) * (1.0 + Math.sin(t * 1.1 + sp.phase) * 0.22);
+                sp.sprite.scale.set(puffSc, puffSc * yAspect, 1);
+                sp.sprite.material.color.setHex(mistColorHex);
+                sp.sprite.material.opacity = (0.18 + Math.sin(t * 0.9 + sp.phase) * 0.09) * Math.max(0.22, smokeIntensity);
               });
             }
           }
@@ -40651,7 +41215,7 @@
             sg.rightWing.rotation.x = -wingFlap;
           });
 
-          // 8. Éclairage Jour / Heure Dorée / Nuit (atténué réalistement sous fort couvert nuageux ou averse)
+          // 8. Éclairage Jour / Heure Dorée / Nuit, Visibilité Réelle, Point de Rosée & Colorimétrie Thermique
           bridgeWinMat.color.setHex(isNight ? 0xfef08a : 0x0f172a);
           shipNightLight.intensity = isNight ? 1.4 : 0.0;
           dockPointLight.intensity = isNight ? 1.6 : (isStormNow ? 0.65 : 0.2);
@@ -40660,29 +41224,64 @@
           });
 
           const overcastDim = 1.0 - Math.max(0, (cloudPctNow - 40) / 60) * 0.48;
-          scene.fog.density = 0.00014 + (cloudPctNow / 100) * 0.00012 + (rainPhaseNow === "overhead" ? 0.00018 : 0);
+          const visFogAdd = visMeters3D < 16000
+            ? Math.min(0.00078, Math.pow((16000 - visMeters3D) / 16000, 1.65) * 0.00075)
+            : 0.0;
+          const dewFogAdd = (dewSpread3D < 2.2 && effHumidity >= 86)
+            ? ((2.2 - dewSpread3D) / 2.2) * 0.00014
+            : 0.0;
+          const snowFogAdd = hasSnow3D
+            ? Math.min(0.00028, 0.00007 + activeSnowRateCm * 0.00009 + (isBlowingGroundSnow3D ? 0.00010 : 0))
+            : 0.0;
+          const crispArcticClear = (effectiveAirTemp <= -8.0 && cloudPctNow < 45 && !hasSnow3D && visMeters3D >= 18000)
+            ? Math.min(0.00005, ((-effectiveAirTemp - 8.0) / 20.0) * 0.00005)
+            : 0.0;
+          scene.fog.density = Math.max(
+            0.00008,
+            0.000135 + (cloudPctNow / 100) * 0.00011 + (rainPhaseNow === "overhead" ? 0.00018 : 0) + visFogAdd + dewFogAdd + snowFogAdd - crispArcticClear
+          );
+
+          const coldLightNorm = Math.max(0, Math.min(1, (-effectiveAirTemp - 4.0) / 20.0));
+          const heatLightNorm = Math.max(0, Math.min(1, (effectiveAirTemp - 23.0) / 12.0));
 
           if (isNight) {
-            hemiLight.color.setHex(0x1e293b);
-            hemiLight.groundColor.setHex(0x020617);
-            hemiLight.intensity = 0.55;
-            dirLight.color.setHex(0x93c5fd);
+            hemiLight.color.setHex(0x1e293b).lerp(scratchThermalColor.setHex(0x283c5a), coldLightNorm * 0.45);
+            hemiLight.groundColor.setHex(0x020617).lerp(scratchThermalColor.setHex(0x1e293b), currentSnowpackFactor * 0.35);
+            hemiLight.intensity = 0.55 + currentSnowpackFactor * 0.08;
+            dirLight.color.setHex(0x93c5fd).lerp(scratchThermalColor.setHex(0xbfdbfe), coldLightNorm * 0.4);
             dirLight.intensity = 0.55 * overcastDim;
-            scene.fog.color.setHex(0x061326);
+            scene.fog.color.setHex(0x061326).lerp(scratchThermalColor.setHex(0x0b1d36), Math.max(coldLightNorm * 0.35, hasSnow3D ? 0.4 : 0));
           } else if (isGolden) {
-            hemiLight.color.setHex(0xfed7aa);
-            hemiLight.groundColor.setHex(0x1e3a5f);
-            hemiLight.intensity = 0.85 * overcastDim;
-            dirLight.color.setHex(0xfb923c);
+            hemiLight.color.setHex(0xfed7aa).lerp(scratchThermalColor.setHex(0xfecdd3), coldLightNorm * 0.35);
+            hemiLight.groundColor.setHex(0x1e3a5f).lerp(scratchThermalColor.setHex(0x94a3b8), currentSnowpackFactor * 0.45);
+            hemiLight.intensity = (0.85 + currentSnowpackFactor * 0.08) * overcastDim;
+            dirLight.color.setHex(0xfb923c).lerp(scratchThermalColor.setHex(0xfdba74), heatLightNorm * 0.35);
             dirLight.intensity = 1.25 * overcastDim;
-            scene.fog.color.setHex(isStormNow ? 0x64748b : 0xd97746);
+            scene.fog.color.setHex(isStormNow ? 0x64748b : 0xd97746).lerp(scratchThermalColor.setHex(0xcbd5e1), hasSnow3D ? 0.45 : 0);
           } else {
             hemiLight.color.setHex(isStormNow ? 0x94a3b8 : 0xe0f2fe);
-            hemiLight.groundColor.setHex(0x0c4a6e);
-            hemiLight.intensity = 0.95 * (0.7 + overcastDim * 0.3);
+            if (!isStormNow && coldLightNorm > 0) {
+              hemiLight.color.lerp(scratchThermalColor.setHex(0xdbeafe), coldLightNorm * 0.55);
+            } else if (!isStormNow && heatLightNorm > 0) {
+              hemiLight.color.lerp(scratchThermalColor.setHex(0xfef3c7), heatLightNorm * 0.30);
+            }
+            hemiLight.groundColor.setHex(0x0c4a6e).lerp(scratchThermalColor.setHex(0xcbd5e1), currentSnowpackFactor * 0.55);
+            hemiLight.intensity = (0.95 + currentSnowpackFactor * 0.10) * (0.7 + overcastDim * 0.3);
             dirLight.color.setHex(0xffffff);
-            dirLight.intensity = 1.22 * overcastDim;
+            if (coldLightNorm > 0) {
+              dirLight.color.lerp(scratchThermalColor.setHex(0xeff6ff), coldLightNorm * 0.45);
+            } else if (heatLightNorm > 0) {
+              dirLight.color.lerp(scratchThermalColor.setHex(0xfffbeb), heatLightNorm * 0.55);
+            }
+            dirLight.intensity = (1.22 + coldLightNorm * 0.06) * overcastDim;
             scene.fog.color.setHex(cloudPctNow >= 75 ? 0x7c93ab : 0x8bb8d6);
+            if (hasSnow3D) {
+              scene.fog.color.lerp(scratchThermalColor.setHex(0xdbeafe), 0.55);
+            } else if (coldLightNorm > 0) {
+              scene.fog.color.lerp(scratchThermalColor.setHex(0xa5c8e4), coldLightNorm * 0.42);
+            } else if (heatLightNorm > 0) {
+              scene.fog.color.lerp(scratchThermalColor.setHex(0x9ec0d4), heatLightNorm * 0.35);
+            }
           }
 
           // 9. Synchronisation fluide de la caméra 3D avec viewAzimuth, viewAltitude et viewFOV
