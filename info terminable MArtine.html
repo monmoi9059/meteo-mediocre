@@ -894,11 +894,16 @@
         color: #f0f9ff !important;
         box-shadow: 0 0 12px rgba(56, 189, 248, 0.6) !important;
       }
+      @keyframes batBeaconPulse {
+        0%, 100% { box-shadow: 0 0 12px rgba(250, 204, 21, 0.58); }
+        50% { box-shadow: 0 0 18px rgba(254, 240, 138, 0.92); }
+      }
       .hud-pill-btn.batsignal-active {
         background: rgba(234, 179, 8, 0.45) !important;
         border-color: #facc15 !important;
         color: #fef08a !important;
         box-shadow: 0 0 14px rgba(250, 204, 21, 0.7) !important;
+        animation: batBeaconPulse 3.2s ease-in-out infinite;
       }
 
       .viewport-landmarks-bar {
@@ -1664,7 +1669,10 @@
       }
       .ar-label-3d {
         position: absolute;
-        transform: translate(-50%, -100%);
+        left: 0;
+        top: 0;
+        will-change: transform;
+        transform: translate3d(0, 0, 0) translate(-50%, -100%);
         background: rgba(6, 16, 32, 0.80);
         backdrop-filter: blur(8px);
         -webkit-backdrop-filter: blur(8px);
@@ -23889,6 +23897,7 @@
       // --- VARIABLES DE VUE (Ciel & Monde 3D 360°) ---
       let viewAzimuth = 135; // Sud-Est par défaut (Quai Valero & Fleuve)
       let viewFOV = 95;
+      let targetViewFOV = viewFOV;
       let viewAltitude = -8;
       let starsModeActive = false;
       window.mode3DActive = true;
@@ -24184,13 +24193,26 @@
       }
 
       // --- CANVAS : CIEL & ASTRONOMIE ---
+      const animWinCachedEl = document.getElementById("animation-window");
+      let cachedAnimW = animWinCachedEl && animWinCachedEl.clientWidth > 0 ? animWinCachedEl.clientWidth : 1000;
+      let cachedAnimH = animWinCachedEl && animWinCachedEl.clientHeight > 0 ? animWinCachedEl.clientHeight : 500;
+      function refreshAnimWinDims() {
+        if (!animWinCachedEl) return;
+        const cw = animWinCachedEl.clientWidth;
+        const ch = animWinCachedEl.clientHeight;
+        if (cw > 0) cachedAnimW = cw;
+        if (ch > 0) cachedAnimH = ch;
+      }
+      window.refreshAnimWinDims = refreshAnimWinDims;
+      window.addEventListener("resize", refreshAnimWinDims, { passive: true });
+      if (typeof ResizeObserver !== "undefined" && animWinCachedEl) {
+        new ResizeObserver(refreshAnimWinDims).observe(animWinCachedEl);
+      }
       function getAnimW() {
-        const el = document.getElementById("animation-window");
-        return el && el.clientWidth > 0 ? el.clientWidth : 1000;
+        return cachedAnimW;
       }
       function getAnimH() {
-        const el = document.getElementById("animation-window");
-        return el && el.clientHeight > 0 ? el.clientHeight : 500;
+        return cachedAnimH;
       }
 
       const skyCanvas = document.getElementById("sky-fx");
@@ -24977,82 +24999,126 @@
         });
       }
 
-      // Animation fluide de caméra vers un azimut cible
+      // Animation fluide de caméra vers un azimut cible (amortissement exponentiel indépendant du framerate 60/120Hz)
       let camTargetAz = null;
       let camTargetAlt = null;
+      let prevCamUpdateMs = performance.now();
+
+      // Références DOM mises en cache pour éviter tout Layout Thrashing à 60/120Hz
+      const hudAzCachedEl = document.getElementById("hud-az-lbl");
+      const hudFovCachedEl = document.getElementById("hud-fov-lbl");
+      const hudTideCachedEl = document.getElementById("hud-tide-lbl");
+      const waterLayerCachedEl = document.getElementById("water-layer");
+      const distantWaterLayerCachedEl = document.getElementById("distant-water-layer");
+      const compassContCachedEl = document.getElementById("compass-container");
+      const compassStripCachedEl = document.getElementById("compass-strip");
+      const boatCachedEl = document.getElementById("boat-container");
+      const wavesCachedEl = document.querySelector(".waves");
+      const whitecapsCachedEl = document.querySelector(".whitecaps");
+
+      let landmarkJumpBtnsMeta = null;
+      let compassMarksMeta = null;
+      let landmarks2DMeta = null;
+      let lastHudAzStr = "";
+      let lastHudFovStr = "";
+      let lastHudTide2DStr = "";
+      const CARDINAL_DIRS_8 = ["N", "NE", "E", "SE", "S", "SO", "O", "NO"];
 
       function updateCamera() {
+        const nowCamMs = performance.now();
+        const dtCam = Math.min(0.08, Math.max(0.002, (nowCamMs - prevCamUpdateMs) * 0.001));
+        prevCamUpdateMs = nowCamMs;
+
+        // Amortissement exponentiel soyeux du zoom (FOV)
+        const diffFov = targetViewFOV - viewFOV;
+        if (Math.abs(diffFov) > 0.01) {
+          viewFOV += diffFov * (1 - Math.exp(-13.5 * dtCam));
+        } else if (diffFov !== 0) {
+          viewFOV = targetViewFOV;
+        }
+
+        // Glissement exponentiel sans saccade vers l'azimut et l'altitude cibles
         if (camTargetAz !== null) {
           let diffAz = camTargetAz - viewAzimuth;
           if (diffAz > 180) diffAz -= 360;
           if (diffAz < -180) diffAz += 360;
-          if (Math.abs(diffAz) < 0.4) {
-            viewAzimuth = camTargetAz;
+          if (Math.abs(diffAz) < 0.015) {
+            viewAzimuth = ((camTargetAz % 360) + 360) % 360;
             camTargetAz = null;
           } else {
-            viewAzimuth = (viewAzimuth + diffAz * 0.12 + 360) % 360;
+            const alphaAz = 1 - Math.exp(-8.5 * dtCam);
+            viewAzimuth = (viewAzimuth + diffAz * alphaAz + 360) % 360;
           }
         }
         if (camTargetAlt !== null) {
           let diffAlt = camTargetAlt - viewAltitude;
-          if (Math.abs(diffAlt) < 0.2) {
+          if (Math.abs(diffAlt) < 0.01) {
             viewAltitude = camTargetAlt;
             camTargetAlt = null;
           } else {
-            viewAltitude += diffAlt * 0.12;
+            const alphaAlt = 1 - Math.exp(-8.5 * dtCam);
+            viewAltitude += diffAlt * alphaAlt;
           }
         }
 
         let W = getAnimW();
         let H = getAnimH();
         let pixelsPerDegreeX = W / viewFOV;
-        let viewFOVY = viewFOV * (H / W);
-        let pixelsPerDegreeY = H / viewFOVY;
+        let viewFOVY = viewFOV * (H / Math.max(1, W));
+        let pixelsPerDegreeY = H / Math.max(1, viewFOVY);
 
         let horizonY = H * 0.56 + viewAltitude * pixelsPerDegreeY;
         let tideFactor = ((currentConditions.tideHeight || 10) - 10) / 35;
         let waterTopY = horizonY + 42 - tideFactor * 36;
 
-        const waterLayer = document.getElementById("water-layer");
-        const distantWaterLayer = document.getElementById("distant-water-layer");
-
-        if (waterLayer) {
-          waterLayer.style.top = `${waterTopY}px`;
-          waterLayer.style.bottom = "0px";
-          waterLayer.style.height = "auto";
+        // Mise à jour du HUD de télémétrie 360° (uniquement lorsque le texte change réellement)
+        if (hudAzCachedEl) {
+          const dStr = CARDINAL_DIRS_8[Math.round(viewAzimuth / 45) % 8];
+          const nextAzStr = `AZ: ${Math.round(viewAzimuth)}° (${dStr})`;
+          if (nextAzStr !== lastHudAzStr) {
+            lastHudAzStr = nextAzStr;
+            hudAzCachedEl.textContent = nextAzStr;
+          }
         }
-        if (distantWaterLayer) {
-          distantWaterLayer.style.top = `${horizonY}px`;
+        if (hudFovCachedEl) {
+          const nextFovStr = `FOV: ${Math.round(viewFOV)}°`;
+          if (nextFovStr !== lastHudFovStr) {
+            lastHudFovStr = nextFovStr;
+            hudFovCachedEl.textContent = nextFovStr;
+          }
         }
-
-        // Mise à jour du HUD de télémétrie 360°
-        const hudAz = document.getElementById("hud-az-lbl");
-        const hudFov = document.getElementById("hud-fov-lbl");
-        const hudTide = document.getElementById("hud-tide-lbl");
-        if (hudAz) {
-          const dirs = ["N", "NE", "E", "SE", "S", "SO", "O", "NO"];
-          const dStr = dirs[Math.round(viewAzimuth / 45) % 8];
-          hudAz.textContent = `AZ: ${Math.round(viewAzimuth)}° (${dStr})`;
-        }
-        if (hudFov) hudFov.textContent = `FOV: ${Math.round(viewFOV)}°`;
-        if (hudTide) {
-          hudTide.textContent =
+        if (hudTideCachedEl && !window.mode3DActive) {
+          const nextTide2D =
             currentConditions.tideMeters !== null
               ? `Eau: ${currentConditions.tideMeters.toFixed(2)}m ${currentConditions.tideTrend || ""}`
               : `Eau: --m`;
+          if (nextTide2D !== lastHudTide2DStr) {
+            lastHudTide2DStr = nextTide2D;
+            hudTideCachedEl.textContent = nextTide2D;
+          }
         }
 
-        document.querySelectorAll(".landmark-jump-btn").forEach((btn) => {
-          const tAz = parseFloat(btn.getAttribute("data-target-az"));
-          let d = Math.abs(tAz - viewAzimuth);
+        if (!landmarkJumpBtnsMeta) {
+          landmarkJumpBtnsMeta = Array.from(document.querySelectorAll(".landmark-jump-btn")).map((btn) => ({
+            btn,
+            tAz: parseFloat(btn.getAttribute("data-target-az")) || 0,
+            isActive: btn.classList.contains("active"),
+          }));
+        }
+        for (let i = 0; i < landmarkJumpBtnsMeta.length; i++) {
+          const item = landmarkJumpBtnsMeta[i];
+          let d = Math.abs(item.tAz - viewAzimuth);
           if (d > 180) d = 360 - d;
-          btn.classList.toggle("active", d < 12);
-        });
+          const shouldActive = d < 12;
+          if (shouldActive !== item.isActive) {
+            item.isActive = shouldActive;
+            item.btn.classList.toggle("active", shouldActive);
+          }
+        }
 
-        // Ruban de Boussole
-        const compassStrip = document.getElementById("compass-strip");
-        if (compassStrip) {
-          if (compassStrip.children.length === 0) {
+        // Ruban de Boussole (mis à jour uniquement lorsqu'il est affiché)
+        if (compassStripCachedEl && (!compassContCachedEl || compassContCachedEl.classList.contains("visible"))) {
+          if (compassStripCachedEl.children.length === 0) {
             const dirs = [
               { az: 0, label: "N", card: true },
               { az: 45, label: "NE", card: false },
@@ -25074,64 +25140,90 @@
               } else {
                 mark.innerHTML = `<span style="font-size:8px; opacity:0.5">${az}</span><div class="compass-tick"></div>`;
               }
-              compassStrip.appendChild(mark);
+              compassStripCachedEl.appendChild(mark);
             }
+            compassMarksMeta = Array.from(compassStripCachedEl.querySelectorAll(".compass-mark")).map((mark) => ({
+              mark,
+              az: parseFloat(mark.dataset.az) || 0,
+            }));
           }
 
-          const marks = compassStrip.querySelectorAll(".compass-mark");
-          const compassFOV = 90;
-          marks.forEach((mark) => {
-            const az = parseFloat(mark.dataset.az);
-            let relAz = az - viewAzimuth;
-            if (relAz < -180) relAz += 360;
-            if (relAz > 180) relAz -= 360;
-            if (Math.abs(relAz) <= compassFOV / 2 + 10) {
-              mark.style.display = "flex";
-              const pct = 50 + (relAz / compassFOV) * 100;
-              mark.style.left = `${pct}%`;
-            } else {
-              mark.style.display = "none";
+          if (compassMarksMeta) {
+            const compassFOV = 90;
+            for (let i = 0; i < compassMarksMeta.length; i++) {
+              const cm = compassMarksMeta[i];
+              let relAz = cm.az - viewAzimuth;
+              if (relAz < -180) relAz += 360;
+              if (relAz > 180) relAz -= 360;
+              if (Math.abs(relAz) <= compassFOV / 2 + 10) {
+                cm.mark.style.display = "flex";
+                const pct = 50 + (relAz / compassFOV) * 100;
+                cm.mark.style.left = `${pct.toFixed(2)}%`;
+              } else {
+                cm.mark.style.display = "none";
+              }
             }
-          });
+          }
         }
 
-        // Projection 360° des landmarks avec clonage sans couture (seamless 360 wrap)
-        const landmarks = document.querySelectorAll(
-          '.landmark:not([id^="clone-"])'
-        );
-        landmarks.forEach((lm, idx) => {
-          let az = parseFloat(lm.getAttribute("data-azimuth"));
-          let widthDeg = parseFloat(lm.getAttribute("data-width"));
-          let offsetY = parseFloat(lm.getAttribute("data-offset-y")) || 0;
+        // En mode 3D, les calques 2D d'eau et de landmarks sont masqués : on évite tout recalcul DOM inutile!
+        if (window.mode3DActive) {
+          return { horizonY, waterTopY, pixelsPerDegreeX, pixelsPerDegreeY };
+        }
 
-          let relAz = az - viewAzimuth;
+        if (waterLayerCachedEl) {
+          waterLayerCachedEl.style.top = `${waterTopY}px`;
+          waterLayerCachedEl.style.bottom = "0px";
+          waterLayerCachedEl.style.height = "auto";
+        }
+        if (distantWaterLayerCachedEl) {
+          distantWaterLayerCachedEl.style.top = `${horizonY}px`;
+        }
+
+        // Projection 360° des landmarks 2D avec clonage sans couture (seamless 360 wrap)
+        if (!landmarks2DMeta) {
+          landmarks2DMeta = Array.from(
+            document.querySelectorAll('.landmark:not([id^="clone-"])')
+          ).map((lm, idx) => {
+            let clone = document.getElementById(`clone-${idx}`);
+            if (!clone) {
+              clone = lm.cloneNode(true);
+              clone.id = `clone-${idx}`;
+              lm.parentNode.appendChild(clone);
+            }
+            return {
+              lm,
+              clone,
+              az: parseFloat(lm.getAttribute("data-azimuth")) || 0,
+              widthDeg: parseFloat(lm.getAttribute("data-width")) || 10,
+              offsetY: parseFloat(lm.getAttribute("data-offset-y")) || 0,
+            };
+          });
+        }
+        for (let i = 0; i < landmarks2DMeta.length; i++) {
+          const item = landmarks2DMeta[i];
+          let relAz = item.az - viewAzimuth;
           if (relAz > 180) relAz -= 360;
           if (relAz < -180) relAz += 360;
 
           let x = W / 2 + relAz * pixelsPerDegreeX;
-          let pixelWidth = widthDeg * pixelsPerDegreeX;
+          let pixelWidth = item.widthDeg * pixelsPerDegreeX;
+          let botPx = H - horizonY - item.offsetY;
 
-          lm.style.display = "block";
-          lm.style.left = `${x}px`;
-          lm.style.width = `${pixelWidth}px`;
-          lm.style.bottom = `${H - horizonY - offsetY}px`;
-          lm.style.transform = `translateX(-50%)`;
+          item.lm.style.display = "block";
+          item.lm.style.left = `${x}px`;
+          item.lm.style.width = `${pixelWidth}px`;
+          item.lm.style.bottom = `${botPx}px`;
+          item.lm.style.transform = `translateX(-50%)`;
 
-          let clone = document.getElementById(`clone-${idx}`);
-          if (!clone) {
-            clone = lm.cloneNode(true);
-            clone.id = `clone-${idx}`;
-            lm.parentNode.appendChild(clone);
-          }
-          clone.style.display = "block";
-
+          item.clone.style.display = "block";
           let altRelAz = relAz > 0 ? relAz - 360 : relAz + 360;
           let altX = W / 2 + altRelAz * pixelsPerDegreeX;
-          clone.style.left = `${altX}px`;
-          clone.style.width = `${pixelWidth}px`;
-          clone.style.bottom = `${H - horizonY - offsetY}px`;
-          clone.style.transform = `translateX(-50%)`;
-        });
+          item.clone.style.left = `${altX}px`;
+          item.clone.style.width = `${pixelWidth}px`;
+          item.clone.style.bottom = `${botPx}px`;
+          item.clone.style.transform = `translateX(-50%)`;
+        }
 
         return { horizonY, waterTopY, pixelsPerDegreeX, pixelsPerDegreeY };
       }
@@ -25139,55 +25231,53 @@
       function animateBoatAndWaves() {
         let cam = updateCamera();
 
-        const boat = document.getElementById("boat-container");
-        const waves = document.querySelector(".waves");
-        let windKnots = (currentConditions.wind || 0) / 1.852;
-
-        let windIntensity = 0;
-        if (windKnots >= 5) {
-          windIntensity = Math.min((windKnots - 5) / 25, 1);
-        }
-
-        if (waves) {
-          let minWaveHeight = 60;
-          let maxWaveHeight = 320;
-          let waveHeight =
-            minWaveHeight + windIntensity * (maxWaveHeight - minWaveHeight);
-          const whitecaps = document.querySelector(".whitecaps");
-          if (whitecaps) {
-            let whitecapOpacity = 0;
-            if (windKnots >= 10) {
-              whitecapOpacity = Math.min((windKnots - 10) / 20, 1);
-            }
-            whitecaps.style.opacity = whitecapOpacity;
+        if (!window.mode3DActive) {
+          let windKnots = (currentConditions.wind || 0) / 1.852;
+          let windIntensity = 0;
+          if (windKnots >= 5) {
+            windIntensity = Math.min((windKnots - 5) / 25, 1);
           }
-          if (windKnots < 5) waveHeight = 24;
-          waves.style.height = waveHeight + "px";
-        }
 
-        if (boat) {
-          let t = Date.now() / 1000;
-          let baseScale = (130 / viewFOV) * 0.57;
-          let boatAzimuth = 135;
-          let relAz = boatAzimuth - viewAzimuth;
-          if (relAz > 180) relAz -= 360;
-          if (relAz < -180) relAz += 360;
+          if (wavesCachedEl) {
+            let minWaveHeight = 60;
+            let maxWaveHeight = 320;
+            let waveHeight =
+              minWaveHeight + windIntensity * (maxWaveHeight - minWaveHeight);
+            if (whitecapsCachedEl) {
+              let whitecapOpacity = 0;
+              if (windKnots >= 10) {
+                whitecapOpacity = Math.min((windKnots - 10) / 20, 1);
+              }
+              whitecapsCachedEl.style.opacity = whitecapOpacity;
+            }
+            if (windKnots < 5) waveHeight = 24;
+            wavesCachedEl.style.height = waveHeight + "px";
+          }
 
-          let boatXScreen = getAnimW() / 2 + relAz * cam.pixelsPerDegreeX;
-          let boatYScreen = cam.waterTopY - 40 + 40 * baseScale;
+          if (boatCachedEl) {
+            let t = Date.now() / 1000;
+            let baseScale = (130 / viewFOV) * 0.57;
+            let boatAzimuth = 135;
+            let relAz = boatAzimuth - viewAzimuth;
+            if (relAz > 180) relAz -= 360;
+            if (relAz < -180) relAz += 360;
 
-          boat.style.left = `${boatXScreen}px`;
-          boat.style.bottom = `${getAnimH() - boatYScreen}px`;
+            let boatXScreen = getAnimW() / 2 + relAz * cam.pixelsPerDegreeX;
+            let boatYScreen = cam.waterTopY - 40 + 40 * baseScale;
 
-          if (windKnots < 5) {
-            boat.style.transform = `translateX(-50%) scale(${baseScale}) rotate(0deg) translateY(0px)`;
-          } else {
-            let maxRot = 10.5 * windIntensity;
-            let maxTransY = 14 * windIntensity;
-            let freq = 1 + windIntensity * 1.4;
-            let rot = Math.sin(t * freq) * maxRot;
-            let transY = Math.cos(t * freq * 1.3) * maxTransY;
-            boat.style.transform = `translateX(-50%) scale(${baseScale}) rotate(${rot}deg) translateY(${transY}px)`;
+            boatCachedEl.style.left = `${boatXScreen}px`;
+            boatCachedEl.style.bottom = `${getAnimH() - boatYScreen}px`;
+
+            if (windKnots < 5) {
+              boatCachedEl.style.transform = `translateX(-50%) scale(${baseScale}) rotate(0deg) translateY(0px)`;
+            } else {
+              let maxRot = 10.5 * windIntensity;
+              let maxTransY = 14 * windIntensity;
+              let freq = 1 + windIntensity * 1.4;
+              let rot = Math.sin(t * freq) * maxRot;
+              let transY = Math.cos(t * freq * 1.3) * maxTransY;
+              boatCachedEl.style.transform = `translateX(-50%) scale(${baseScale}) rotate(${rot}deg) translateY(${transY}px)`;
+            }
           }
         }
 
@@ -25535,8 +25625,14 @@
       }
 
       function updateDebrisFX() {
+        if (window.mode3DActive) {
+          requestAnimationFrame(updateDebrisFX);
+          return;
+        }
         if (Math.random() < 0.004) spawnDebris();
 
+        const animWNow = getAnimW();
+        const pixelsPerDegreeX = animWNow / viewFOV;
         for (let i = debrisList.length - 1; i >= 0; i--) {
           let d = debrisList[i];
           let currentSpeed = d.baseSpeed;
@@ -25570,8 +25666,7 @@
           if (relAz > 180) relAz -= 360;
           if (relAz < -180) relAz += 360;
 
-          let pixelsPerDegreeX = getAnimW() / viewFOV;
-          let screenX = getAnimW() / 2 + relAz * pixelsPerDegreeX;
+          let screenX = animWNow * 0.5 + relAz * pixelsPerDegreeX;
 
           d.el.style.transform = `translate3d(${screenX}px, ${currentY}px, 0) rotate(${d.rotation}deg)`;
           d.el.style.display = "block";
@@ -25598,6 +25693,8 @@
       document.querySelectorAll(".landmark-jump-btn").forEach((btn) => {
         btn.addEventListener("click", (e) => {
           e.stopPropagation();
+          touchVelAz = 0;
+          touchVelAlt = 0;
           camTargetAz = parseFloat(btn.getAttribute("data-target-az"));
           camTargetAlt = parseFloat(btn.getAttribute("data-target-alt") || "-5");
           if (btn.textContent.includes("Batman") || Math.abs(camTargetAz - 133) < 0.5) {
@@ -25630,9 +25727,11 @@
       if (hudResetCam) {
         hudResetCam.addEventListener("click", (e) => {
           e.stopPropagation();
+          touchVelAz = 0;
+          touchVelAlt = 0;
           camTargetAz = 128;
           camTargetAlt = -5;
-          viewFOV = 100;
+          targetViewFOV = 100;
         });
       }
 
@@ -25668,6 +25767,7 @@
         animFsBtn.addEventListener("click", () => {
           animCard.classList.toggle("fullscreen-card");
           setTimeout(() => {
+            refreshAnimWinDims();
             W = skyCanvas.width = wCanvas.width = getAnimW();
             H = skyCanvas.height = wCanvas.height = getAnimH();
           }, 50);
@@ -25683,6 +25783,7 @@
           cleanUiBtn.classList.toggle("active", isHidden);
           cleanUiBtn.innerHTML = isHidden ? "🔙 Dashboard" : "👁️ Panorama";
           setTimeout(() => {
+            refreshAnimWinDims();
             W = skyCanvas.width = wCanvas.width = getAnimW();
             H = skyCanvas.height = wCanvas.height = getAnimH();
           }, 50);
@@ -25707,56 +25808,7 @@
         });
       }
 
-
-      // Drag-to-pan 360° (uniquement à l'intérieur de #animation-window)
-      if (animWinEl) {
-        animWinEl.addEventListener("mousedown", (e) => {
-          if (e.target.closest("button")) return;
-          isDraggingSky = true;
-          camTargetAz = null;
-          camTargetAlt = null;
-          startDragX = e.clientX;
-          startDragY = e.clientY;
-          startAzimuth = viewAzimuth;
-          startAltitude = viewAltitude;
-          animWinEl.style.cursor = "grabbing";
-        });
-      }
-
-      window.addEventListener("mousemove", (e) => {
-        if (!isDraggingSky) return;
-        let dx = e.clientX - startDragX;
-        let dy = e.clientY - startDragY;
-        let degPerPixelX = viewFOV / W;
-        let degPerPixelY = (viewFOV * (H / W)) / H;
-        viewAzimuth = (startAzimuth - dx * degPerPixelX + 360) % 360;
-        viewAltitude = Math.max(
-          -35,
-          Math.min(85, startAltitude + dy * degPerPixelY)
-        );
-      });
-
-      window.addEventListener("mouseup", () => {
-        if (isDraggingSky) {
-          isDraggingSky = false;
-          if (animWinEl) animWinEl.style.cursor = "grab";
-        }
-      });
-
-      // Zoom molette dans #animation-window
-      if (animWinEl) {
-        animWinEl.addEventListener(
-          "wheel",
-          (e) => {
-            e.preventDefault();
-            viewFOV += e.deltaY * 0.05;
-            viewFOV = Math.max(30, Math.min(120, viewFOV));
-          },
-          { passive: false }
-        );
-      }
-
-            // Support tactile pour #animation-window (OptimisÃ© Android / Mobile avec dÃ©filement fluide)
+      // Variables d'inertie partagées (Souris Desktop & Écran tactile 120Hz)
       let initialPinchDistance = null;
       let initialFOV = 100;
       let touchVelAz = 0;
@@ -25765,15 +25817,88 @@
       let lastTouchMoveY = 0;
       let lastTouchMoveTime = 0;
       let lastTapTime3D = 0;
+      let prevInertiaMs = performance.now();
 
-      // Boucle d'inertie 120Hz pour le glissement tactile fluide sur Samsung S24
+      // Drag-to-pan 360° avec inertie cinématique au relâchement (uniquement à l'intérieur de #animation-window)
+      if (animWinEl) {
+        animWinEl.addEventListener("mousedown", (e) => {
+          if (e.target.closest("button") || e.target.closest("#weather-minimap-hud") || e.target.closest(".tug-maneuver-hud") || e.target.closest("#temp-simulation-hud")) return;
+          isDraggingSky = true;
+          touchVelAz = 0;
+          touchVelAlt = 0;
+          camTargetAz = null;
+          camTargetAlt = null;
+          startDragX = lastTouchMoveX = e.clientX;
+          startDragY = lastTouchMoveY = e.clientY;
+          lastTouchMoveTime = performance.now();
+          startAzimuth = viewAzimuth;
+          startAltitude = viewAltitude;
+          animWinEl.style.cursor = "grabbing";
+        });
+      }
+
+      window.addEventListener("mousemove", (e) => {
+        if (!isDraggingSky) return;
+        const nowT = performance.now();
+        const dt = Math.max(4, nowT - lastTouchMoveTime);
+        let dx = e.clientX - startDragX;
+        let dy = e.clientY - startDragY;
+        let stepX = e.clientX - lastTouchMoveX;
+        let stepY = e.clientY - lastTouchMoveY;
+        const safeW = Math.max(280, W);
+        const safeH = Math.max(240, H);
+        let degPerPixelX = viewFOV / safeW;
+        let degPerPixelY = (viewFOV * (safeH / safeW)) / safeH;
+        viewAzimuth = (startAzimuth - dx * degPerPixelX + 360) % 360;
+        viewAltitude = Math.max(
+          -35,
+          Math.min(85, startAltitude + dy * degPerPixelY)
+        );
+        const factor = Math.min(2.0, 16.67 / dt);
+        touchVelAz = touchVelAz * 0.35 + (-stepX * degPerPixelX * factor * 0.78) * 0.65;
+        touchVelAlt = touchVelAlt * 0.35 + (stepY * degPerPixelY * factor * 0.68) * 0.65;
+        lastTouchMoveX = e.clientX;
+        lastTouchMoveY = e.clientY;
+        lastTouchMoveTime = nowT;
+      });
+
+      window.addEventListener("mouseup", () => {
+        if (isDraggingSky) {
+          isDraggingSky = false;
+          if (performance.now() - lastTouchMoveTime > 75) {
+            touchVelAz = 0;
+            touchVelAlt = 0;
+          }
+          if (animWinEl) animWinEl.style.cursor = "grab";
+        }
+      });
+
+      // Zoom molette fluide amorti dans #animation-window
+      if (animWinEl) {
+        animWinEl.addEventListener(
+          "wheel",
+          (e) => {
+            e.preventDefault();
+            targetViewFOV = Math.max(28, Math.min(120, targetViewFOV + e.deltaY * 0.055));
+          },
+          { passive: false }
+        );
+      }
+
+      // Boucle d'inertie 60/120Hz indépendante du taux de rafraîchissement (Souris & Mobile S24)
       function updateTouchInertiaS24() {
         requestAnimationFrame(updateTouchInertiaS24);
-        if (!isDraggingSky && (Math.abs(touchVelAz) > 0.015 || Math.abs(touchVelAlt) > 0.015)) {
-          viewAzimuth = (viewAzimuth + touchVelAz + 360) % 360;
-          viewAltitude = Math.max(-35, Math.min(85, viewAltitude + touchVelAlt));
-          touchVelAz *= 0.92;
-          touchVelAlt *= 0.90;
+        const nowInert = performance.now();
+        const dtInert = Math.min(0.05, Math.max(0.002, (nowInert - prevInertiaMs) * 0.001));
+        prevInertiaMs = nowInert;
+        if (!isDraggingSky && (Math.abs(touchVelAz) > 0.01 || Math.abs(touchVelAlt) > 0.01)) {
+          const step60 = dtInert * 60;
+          viewAzimuth = (viewAzimuth + touchVelAz * step60 + 360) % 360;
+          viewAltitude = Math.max(-35, Math.min(85, viewAltitude + touchVelAlt * step60));
+          touchVelAz *= Math.pow(0.92, step60);
+          touchVelAlt *= Math.pow(0.90, step60);
+          if (Math.abs(touchVelAz) <= 0.01) touchVelAz = 0;
+          if (Math.abs(touchVelAlt) <= 0.01) touchVelAlt = 0;
         }
       }
       requestAnimationFrame(updateTouchInertiaS24);
@@ -25793,10 +25918,10 @@
               initialPinchDistance = Math.hypot(dx, dy);
               initialFOV = viewFOV;
             } else if (e.touches.length === 1) {
-              // Detection du Double-Tap sur S24 pour Zoom Teleobjectif (FOV 100 <-> 46)
+              // Détection du Double-Tap sur S24 pour Zoom Téléobjectif fluide (FOV 98 <-> 46)
               const nowTap = performance.now();
               if (nowTap - lastTapTime3D < 280) {
-                viewFOV = viewFOV > 68 ? 46 : 98;
+                targetViewFOV = targetViewFOV > 68 ? 46 : 98;
                 if (navigator.vibrate) navigator.vibrate(12);
                 lastTapTime3D = 0;
                 return;
@@ -25824,8 +25949,8 @@
               let dx = e.touches[0].clientX - e.touches[1].clientX;
               let dy = e.touches[0].clientY - e.touches[1].clientY;
               let currentDistance = Math.hypot(dx, dy);
-              let scale = initialPinchDistance / currentDistance;
-              viewFOV = Math.max(28, Math.min(120, initialFOV * scale));
+              let scale = initialPinchDistance / Math.max(1, currentDistance);
+              viewFOV = targetViewFOV = Math.max(28, Math.min(120, initialFOV * scale));
             } else if (isDraggingSky && e.touches.length === 1) {
               e.preventDefault();
               const curX = e.touches[0].clientX;
@@ -25838,8 +25963,10 @@
               let stepX = curX - lastTouchMoveX;
               let stepY = curY - lastTouchMoveY;
 
-              let degPerPixelX = viewFOV / Math.max(280, W);
-              let degPerPixelY = (viewFOV * (H / Math.max(280, W))) / Math.max(240, H);
+              const safeW = Math.max(280, W);
+              const safeH = Math.max(240, H);
+              let degPerPixelX = viewFOV / safeW;
+              let degPerPixelY = (viewFOV * (safeH / safeW)) / safeH;
 
               viewAzimuth = (startAzimuth - dx * degPerPixelX + 360) % 360;
               viewAltitude = Math.max(
@@ -25847,10 +25974,10 @@
                 Math.min(85, startAltitude + dy * degPerPixelY)
               );
 
-              // Calculer la vitesse angulaire pour l'inertie 120Hz au relachement
-              const factor = Math.min(2.2, 16.6 / dt);
-              touchVelAz = -stepX * degPerPixelX * factor * 0.85;
-              touchVelAlt = stepY * degPerPixelY * factor * 0.75;
+              // Calculer la vitesse angulaire lissée pour l'inertie 120Hz au relâchement
+              const factor = Math.min(2.2, 16.67 / dt);
+              touchVelAz = touchVelAz * 0.3 + (-stepX * degPerPixelX * factor * 0.85) * 0.7;
+              touchVelAlt = touchVelAlt * 0.3 + (stepY * degPerPixelY * factor * 0.75) * 0.7;
 
               lastTouchMoveX = curX;
               lastTouchMoveY = curY;
@@ -25863,6 +25990,10 @@
         animWinEl.addEventListener("touchend", () => {
           isDraggingSky = false;
           initialPinchDistance = null;
+          if (performance.now() - lastTouchMoveTime > 85) {
+            touchVelAz = 0;
+            touchVelAlt = 0;
+          }
         });
       }
 
@@ -34092,439 +34223,723 @@
         dockPointLight.position.set(0, 22, -6);
         dockGroup.add(dockPointLight);
 
-        // --- 3B. BATMAN EN PATROUILLE NOCTURNE SUR LE QUAI VALERO ---
+        // --- 3B. BATMAN EN PATROUILLE NOCTURNE SUR LE QUAI VALERO (RIG HIÉRARCHIQUE ARTICULÉ AAA) ---
         const batmanGroup = new THREE.Group();
         batmanGroup.position.set(0, 7.35, 0.5);
         dockGroup.add(batmanGroup);
         window.batmanGroup = batmanGroup;
 
-        // Matériaux Batman
-        const batSuitDarkMat = new THREE.MeshLambertMaterial({ color: 0x18181b }); // Noir / gris très sombre
-        const batArmorMat = new THREE.MeshLambertMaterial({ color: 0x27272a });    // Kevlar carbone
+        // Éclairage de découpe héroïque subtil (Rim Light nocturne bleuté clair de lune)
+        const batHeroRimLight = new THREE.PointLight(0x93c5fd, 0.72, 9.5);
+        batHeroRimLight.position.set(0, 2.25, 0.85);
+        batmanGroup.add(batHeroRimLight);
+
+        // Matériaux Batman haute lisibilité nocturne
+        const batSuitDarkMat = new THREE.MeshLambertMaterial({ color: 0x18181b }); // Noir / graphite tactique
+        const batArmorMat = new THREE.MeshLambertMaterial({ color: 0x2d3139 });    // Plaques Kevlar carbone
         const batBeltMat = new THREE.MeshLambertMaterial({ color: 0xfacc15 });     // Ceinture utilitaire dorée
-        const batCapeMat = new THREE.MeshLambertMaterial({ color: 0x09090b, side: THREE.DoubleSide }); // Cape noire
-        const batSkinMat = new THREE.MeshLambertMaterial({ color: 0xfbcfe8 });     // Peau visage (menton)
-        const batEyeMat = new THREE.MeshBasicMaterial({ color: 0xffffff });        // Yeux blancs lumineux
-        const batEmblemMat = new THREE.MeshBasicMaterial({ color: 0x09090b });     // Chauve-souris torse
+        const batCapeMat = new THREE.MeshLambertMaterial({ color: 0x09090b, side: THREE.DoubleSide }); // Cape noire double-face
+        const batSkinMat = new THREE.MeshLambertMaterial({ color: 0xfbcfe8 });     // Menton découvert
+        const batEyeMat = new THREE.MeshBasicMaterial({ color: 0xffffff });        // Lentilles blanches lumineuses
+        const batEmblemMat = new THREE.MeshBasicMaterial({ color: 0x09090b });     // Chauve-souris poitrine
+        const batSparkMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });      // Étincelle de tir du grappin
 
-        // Corps / Torse
-        const batTorso = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.85, 0.42), batArmorMat);
-        batTorso.position.y = 1.35;
-        batmanGroup.add(batTorso);
+        // 1. Groupe Torse articulé à la taille (pivot y = 0.92) : entraîne poitrine, ceinture, tête, bras et cape!
+        const batTorsoGroup = new THREE.Group();
+        batTorsoGroup.position.set(0, 0.92, 0);
+        batmanGroup.add(batTorsoGroup);
 
-        // Plastron & Logo Batman (Ovale jaune + Chauve-souris noire)
+        // Abdomen blindé + Plastron pectoral en V
+        const batAbdomen = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.38, 0.38), batSuitDarkMat);
+        batAbdomen.position.set(0, 0.22, 0);
+        batTorsoGroup.add(batAbdomen);
+
+        const batChest = new THREE.Mesh(new THREE.BoxGeometry(0.76, 0.48, 0.44), batArmorMat);
+        batChest.position.set(0, 0.56, 0.01);
+        batTorsoGroup.add(batChest);
+
+        // Épaulières Kevlar sculptées
+        [-0.42, 0.42].forEach((sx) => {
+          const pauldron = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.16, 0.34), batArmorMat);
+          pauldron.position.set(sx, 0.74, 0);
+          pauldron.rotation.z = sx < 0 ? 0.18 : -0.18;
+          batTorsoGroup.add(pauldron);
+        });
+
+        // Plastron & Emblème Batman (Ovale doré + Chauve-souris noire stylisée solidaire du torse)
         const batChestOval = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.18, 0.18, 0.04, 16),
+          new THREE.CylinderGeometry(0.19, 0.19, 0.04, 20),
           batBeltMat
         );
         batChestOval.rotation.x = Math.PI / 2;
-        batChestOval.position.set(0, 1.48, 0.22);
-        batmanGroup.add(batChestOval);
+        batChestOval.scale.set(1.25, 1, 0.78);
+        batChestOval.position.set(0, 0.58, 0.225);
+        batTorsoGroup.add(batChestOval);
 
-        const batWingLeft = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.08, 0.02), batEmblemMat);
-        batWingLeft.position.set(-0.06, 1.48, 0.24);
-        batmanGroup.add(batWingLeft);
-        const batWingRight = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.08, 0.02), batEmblemMat);
-        batWingRight.position.set(0.06, 1.48, 0.24);
-        batmanGroup.add(batWingRight);
+        const batEmblemCenter = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.11, 0.025), batEmblemMat);
+        batEmblemCenter.position.set(0, 0.58, 0.245);
+        batTorsoGroup.add(batEmblemCenter);
 
-        // Ceinture utilitaire avec capsules / pochettes
-        const batBelt = new THREE.Mesh(new THREE.BoxGeometry(0.76, 0.14, 0.46), batBeltMat);
-        batBelt.position.y = 0.95;
-        batmanGroup.add(batBelt);
+        const batWingLeft = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.075, 0.025), batEmblemMat);
+        batWingLeft.position.set(-0.085, 0.585, 0.245);
+        batWingLeft.rotation.z = -0.14;
+        batTorsoGroup.add(batWingLeft);
 
-        const batBuckle = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.18, 0.5), batBeltMat);
-        batBuckle.position.y = 0.95;
-        batmanGroup.add(batBuckle);
+        const batWingRight = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.075, 0.025), batEmblemMat);
+        batWingRight.position.set(0.085, 0.585, 0.245);
+        batWingRight.rotation.z = 0.14;
+        batTorsoGroup.add(batWingRight);
 
-        for (let pouchX of [-0.28, -0.16, 0.16, 0.28]) {
-          const pouch = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.12, 0.08), batBeltMat);
-          pouch.position.set(pouchX, 0.95, 0.24);
-          batmanGroup.add(pouch);
+        // Ceinture utilitaire dorée avec boucle centrale, capsules cylindriques et étui de grappin
+        const batBelt = new THREE.Mesh(new THREE.BoxGeometry(0.70, 0.13, 0.43), batBeltMat);
+        batBelt.position.set(0, 0.03, 0);
+        batTorsoGroup.add(batBelt);
+
+        const batBuckle = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.16, 0.47), batBeltMat);
+        batBuckle.position.set(0, 0.03, 0.01);
+        batTorsoGroup.add(batBuckle);
+
+        for (let pouchX of [-0.29, -0.20, -0.12, 0.12, 0.20, 0.29]) {
+          const pouch = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.13, 8), batBeltMat);
+          pouch.position.set(pouchX, 0.03, 0.225);
+          batTorsoGroup.add(pouch);
         }
 
-        // Tête / Masque / Capuche (Cowl)
-        const batHead = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.44, 0.42), batSuitDarkMat);
-        batHead.position.y = 1.95;
-        batmanGroup.add(batHead);
+        const holsterGrapnel = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.18, 0.20), batArmorMat);
+        holsterGrapnel.position.set(0.38, -0.02, 0.04);
+        batTorsoGroup.add(holsterGrapnel);
 
-        // Oreilles de chauve-souris pointues
-        const earGeo = new THREE.ConeGeometry(0.07, 0.32, 4);
+        // 2. Groupe Tête / Masque (Cowl) articulé au cou : oreilles, menton et yeux tournent ensemble!
+        const batHeadGroup = new THREE.Group();
+        batHeadGroup.position.set(0, 0.82, 0.01);
+        batTorsoGroup.add(batHeadGroup);
+
+        const batNeck = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.17, 0.14, 10), batSuitDarkMat);
+        batNeck.position.set(0, 0.05, 0);
+        batHeadGroup.add(batNeck);
+
+        const batHead = new THREE.Mesh(new THREE.BoxGeometry(0.41, 0.43, 0.42), batSuitDarkMat);
+        batHead.position.set(0, 0.24, 0);
+        batHeadGroup.add(batHead);
+
+        const batBrow = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.07, 0.06), batSuitDarkMat);
+        batBrow.position.set(0, 0.30, 0.20);
+        batHeadGroup.add(batBrow);
+
+        const earGeo = new THREE.ConeGeometry(0.068, 0.34, 4);
         const batEarLeft = new THREE.Mesh(earGeo, batSuitDarkMat);
-        batEarLeft.position.set(-0.16, 2.26, 0);
-        batmanGroup.add(batEarLeft);
+        batEarLeft.position.set(-0.16, 0.56, -0.02);
+        batEarLeft.rotation.x = -0.08;
+        batHeadGroup.add(batEarLeft);
 
         const batEarRight = new THREE.Mesh(earGeo, batSuitDarkMat);
-        batEarRight.position.set(0.16, 2.26, 0);
-        batmanGroup.add(batEarRight);
+        batEarRight.position.set(0.16, 0.56, -0.02);
+        batEarRight.rotation.x = -0.08;
+        batHeadGroup.add(batEarRight);
 
-        // Menton / Bouche découverte
         const batChin = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.14, 0.06), batSkinMat);
-        batChin.position.set(0, 1.83, 0.2);
-        batmanGroup.add(batChin);
+        batChin.position.set(0, 0.11, 0.195);
+        batHeadGroup.add(batChin);
 
-        // Yeux blancs emblématiques (fentes brillantes dans le masque)
-        [-0.1, 0.1].forEach((eyeX) => {
-          const batEye = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.035, 0.04), batEyeMat);
-          batEye.position.set(eyeX, 1.97, 0.21);
-          batmanGroup.add(batEye);
+        [-0.095, 0.095].forEach((eyeX) => {
+          const batEye = new THREE.Mesh(new THREE.BoxGeometry(0.085, 0.034, 0.04), batEyeMat);
+          batEye.position.set(eyeX, 0.255, 0.205);
+          batEye.rotation.z = eyeX < 0 ? -0.15 : 0.15;
+          batHeadGroup.add(batEye);
         });
 
-        // Bras gauche & droit articulés (épaules, gantelets avec pointes de combat)
+        // 3. Bras gauche & droit à double articulation (Épaule + Coude + Gantelets à 3 lames)
         const batArmLeftGroup = new THREE.Group();
-        batArmLeftGroup.position.set(-0.46, 1.68, 0);
-        batmanGroup.add(batArmLeftGroup);
-        const batArmLeft = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.65, 0.22), batSuitDarkMat);
-        batArmLeft.position.y = -0.28;
-        batArmLeftGroup.add(batArmLeft);
-        const batFinLeft = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.18, 3), batSuitDarkMat);
-        batFinLeft.rotation.z = Math.PI / 2;
-        batFinLeft.position.set(-0.12, -0.38, 0);
-        batArmLeftGroup.add(batFinLeft);
+        batArmLeftGroup.position.set(-0.47, 0.74, 0);
+        batTorsoGroup.add(batArmLeftGroup);
+
+        const batUpperArmL = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.34, 0.21), batSuitDarkMat);
+        batUpperArmL.position.y = -0.16;
+        batArmLeftGroup.add(batUpperArmL);
+
+        const batElbowLeftGroup = new THREE.Group();
+        batElbowLeftGroup.position.set(0, -0.33, 0);
+        batArmLeftGroup.add(batElbowLeftGroup);
+
+        const batForearmL = new THREE.Mesh(new THREE.BoxGeometry(0.19, 0.34, 0.20), batArmorMat);
+        batForearmL.position.y = -0.16;
+        batElbowLeftGroup.add(batForearmL);
+
+        [-0.08, -0.16, -0.24].forEach((fy) => {
+          const finL = new THREE.Mesh(new THREE.ConeGeometry(0.042, 0.16, 3), batSuitDarkMat);
+          finL.rotation.z = Math.PI / 2 + 0.22;
+          finL.position.set(-0.12, fy, -0.02);
+          batElbowLeftGroup.add(finL);
+        });
 
         const batArmRightGroup = new THREE.Group();
-        batArmRightGroup.position.set(0.46, 1.68, 0);
-        batmanGroup.add(batArmRightGroup);
-        const batArmRight = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.65, 0.22), batSuitDarkMat);
-        batArmRight.position.y = -0.28;
-        batArmRightGroup.add(batArmRight);
-        const batFinRight = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.18, 3), batSuitDarkMat);
-        batFinRight.rotation.z = -Math.PI / 2;
-        batFinRight.position.set(0.12, -0.38, 0);
-        batArmRightGroup.add(batFinRight);
+        batArmRightGroup.position.set(0.47, 0.74, 0);
+        batTorsoGroup.add(batArmRightGroup);
 
-        // Grappin tactique (Grapnel Gun)
+        const batUpperArmR = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.34, 0.21), batSuitDarkMat);
+        batUpperArmR.position.y = -0.16;
+        batArmRightGroup.add(batUpperArmR);
+
+        const batElbowRightGroup = new THREE.Group();
+        batElbowRightGroup.position.set(0, -0.33, 0);
+        batArmRightGroup.add(batElbowRightGroup);
+
+        const batForearmR = new THREE.Mesh(new THREE.BoxGeometry(0.19, 0.34, 0.20), batArmorMat);
+        batForearmR.position.y = -0.16;
+        batElbowRightGroup.add(batForearmR);
+
+        [-0.08, -0.16, -0.24].forEach((fy) => {
+          const finR = new THREE.Mesh(new THREE.ConeGeometry(0.042, 0.16, 3), batSuitDarkMat);
+          finR.rotation.z = -Math.PI / 2 - 0.22;
+          finR.position.set(0.12, fy, -0.02);
+          batElbowRightGroup.add(finR);
+        });
+
+        // Pistolet-Grappin tactique (Grapnel Gun) en main droite + bouche à feu avec flash lumineux
         const grapnelGroup = new THREE.Group();
-        grapnelGroup.position.set(0, -0.62, 0.1);
-        const grapnelBody = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.16, 0.26), batArmorMat);
+        grapnelGroup.position.set(0, -0.33, 0.10);
+        const grapnelBody = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.15, 0.26), batArmorMat);
         grapnelGroup.add(grapnelBody);
-        const grapnelBarrel = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.24, 8), batSuitDarkMat);
+        const grapnelBarrel = new THREE.Mesh(new THREE.CylinderGeometry(0.038, 0.038, 0.26, 8), batSuitDarkMat);
         grapnelBarrel.rotation.x = Math.PI / 2;
-        grapnelBarrel.position.set(0, 0.04, 0.18);
+        grapnelBarrel.position.set(0, 0.04, 0.19);
         grapnelGroup.add(grapnelBarrel);
-        const grapnelSpool = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.08, 12), batBeltMat);
+        const grapnelSpool = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.09, 12), batBeltMat);
         grapnelSpool.rotation.z = Math.PI / 2;
-        grapnelSpool.position.set(0, -0.06, 0.02);
+        grapnelSpool.position.set(0, -0.05, 0.03);
         grapnelGroup.add(grapnelSpool);
-        batArmRightGroup.add(grapnelGroup);
 
-        // Jambes gauche & droite articulées
+        const grapnelMuzzleAnchor = new THREE.Object3D();
+        grapnelMuzzleAnchor.position.set(0, 0.04, 0.32);
+        grapnelGroup.add(grapnelMuzzleAnchor);
+
+        const batGrappleSpark = new THREE.Mesh(new THREE.OctahedronGeometry(0.14, 0), batSparkMat);
+        batGrappleSpark.position.set(0, 0.04, 0.34);
+        batGrappleSpark.visible = false;
+        grapnelGroup.add(batGrappleSpark);
+
+        const batGrappleFlashLight = new THREE.PointLight(0xfacc15, 0, 12);
+        batGrappleFlashLight.position.set(0, 0.06, 0.36);
+        grapnelGroup.add(batGrappleFlashLight);
+
+        batElbowRightGroup.add(grapnelGroup);
+        grapnelGroup.visible = false;
+
+        // Câble Kevlar doré 3D reliant le pistolet-grappin à la tour incendie Est (+17.5m, y = 21.8m, z = -1.2m)
+        const batGrappleCableGeo = new THREE.BufferGeometry().setFromPoints([
+          new THREE.Vector3(2.2, 9.2, -3.8),
+          new THREE.Vector3(17.5, 21.8, -1.2),
+        ]);
+        const batGrappleCableMat = new THREE.LineBasicMaterial({
+          color: 0xfde047,
+          transparent: true,
+          opacity: 0.92,
+        });
+        const batGrappleCableLine = new THREE.Line(batGrappleCableGeo, batGrappleCableMat);
+        batGrappleCableLine.visible = false;
+        batGrappleCableLine.frustumCulled = false;
+        dockGroup.add(batGrappleCableLine);
+
+        const batGrappleHookMesh = new THREE.Mesh(new THREE.ConeGeometry(0.11, 0.28, 4), batBeltMat);
+        batGrappleHookMesh.visible = false;
+        dockGroup.add(batGrappleHookMesh);
+
+        // 4. Jambes gauche & droite à double articulation (Hanche + Genou + Botte blindée)
         const batLegLeftGroup = new THREE.Group();
-        batLegLeftGroup.position.set(-0.2, 0.88, 0);
+        batLegLeftGroup.position.set(-0.20, 0.90, 0);
         batmanGroup.add(batLegLeftGroup);
-        const batLegLeft = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.85, 0.26), batSuitDarkMat);
-        batLegLeft.position.y = -0.42;
-        batLegLeftGroup.add(batLegLeft);
-        const batBootLeft = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.18, 0.36), batArmorMat);
-        batBootLeft.position.set(0, -0.82, 0.05);
-        batLegLeftGroup.add(batBootLeft);
+
+        const batThighL = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.45, 0.26), batSuitDarkMat);
+        batThighL.position.y = -0.22;
+        batLegLeftGroup.add(batThighL);
+
+        const batKneePadL = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.12, 0.08), batArmorMat);
+        batKneePadL.position.set(0, -0.43, 0.13);
+        batLegLeftGroup.add(batKneePadL);
+
+        const batKneeLeftGroup = new THREE.Group();
+        batKneeLeftGroup.position.set(0, -0.44, 0);
+        batLegLeftGroup.add(batKneeLeftGroup);
+
+        const batShinL = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.42, 0.24), batSuitDarkMat);
+        batShinL.position.y = -0.20;
+        batKneeLeftGroup.add(batShinL);
+
+        const batBootLeft = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.16, 0.36), batArmorMat);
+        batBootLeft.position.set(0, -0.38, 0.05);
+        batKneeLeftGroup.add(batBootLeft);
 
         const batLegRightGroup = new THREE.Group();
-        batLegRightGroup.position.set(0.2, 0.88, 0);
+        batLegRightGroup.position.set(0.20, 0.90, 0);
         batmanGroup.add(batLegRightGroup);
-        const batLegRight = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.85, 0.26), batSuitDarkMat);
-        batLegRight.position.y = -0.42;
-        batLegRightGroup.add(batLegRight);
-        const batBootRight = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.18, 0.36), batArmorMat);
-        batBootRight.position.set(0, -0.82, 0.05);
-        batLegRightGroup.add(batBootRight);
 
-        // Cape majestueuse flottante (en deux pans articulés pour le vent et la course)
+        const batThighR = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.45, 0.26), batSuitDarkMat);
+        batThighR.position.y = -0.22;
+        batLegRightGroup.add(batThighR);
+
+        const batKneePadR = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.12, 0.08), batArmorMat);
+        batKneePadR.position.set(0, -0.43, 0.13);
+        batLegRightGroup.add(batKneePadR);
+
+        const batKneeRightGroup = new THREE.Group();
+        batKneeRightGroup.position.set(0, -0.44, 0);
+        batLegRightGroup.add(batKneeRightGroup);
+
+        const batShinR = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.42, 0.24), batSuitDarkMat);
+        batShinR.position.y = -0.20;
+        batKneeRightGroup.add(batShinR);
+
+        const batBootRight = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.16, 0.36), batArmorMat);
+        batBootRight.position.set(0, -0.38, 0.05);
+        batKneeRightGroup.add(batBootRight);
+
+        // 5. Cape majestueuse à 3 segments ondulants et ourlet festonné en ailes de chauve-souris
+        // (Note : en repère droit Three.js, rotation.x > 0 projette la cape vers -Z, c'est-à-dire DERRIÈRE Batman!)
         const batmanCapeGroup = new THREE.Group();
-        batmanCapeGroup.position.set(0, 1.72, -0.22);
-        batmanGroup.add(batmanCapeGroup);
+        batmanCapeGroup.position.set(0, 0.80, -0.21);
+        batTorsoGroup.add(batmanCapeGroup);
 
-        const batCapeUpper = new THREE.Mesh(
-          new THREE.BoxGeometry(0.78, 0.8, 0.04),
-          batCapeMat
-        );
-        batCapeUpper.position.y = -0.38;
+        const batCapeUpper = new THREE.Mesh(new THREE.BoxGeometry(0.82, 0.56, 0.035), batCapeMat);
+        batCapeUpper.position.set(0, -0.27, 0);
         batmanCapeGroup.add(batCapeUpper);
 
-        const batmanCapeLower = new THREE.Mesh(
-          new THREE.BoxGeometry(0.92, 0.85, 0.04),
-          batCapeMat
-        );
-        batmanCapeLower.position.set(0, -1.05, -0.1);
-        batmanCapeGroup.add(batmanCapeLower);
+        const batCapeMidGroup = new THREE.Group();
+        batCapeMidGroup.position.set(0, -0.54, 0);
+        batmanCapeGroup.add(batCapeMidGroup);
 
-        // Fonction d'animation de Batman : Grande patrouille panoramique sur l'ensemble du Quai Valero
-        // (Ducs-d'Albe Ouest à -34m, passerelles suspendues, front de mer, Duc-d'Albe Est à +34m)
-        // Toutes les actions clés (vigie, saut acrobatique, accroupi héroïque, tir grappin) sont positionnées
-        // sur le bord d'eau et les îlots ouverts, 100% dégagées de toute cabane ou obstacle visuel !
-        function updateBatman3D(timeSec, nightFlag) {
+        const batCapeMid = new THREE.Mesh(new THREE.BoxGeometry(0.98, 0.56, 0.032), batCapeMat);
+        batCapeMid.position.set(0, -0.27, 0);
+        batCapeMidGroup.add(batCapeMid);
+
+        const batCapeLowerGroup = new THREE.Group();
+        batCapeLowerGroup.position.set(0, -0.54, 0);
+        batCapeMidGroup.add(batCapeLowerGroup);
+
+        const batmanCapeLower = new THREE.Mesh(new THREE.BoxGeometry(1.16, 0.52, 0.028), batCapeMat);
+        batmanCapeLower.position.set(0, -0.25, 0);
+        batCapeLowerGroup.add(batmanCapeLower);
+
+        // 5 pointes festonnées iconiques au bas de la cape
+        [-0.48, -0.24, 0, 0.24, 0.48].forEach((tipX, idx) => {
+          const tipLen = idx % 2 === 0 ? 0.24 : 0.17;
+          const tip = new THREE.Mesh(new THREE.ConeGeometry(0.11, tipLen, 3), batCapeMat);
+          tip.rotation.x = Math.PI;
+          tip.scale.set(1.1, 1, 0.25);
+          tip.position.set(tipX, -0.50 - tipLen * 0.42, 0);
+          batCapeLowerGroup.add(tip);
+        });
+
+        // Vecteurs pré-alloués pour le câble du pistolet-grappin (zéro allocation GC par frame)
+        const batMuzzleWorldVec = new THREE.Vector3();
+        const batMuzzleDockLocalVec = new THREE.Vector3();
+        const batTowerAnchorLocal = new THREE.Vector3(17.5, 21.8, -1.2);
+        const batHookCurLocalVec = new THREE.Vector3();
+        let batRigInitialized = false;
+
+        function dampScalar(cur, target, lambda, dt) {
+          return cur + (target - cur) * (1 - Math.exp(-lambda * dt));
+        }
+        function dampRadians(cur, target, lambda, dt) {
+          let diff = target - cur;
+          while (diff > Math.PI) diff -= Math.PI * 2;
+          while (diff < -Math.PI) diff += Math.PI * 2;
+          return cur + diff * (1 - Math.exp(-lambda * dt));
+        }
+
+        // Fonction d'animation de Batman : Grande patrouille panoramique sur l'ensemble du Quai Valero (68m)
+        // (Ducs-d'Albe Ouest à -34m, passerelles suspendues, front de mer -3.8m, Duc-d'Albe Est à +34m)
+        // Toutes les actions clés (vigie, saut acrobatique, accroupi héroïque, tir grappin réel) restent 100% dégagées des cabanes !
+        function updateBatman3D(timeSec, nightFlag, dtArg) {
           const isSignal = (typeof isBatSignalActive === "function" && isBatSignalActive());
           const isAct = nightFlag || !!window.forceBatman3D || isSignal;
           batmanGroup.visible = isAct;
-          if (!isAct) return;
+          if (!isAct) {
+            batGrappleCableLine.visible = false;
+            batGrappleHookMesh.visible = false;
+            batRigInitialized = false;
+            return;
+          }
 
+          const dt = typeof dtArg === "number" && dtArg > 0 ? Math.min(0.08, dtArg) : 0.016;
           const cycleTime = 64.0;
-          const tau = (timeSec % cycleTime);
+          const tau = timeSec % cycleTime;
 
-          // Force du vent pour la physique de la cape
+          // Force du vent pour la physique ondulatoire de la cape à 3 segments
           const windKmh = (typeof currentConditions !== "undefined" && currentConditions.wind) ? currentConditions.wind : 16;
           const windKnots = windKmh / 1.852;
           const windFactor = Math.min(1.5, Math.max(0.3, windKnots / 15.0));
 
-          // Helper pour la foulée athlétique de course
-          function runGait(freq, dirFactor) {
-            const stride = Math.sin(tau * freq);
-            batLegLeftGroup.rotation.x = stride * 0.88;
-            batLegLeftGroup.rotation.y = 0;
-            batLegLeftGroup.rotation.z = -0.04;
-            batLegLeftGroup.position.set(-0.2, 0.88, 0);
+          // Cibles articulaires par défaut (posture debout équilibrée)
+          let targetPosX = batmanGroup.position.x;
+          let targetPosY = 7.35;
+          let targetPosZ = batmanGroup.position.z;
+          let targetRotY = batmanGroup.rotation.y;
 
-            batLegRightGroup.rotation.x = -stride * 0.88;
-            batLegRightGroup.rotation.y = 0;
-            batLegRightGroup.rotation.z = 0.04;
-            batLegRightGroup.position.set(0.2, 0.88, 0);
+          let tTorsoX = 0.04, tTorsoY = 0, tTorsoZ = 0;
+          let tHeadX = -0.05, tHeadY = 0;
+          let tHipLX = 0, tHipLZ = -0.05, tKneeLX = 0.04;
+          let tHipRX = 0, tHipRZ = 0.05, tKneeRX = 0.04;
+          let tArmLX = 0.12, tArmLZ = -0.22, tElbowLX = -0.28;
+          let tArmRX = 0.12, tArmRZ = 0.22, tElbowRX = -0.28;
+          let tCape1X = 0.22, tCape2X = 0.18, tCape3X = 0.16, tCapeTwistY = 0;
+          let drawGrapnel = false;
+          let grappleShotActive = false;
+          let grappleExt = 0;
+          let muzzleSparkAmt = 0;
 
-            batArmLeftGroup.rotation.x = -stride * 0.95;
-            batArmLeftGroup.rotation.y = 0;
-            batArmLeftGroup.rotation.z = 0.12 * dirFactor;
-            batArmLeftGroup.position.set(-0.46, 1.68, 0);
+          // Foulée biomécanique réaliste (hanche + flexion du genou au retour + balancier des coudes + onde de cape arrière)
+          function computeRunPose(freq, dirFactor) {
+            const ph = tau * freq;
+            const sL = Math.sin(ph);
+            const sR = -sL;
+            // En repère Three.js : rotation.x < 0 lève la cuisse vers l'avant (+Z), knee.rotation.x > 0 plie le tibia vers l'arrière (-Z)
+            tHipLX = -sL * 0.92;
+            tKneeLX = Math.max(0.08, -Math.cos(ph) * 0.78 + (sL < 0 ? 0.42 : 0.12));
+            tHipLZ = -0.04;
 
-            batArmRightGroup.rotation.x = stride * 0.95;
-            batArmRightGroup.rotation.y = 0;
-            batArmRightGroup.rotation.z = -0.12 * dirFactor;
-            batArmRightGroup.position.set(0.46, 1.68, 0);
+            tHipRX = -sR * 0.92;
+            tKneeRX = Math.max(0.08, Math.cos(ph) * 0.78 + (sR < 0 ? 0.42 : 0.12));
+            tHipRZ = 0.04;
 
-            batTorso.rotation.x = 0.20;
-            batTorso.rotation.y = 0;
-            batHead.rotation.x = -0.12;
-            batHead.rotation.y = 0;
+            // Balancier croisé des bras avec coudes fléchis à ~75°
+            tArmLX = sL * 0.88 + 0.10;
+            tArmLZ = -0.14;
+            tElbowLX = -1.18 - Math.max(0, -sL) * 0.35;
 
-            const capeWind = Math.sin(tau * 13.0) * 0.20 + Math.cos(tau * 19.0) * 0.14;
-            batmanCapeGroup.rotation.x = -0.70 - Math.abs(stride) * 0.42 - windFactor * 0.18 + capeWind;
-            batmanCapeLower.rotation.x = -0.42 + Math.sin(tau * 16.0) * 0.32;
-            return Math.abs(stride) * 0.14;
+            tArmRX = sR * 0.88 + 0.10;
+            tArmRZ = 0.14;
+            tElbowRX = -1.18 - Math.max(0, -sR) * 0.35;
+
+            // Inclinaison athlétique du buste vers l'avant et contre-rotation d'épaules
+            tTorsoX = 0.24;
+            tTorsoY = sL * 0.11 * dirFactor;
+            tHeadX = -0.18;
+            tHeadY = -tTorsoY * 0.6;
+
+            // Onde propagée le long des 3 pans de la cape flottant DERRIÈRE Batman (rotation.x > 0)
+            const w1 = Math.sin(tau * 13.5) * 0.12;
+            const w2 = Math.sin(tau * 13.5 - 1.1) * 0.18;
+            const w3 = Math.sin(tau * 13.5 - 2.2) * 0.24;
+            tCape1X = 0.78 + Math.abs(sL) * 0.22 + windFactor * 0.14 + w1;
+            tCape2X = 0.24 + w2;
+            tCape3X = 0.18 + w3;
+            tCapeTwistY = Math.cos(ph) * 0.12;
+
+            // Impulsion verticale à chaque foulée (2 rebonds par cycle complet)
+            return Math.abs(Math.cos(ph)) * 0.15;
           }
 
           // -------------------------------------------------------------------------
           // PHASE 1 : DUC-D'ALBE OUEST EXTRÊME (-34m) — VIGIE & SUPERHERO LANDING (0.0s à 9.0s)
-          // Emplacement totalement dégagé au-dessus des eaux face aux ponts de Québec
           // -------------------------------------------------------------------------
           if (tau < 9.0) {
             window.batmanActionStatus = "Vigie & Accroupi héroïque (Duc-d'Albe Ouest • -34m)";
-            batmanGroup.position.set(-34.0, 7.35, -2.8);
-            batmanGroup.rotation.y = -Math.PI / 2; // Regard vers l'Ouest (Ponts de Québec)
+            targetPosX = -34.0;
+            targetPosZ = -2.8;
+            targetRotY = -Math.PI / 2; // Face aux Ponts de Québec
 
             if (tau < 5.0) {
-              // Accroupi tactique héroïque (Superhero Crouch)
               const u = tau / 5.0;
-              const crouchProg = u < 0.22 ? (u / 0.22) : (u > 0.80 ? ((1.0 - u) / 0.20) : 1.0);
-              batmanGroup.position.y = 7.35 - crouchProg * 0.48;
+              const rawCrouch = u < 0.22 ? (u / 0.22) : (u > 0.78 ? ((1.0 - u) / 0.22) : 1.0);
+              const crouchProg = rawCrouch * rawCrouch * (3 - 2 * rawCrouch);
+              targetPosY = 7.35 - crouchProg * 0.46;
 
-              batLegRightGroup.rotation.x = 1.15 * crouchProg;
-              batLegLeftGroup.rotation.x = 0.45 * crouchProg;
-              batLegRightGroup.position.y = 0.88 - crouchProg * 0.18;
-              batLegLeftGroup.position.y = 0.88 - crouchProg * 0.10;
+              // Genou gauche fléchi devant, genou droit posé bas, poing droit en appui au sol!
+              tHipLX = -1.18 * crouchProg;
+              tKneeLX = 1.48 * crouchProg;
+              tHipRX = -0.42 * crouchProg;
+              tKneeRX = 1.35 * crouchProg;
 
-              batTorso.rotation.x = 0.48 * crouchProg;
-              batHead.rotation.x = -0.42 * crouchProg + Math.sin(tau * 1.5) * 0.08;
-              batHead.rotation.y = Math.sin(tau * 1.2) * 0.25;
+              tTorsoX = 0.52 * crouchProg;
+              tTorsoY = -0.16 * crouchProg;
+              tHeadX = -0.46 * crouchProg + Math.sin(tau * 1.6) * 0.06;
+              tHeadY = 0.16 * crouchProg + Math.sin(tau * 1.2) * 0.26;
 
-              // Poing droit au sol, bras gauche en appui
-              batArmRightGroup.rotation.x = 0.85 * crouchProg;
-              batArmRightGroup.rotation.z = 0.18 * crouchProg;
-              batArmRightGroup.position.y = 1.68 - crouchProg * 0.22;
+              tArmRX = -0.58 * crouchProg;
+              tArmRZ = 0.12 * crouchProg;
+              tElbowRX = -0.22 * crouchProg;
 
-              batArmLeftGroup.rotation.x = 0.40 * crouchProg;
-              batArmLeftGroup.rotation.z = -0.32 * crouchProg;
-              batArmLeftGroup.position.y = 1.68 - crouchProg * 0.12;
+              tArmLX = 0.35 * crouchProg;
+              tArmLZ = -0.38 * crouchProg;
+              tElbowLX = -0.65 * crouchProg;
 
-              batmanCapeGroup.rotation.x = -0.06 - Math.sin(tau * 3.0) * 0.08;
-              batmanCapeLower.rotation.x = -0.10 + Math.sin(tau * 3.8) * 0.12;
+              tCape1X = 0.18 + crouchProg * 0.14 + Math.sin(tau * 3.2) * 0.06;
+              tCape2X = 0.26 + Math.sin(tau * 3.2 - 0.9) * 0.09;
+              tCape3X = 0.22 + Math.sin(tau * 3.2 - 1.8) * 0.12;
             } else {
-              // Se relève fièrement, mains à la ceinture, cape au vent
+              // Debout héroïque face aux ponts, mains près de la ceinture, cape gonflée par le vent du fleuve
               const u = (tau - 5.0) / 4.0;
-              batmanGroup.position.y = 7.35;
-              batLegLeftGroup.rotation.set(0, 0, -0.06);
-              batLegRightGroup.rotation.set(0, 0, 0.06);
-              batLegLeftGroup.position.set(-0.2, 0.88, 0);
-              batLegRightGroup.position.set(0.2, 0.88, 0);
+              tTorsoX = 0.04;
+              tHeadX = -0.06;
+              tHeadY = Math.sin((tau - 5.0) * 1.8) * 0.36;
+              tArmLX = 0.16; tArmLZ = -0.26; tElbowLX = -0.45;
+              tArmRX = 0.16; tArmRZ = 0.26; tElbowRX = -0.45;
 
-              batArmLeftGroup.rotation.set(-0.16, 0, -0.26);
-              batArmRightGroup.rotation.set(-0.16, 0, 0.26);
-              batArmLeftGroup.position.set(-0.46, 1.68, 0);
-              batArmRightGroup.position.set(0.46, 1.68, 0);
+              tCape1X = 0.32 + windFactor * 0.20 + Math.sin(tau * 4.6) * 0.10;
+              tCape2X = 0.24 + windFactor * 0.14 + Math.sin(tau * 4.6 - 1.0) * 0.15;
+              tCape3X = 0.20 + Math.sin(tau * 4.6 - 2.0) * 0.20;
+              tCapeTwistY = Math.cos(tau * 3.1) * 0.10;
 
-              batTorso.rotation.x = 0.04;
-              batHead.rotation.x = -0.06;
-              batHead.rotation.y = Math.sin((tau - 5.0) * 1.8) * 0.35;
-
-              const capeFlap = Math.sin(tau * 5.0) * 0.16 + Math.cos(tau * 7.2) * 0.10;
-              batmanCapeGroup.rotation.x = -0.32 - windFactor * 0.22 + capeFlap;
-              batmanCapeLower.rotation.x = -0.36 - windFactor * 0.30 + Math.sin(tau * 5.5) * 0.18;
-
-              // Rotation progressive vers l'Est avant le départ
-              if (u > 0.7) {
-                const turnProg = (u - 0.7) / 0.3;
-                batmanGroup.rotation.y = -Math.PI / 2 + turnProg * Math.PI;
+              if (u > 0.72) {
+                const turnProg = (u - 0.72) / 0.28;
+                const sTurn = turnProg * turnProg * (3 - 2 * turnProg);
+                targetRotY = -Math.PI / 2 + sTurn * Math.PI;
               }
             }
           }
           // -------------------------------------------------------------------------
           // PHASE 2 : SPRINT SUR LES PASSERELLES SUSPENDUES OUEST (-34m -> -2m) (9.0s à 19.0s)
-          // Course au-dessus de l'eau reliant les ducs-d'Albe à la plateforme centrale
           // -------------------------------------------------------------------------
           else if (tau < 19.0) {
             window.batmanActionStatus = "Sprint sur passerelle suspendue Ouest (Fleuve)";
             const u = (tau - 9.0) / 10.0;
-            const curX = -34.0 + u * 32.0; // De -34m à -2m
-            const curZ = -2.8 - u * 1.0;   // S'aligne vers le bord frontal -3.8m
-            batmanGroup.position.set(curX, 7.35, curZ);
-            batmanGroup.rotation.y = Math.PI / 2; // Course vers l'Est
-
-            const bounce = runGait(15.2, 1.0);
-            batmanGroup.position.y = 7.35 + bounce;
+            targetPosX = -34.0 + u * 32.0;
+            targetPosZ = -2.8 - u * 1.0;
+            targetRotY = Math.PI / 2;
+            targetPosY = 7.35 + computeRunPose(14.8, 1.0);
           }
           // -------------------------------------------------------------------------
           // PHASE 3 : BORD FRONTAL DU QUAI & GRAND SAUT ACROBATIQUE / PARKOUR (19.0s à 25.0s)
-          // En plein front de mer (-2m -> +2m à z = -3.8m), 100% visible devant les bras Chiksan
           // -------------------------------------------------------------------------
           else if (tau < 25.0) {
             window.batmanActionStatus = "Saut acrobatique / Parkour (Front du Quai)";
-            const u = (tau - 19.0) / 6.0;
-            batmanGroup.rotation.y = Math.PI / 2;
+            targetPosZ = -3.8;
+            targetRotY = Math.PI / 2;
 
             if (tau >= 20.5 && tau <= 23.2) {
-              // Saut spectaculaire au-dessus des tuyauteries et bordures de quai
               const ju = (tau - 20.5) / 2.7;
-              const curX = -1.0 + ju * 2.8;
-              const jumpH = Math.sin(ju * Math.PI) * 1.55; // 1.55m de détente verticale !
-              batmanGroup.position.set(curX, 7.35 + jumpH, -3.8);
+              targetPosX = -1.0 + ju * 2.8;
+              const jumpArc = Math.sin(ju * Math.PI);
+              targetPosY = 7.35 + jumpArc * 1.65;
 
-              batLegLeftGroup.rotation.x = -1.15;
-              batLegRightGroup.rotation.x = -0.92;
-              batArmLeftGroup.rotation.set(-0.35, 0, -0.72);
-              batArmRightGroup.rotation.set(-0.35, 0, 0.72);
-              batTorso.rotation.x = 0.35;
-              batHead.rotation.x = -0.28;
+              // Jambes groupées dynamiquement en plein vol, bras déployés en ailes de chauve-souris
+              tHipLX = -1.25 * jumpArc - 0.25;
+              tKneeLX = 1.35 * jumpArc + 0.20;
+              tHipRX = -0.82 * jumpArc - 0.20;
+              tKneeRX = 1.10 * jumpArc + 0.20;
 
-              // Cape flottant horizontalement comme des ailes déployées
-              batmanCapeGroup.rotation.x = -1.25;
-              batmanCapeLower.rotation.x = -0.95;
+              tArmLX = 0.28; tArmLZ = -0.95 * jumpArc - 0.25; tElbowLX = -0.35;
+              tArmRX = 0.28; tArmRZ = 0.95 * jumpArc + 0.25; tElbowRX = -0.35;
+              tTorsoX = 0.36;
+              tHeadX = -0.28;
+
+              // Cape déployée horizontalement en planeur derrière Batman
+              tCape1X = 1.18;
+              tCape2X = 0.22 + Math.sin(tau * 14.0) * 0.14;
+              tCape3X = 0.16 + Math.cos(tau * 14.0) * 0.18;
             } else {
-              const curX = tau < 20.5 ? (-2.0 + ((tau - 19.0) / 1.5) * 1.0) : (1.8 + ((tau - 23.2) / 1.8) * 0.4);
-              batmanGroup.position.set(curX, 7.35, -3.8);
-              const bounce = runGait(14.0, 1.0);
-              batmanGroup.position.y = 7.35 + bounce;
+              targetPosX = tau < 20.5
+                ? (-2.0 + ((tau - 19.0) / 1.5) * 1.0)
+                : (1.8 + ((tau - 23.2) / 1.8) * 0.4);
+              targetPosY = 7.35 + computeRunPose(14.2, 1.0);
             }
           }
           // -------------------------------------------------------------------------
-          // PHASE 4 : VIGIE AU BORD DE L'EAU & VISÉE AU GRAPPIN (BAT-SIGNAL) (25.0s à 37.0s)
-          // Emplacement : x = 2.0m, z = -3.8m (Bord jaune ouvert, devant toutes les cabanes !)
+          // PHASE 4 : VIGIE AU BORD DE L'EAU, OBSERVATION BAT-SIGNAL & TIR AU GRAPPIN (25.0s à 37.0s)
+          // Emplacement : x = 2.2m, z = -3.8m (100% dégagé devant les cabanes)
           // -------------------------------------------------------------------------
           else if (tau < 37.0) {
-            batmanGroup.position.set(2.2, 7.35, -3.8);
+            targetPosX = 2.2;
+            targetPosZ = -3.8;
 
-            if (tau < 30.5) {
+            if (tau < 30.2) {
               window.batmanActionStatus = "Vigie au bord du quai (Face au chenal maritime)";
-              const u = (tau - 25.0) / 5.5;
-              // Rotation face au fleuve
-              batmanGroup.rotation.y = Math.PI / 2 + Math.min(1.0, u * 2.5) * (Math.PI / 2);
+              targetRotY = Math.PI; // Face au fleuve et au pétrolier
+              tTorsoX = 0.05;
+              tArmLX = 0.14; tArmLZ = -0.24; tElbowLX = -0.48;
+              tArmRX = 0.14; tArmRZ = 0.24; tElbowRX = -0.48;
 
-              batLegLeftGroup.rotation.set(0, 0, -0.06);
-              batLegRightGroup.rotation.set(0, 0, 0.06);
-              batArmLeftGroup.rotation.set(-0.14, 0, -0.24);
-              batArmRightGroup.rotation.set(-0.14, 0, 0.24);
-              batTorso.rotation.x = 0.04;
+              const scan = Math.sin((tau - 25.0) * 1.55);
+              tHeadY = scan * 0.46;
+              tHeadX = -0.08 + Math.sin(tau * 1.3) * 0.05;
 
-              // Balayage de la baie par le regard
-              const scan = Math.sin((tau - 25.0) * 1.6);
-              batHead.rotation.y = scan * 0.45;
-              batHead.rotation.x = -0.08 + Math.sin(tau * 1.2) * 0.05;
+              tCape1X = 0.28 + windFactor * 0.18 + Math.sin(tau * 4.2) * 0.09;
+              tCape2X = 0.22 + windFactor * 0.14 + Math.sin(tau * 4.2 - 1.0) * 0.13;
+              tCape3X = 0.18 + Math.sin(tau * 4.2 - 2.0) * 0.17;
+            } else if (tau < 32.8) {
+              window.batmanActionStatus = "Observation du Bat-Signal dans les nuages (Rive-Sud)";
+              // Pivote vers le ciel de la Rive-Sud (Az 175° -> z > 0 dans dockGroup)
+              targetRotY = -0.18;
+              tTorsoX = -0.10;
+              tHeadX = -0.52 + Math.sin(tau * 2.0) * 0.04;
+              tHeadY = 0.08;
+              tArmLX = 0.14; tArmLZ = -0.22; tElbowLX = -0.45;
+              tArmRX = 0.10; tArmRZ = 0.26; tElbowRX = -0.75; // Main droite sur l'étui du grappin
 
-              const capeFlap = Math.sin(tau * 4.2) * 0.14;
-              batmanCapeGroup.rotation.x = -0.26 - windFactor * 0.20 + capeFlap;
-              batmanCapeLower.rotation.x = -0.32 - windFactor * 0.26 + Math.sin(tau * 5.0) * 0.16;
+              tCape1X = 0.30 + windFactor * 0.18 + Math.sin(tau * 5.0) * 0.10;
+              tCape2X = 0.22 + Math.sin(tau * 5.0 - 1.0) * 0.14;
+              tCape3X = 0.18 + Math.sin(tau * 5.0 - 2.0) * 0.18;
             } else {
-              window.batmanActionStatus = "Visée au pistolet-grappin (Bat-Signal Rive-Sud)";
-              const u = (tau - 30.5) / 6.5;
-              // Batman pivote vers le ciel de la Rive-Sud
-              batmanGroup.rotation.y = Math.PI + 0.22;
+              window.batmanActionStatus = "Tir au pistolet-grappin (Ancrage Tour Est • 21.8m)";
+              const gu = (tau - 32.8) / 4.2; // 0..1 sur 4.2s
+              // S'aligne face à la haute tour incendie Est (17.5, 21.8, -1.2)
+              targetRotY = 1.40;
+              drawGrapnel = true;
 
-              batLegLeftGroup.rotation.set(0.08, 0, -0.06);
-              batLegRightGroup.rotation.set(-0.12, 0, 0.06);
-              batTorso.rotation.x = -0.10;
+              tHipLX = -0.14; tKneeLX = 0.18;
+              tHipRX = 0.18; tKneeRX = 0.12;
+              tTorsoX = -0.08;
+              tTorsoY = -0.14;
+              tHeadX = -0.52;
+              tHeadY = 0.10;
 
-              // Tête levée vers le Bat-Signal dans les nuages
-              batHead.rotation.x = -0.56 + Math.sin(tau * 2.0) * 0.05;
-              batHead.rotation.y = 0.10;
+              const aimRaise = Math.min(1.0, gu / 0.18);
+              const recoil = (gu > 0.20 && gu < 0.34) ? Math.sin(((gu - 0.20) / 0.14) * Math.PI) * 0.22 : 0;
+              tArmRX = (-2.12 + recoil) * aimRaise;
+              tArmRZ = 0.10;
+              tElbowRX = -0.14 * aimRaise;
 
-              // Dégainé et visée dynamique au grappin
-              const aimProg = Math.min(1.0, Math.max(0, (u - 0.08) / 0.25));
-              batArmRightGroup.position.set(0.46, 1.68, 0);
-              batArmRightGroup.rotation.x = -2.42 * aimProg;
-              batArmRightGroup.rotation.z = -0.28 * aimProg;
+              tArmLX = 0.20; tArmLZ = -0.28; tElbowLX = -0.62;
 
-              batArmLeftGroup.position.set(-0.46, 1.68, 0);
-              batArmLeftGroup.rotation.x = -0.26;
-              batArmLeftGroup.rotation.z = -0.22;
+              if (gu >= 0.20 && gu <= 0.92) {
+                grappleShotActive = true;
+                if (gu < 0.36) {
+                  // Propulsion éclair du grappin vers le sommet de la tour (21.8m)
+                  grappleExt = (gu - 0.20) / 0.16;
+                } else if (gu < 0.74) {
+                  // Câble Kevlar tendu sous haute tension
+                  grappleExt = 1.0;
+                } else {
+                  // Rétraction rapide du câble avant la reprise du sprint
+                  grappleExt = Math.max(0, 1.0 - (gu - 0.74) / 0.18);
+                }
+                if (gu >= 0.20 && gu <= 0.30) {
+                  muzzleSparkAmt = 1.0 - (gu - 0.20) / 0.10;
+                }
+              }
 
-              const capeSnap = Math.sin(tau * 8.5) * 0.24;
-              batmanCapeGroup.rotation.x = -0.46 - windFactor * 0.22 + capeSnap;
-              batmanCapeLower.rotation.x = -0.40 + Math.cos(tau * 9.5) * 0.25;
+              tCape1X = 0.42 + windFactor * 0.20 + Math.sin(tau * 7.5) * 0.12;
+              tCape2X = 0.28 + Math.sin(tau * 7.5 - 1.0) * 0.16;
+              tCape3X = 0.24 + Math.sin(tau * 7.5 - 2.0) * 0.22;
             }
           }
           // -------------------------------------------------------------------------
-          // PHASE 5 : SPRINT VERS LES PASSERELLES & DUCS-D'ALBE EST (+2m -> +34m) (37.0s à 47.0s)
-          // Batman traverse toute l'aile est du terminal maritime en courant sur les passerelles
+          // PHASE 5 : SPRINT VERS LES PASSERELLES & DUCS-D'ALBE EST (+2.2m -> +34m) (37.0s à 47.0s)
           // -------------------------------------------------------------------------
           else if (tau < 47.0) {
             window.batmanActionStatus = "Sprint sur passerelle suspendue Est (+34m)";
             const u = (tau - 37.0) / 10.0;
-            const curX = 2.2 + u * 31.8; // De +2.2m à +34.0m
-            const curZ = -3.8 + u * 1.0;  // Rejoint l'axe de la passerelle est à -2.8m
-            batmanGroup.position.set(curX, 7.35, curZ);
-            batmanGroup.rotation.y = Math.PI / 2; // Course vers l'Est
-
-            const bounce = runGait(15.2, 1.0);
-            batmanGroup.position.y = 7.35 + bounce;
+            targetPosX = 2.2 + u * 31.8;
+            targetPosZ = -3.8 + u * 1.0;
+            targetRotY = Math.PI / 2;
+            targetPosY = 7.35 + computeRunPose(14.8, 1.0);
           }
           // -------------------------------------------------------------------------
           // PHASE 6 : DUC-D'ALBE EST EXTRÊME (+34m) — VIGIE D'OBSERVATION AVAL (47.0s à 54.0s)
-          // Posté sur l'îlot est en pleine eau, observant l'Île d'Orléans et les remorqueurs
           // -------------------------------------------------------------------------
           else if (tau < 54.0) {
             window.batmanActionStatus = "Vigie d'observation aval (Duc-d'Albe Est • +34m)";
             const u = (tau - 47.0) / 7.0;
-            batmanGroup.position.set(34.0, 7.35, -2.8);
-            batmanGroup.rotation.y = Math.PI / 4; // Regard vers l'aval (Île d'Orléans)
+            targetPosX = 34.0;
+            targetPosZ = -2.8;
+            targetRotY = Math.PI * 0.72; // Orienté vers le chenal aval & Île d'Orléans
 
-            batLegLeftGroup.rotation.set(0, 0, -0.06);
-            batLegRightGroup.rotation.set(0, 0, 0.06);
-            batArmLeftGroup.rotation.set(-0.15, 0, -0.26);
-            batArmRightGroup.rotation.set(-0.15, 0, 0.26);
-            batTorso.rotation.x = 0.05;
+            tTorsoX = 0.05;
+            tArmLX = 0.15; tArmLZ = -0.26; tElbowLX = -0.46;
+            tArmRX = 0.15; tArmRZ = 0.26; tElbowRX = -0.46;
 
             const scan = Math.sin((tau - 47.0) * 1.5);
-            batHead.rotation.y = scan * 0.40;
-            batHead.rotation.x = -0.08 + Math.sin(tau * 1.3) * 0.05;
+            tHeadY = scan * 0.42;
+            tHeadX = -0.08 + Math.sin(tau * 1.3) * 0.05;
 
-            const capeFlap = Math.sin(tau * 4.8) * 0.16 + Math.cos(tau * 6.5) * 0.10;
-            batmanCapeGroup.rotation.x = -0.34 - windFactor * 0.24 + capeFlap;
-            batmanCapeLower.rotation.x = -0.38 - windFactor * 0.32 + Math.sin(tau * 5.2) * 0.18;
+            tCape1X = 0.34 + windFactor * 0.22 + Math.sin(tau * 4.8) * 0.10;
+            tCape2X = 0.26 + windFactor * 0.16 + Math.sin(tau * 4.8 - 1.0) * 0.15;
+            tCape3X = 0.22 + Math.sin(tau * 4.8 - 2.0) * 0.20;
 
-            if (u > 0.75) {
-              const turnProg = (u - 0.75) / 0.25;
-              batmanGroup.rotation.y = Math.PI / 4 - turnProg * (Math.PI * 0.75); // Pivote vers l'Ouest
+            if (u > 0.74) {
+              const turnProg = (u - 0.74) / 0.26;
+              const sTurn = turnProg * turnProg * (3 - 2 * turnProg);
+              targetRotY = Math.PI * 0.72 + sTurn * (Math.PI * 0.78); // Pivote vers l'Ouest (-PI/2)
             }
           }
           // -------------------------------------------------------------------------
           // PHASE 7 : GRANDE RONDE RETOUR OUEST TRAVERSANT TOUT LE QUAI (+34m -> -34m) (54.0s à 64.0s)
-          // Sprint d'un bout à l'autre du terminal (68 mètres) pour boucler le circuit !
           // -------------------------------------------------------------------------
           else {
             window.batmanActionStatus = "Sprint de ronde générale (Retour Est -> Ouest • 68m)";
             const u = (tau - 54.0) / 10.0;
-            const curX = 34.0 - u * 68.0; // De +34m à -34m
-            batmanGroup.position.set(curX, 7.35, -2.8);
-            batmanGroup.rotation.y = -Math.PI / 2; // Regard vers l'Ouest
+            targetPosX = 34.0 - u * 68.0;
+            targetPosZ = -2.8;
+            targetRotY = -Math.PI / 2;
+            targetPosY = 7.35 + computeRunPose(15.4, -1.0);
+          }
 
-            const bounce = runGait(15.8, -1.0);
-            batmanGroup.position.y = 7.35 + bounce;
+          // Application fluide avec amortissement exponentiel (zéro saccade aux changements de phase!)
+          const kJoint = batRigInitialized ? 24.0 : 1000.0;
+          const kTurn = batRigInitialized ? 12.0 : 1000.0;
+          const kPos = batRigInitialized ? 28.0 : 1000.0;
+          batRigInitialized = true;
+
+          batmanGroup.position.x = dampScalar(batmanGroup.position.x, targetPosX, kPos, dt);
+          batmanGroup.position.y = dampScalar(batmanGroup.position.y, targetPosY, kPos, dt);
+          batmanGroup.position.z = dampScalar(batmanGroup.position.z, targetPosZ, kPos, dt);
+          batmanGroup.rotation.y = dampRadians(batmanGroup.rotation.y, targetRotY, kTurn, dt);
+
+          batTorsoGroup.rotation.x = dampScalar(batTorsoGroup.rotation.x, tTorsoX, kJoint, dt);
+          batTorsoGroup.rotation.y = dampScalar(batTorsoGroup.rotation.y, tTorsoY, kJoint, dt);
+          batTorsoGroup.rotation.z = dampScalar(batTorsoGroup.rotation.z, tTorsoZ, kJoint, dt);
+
+          batHeadGroup.rotation.x = dampScalar(batHeadGroup.rotation.x, tHeadX, kJoint, dt);
+          batHeadGroup.rotation.y = dampScalar(batHeadGroup.rotation.y, tHeadY, kJoint, dt);
+
+          batLegLeftGroup.rotation.x = dampScalar(batLegLeftGroup.rotation.x, tHipLX, kJoint, dt);
+          batLegLeftGroup.rotation.z = dampScalar(batLegLeftGroup.rotation.z, tHipLZ, kJoint, dt);
+          batKneeLeftGroup.rotation.x = dampScalar(batKneeLeftGroup.rotation.x, tKneeLX, kJoint, dt);
+
+          batLegRightGroup.rotation.x = dampScalar(batLegRightGroup.rotation.x, tHipRX, kJoint, dt);
+          batLegRightGroup.rotation.z = dampScalar(batLegRightGroup.rotation.z, tHipRZ, kJoint, dt);
+          batKneeRightGroup.rotation.x = dampScalar(batKneeRightGroup.rotation.x, tKneeRX, kJoint, dt);
+
+          batArmLeftGroup.rotation.x = dampScalar(batArmLeftGroup.rotation.x, tArmLX, kJoint, dt);
+          batArmLeftGroup.rotation.z = dampScalar(batArmLeftGroup.rotation.z, tArmLZ, kJoint, dt);
+          batElbowLeftGroup.rotation.x = dampScalar(batElbowLeftGroup.rotation.x, tElbowLX, kJoint, dt);
+
+          batArmRightGroup.rotation.x = dampScalar(batArmRightGroup.rotation.x, tArmRX, kJoint, dt);
+          batArmRightGroup.rotation.z = dampScalar(batArmRightGroup.rotation.z, tArmRZ, kJoint, dt);
+          batElbowRightGroup.rotation.x = dampScalar(batElbowRightGroup.rotation.x, tElbowRX, kJoint, dt);
+
+          batmanCapeGroup.rotation.x = dampScalar(batmanCapeGroup.rotation.x, tCape1X, 18.0, dt);
+          batmanCapeGroup.rotation.y = dampScalar(batmanCapeGroup.rotation.y, tCapeTwistY, 14.0, dt);
+          batCapeMidGroup.rotation.x = dampScalar(batCapeMidGroup.rotation.x, tCape2X, 16.0, dt);
+          batCapeLowerGroup.rotation.x = dampScalar(batCapeLowerGroup.rotation.x, tCape3X, 14.0, dt);
+
+          // Gestion visuelle du Pistolet-Grappin, du flash de bouche et du câble Kevlar 3D
+          grapnelGroup.visible = drawGrapnel;
+          holsterGrapnel.visible = !drawGrapnel;
+
+          if (muzzleSparkAmt > 0.02) {
+            batGrappleSpark.visible = true;
+            const sSc = 0.6 + muzzleSparkAmt * 1.4;
+            batGrappleSpark.scale.set(sSc, sSc, sSc);
+            batGrappleSpark.rotation.z += 0.5;
+            batGrappleFlashLight.intensity = muzzleSparkAmt * 3.2;
+          } else {
+            batGrappleSpark.visible = false;
+            batGrappleFlashLight.intensity = 0;
+          }
+
+          if (grappleShotActive && grappleExt > 0.01) {
+            batmanGroup.updateMatrixWorld(true);
+            grapnelMuzzleAnchor.getWorldPosition(batMuzzleWorldVec);
+            batMuzzleDockLocalVec.copy(batMuzzleWorldVec);
+            dockGroup.worldToLocal(batMuzzleDockLocalVec);
+
+            batHookCurLocalVec.lerpVectors(batMuzzleDockLocalVec, batTowerAnchorLocal, grappleExt);
+            const posArr = batGrappleCableGeo.attributes.position.array;
+            posArr[0] = batMuzzleDockLocalVec.x;
+            posArr[1] = batMuzzleDockLocalVec.y;
+            posArr[2] = batMuzzleDockLocalVec.z;
+            posArr[3] = batHookCurLocalVec.x;
+            posArr[4] = batHookCurLocalVec.y;
+            posArr[5] = batHookCurLocalVec.z;
+            batGrappleCableGeo.attributes.position.needsUpdate = true;
+
+            batGrappleCableLine.visible = true;
+            batGrappleHookMesh.visible = true;
+            batGrappleHookMesh.position.copy(batHookCurLocalVec);
+          } else {
+            batGrappleCableLine.visible = false;
+            batGrappleHookMesh.visible = false;
           }
         }
         window.updateBatman3D = updateBatman3D;
@@ -36697,6 +37112,39 @@
           return tex;
         }
 
+        function createBatBeamVerticalTexture() {
+          const cnv = document.createElement("canvas");
+          cnv.width = 64;
+          cnv.height = 256;
+          const ctx = cnv.getContext("2d");
+          // En Three.js CylinderGeometry : y=0 du canvas correspond au sommet (nuages) et y=256 à la base (lentille du projecteur)
+          const grad = ctx.createLinearGradient(0, 256, 0, 0);
+          grad.addColorStop(0.0, "rgba(255, 254, 235, 0.98)");
+          grad.addColorStop(0.12, "rgba(254, 243, 165, 0.78)");
+          grad.addColorStop(0.45, "rgba(253, 224, 71, 0.44)");
+          grad.addColorStop(0.78, "rgba(245, 158, 11, 0.22)");
+          grad.addColorStop(0.94, "rgba(217, 119, 6, 0.06)");
+          grad.addColorStop(1.0, "rgba(180, 83, 9, 0.0)");
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, 0, 64, 256);
+          return new THREE.CanvasTexture(cnv);
+        }
+
+        function createBatLensGlowTexture() {
+          const cnv = document.createElement("canvas");
+          cnv.width = 128;
+          cnv.height = 128;
+          const ctx = cnv.getContext("2d");
+          const g = ctx.createRadialGradient(64, 64, 2, 64, 64, 62);
+          g.addColorStop(0.0, "rgba(255, 255, 240, 1.0)");
+          g.addColorStop(0.28, "rgba(254, 240, 138, 0.82)");
+          g.addColorStop(0.65, "rgba(245, 158, 11, 0.25)");
+          g.addColorStop(1.0, "rgba(245, 158, 11, 0.0)");
+          ctx.fillStyle = g;
+          ctx.fillRect(0, 0, 128, 128);
+          return new THREE.CanvasTexture(cnv);
+        }
+
         const batSignal3DGroup = new THREE.Group();
         scene.add(batSignal3DGroup);
 
@@ -36706,63 +37154,153 @@
         // Emplacement de la projection dans la couverture nuageuse au-dessus de la Rive-Sud (Az 175° au-dessus de Saint-Romuald / Lévis, Alt ~21°, Dist 620m)
         const batTargetBase = azDistToVec3(175, 620, 260);
 
-        // A. Base et fût du projecteur de DCA / Bat-Signal
+        // A. Base et cardan motorisé 2 axes du projecteur DCA / Bat-Signal
         const batMetalMat = new THREE.MeshLambertMaterial({ color: 0x1e293b });
-        const batLensMat = new THREE.MeshBasicMaterial({ color: 0xfef08a, side: THREE.DoubleSide });
+        const batDarkTrimMat = new THREE.MeshLambertMaterial({ color: 0x0f172a });
+        const batLensMat = new THREE.MeshBasicMaterial({ color: 0xfef9c3, side: THREE.DoubleSide });
 
-        const batStand = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.75, 1.8, 12), batMetalMat);
+        const batPedestal = new THREE.Mesh(new THREE.CylinderGeometry(1.15, 1.35, 0.45, 16), batDarkTrimMat);
+        batPedestal.position.copy(batProjectorOrigin).add(new THREE.Vector3(0, -1.75, 0));
+        batSignal3DGroup.add(batPedestal);
+
+        const batStand = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.78, 1.7, 14), batMetalMat);
         batStand.position.copy(batProjectorOrigin).add(new THREE.Vector3(0, -0.9, 0));
         batSignal3DGroup.add(batStand);
 
-        const batYoke = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.4, 0.8), batMetalMat);
+        // Fourche d'azimut (Yoke) à deux bras latéraux
+        const batYoke = new THREE.Group();
         batYoke.position.copy(batProjectorOrigin);
         batSignal3DGroup.add(batYoke);
 
-        // Tambour mobile du projecteur orientable
+        const batYokeCross = new THREE.Mesh(new THREE.BoxGeometry(2.35, 0.32, 0.75), batMetalMat);
+        batYokeCross.position.set(0, -0.95, 0);
+        batYoke.add(batYokeCross);
+
+        [-1.08, 1.08].forEach((yx) => {
+          const arm = new THREE.Mesh(new THREE.BoxGeometry(0.24, 1.15, 0.55), batMetalMat);
+          arm.position.set(yx, -0.35, 0);
+          batYoke.add(arm);
+        });
+
+        // Tambour mobile du projecteur à arc carbone orientable en site/azimut
         const batDrumGroup = new THREE.Group();
         batDrumGroup.position.copy(batProjectorOrigin);
         batSignal3DGroup.add(batDrumGroup);
 
-        const batDrum = new THREE.Mesh(new THREE.CylinderGeometry(1.05, 0.95, 2.2, 18), batMetalMat);
+        const batDrum = new THREE.Mesh(new THREE.CylinderGeometry(1.06, 0.96, 2.35, 24), batMetalMat);
         batDrum.rotation.x = Math.PI / 2;
         batDrumGroup.add(batDrum);
 
-        const batLens = new THREE.Mesh(new THREE.CircleGeometry(0.98, 18), batLensMat);
-        batLens.position.set(0, 0, 1.11);
+        const batCoolingRing = new THREE.Mesh(new THREE.CylinderGeometry(1.14, 1.14, 0.35, 24), batDarkTrimMat);
+        batCoolingRing.rotation.x = Math.PI / 2;
+        batCoolingRing.position.set(0, 0, -0.55);
+        batDrumGroup.add(batCoolingRing);
+
+        const batLens = new THREE.Mesh(new THREE.CircleGeometry(0.99, 24), batLensMat);
+        batLens.position.set(0, 0, 1.19);
         batDrumGroup.add(batLens);
 
+        // Pochoir métallique chauve-souris fixé directement sur la vitre bombée du projecteur
+        const batStencilCenter = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.32, 0.04), batDarkTrimMat);
+        batStencilCenter.position.set(0, 0, 1.22);
+        batDrumGroup.add(batStencilCenter);
+
+        const batLensFlareSprite = new THREE.Sprite(
+          new THREE.SpriteMaterial({
+            map: createBatLensGlowTexture(),
+            color: 0xfef08a,
+            transparent: true,
+            opacity: 0.88,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+          })
+        );
+        batLensFlareSprite.scale.set(4.8, 4.8, 1);
+        batLensFlareSprite.position.set(0, 0, 1.32);
+        batDrumGroup.add(batLensFlareSprite);
+
         // Lampe ponctuelle locale pour illuminer le quai autour du projecteur
-        const batPointLight = new THREE.PointLight(0xfef08a, 2.6, 45);
+        const batPointLight = new THREE.PointLight(0xfef08a, 2.8, 52);
         batPointLight.position.copy(batProjectorOrigin);
         batSignal3DGroup.add(batPointLight);
 
-        // B. Cône volumétrique du faisceau lumineux géant (THREE.CylinderGeometry ouvert aux extrémités avec AdditiveBlending)
+        // B. Faisceau volumétrique coaxial à 3 couches (Cœur à arc carbone + Cône principal + Halo Tyndall diffus sans arête dure)
         const beamDist = batProjectorOrigin.distanceTo(batTargetBase);
-        const batBeamGeo = new THREE.CylinderGeometry(44, 1.1, beamDist, 24, 1, true);
-        const batBeamMat = new THREE.MeshBasicMaterial({
-          color: 0xfef08a,
+        const batBeamVertTex = createBatBeamVerticalTexture();
+
+        const batBeamGroup = new THREE.Group();
+        batSignal3DGroup.add(batBeamGroup);
+
+        const batBeamMatCore = new THREE.MeshBasicMaterial({
+          map: batBeamVertTex,
+          color: 0xfef9c3,
           transparent: true,
-          opacity: 0.32,
+          opacity: 0.26,
           blending: THREE.AdditiveBlending,
           side: THREE.DoubleSide,
-          depthWrite: false
+          depthWrite: false,
         });
-        const batBeamMesh = new THREE.Mesh(batBeamGeo, batBeamMat);
-        batSignal3DGroup.add(batBeamMesh);
+        const batBeamMatMid = new THREE.MeshBasicMaterial({
+          map: batBeamVertTex,
+          color: 0xfef08a,
+          transparent: true,
+          opacity: 0.18,
+          blending: THREE.AdditiveBlending,
+          side: THREE.DoubleSide,
+          depthWrite: false,
+        });
+        const batBeamMatOuter = new THREE.MeshBasicMaterial({
+          map: batBeamVertTex,
+          color: 0xfacc15,
+          transparent: true,
+          opacity: 0.10,
+          blending: THREE.AdditiveBlending,
+          side: THREE.DoubleSide,
+          depthWrite: false,
+        });
+
+        const batBeamCoreMesh = new THREE.Mesh(new THREE.CylinderGeometry(19, 0.58, beamDist, 32, 1, true), batBeamMatCore);
+        const batBeamMesh = new THREE.Mesh(new THREE.CylinderGeometry(34, 0.96, beamDist, 32, 1, true), batBeamMatMid);
+        const batBeamOuterMesh = new THREE.Mesh(new THREE.CylinderGeometry(50, 1.35, beamDist, 32, 1, true), batBeamMatOuter);
+        batBeamGroup.add(batBeamCoreMesh);
+        batBeamGroup.add(batBeamMesh);
+        batBeamGroup.add(batBeamOuterMesh);
 
         // C. Emblème UNIQUE projeté sur les nuages de la Rive-Sud (Disque haute définition avec silhouette de la chauve-souris)
         const batCloudTex = createBatSignalCloudTexture();
         const batCloudMat = new THREE.MeshBasicMaterial({
           map: batCloudTex,
           transparent: true,
-          opacity: 0.94,
+          opacity: 0.95,
           depthWrite: false,
-          side: THREE.DoubleSide
+          side: THREE.DoubleSide,
         });
-        const batCloudMesh = new THREE.Mesh(new THREE.PlaneGeometry(130, 130), batCloudMat);
+        const batCloudMesh = new THREE.Mesh(new THREE.PlaneGeometry(132, 132), batCloudMat);
         batCloudMesh.position.copy(batTargetBase);
         batCloudMesh.lookAt(batProjectorOrigin);
         batSignal3DGroup.add(batCloudMesh);
+
+        // D. Reflet doré atmosphérique subtil du faisceau sur le clapotis de l'anse près du quai (Rive-Sud)
+        const batWaterShimmerGroup = new THREE.Group();
+        const batWaterShimmerMat = new THREE.MeshBasicMaterial({
+          color: 0xfde047,
+          transparent: true,
+          opacity: 0.16,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false,
+          side: THREE.DoubleSide,
+        });
+        const batWaterShimmerBars = [];
+        for (let bw = 0; bw < 5; bw++) {
+          const bwDist = 88 + bw * 16;
+          const bwPos = azDistToVec3(148 + bw * 4.5, bwDist, 0.22);
+          const bwMesh = new THREE.Mesh(new THREE.PlaneGeometry(7 + bw * 2.2, 2.2), batWaterShimmerMat);
+          bwMesh.rotation.x = -Math.PI / 2;
+          bwMesh.position.copy(bwPos);
+          batWaterShimmerGroup.add(bwMesh);
+          batWaterShimmerBars.push({ mesh: bwMesh, baseX: bwPos.x, idx: bw });
+        }
+        batSignal3DGroup.add(batWaterShimmerGroup);
 
         batSignal3DGroup.visible = false;
 
@@ -37063,6 +37601,11 @@
         const ferryLightFwd = new THREE.Mesh(new THREE.SphereGeometry(0.5, 6, 6), new THREE.MeshBasicMaterial({ color: 0xffffff }));
         ferryLightFwd.position.set(20, 7.5, 0);
         ferryGroup.add(ferryLightFwd);
+
+        const ferryLightAft = new THREE.Mesh(new THREE.SphereGeometry(0.5, 6, 6), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+        ferryLightAft.position.set(-20, 7.5, 0);
+        ferryLightAft.visible = false;
+        ferryGroup.add(ferryLightAft);
 
         const ferryLightPort = new THREE.Mesh(new THREE.SphereGeometry(0.5, 6, 6), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
         ferryLightPort.position.set(0, 8.5, -5.6);
@@ -37981,6 +38524,13 @@
         let activeCamPreset3D = "quai";
         let autoOrbit3D = false;
         let showArLabels3D = false;
+        let camFlightBlend3D = 1.0;
+        const camFlightStartPos3D = new THREE.Vector3(0, 22.0, 0);
+
+        function beginCamFlight3D() {
+          camFlightStartPos3D.copy(camera3D.position);
+          camFlightBlend3D = 0.0;
+        }
 
         const camPresets = {
           quai: { height: 22.0, alt: -8, fov: 95 },
@@ -37995,14 +38545,17 @@
             const key = btn.getAttribute("data-cam-preset");
             const p = camPresets[key];
             if (!p) return;
+            beginCamFlight3D();
             activeCamPreset3D = key;
             targetCamHeight3D = p.height;
             camTargetAlt = p.alt;
-            viewFOV = p.fov;
+            targetViewFOV = p.fov;
+            touchVelAz = 0;
+            touchVelAlt = 0;
             if (key === "bridge") {
-              viewAzimuth = 250;
+              camTargetAz = 250;
             } else if (key === "tug") {
-              viewAzimuth = 128;
+              camTargetAz = 128;
             }
             document
               .querySelectorAll("[data-cam-preset]")
@@ -38305,11 +38858,14 @@
 
         window.focusCameraOnAzimuth = function (az, alt = 4) {
           if (activeCamPreset3D === "bridge" || activeCamPreset3D === "tug") {
+            beginCamFlight3D();
             activeCamPreset3D = "quai";
             targetCamHeight3D = camPresets.quai.height;
             document.querySelectorAll("[data-cam-preset]").forEach((b) => b.classList.remove("active-cam"));
             document.getElementById("hud-cam-quai")?.classList.add("active-cam");
           }
+          touchVelAz = 0;
+          touchVelAlt = 0;
           camTargetAz = ((az % 360) + 360) % 360;
           camTargetAlt = alt;
         };
@@ -38319,11 +38875,14 @@
           const pos = poi.getPos();
           const az = ((Math.atan2(pos.x, -pos.z) * 180) / Math.PI + 360) % 360;
           if (activeCamPreset3D === "bridge" || activeCamPreset3D === "tug") {
+            beginCamFlight3D();
             activeCamPreset3D = "quai";
             targetCamHeight3D = camPresets.quai.height;
             document.querySelectorAll("[data-cam-preset]").forEach((b) => b.classList.remove("active-cam"));
             document.getElementById("hud-cam-quai")?.classList.add("active-cam");
           }
+          touchVelAz = 0;
+          touchVelAlt = 0;
           camTargetAz = az;
           camTargetAlt = poi.id === "weather_front" ? 6 : -6;
         }
@@ -38373,21 +38932,22 @@
           });
         }
 
-        // Projection mathématique 3D exacte pour aligner les étoiles/constellations/soleil avec la caméra Three.js
+        // Projection mathématique 3D exacte à l'infini optique (zéro allocation GC par étoile)
         const tmpVec3 = new THREE.Vector3();
+        const tmpCamDir3D = new THREE.Vector3();
+        const tmpToPt3D = new THREE.Vector3();
         window.projectAzAlt3D = function (az, alt, w, h) {
           const d2r = Math.PI / 180;
           const dist = 2000;
-          const x = Math.cos(alt * d2r) * Math.sin(az * d2r) * dist;
-          const y = camHeight3D + Math.sin(alt * d2r) * dist;
-          const z = Math.cos(alt * d2r) * -Math.cos(az * d2r) * dist;
+          const cosAlt = Math.cos(alt * d2r);
+          const x = camera3D.position.x + cosAlt * Math.sin(az * d2r) * dist;
+          const y = camera3D.position.y + Math.sin(alt * d2r) * dist;
+          const z = camera3D.position.z + cosAlt * -Math.cos(az * d2r) * dist;
 
           tmpVec3.set(x, y, z);
-          // Vérifier que le point est devant la caméra
-          const camDir = new THREE.Vector3();
-          camera3D.getWorldDirection(camDir);
-          const toPt = tmpVec3.clone().sub(camera3D.position);
-          if (toPt.dot(camDir) <= 0.1) return null;
+          camera3D.getWorldDirection(tmpCamDir3D);
+          tmpToPt3D.subVectors(tmpVec3, camera3D.position);
+          if (tmpToPt3D.dot(tmpCamDir3D) <= 0.1) return null;
 
           tmpVec3.project(camera3D);
           const sx = (tmpVec3.x * 0.5 + 0.5) * w;
@@ -38397,6 +38957,7 @@
 
 
         function handleResize3D() {
+          if (window.refreshAnimWinDims) window.refreshAnimWinDims();
           const w = getAnimW();
           const h = getAnimH();
           if (w <= 0 || h <= 0) return;
@@ -38988,10 +39549,63 @@
           }
         }
 
+        // Vecteurs et tampons pré-alloués pour zéro allocation GC dans la boucle temps réel 60/120Hz
+        const hudTide3DEl = document.getElementById("hud-tide-lbl");
+        const tugNarrative3DEl = document.getElementById("tug-narrative-lbl");
+        let lastHudTideText3D = "";
+        let lastHudTideTitle3D = "";
+        let lastTugNarrative3D = "";
+
+        function setTugNarrativeText(txt) {
+          if (tugNarrative3DEl && txt !== lastTugNarrative3D) {
+            lastTugNarrative3D = txt;
+            tugNarrative3DEl.textContent = txt;
+          }
+        }
+
+        function updateLineEndpoints(geo, pA, pB) {
+          const attr = geo && geo.attributes && geo.attributes.position;
+          if (attr) {
+            attr.setXYZ(0, pA.x, pA.y, pA.z);
+            attr.setXYZ(1, pB.x, pB.y, pB.z);
+            attr.needsUpdate = true;
+          }
+        }
+
+        const FERRY_PT_LEVIS = azDistToVec3(80, 1140, 0);
+        const FERRY_PT_QUEBEC = azDistToVec3(347, 1090, 0);
+        const FERRY_AXIS_ROT_Y = Math.atan2(-(FERRY_PT_QUEBEC.z - FERRY_PT_LEVIS.z), FERRY_PT_QUEBEC.x - FERRY_PT_LEVIS.x);
+        const CARGO_PT_START = azDistToVec3(58, 1250, 0);
+        const CARGO_PT_END = azDistToVec3(248, 820, 0);
+        const CARGO_AXIS_ROT_Y = Math.atan2(-(CARGO_PT_END.z - CARGO_PT_START.z), CARGO_PT_END.x - CARGO_PT_START.x);
+        const UP_VEC_3D = new THREE.Vector3(0, 1, 0);
+
+        const scratchShipPos = new THREE.Vector3();
+        const scratchBowTugPos = new THREE.Vector3();
+        const scratchSternTugPos = new THREE.Vector3();
+        const scratchDeltaVec = new THREE.Vector3();
+        const scratchBittBow = new THREE.Vector3();
+        const scratchBittStern = new THREE.Vector3();
+        const scratchAttachBow = new THREE.Vector3();
+        const scratchAttachStern = new THREE.Vector3();
+        const scratchWinterColor = new THREE.Color();
+        const scratchFerryPos = new THREE.Vector3();
+        const scratchCargoPos = new THREE.Vector3();
+        const scratchMoorDock = new THREE.Vector3();
+        const scratchMoorShip = new THREE.Vector3();
+        const scratchBatTarget = new THREE.Vector3();
+        const scratchBatMid = new THREE.Vector3();
+        const scratchBatDir = new THREE.Vector3();
+        const desiredCamPos3D = new THREE.Vector3();
+        const scratchArCamDir = new THREE.Vector3();
+        const scratchArToPoi = new THREE.Vector3();
+        const scratchArProj = new THREE.Vector3();
+
         function render3DLoop(nowMs) {
           requestAnimationFrame(render3DLoop);
           const curTimeMs = typeof nowMs === "number" ? nowMs : performance.now();
           const dt3D = Math.min(0.1, Math.max(0.004, (curTimeMs - prevRender3DMs) / 1000));
+          const dt60 = dt3D * 60;
           prevRender3DMs = curTimeMs;
 
           // Avancer le temps simule si le lecteur Time-Lapse Meteo est actif
@@ -39010,8 +39624,8 @@
 
           // 1. Niveau d'eau 3D dynamique selon la maree en direct de Lauzon (#03250)
           const targetWaterY = (tideM - 3.1) * 1.25;
-          const lerpFactor = Math.abs(targetWaterY - waterLevelY) > 0.4 ? 0.20 : 0.08;
-          waterLevelY += (targetWaterY - waterLevelY) * lerpFactor;
+          const baseWaterLerp = Math.abs(targetWaterY - waterLevelY) > 0.4 ? 0.20 : 0.08;
+          waterLevelY += (targetWaterY - waterLevelY) * (1 - Math.pow(1 - baseWaterLerp, dt60));
           if (isNaN(waterLevelY)) waterLevelY = 0.0;
           waterMesh.position.y = waterLevelY;
           streaksGroup.position.y = waterLevelY;
@@ -39025,9 +39639,8 @@
                 ? 1.0
                 : 0.0;
 
-          // Telemetrie en temps reel dans le HUD 3D (niveau d'eau, maree et direction du courant)
-          const hudTide = document.getElementById("hud-tide-lbl");
-          if (hudTide) {
+          // Telemetrie en temps reel dans le HUD 3D (avec dirty-check pour zéro mutation DOM inutile)
+          if (hudTide3DEl) {
             const flowText =
               c.flowDirection === "left"
                 ? "Flot \u2B05\uFE0F"
@@ -39035,8 +39648,16 @@
                   ? "Jusant \u27A1\uFE0F"
                   : "\u00C9tale \uD83D\uDD04";
             const relStr = waterLevelY >= 0 ? `+${waterLevelY.toFixed(1)}m` : `${waterLevelY.toFixed(1)}m`;
-            hudTide.title = `Niveau d'eau 3D Lauzon (#03250) : ${tideM.toFixed(2)}m (${relStr} vs moyenne) • Courant : ${flowText}`;
-            hudTide.textContent = `Eau: ${tideM.toFixed(2)}m ${c.tideTrend || ""} • ${flowText}`;
+            const nextText = `Eau: ${tideM.toFixed(2)}m ${c.tideTrend || ""} • ${flowText}`;
+            const nextTitle = `Niveau d'eau 3D Lauzon (#03250) : ${tideM.toFixed(2)}m (${relStr} vs moyenne) • Courant : ${flowText}`;
+            if (nextText !== lastHudTideText3D) {
+              lastHudTideText3D = nextText;
+              hudTide3DEl.textContent = nextText;
+            }
+            if (nextTitle !== lastHudTideTitle3D) {
+              lastHudTideTitle3D = nextTitle;
+              hudTide3DEl.title = nextTitle;
+            }
           }
 
           // Mettre a jour la carte d'environnement (CubeMap) selon l'heure solaire simulee
@@ -39362,9 +39983,9 @@
           const dirZ = -Math.cos((70 * Math.PI) / 180);
           for (let i = 0; i < currentStreaks.length; i++) {
             const st = currentStreaks[i];
-            st.mesh.position.x += dirX * st.speed * flowSign * 0.45;
-            st.mesh.position.z += dirZ * st.speed * flowSign * 0.45;
-            if (st.mesh.position.length() > 720) {
+            st.mesh.position.x += dirX * st.speed * flowSign * 0.45 * dt60;
+            st.mesh.position.z += dirZ * st.speed * flowSign * 0.45 * dt60;
+            if (st.mesh.position.lengthSq() > 720 * 720) {
               st.mesh.position.multiplyScalar(-0.85);
             }
             st.mesh.position.y =
@@ -39424,7 +40045,7 @@
           // -------------------------------------------------------------
           const tm = window.tugManeuver;
           if (tm && (tm.state === "departing" || tm.state === "arriving")) {
-            const deltaProg = 0.001 * tm.speedMultiplier;
+            const deltaProg = 0.001 * tm.speedMultiplier * dt60;
             tm.progress += deltaProg;
 
             if (tm.state === "departing") {
@@ -39441,10 +40062,10 @@
             tm.updateUI();
           }
 
-                    let sP = TANKER_DOCKED_POS.clone();
+          const sP = scratchShipPos.copy(TANKER_DOCKED_POS);
           let sRot = TANKER_DOCKED_ROT;
-          let bowTugTarget = TUG_STANDBY_BOW.clone();
-          let sternTugTarget = TUG_STANDBY_STERN.clone();
+          const bowTugTarget = scratchBowTugPos.copy(TUG_STANDBY_BOW);
+          const sternTugTarget = scratchSternTugPos.copy(TUG_STANDBY_STERN);
           let bowTugRot = TUG_BASSIN_ROT;
           let sternTugRot = TUG_BASSIN_ROT;
           let thrustIntensity = 0.15;
@@ -39455,20 +40076,20 @@
           const tmState = tm ? tm.state : "docked";
 
           if (tmState === "docked") {
-            sP = TANKER_DOCKED_POS;
+            sP.copy(TANKER_DOCKED_POS);
             sRot = TANKER_DOCKED_ROT;
-            bowTugTarget = TUG_STANDBY_BOW;
-            sternTugTarget = TUG_STANDBY_STERN;
+            bowTugTarget.copy(TUG_STANDBY_BOW);
+            sternTugTarget.copy(TUG_STANDBY_STERN);
             bowTugRot = TUG_BASSIN_ROT;
             sternTugRot = TUG_BASSIN_ROT;
             linesActive = false;
             thrustIntensity = 0.1;
             if (tm) tm.speedKnots = 0.0;
           } else if (tmState === "departed") {
-            sP = TANKER_CHANNEL_POS;
+            sP.copy(TANKER_CHANNEL_POS);
             sRot = TANKER_CHANNEL_ROT;
-            bowTugTarget = TUG_STANDBY_BOW;
-            sternTugTarget = TUG_STANDBY_STERN;
+            bowTugTarget.copy(TUG_STANDBY_BOW);
+            sternTugTarget.copy(TUG_STANDBY_STERN);
             bowTugRot = TUG_BASSIN_ROT;
             sternTugRot = TUG_BASSIN_ROT;
             linesActive = false;
@@ -39479,14 +40100,14 @@
               // Phase 1/5 : Les remorqueurs quittent le Bassin Louise (Port de Quebec, Az 356) et traversent le fleuve jusqu'au Cap Quebec (Sec. 87)
               const u = tmP / 0.25;
               const s = u * u * (3 - 2 * u);
-              sP = TANKER_DOCKED_POS;
+              sP.copy(TANKER_DOCKED_POS);
               sRot = TANKER_DOCKED_ROT;
               const bowStation = getShipRelativeVec3(sP, sRot, 46, 26);
               const sternStation = getShipRelativeVec3(sP, sRot, -38, 26);
               bowTugTarget.lerpVectors(TUG_STANDBY_BOW, bowStation, s);
               sternTugTarget.lerpVectors(TUG_STANDBY_STERN, sternStation, s);
-              const dBow = new THREE.Vector3().subVectors(bowStation, TUG_STANDBY_BOW);
-              const transitRot = Math.atan2(-dBow.z, dBow.x);
+              scratchDeltaVec.subVectors(bowStation, TUG_STANDBY_BOW);
+              const transitRot = Math.atan2(-scratchDeltaVec.z, scratchDeltaVec.x);
               bowTugRot = u < 0.85 ? transitRot : transitRot + (sRot - transitRot) * ((u - 0.85) / 0.15);
               sternTugRot = bowTugRot;
               thrustIntensity = 0.85;
@@ -39494,8 +40115,7 @@
               tugTransitFocus = true;
               if (tm) {
                 tm.speedKnots = 0.0;
-                const nEl = document.getElementById("tug-narrative-lbl");
-                if (nEl) nEl.textContent = "Phase 1/5 : Sortie des remorqueurs Oc\u00e9an Taiga & K. Rusby du Bassin Louise (Port de Qu\u00e9bec) \u2022 Transit vers Sec. 87";
+                setTugNarrativeText("Phase 1/5 : Sortie des remorqueurs Oc\u00e9an Taiga & K. Rusby du Bassin Louise (Port de Qu\u00e9bec) \u2022 Transit vers Sec. 87");
               }
             } else if (tmP < 0.52) {
               // Phase 2/5 : Ecartement du quai Section 87 par traction laterale
@@ -39503,16 +40123,15 @@
               const s = u * u * (3 - 2 * u);
               sP.lerpVectors(TANKER_DOCKED_POS, TANKER_CLEAR_POS, s);
               sRot = TANKER_DOCKED_ROT + (TANKER_CLEAR_ROT - TANKER_DOCKED_ROT) * s;
-              bowTugTarget = getShipRelativeVec3(sP, sRot, 36, 34);
-              sternTugTarget = getShipRelativeVec3(sP, sRot, -36, 34);
+              bowTugTarget.copy(getShipRelativeVec3(sP, sRot, 36, 34));
+              sternTugTarget.copy(getShipRelativeVec3(sP, sRot, -36, 34));
               bowTugRot = sRot + Math.PI / 2;
               sternTugRot = sRot + Math.PI / 2;
               thrustIntensity = 0.95;
               linesActive = true;
               if (tm) {
                 tm.speedKnots = 1.8;
-                const nEl = document.getElementById("tug-narrative-lbl");
-                if (nEl) nEl.textContent = "Phase 2/5 : \u00C9cartement du quai \u2022 Pleine traction des remorqueurs (D\u00e9gagement Section 87)";
+                setTugNarrativeText("Phase 2/5 : \u00C9cartement du quai \u2022 Pleine traction des remorqueurs (D\u00e9gagement Section 87)");
               }
             } else if (tmP < 0.74) {
               // Phase 3/5 : Evitage dans le courant vers le chenal aval
@@ -39520,16 +40139,15 @@
               const s = u * u * (3 - 2 * u);
               sP.lerpVectors(TANKER_CLEAR_POS, TANKER_TURN_POS, s);
               sRot = TANKER_CLEAR_ROT + (TANKER_TURN_ROT - TANKER_CLEAR_ROT) * s;
-              bowTugTarget = getShipRelativeVec3(sP, sRot, 46, 20);
-              sternTugTarget = getShipRelativeVec3(sP, sRot, -40, 18);
+              bowTugTarget.copy(getShipRelativeVec3(sP, sRot, 46, 20));
+              sternTugTarget.copy(getShipRelativeVec3(sP, sRot, -40, 18));
               bowTugRot = sRot - 0.35;
               sternTugRot = sRot + 0.25;
               thrustIntensity = 0.85;
               linesActive = true;
               if (tm) {
                 tm.speedKnots = 3.6;
-                const nEl = document.getElementById("tug-narrative-lbl");
-                if (nEl) nEl.textContent = "Phase 3/5 : \u00C9vitage du Suezmax \u2022 Pivotement dans le courant vers le chenal maritime";
+                setTugNarrativeText("Phase 3/5 : \u00C9vitage du Suezmax \u2022 Pivotement dans le courant vers le chenal maritime");
               }
             } else if (tmP < 0.86) {
               // Phase 4/5 : Mise en route dans le chenal des Grands Navires
@@ -39537,37 +40155,35 @@
               const s = u * u * (3 - 2 * u);
               sP.lerpVectors(TANKER_TURN_POS, TANKER_CHANNEL_POS, s);
               sRot = TANKER_TURN_ROT + (TANKER_CHANNEL_ROT - TANKER_TURN_ROT) * s;
-              bowTugTarget = getShipRelativeVec3(sP, sRot, 58, 14);
-              sternTugTarget = getShipRelativeVec3(sP, sRot, -46, -16);
+              bowTugTarget.copy(getShipRelativeVec3(sP, sRot, 58, 14));
+              sternTugTarget.copy(getShipRelativeVec3(sP, sRot, -46, -16));
               bowTugRot = sRot;
               sternTugRot = sRot;
               thrustIntensity = 0.65;
               linesActive = true;
               if (tm) {
                 tm.speedKnots = 4.5 + u * 3.5;
-                const nEl = document.getElementById("tug-narrative-lbl");
-                if (nEl) nEl.textContent = "Phase 4/5 : Cap Qu\u00e9bec align\u00e9 dans le chenal maritime vers l'\u00cele d'Orl\u00e9ans \u2022 Largage des remorques";
+                setTugNarrativeText("Phase 4/5 : Cap Qu\u00e9bec align\u00e9 dans le chenal maritime vers l'\u00cele d'Orl\u00e9ans \u2022 Largage des remorques");
               }
             } else {
               // Phase 5/5 : Retour des remorqueurs vers le Bassin Louise (Port de Quebec)
               const u = (tmP - 0.86) / 0.14;
               const s = u * u * (3 - 2 * u);
-              sP = TANKER_CHANNEL_POS;
+              sP.copy(TANKER_CHANNEL_POS);
               sRot = TANKER_CHANNEL_ROT;
               const bowRelease = getShipRelativeVec3(sP, sRot, 58, 14);
               const sternRelease = getShipRelativeVec3(sP, sRot, -46, -16);
               bowTugTarget.lerpVectors(bowRelease, TUG_STANDBY_BOW, s);
               sternTugTarget.lerpVectors(sternRelease, TUG_STANDBY_STERN, s);
-              const dBack = new THREE.Vector3().subVectors(TUG_STANDBY_BOW, bowRelease);
-              bowTugRot = Math.atan2(-dBack.z, dBack.x);
+              scratchDeltaVec.subVectors(TUG_STANDBY_BOW, bowRelease);
+              bowTugRot = Math.atan2(-scratchDeltaVec.z, scratchDeltaVec.x);
               sternTugRot = bowTugRot;
               thrustIntensity = 0.8;
               linesActive = false;
               tugTransitFocus = true;
               if (tm) {
                 tm.speedKnots = 8.5;
-                const nEl = document.getElementById("tug-narrative-lbl");
-                if (nEl) nEl.textContent = "Phase 5/5 : Retour des remorqueurs Oc\u00e9an Taiga & K. Rusby vers le Bassin Louise (Port de Qu\u00e9bec)";
+                setTugNarrativeText("Phase 5/5 : Retour des remorqueurs Oc\u00e9an Taiga & K. Rusby vers le Bassin Louise (Port de Qu\u00e9bec)");
               }
             }
           } else if (tmState === "arriving") {
@@ -39584,8 +40200,8 @@
               bowTugTarget.lerpVectors(TUG_STANDBY_BOW, bowMeet, tugS);
               sternTugTarget.lerpVectors(TUG_STANDBY_STERN, sternMeet, tugS);
               if (tugU < 1.0) {
-                const dMeet = new THREE.Vector3().subVectors(bowMeet, TUG_STANDBY_BOW);
-                bowTugRot = Math.atan2(-dMeet.z, dMeet.x);
+                scratchDeltaVec.subVectors(bowMeet, TUG_STANDBY_BOW);
+                bowTugRot = Math.atan2(-scratchDeltaVec.z, scratchDeltaVec.x);
                 sternTugRot = bowTugRot;
               } else {
                 bowTugRot = sRot;
@@ -39595,8 +40211,7 @@
               linesActive = u >= 0.65;
               if (tm) {
                 tm.speedKnots = 7.0 - u * 3.2;
-                const nEl = document.getElementById("tug-narrative-lbl");
-                if (nEl) nEl.textContent = "Phase 1/5 : Sortie des remorqueurs du Bassin Louise \u2022 Prise en charge du Cap Qu\u00e9bec dans le chenal";
+                setTugNarrativeText("Phase 1/5 : Sortie des remorqueurs du Bassin Louise \u2022 Prise en charge du Cap Qu\u00e9bec dans le chenal");
               }
             } else if (tmP < 0.50) {
               // Phase 2/5 : Freinage et alignement devant la Section 87
@@ -39604,16 +40219,15 @@
               const s = u * u * (3 - 2 * u);
               sP.lerpVectors(TANKER_TURN_POS, TANKER_CLEAR_POS, s);
               sRot = TANKER_ARRIVE_TURN_ROT + (TANKER_CLEAR_ROT - TANKER_ARRIVE_TURN_ROT) * s;
-              bowTugTarget = getShipRelativeVec3(sP, sRot, 42, 24);
-              sternTugTarget = getShipRelativeVec3(sP, sRot, -38, 24);
+              bowTugTarget.copy(getShipRelativeVec3(sP, sRot, 42, 24));
+              sternTugTarget.copy(getShipRelativeVec3(sP, sRot, -38, 24));
               bowTugRot = sRot + Math.PI / 2;
               sternTugRot = sRot + Math.PI / 2;
               thrustIntensity = 0.8;
               linesActive = true;
               if (tm) {
                 tm.speedKnots = 3.8 - u * 2.2;
-                const nEl = document.getElementById("tug-narrative-lbl");
-                if (nEl) nEl.textContent = "Phase 2/5 : Freinage & alignement d'\u00e9vitage en face des ducs-d'Albe de la Section 87";
+                setTugNarrativeText("Phase 2/5 : Freinage & alignement d'\u00e9vitage en face des ducs-d'Albe de la Section 87");
               }
             } else if (tmP < 0.78) {
               // Phase 3/5 : Poussee laterale et accostage en douceur contre les defenses de la Section 87
@@ -39621,29 +40235,28 @@
               const s = u * u * (3 - 2 * u);
               sP.lerpVectors(TANKER_CLEAR_POS, TANKER_DOCKED_POS, s);
               sRot = TANKER_CLEAR_ROT + (TANKER_DOCKED_ROT - TANKER_CLEAR_ROT) * s;
-              bowTugTarget = getShipRelativeVec3(sP, sRot, 32, 18);
-              sternTugTarget = getShipRelativeVec3(sP, sRot, -32, 18);
+              bowTugTarget.copy(getShipRelativeVec3(sP, sRot, 32, 18));
+              sternTugTarget.copy(getShipRelativeVec3(sP, sRot, -32, 18));
               bowTugRot = sRot - Math.PI / 2;
               sternTugRot = sRot - Math.PI / 2;
               thrustIntensity = 0.9;
               linesActive = true;
               if (tm) {
                 tm.speedKnots = 1.4 - u * 1.2;
-                const nEl = document.getElementById("tug-narrative-lbl");
-                if (nEl) nEl.textContent = "Phase 3/5 : Pouss\u00e9e lat\u00e9rale des remorqueurs \u2022 Accostage en douceur \u00e0 la Section 87";
+                setTugNarrativeText("Phase 3/5 : Pouss\u00e9e lat\u00e9rale des remorqueurs \u2022 Accostage en douceur \u00e0 la Section 87");
               }
             } else {
               // Phase 4 & 5 : Navire amarre a la Section 87 • Les remorqueurs retournent au Bassin Louise (Port de Quebec)!
               const u = (tmP - 0.78) / 0.22;
               const s = u * u * (3 - 2 * u);
-              sP = TANKER_DOCKED_POS;
+              sP.copy(TANKER_DOCKED_POS);
               sRot = TANKER_DOCKED_ROT;
               const bowRelease = getShipRelativeVec3(sP, sRot, 32, 22);
               const sternRelease = getShipRelativeVec3(sP, sRot, -32, 22);
               bowTugTarget.lerpVectors(bowRelease, TUG_STANDBY_BOW, s);
               sternTugTarget.lerpVectors(sternRelease, TUG_STANDBY_STERN, s);
-              const dReturn = new THREE.Vector3().subVectors(TUG_STANDBY_BOW, bowRelease);
-              const returnRot = Math.atan2(-dReturn.z, dReturn.x);
+              scratchDeltaVec.subVectors(TUG_STANDBY_BOW, bowRelease);
+              const returnRot = Math.atan2(-scratchDeltaVec.z, scratchDeltaVec.x);
               bowTugRot = u < 0.92 ? returnRot : TUG_BASSIN_ROT;
               sternTugRot = bowTugRot;
               thrustIntensity = u < 0.95 ? 0.82 : 0.2;
@@ -39651,8 +40264,7 @@
               tugTransitFocus = true;
               if (tm) {
                 tm.speedKnots = 0.0;
-                const nEl = document.getElementById("tug-narrative-lbl");
-                if (nEl) nEl.textContent = "Phase 4/4 : Cap Qu\u00e9bec amarr\u00e9 (Sec. 87) \u2022 Retour des remorqueurs Oc\u00e9an Taiga & K. Rusby vers le Bassin Louise";
+                setTugNarrativeText("Phase 4/4 : Cap Qu\u00e9bec amarr\u00e9 (Sec. 87) \u2022 Retour des remorqueurs Oc\u00e9an Taiga & K. Rusby vers le Bassin Louise");
               }
             }
           }
@@ -39689,29 +40301,32 @@
           tugStern.wash.scale.set(washPulse * thrustIntensity * 2.0, 1, washPulse * thrustIntensity * 1.5);
           tugStern.wash.material.opacity = Math.min(0.85, thrustIntensity * 0.9);
 
-          // Mettre à jour les lignes de remorquage 3D (Aussières haute résistance)
+          // Mettre à jour les lignes de remorquage 3D sans réallocation de BufferAttribute
           towLineBow.visible = linesActive;
           towLineStern.visible = linesActive;
           if (linesActive) {
-            const tBowBitt = tankerGroup.localToWorld(new THREE.Vector3(48, 5.5, 6.5));
-            const tSternBitt = tankerGroup.localToWorld(new THREE.Vector3(-38, 5.5, 6.5));
-            const tugBowAttach = tugBow.group.localToWorld(new THREE.Vector3(-8.5, 3.2, 0));
-            const tugSternAttach = tugStern.group.localToWorld(new THREE.Vector3(-8.5, 3.2, 0));
+            scratchBittBow.set(48, 5.5, 6.5);
+            tankerGroup.localToWorld(scratchBittBow);
+            scratchBittStern.set(-38, 5.5, 6.5);
+            tankerGroup.localToWorld(scratchBittStern);
+            scratchAttachBow.set(-8.5, 3.2, 0);
+            tugBow.group.localToWorld(scratchAttachBow);
+            scratchAttachStern.set(-8.5, 3.2, 0);
+            tugStern.group.localToWorld(scratchAttachStern);
 
-            towLineBowGeo.setFromPoints([tugBowAttach, tBowBitt]);
-            towLineBowGeo.attributes.position.needsUpdate = true;
-            towLineSternGeo.setFromPoints([tugSternAttach, tSternBitt]);
-            towLineSternGeo.attributes.position.needsUpdate = true;
+            updateLineEndpoints(towLineBowGeo, scratchAttachBow, scratchBittBow);
+            updateLineEndpoints(towLineSternGeo, scratchAttachStern, scratchBittStern);
           }
 
-          // Suivi automatique caméra 3D si activé
-                    if (tm && tm.isCameraTracking && !isDraggingSky) {
+          // Suivi automatique caméra 3D si activé (indépendant du framerate)
+          if (tm && tm.isCameraTracking && !isDraggingSky) {
             const trackTarget = tugTransitFocus ? bowTugTarget : sP;
             const desiredAz = (Math.atan2(trackTarget.x, -trackTarget.z) * 180 / Math.PI + 360) % 360;
             let diffAz = desiredAz - viewAzimuth;
             if (diffAz > 180) diffAz -= 360;
             if (diffAz < -180) diffAz += 360;
-            viewAzimuth = (viewAzimuth + diffAz * 0.06 + 360) % 360;
+            const trackBlend = 1 - Math.pow(1 - 0.06, dt60);
+            viewAzimuth = (viewAzimuth + diffAz * trackBlend + 360) % 360;
           }
 
           wakeRingMesh.scale.x = 1.92 + Math.sin(t * 2.6) * 0.06;
@@ -39765,14 +40380,15 @@
             c.weatherCode === 85 || c.weatherCode === 86;
 
           const targetWinterFactor = isWinterCondition ? 1.0 : 0.0;
-          currentWinterFactor += (targetWinterFactor - currentWinterFactor) * 0.05;
+          currentWinterFactor += (targetWinterFactor - currentWinterFactor) * (1 - Math.pow(1 - 0.05, dt60));
 
-          // Transition douce des matériaux du paysage (falaises, collines, toitures, conifères et eau glacée)
+          // Transition douce des matériaux du paysage sans allocation GC
           if (Math.abs(currentWinterFactor - lastWinterFactor) > 0.002) {
             lastWinterFactor = currentWinterFactor;
-            winterShadedMaterials.forEach((item) => {
-              item.mat.color.setHex(item.base).lerp(new THREE.Color(item.winter), currentWinterFactor);
-            });
+            for (let wi = 0; wi < winterShadedMaterials.length; wi++) {
+              const item = winterShadedMaterials[wi];
+              item.mat.color.setHex(item.base).lerp(scratchWinterColor.setHex(item.winter), currentWinterFactor);
+            }
             if (window.dockSnowMesh) {
               window.dockSnowMesh.material.opacity = currentWinterFactor * 0.94;
               window.dockSnowMesh.visible = currentWinterFactor > 0.02;
@@ -39936,58 +40552,78 @@
           });
 
           bridgeCars.forEach((car) => {
-            car.mesh.position.x += car.speed;
+            car.mesh.position.x += car.speed * dt60;
             if (car.mesh.position.x > 160) car.mesh.position.x = -160;
             if (car.mesh.position.x < -160) car.mesh.position.x = 160;
           });
 
           orleansCars.forEach((car) => {
-            car.mesh.position.x += car.speed;
+            car.mesh.position.x += car.speed * dt60;
             if (car.mesh.position.x > halfOrlSpan + 24) car.mesh.position.x = -halfOrlSpan - 24;
             if (car.mesh.position.x < -halfOrlSpan - 24) car.mesh.position.x = halfOrlSpan + 24;
           });
 
-          // Animation de la circulation automobile sur Boulevard Champlain (Rive-Nord)
+          // Animation de la circulation automobile sur Boulevard Champlain (Rive-Nord) — zéro allocation GC
           if (window.champlainCars && window.champlainRoadCurve) {
-            champlainCars.forEach((car) => {
-              car.progress += car.speed;
+            for (let ci = 0; ci < champlainCars.length; ci++) {
+              const car = champlainCars[ci];
+              car.progress += car.speed * dt60;
               if (car.progress > 1.0) car.progress -= 1.0;
               if (car.progress < 0.0) car.progress += 1.0;
               const pt = window.champlainRoadCurve.getPointAt(car.progress);
               const tan = window.champlainRoadCurve.getTangentAt(car.progress);
-              const dir = car.speed >= 0 ? tan : tan.clone().negate();
-              const normal = new THREE.Vector3(-dir.z, 0, dir.x).normalize();
-              car.group.position.copy(pt).addScaledVector(normal, car.laneOffset);
-              car.group.rotation.y = Math.atan2(-dir.z, dir.x);
-            });
+              const sign = car.speed >= 0 ? 1 : -1;
+              const dx = tan.x * sign;
+              const dz = tan.z * sign;
+              const nLen = Math.hypot(dx, dz) || 1;
+              const nx = -dz / nLen;
+              const nz = dx / nLen;
+              car.group.position.set(pt.x + nx * car.laneOffset, pt.y, pt.z + nz * car.laneOffset);
+              car.group.rotation.y = Math.atan2(-dz, dx);
+            }
           }
 
-          // Animation de la circulation automobile sur Route 132 (Rive-Sud)
+          // Animation de la circulation automobile sur Route 132 (Rive-Sud) — zéro allocation GC
           if (window.route132Cars && window.route132Curve) {
-            route132Cars.forEach((car) => {
-              car.progress += car.speed;
+            for (let ri = 0; ri < route132Cars.length; ri++) {
+              const car = route132Cars[ri];
+              car.progress += car.speed * dt60;
               if (car.progress > 1.0) car.progress -= 1.0;
               if (car.progress < 0.0) car.progress += 1.0;
               const pt = window.route132Curve.getPointAt(car.progress);
               const tan = window.route132Curve.getTangentAt(car.progress);
-              const dir = car.speed >= 0 ? tan : tan.clone().negate();
-              const normal = new THREE.Vector3(-dir.z, 0, dir.x).normalize();
-              car.group.position.copy(pt).addScaledVector(normal, car.laneOffset);
-              car.group.rotation.y = Math.atan2(-dir.z, dir.x);
-            });
+              const sign = car.speed >= 0 ? 1 : -1;
+              const dx = tan.x * sign;
+              const dz = tan.z * sign;
+              const nLen = Math.hypot(dx, dz) || 1;
+              const nx = -dz / nLen;
+              const nz = dx / nLen;
+              car.group.position.set(pt.x + nx * car.laneOffset, pt.y, pt.z + nz * car.laneOffset);
+              car.group.rotation.y = Math.atan2(-dz, dx);
+            }
           }
 
-          // A. Traversier Québec-Lévis (Traversée continue du fleuve)
-          const ferryProgress = (Math.sin(t * 0.12) + 1) * 0.5; // oscillation fluide entre 0 (Lévis) et 1 (Québec)
-          const pLevis = azDistToVec3(80, 1140, 0);
-          const pQuebec = azDistToVec3(347, 1090, 0);
-          const fCurPos = new THREE.Vector3().lerpVectors(pLevis, pQuebec, ferryProgress);
-          const fWave = sampleWaveHeight(fCurPos.x, fCurPos.z, t, windKnots, flowSign);
-          ferryGroup.position.set(fCurPos.x, waterLevelY + fWave * 0.35, fCurPos.z);
+          // A. Traversier amphidrome Québec-Lévis (NM Alphonse-Desjardins — proue alignée sur l'axe de traversée sans retournement brusque)
+          const ferryProgress = (Math.sin(t * 0.12) + 1) * 0.5;
+          scratchFerryPos.lerpVectors(FERRY_PT_LEVIS, FERRY_PT_QUEBEC, ferryProgress);
+          const fWave = sampleWaveHeight(scratchFerryPos.x, scratchFerryPos.z, t, windKnots, flowSign);
+          ferryGroup.position.set(scratchFerryPos.x, waterLevelY + fWave * 0.35, scratchFerryPos.z);
           const fMovingDir = Math.cos(t * 0.12);
-          const fDirVec = new THREE.Vector3().subVectors(pQuebec, pLevis).multiplyScalar(fMovingDir >= 0 ? 1 : -1);
-          ferryGroup.rotation.y = Math.atan2(fDirVec.x, fDirVec.z);
-          ferryGroup.rotation.z = Math.sin(t * 1.8) * 0.025; // léger roulis
+          const fHeadingToQc = fMovingDir >= 0;
+          ferryGroup.rotation.y = FERRY_AXIS_ROT_Y;
+          ferryGroup.rotation.x = Math.sin(t * 1.8) * 0.022;
+          ferryGroup.rotation.z = Math.cos(t * 1.35) * 0.012;
+          const navLightsActive = isNight || isGolden || cloudPctNow >= 85;
+          ferryLightFwd.visible = navLightsActive && fHeadingToQc;
+          ferryLightAft.visible = navLightsActive && !fHeadingToQc;
+          ferryLightPort.visible = navLightsActive;
+          ferryLightStbd.visible = navLightsActive;
+          ferryLightPort.material.color.setHex(fHeadingToQc ? 0xef4444 : 0x10b981);
+          ferryLightStbd.material.color.setHex(fHeadingToQc ? 0x10b981 : 0xef4444);
+          const fSpeedNorm = Math.abs(fMovingDir);
+          ferryWakeMesh.material.opacity = 0.12 + fSpeedNorm * 0.36;
+          const fWakePulse = 0.72 + fSpeedNorm * 0.32 + Math.sin(t * 3.2) * 0.04;
+          ferryWakeMesh.scale.set(fWakePulse, 1, 0.85 + fSpeedNorm * 0.25);
 
           // B. Remorqueurs Groupe Océan déjà animés dynamiquement dans la boucle de manœuvre
 
@@ -40050,23 +40686,20 @@
           }
 
           // 9. Synchronisation fluide de la caméra 3D avec viewAzimuth, viewAltitude et viewFOV
-          camHeight3D += (targetCamHeight3D - camHeight3D) * 0.1;
+          camHeight3D += (targetCamHeight3D - camHeight3D) * (1 - Math.pow(1 - 0.1, dt60));
           const w = getAnimW();
           const h = getAnimH();
           const vFovDeg = Math.max(
             22,
             Math.min(105, viewFOV * (h / Math.max(1, w)))
           );
-          if (Math.abs(camera3D.fov - vFovDeg) > 0.05) {
+          if (Math.abs(camera3D.fov - vFovDeg) > 0.025 || Math.abs(camera3D.aspect - w / Math.max(1, h)) > 0.001) {
             camera3D.fov = vFovDeg;
             camera3D.aspect = w / Math.max(1, h);
             camera3D.updateProjectionMatrix();
           }
 
-          // Caméra 3D : L'observateur sur le quai (quai) ou en drone (drone) reste sur une hauteur d'observation fixe.
-          // Cela permet à l'observateur de voir le niveau réel de l'eau monter et descendre contre le quai et le pétrolier!
-          // Seul le mode 'water' flotte avec le niveau d'eau dynamique.
-                              // G. Animation des Bras Chiksan articules, de la Coupee et des 8 Aussieres d'amarrage (Section 87)
+          // G. Animation des Bras Chiksan articulés, de la Coupée et des 8 Aussières d'amarrage (Section 87)
           const isDockedNow = tmState === "docked" || (tmState === "departing" && tmP < 0.23) || (tmState === "arriving" && tmP >= 0.78);
           mooringLinesGroup.visible = isDockedNow;
           gangwayBridge.visible = isDockedNow;
@@ -40092,50 +40725,71 @@
           if (isDockedNow) {
             for (let m = 0; m < mooringLines3D.length; m++) {
               const ml = mooringLines3D[m];
-              const pDock = dockGroup.localToWorld(ml.dockLocal.clone());
-              const pShip = tankerGroup.localToWorld(ml.shipLocal.clone());
-              ml.geo.setFromPoints([pDock, pShip]);
-              ml.geo.attributes.position.needsUpdate = true;
+              scratchMoorDock.copy(ml.dockLocal);
+              scratchMoorShip.copy(ml.shipLocal);
+              dockGroup.localToWorld(scratchMoorDock);
+              tankerGroup.localToWorld(scratchMoorShip);
+              updateLineEndpoints(ml.geo, scratchMoorDock, scratchMoorShip);
             }
           }
+          const chiksanEase = 1 - Math.pow(1 - 0.08, dt60);
           chiksanBooms3D.forEach((cb, idx) => {
             const targetPitch = isDockedNow
               ? -0.05 - waterLevelY * 0.035 + Math.sin(t * 1.4 + idx) * 0.008
               : -0.58;
-            cb.pivot.rotation.x += (targetPitch - cb.pivot.rotation.x) * 0.08;
+            cb.pivot.rotation.x += (targetPitch - cb.pivot.rotation.x) * chiksanEase;
           });
 
-          // Animation de Batman qui court sur le quai Valero la nuit
+          // Animation articulée de Batman qui patrouille sur tout le quai Valero la nuit
           if (typeof updateBatman3D === "function") {
-            updateBatman3D(t, isNight);
+            updateBatman3D(t, isNight, dt3D);
           }
 
-          // Bat-Signal 3D (Actif quotidiennement de 17h00 à 05h30 avec options AUTO / FORCÉ ON / OFF)
+          // Bat-Signal 3D Volumétrique (Actif quotidiennement de 17h00 à 05h30 avec options AUTO / FORCÉ ON / OFF)
           const batSignalOn = typeof isBatSignalActive === "function" ? isBatSignalActive() : false;
           if (batSignal3DGroup) {
             batSignal3DGroup.visible = batSignalOn;
             if (batSignalOn) {
-              // Balayage doux et atmosphérique du projecteur au-dessus de la Rive-Sud
               const sweepX = Math.sin(t * 0.28) * 16.0;
               const sweepY = Math.cos(t * 0.22) * 8.0;
               const sweepZ = Math.sin(t * 0.18) * 12.0;
-              const curBatTarget = batTargetBase.clone().add(new THREE.Vector3(sweepX, sweepY, sweepZ));
+              scratchBatTarget.set(
+                batTargetBase.x + sweepX,
+                batTargetBase.y + sweepY,
+                batTargetBase.z + sweepZ
+              );
 
-              // Orientation du tambour et positionnement de l'emblème nuageux UNIQUE
-              batDrumGroup.lookAt(curBatTarget);
-              batCloudMesh.position.copy(curBatTarget);
+              scratchBatDir.subVectors(scratchBatTarget, batProjectorOrigin);
+              const curBeamLen = scratchBatDir.length() || beamDist;
+              scratchBatDir.multiplyScalar(1 / curBeamLen);
+
+              // Cardan 2 axes (fourche d'azimut + tambour mobile) et emblème nuageux UNIQUE
+              batYoke.rotation.y = Math.atan2(scratchBatDir.x, scratchBatDir.z);
+              batDrumGroup.lookAt(scratchBatTarget);
+              batCloudMesh.position.copy(scratchBatTarget);
               batCloudMesh.lookAt(batProjectorOrigin);
 
-              // Orientation et centrage du faisceau volumétrique
-              const beamMid = new THREE.Vector3().addVectors(batProjectorOrigin, curBatTarget).multiplyScalar(0.5);
-              const beamDir = new THREE.Vector3().subVectors(curBatTarget, batProjectorOrigin).normalize();
-              batBeamMesh.position.copy(beamMid);
-              batBeamMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), beamDir);
+              // Faisceau volumétrique coaxial à 3 couches sans arête dure
+              scratchBatMid.addVectors(batProjectorOrigin, scratchBatTarget).multiplyScalar(0.5);
+              batBeamGroup.position.copy(scratchBatMid);
+              batBeamGroup.quaternion.setFromUnitVectors(UP_VEC_3D, scratchBatDir);
+              batBeamGroup.scale.set(1, curBeamLen / beamDist, 1);
 
-              // Scintillement atmosphérique et brume nuageuse
-              const batFlicker = 0.92 + Math.sin(t * 6.8) * 0.05 + Math.cos(t * 11.4) * 0.03;
-              batBeamMat.opacity = 0.32 * batFlicker;
-              batCloudMat.opacity = 0.94 * batFlicker;
+              // Scintillement d'arc carbone & reflet doré sur l'eau de l'anse
+              const batFlicker = 0.93 + Math.sin(t * 6.4) * 0.045 + Math.cos(t * 11.2) * 0.025;
+              batBeamMatCore.opacity = 0.26 * batFlicker;
+              batBeamMatMid.opacity = 0.18 * batFlicker;
+              batBeamMatOuter.opacity = 0.10 * batFlicker;
+              batCloudMat.opacity = 0.95 * batFlicker;
+              batLensFlareSprite.material.opacity = 0.88 * batFlicker;
+
+              batWaterShimmerGroup.position.y = waterLevelY;
+              batWaterShimmerMat.opacity = (isNight ? 0.17 : 0.08) * batFlicker;
+              for (let bw = 0; bw < batWaterShimmerBars.length; bw++) {
+                const bwb = batWaterShimmerBars[bw];
+                bwb.mesh.scale.x = 0.85 + Math.sin(t * 3.1 + bwb.idx * 0.9) * 0.28;
+                bwb.mesh.position.x = bwb.baseX + Math.cos(t * 1.9 + bwb.idx) * 1.6;
+              }
             }
           }
           if (typeof updateBatSignalHUDButton === "function" && Math.floor(t * 10) % 15 === 0) {
@@ -40149,33 +40803,42 @@
             shipSearchlightGroup.rotation.y = Math.sin(t * 0.65) * 0.55;
           }
 
-          // I. Transit continu du Vracquier "CSL Saint-Laurent" dans le chenal maritime (Az 65 <-> 245)
+          // I. Transit continu du Vracquier "CSL Saint-Laurent" dans le chenal maritime (Az 58 <-> 248)
           const cargoCycle = ((t * 0.018) % 1.0);
-          const cargoStart = azDistToVec3(58, 1250, 0);
-          const cargoEnd = azDistToVec3(248, 820, 0);
-          const cargoPos = new THREE.Vector3().lerpVectors(cargoStart, cargoEnd, cargoCycle);
-          const cargoWave = sampleWaveHeight(cargoPos.x, cargoPos.z, t, windKnots, flowSign);
-          seawayCargoGroup.position.set(cargoPos.x, waterLevelY + cargoWave * 0.35, cargoPos.z);
-          const cargoDir = new THREE.Vector3().subVectors(cargoEnd, cargoStart);
-          seawayCargoGroup.rotation.y = Math.atan2(-cargoDir.z, cargoDir.x);
+          scratchCargoPos.lerpVectors(CARGO_PT_START, CARGO_PT_END, cargoCycle);
+          const cargoWave = sampleWaveHeight(scratchCargoPos.x, scratchCargoPos.z, t, windKnots, flowSign);
+          seawayCargoGroup.position.set(scratchCargoPos.x, waterLevelY + cargoWave * 0.35, scratchCargoPos.z);
+          seawayCargoGroup.rotation.y = CARGO_AXIS_ROT_Y;
           seawayCargoGroup.rotation.z = Math.sin(t * 1.3) * 0.018;
 
-          // J. Auto-Orbite cinematique 360 si activee
+          // J. Auto-Orbite cinématique 360° indépendante du framerate si activée
           if (autoOrbit3D && !isDraggingSky && camTargetAz === null) {
-            viewAzimuth = (viewAzimuth + 0.14) % 360;
+            viewAzimuth = (viewAzimuth + 0.14 * dt60) % 360;
           }
 
-          // K. Positionnement dynamique de la camera 3D (Quai, Passerelle Cap Quebec, Vue Tug, Drone, Ras d'Eau)
+          // K. Positionnement dynamique et vol cinématique fluide de la caméra 3D (Quai, Passerelle Cap Québec, Vue Tug, Drone, Ras d'Eau)
           if (activeCamPreset3D === "bridge") {
-            const bridgeWorldPos = tankerGroup.localToWorld(new THREE.Vector3(-23.5, 20.4, 0));
-            camera3D.position.copy(bridgeWorldPos);
+            desiredCamPos3D.set(-23.5, 20.4, 0);
+            tankerGroup.localToWorld(desiredCamPos3D);
           } else if (activeCamPreset3D === "tug") {
-            const tugWorldPos = tugBow.group.localToWorld(new THREE.Vector3(1.5, 9.8, 0));
-            camera3D.position.copy(tugWorldPos);
+            desiredCamPos3D.set(1.5, 9.8, 0);
+            tugBow.group.localToWorld(desiredCamPos3D);
           } else {
             const isFloatingCam = targetCamHeight3D < 12.0;
-            const camY = isFloatingCam ? (waterLevelY + camHeight3D) : camHeight3D;
-            camera3D.position.set(0, camY, 0);
+            const baseCamH = camFlightBlend3D < 1.0 ? targetCamHeight3D : camHeight3D;
+            const camY = isFloatingCam ? (waterLevelY + baseCamH) : baseCamH;
+            desiredCamPos3D.set(0, camY, 0);
+          }
+
+          if (camFlightBlend3D < 1.0) {
+            camFlightBlend3D = Math.min(1.0, camFlightBlend3D + dt3D * 1.55);
+            const sf = camFlightBlend3D * camFlightBlend3D * (3 - 2 * camFlightBlend3D);
+            camera3D.position.lerpVectors(camFlightStartPos3D, desiredCamPos3D, sf);
+            if (camFlightBlend3D >= 1.0) {
+              camHeight3D = targetCamHeight3D;
+            }
+          } else {
+            camera3D.position.copy(desiredCamPos3D);
           }
 
           const azRad = (viewAzimuth * Math.PI) / 180;
@@ -40188,47 +40851,73 @@
 
           renderer.render(scene, camera3D);
 
-          // L. Mise a jour temps reel des Reperes AR 3D flottants et de la Carte d'Inspection Telemetrique
+          // L. Mise à jour temps réel GPU (translate3d) des Repères AR 3D flottants et de la Carte d'Inspection Télémétrique
           if (showArLabels3D && arLayerEl) {
-            const camDir = new THREE.Vector3();
-            camera3D.getWorldDirection(camDir);
+            camera3D.getWorldDirection(scratchArCamDir);
             for (let i = 0; i < arPoiList.length; i++) {
               const poi = arPoiList[i];
               if (!poi.domEl) continue;
               if (typeof poi.isVisible === "function" && !poi.isVisible()) {
-                poi.domEl.style.display = "none";
+                if (poi._vis !== false) {
+                  poi._vis = false;
+                  poi.domEl.style.display = "none";
+                }
                 continue;
               }
               const worldPos = poi.getPos();
-              const toPoi = worldPos.clone().sub(camera3D.position);
-              const distMeters = Math.round(toPoi.length());
-              if (toPoi.dot(camDir) <= 0.15 || (activeCamPreset3D === "bridge" && poi.id === "tanker")) {
-                poi.domEl.style.display = "none";
+              scratchArToPoi.subVectors(worldPos, camera3D.position);
+              const distMeters = Math.round(scratchArToPoi.length());
+              if (scratchArToPoi.dot(scratchArCamDir) <= 0.15 || (activeCamPreset3D === "bridge" && poi.id === "tanker")) {
+                if (poi._vis !== false) {
+                  poi._vis = false;
+                  poi.domEl.style.display = "none";
+                }
                 continue;
               }
-              const proj = worldPos.clone().project(camera3D);
-              const sx = (proj.x * 0.5 + 0.5) * w;
-              const sy = (-proj.y * 0.5 + 0.5) * h;
+              scratchArProj.copy(worldPos).project(camera3D);
+              const sx = (scratchArProj.x * 0.5 + 0.5) * w;
+              const sy = (-scratchArProj.y * 0.5 + 0.5) * h;
               if (sx < 20 || sx > w - 20 || sy < 35 || sy > h - 25) {
-                poi.domEl.style.display = "none";
+                if (poi._vis !== false) {
+                  poi._vis = false;
+                  poi.domEl.style.display = "none";
+                }
                 continue;
               }
               const realDistStr = typeof poi.getRealDist === "function" ? poi.getRealDist() : `${distMeters}m`;
-              poi.domEl.style.display = "flex";
-              poi.domEl.style.left = `${sx.toFixed(1)}px`;
-              poi.domEl.style.top = `${sy.toFixed(1)}px`;
-              if (typeof poi.getDynamicLabel === "function" && poi.titleEl) {
-                poi.titleEl.textContent = poi.getDynamicLabel();
+              if (poi._vis !== true) {
+                poi._vis = true;
+                poi.domEl.style.display = "flex";
               }
-              if (poi.distEl) poi.distEl.textContent = realDistStr;
+              const qx = Math.round(sx * 5) / 5;
+              const qy = Math.round(sy * 5) / 5;
+              if (poi._tx !== qx || poi._ty !== qy) {
+                poi._tx = qx;
+                poi._ty = qy;
+                poi.domEl.style.transform = `translate3d(${qx}px, ${qy}px, 0) translate(-50%, -100%)`;
+              }
+              if (typeof poi.getDynamicLabel === "function" && poi.titleEl) {
+                const dynLbl = poi.getDynamicLabel();
+                if (poi._lbl !== dynLbl) {
+                  poi._lbl = dynLbl;
+                  poi.titleEl.textContent = dynLbl;
+                }
+              }
+              if (poi.distEl && poi._dist !== realDistStr) {
+                poi._dist = realDistStr;
+                poi.distEl.textContent = realDistStr;
+              }
 
               if (selectedPoiId === poi.id && inspectPopupEl) {
                 const azDeg = Math.round(((Math.atan2(worldPos.x, -worldPos.z) * 180) / Math.PI + 360) % 360);
-                if (inspectTitleEl) inspectTitleEl.textContent = typeof poi.getDynamicLabel === "function" ? poi.getDynamicLabel() : `${poi.icon} ${poi.label}`;
-                if (inspectSubEl) inspectSubEl.textContent = poi.sub;
-                if (inspectAzDistEl) inspectAzDistEl.textContent = `${azDeg}\u00B0 \u2022 ${realDistStr}`;
-                if (inspectStatusEl) inspectStatusEl.textContent = poi.getStatus();
-                if (inspectDraftEl) inspectDraftEl.textContent = poi.draft;
+                const inspTitle = typeof poi.getDynamicLabel === "function" ? poi.getDynamicLabel() : `${poi.icon} ${poi.label}`;
+                const inspAzDist = `${azDeg}\u00B0 \u2022 ${realDistStr}`;
+                const inspStatus = poi.getStatus();
+                if (inspectTitleEl && inspectTitleEl.textContent !== inspTitle) inspectTitleEl.textContent = inspTitle;
+                if (inspectSubEl && inspectSubEl.textContent !== poi.sub) inspectSubEl.textContent = poi.sub;
+                if (inspectAzDistEl && inspectAzDistEl.textContent !== inspAzDist) inspectAzDistEl.textContent = inspAzDist;
+                if (inspectStatusEl && inspectStatusEl.textContent !== inspStatus) inspectStatusEl.textContent = inspStatus;
+                if (inspectDraftEl && inspectDraftEl.textContent !== poi.draft) inspectDraftEl.textContent = poi.draft;
               }
             }
           }
