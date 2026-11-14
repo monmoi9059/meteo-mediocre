@@ -25796,18 +25796,43 @@
 
       const animWinEl = document.getElementById("animation-window");
 
-      // Boutons de raccourcis Azimut (Landmarks)
-      document.querySelectorAll(".landmark-jump-btn").forEach((btn) => {
+      // Boutons de raccourcis Azimut (Landmarks — calibrés WGS84 en mode 3D, préservés en 2D)
+      const LANDMARK_3D_WGS84_MAP = {
+        "204": { az: 144, alt: 4, html: "&#x1F3ED; Raffinerie &middot; 144&deg;", title: "Raffinerie Jean-Gaulin Valero (Plateau Saint-Romuald) — Azimut WGS84 144° • Distance réelle 3,4 km" },
+        "250": { az: 237, alt: 2, html: "&#x1F309; Ponts QC &middot; 237&deg;", title: "Ponts de Québec et Pierre-Laporte (Gorge Chaudière / Cap-Rouge) — Azimut WGS84 237° • Distance réelle 7,2 km" },
+        "318": { az: 306, alt: -1, html: "&#x1F6DF; Garde C&ocirc;t. &middot; 306&deg;", title: "Base de la Garde côtière canadienne & Anse au Foulon — Azimut WGS84 306° • Distance réelle 1,9 km" },
+        "340": { az: 6, alt: 4, html: "&#x1F3F0; Frontenac &middot; 6&deg;", title: "Château Frontenac, Citadelle & Cap-Diamant — Azimut WGS84 6° Nord • Distance réelle 3,4 km" },
+        "356": { az: 9.8, alt: 0, html: "&#x2693; Bassin L. &middot; 10&deg;", title: "Bassin Louise, Silos Bunge & Remorqueurs Groupe Océan — Azimut WGS84 10° • Distance réelle 4,3 km" },
+        "30": { az: 23.5, alt: 1, html: "&#x1F309; Pont &Icirc;.O. &middot; 24&deg;", title: "Pont de l'Île d'Orléans (Beauport ↔ Sainte-Pétronille) — Azimut WGS84 23,5° • Distance réelle 10,2 km" },
+        "52": { az: 36, alt: 0, html: "&#x1F3DD;&#xFE0F; &Icirc;le d'Orl&eacute;ans &middot; 36&deg;", title: "Île d'Orléans (Sainte-Pétronille & Saint-Laurent) — Azimut WGS84 36° • Distance réelle 10,8 km" },
+        "80": { az: 19, alt: -1, html: "&#x26F4;&#xFE0F; Traverse &middot; 19&deg;", title: "Traverse Québec–Lévis (Pointe-à-Carcy 9° ↔ Quai Paquet 28°) — Azimut WGS84 19° • Distance réelle 4,8 km" },
+        "88": { az: 31.8, alt: 1, html: "&#x1F3D7;&#xFE0F; Davie &middot; 32&deg;", title: "Chantier maritime Davie & Cale sèche Champlain (Lauzon) — Azimut WGS84 31,8° • Distance réelle 6,6 km" }
+      };
+      const landmarkJumpBtns = document.querySelectorAll(".landmark-jump-btn");
+      landmarkJumpBtns.forEach((btn) => {
+        const origAzStr = (btn.getAttribute("data-target-az") || "").trim();
+        btn.dataset.origAz2d = origAzStr;
+        btn.dataset.origAlt2d = btn.getAttribute("data-target-alt") || "-5";
+        btn.dataset.origHtml2d = btn.innerHTML;
+        btn.dataset.origTitle2d = btn.getAttribute("title") || "";
+
         btn.addEventListener("click", (e) => {
           e.stopPropagation();
           touchVelAz = 0;
           touchVelAlt = 0;
-          camTargetAz = parseFloat(btn.getAttribute("data-target-az"));
-          camTargetAlt = parseFloat(btn.getAttribute("data-target-alt") || "-5");
-          if (btn.textContent.includes("Batman") || Math.abs(camTargetAz - 133) < 0.5) {
+          const map3d = window.mode3DActive ? LANDMARK_3D_WGS84_MAP[origAzStr] : null;
+          const nextAz = map3d ? map3d.az : parseFloat(origAzStr);
+          const nextAlt = map3d ? map3d.alt : parseFloat(btn.dataset.origAlt2d || "-5");
+          if (window.mode3DActive && typeof window.focusCameraOnAzimuth === "function") {
+            window.focusCameraOnAzimuth(nextAz, nextAlt);
+          } else {
+            camTargetAz = nextAz;
+            camTargetAlt = nextAlt;
+          }
+          if (btn.textContent.includes("Batman") || Math.abs(nextAz - 133) < 0.5) {
             window.forceBatman3D = true;
           }
-          if (btn.textContent.includes("Bat-Signal") || Math.abs(camTargetAz - 175) < 0.5 || Math.abs(camTargetAz - 338) < 0.5) {
+          if (btn.textContent.includes("Bat-Signal") || Math.abs(nextAz - 175) < 0.5 || Math.abs(nextAz - 338) < 0.5) {
             window.batSignalMode = "on";
             if (typeof window.updateBatSignalHUDButton === "function") {
               window.updateBatSignalHUDButton();
@@ -25819,7 +25844,7 @@
               }
             }
           }
-          if (btn.textContent.includes("Glaces") || Math.abs(camTargetAz - 120) < 0.5) {
+          if (btn.textContent.includes("Glaces") || Math.abs(nextAz - 120) < 0.5) {
             window.forceWinter3D = true;
             const wBtn = document.getElementById("hud-toggle-winter");
             if (wBtn) {
@@ -25829,6 +25854,17 @@
           }
         });
       });
+      window.syncLandmarkButtonsMode = function () {
+        const is3D = Boolean(window.mode3DActive);
+        landmarkJumpBtns.forEach((btn) => {
+          const origAzStr = btn.dataset.origAz2d || "";
+          const map3d = LANDMARK_3D_WGS84_MAP[origAzStr];
+          if (!map3d) return;
+          btn.innerHTML = is3D ? map3d.html : btn.dataset.origHtml2d;
+          btn.setAttribute("title", is3D ? map3d.title : btn.dataset.origTitle2d);
+        });
+      };
+      window.syncLandmarkButtonsMode();
 
       const hudResetCam = document.getElementById("hud-reset-cam");
       if (hudResetCam) {
@@ -33660,8 +33696,8 @@
           const az = Math.random() * 360;
           const p = azDistToVec3(az, dist, 0.18);
           mesh.position.copy(p);
-          // Orienter le long de l'axe du fleuve (WSW <-> ENE, ~70° / 250°)
-          mesh.rotation.y = (-20 * Math.PI) / 180 + (Math.random() - 0.5) * 0.2;
+          // Orienter le long de l'axe réel du Coude de Québec (SW <-> NE, ~44° / 224°)
+          mesh.rotation.y = (46 * Math.PI) / 180 + (Math.random() - 0.5) * 0.22;
           streaksGroup.add(mesh);
           currentStreaks.push({
             mesh,
@@ -33703,8 +33739,8 @@
           const k1 = 0.045,
             k2 = 0.078,
             k3 = 0.135;
-          const dirX = 0.939;
-          const dirZ = -0.342;
+          const dirX = 0.695;
+          const dirZ = -0.719;
           const along = x * dirX + z * dirZ;
           const across = -x * dirZ + z * dirX;
           const windAlong = x * windWaveDirX + z * windWaveDirZ;
@@ -36413,14 +36449,14 @@
         }
         window.updateBatman3D = updateBatman3D;
 
-        // --- 4. BOUÉES DU CHENAL MARITIME DU SAINT-LAURENT (VERTES & ROUGES) ---
+        // --- 4. BOUÉES DU CHENAL MARITIME DU SAINT-LAURENT (VERTES TRIBORD SUD & ROUGES BÂBORD NORD) ---
         const buoys3D = [];
         const buoySpecs = [
-          { az: 112, dist: 92, color: 0x10b981, isGreen: true }, // Bouée verte chenal Sud
-          { az: 162, dist: 105, color: 0x10b981, isGreen: true },
-          { az: 75, dist: 145, color: 0x10b981, isGreen: true },
-          { az: 355, dist: 175, color: 0xef4444, isGreen: false }, // Bouée rouge chenal Nord
-          { az: 285, dist: 165, color: 0xef4444, isGreen: false },
+          { az: 108, dist: 92, color: 0x10b981, isGreen: true },  // Bouée verte approche Est (Poste 86)
+          { az: 168, dist: 112, color: 0x10b981, isGreen: true }, // Bouée verte approche Ouest (Poste 87)
+          { az: 42, dist: 245, color: 0x10b981, isGreen: true },  // Bouée verte chenal Sud (Coude de Québec)
+          { az: 352, dist: 235, color: 0xef4444, isGreen: false }, // Bouée rouge chenal Nord (Cap-Blanc)
+          { az: 278, dist: 225, color: 0xef4444, isGreen: false }, // Bouée rouge chenal Nord (Anse au Foulon)
         ];
         buoySpecs.forEach((b, idx) => {
           const bGroup = new THREE.Group();
@@ -36458,35 +36494,111 @@
           });
         });
 
-        // --- 5. RAFFINERIE JEAN-GAULIN & RIVE-SUD (AZIMUT 95° à 234° JUSQU'À LA CULÉE SUD DES PONTS) ---
-        // --- 5. RIVE-SUD 3D : LÉVIS, ST-ROMUALD, RAFFINERIE VALERO & HORIZON CONTINENTAL (70° à 262°) ---
+        // --- TEXTURES PROCÉDURALES GÉOLOGIQUES & FORESTIÈRES (Niveaux de gris neutres compatibles saisons/hiver) ---
+        function createStratifiedShaleTexture() {
+          const cnv = document.createElement("canvas");
+          cnv.width = 256;
+          cnv.height = 256;
+          const ctx = cnv.getContext("2d");
+          ctx.fillStyle = "#d8dde3";
+          ctx.fillRect(0, 0, 256, 256);
+          // Strates obliques de schiste ordovicien & grauwacke (Formation de Lévis / Promontoire de Québec)
+          for (let y = -32; y < 288; y += 5) {
+            const lum = 182 + ((y * 37) % 58);
+            ctx.strokeStyle = `rgb(${lum}, ${lum + 2}, ${lum + 5})`;
+            ctx.lineWidth = 2 + (y % 3);
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.bezierCurveTo(85, y + 10, 170, y - 8, 256, y + 6);
+            ctx.stroke();
+          }
+          // Diaclases verticales et micro-fractures rocheuses
+          for (let k = 0; k < 90; k++) {
+            const fx = (k * 53) % 256;
+            const fy = (k * 79) % 256;
+            const fh = 12 + (k % 24);
+            const flum = 148 + (k % 38);
+            ctx.fillStyle = `rgba(${flum}, ${flum}, ${flum + 4}, 0.42)`;
+            ctx.fillRect(fx, fy, 1.6, fh);
+          }
+          const tex = new THREE.CanvasTexture(cnv);
+          tex.wrapS = THREE.RepeatWrapping;
+          tex.wrapT = THREE.RepeatWrapping;
+          return tex;
+        }
+
+        function createForestCanopyTexture() {
+          const cnv = document.createElement("canvas");
+          cnv.width = 256;
+          cnv.height = 256;
+          const ctx = cnv.getContext("2d");
+          ctx.fillStyle = "#dce3dc";
+          ctx.fillRect(0, 0, 256, 256);
+          for (let i = 0; i < 420; i++) {
+            const cx = (i * 73 + 19) % 256;
+            const cy = (i * 137 + 31) % 256;
+            const r = 4 + (i % 9);
+            const lum = 168 + ((i * 29) % 78);
+            ctx.fillStyle = `rgba(${lum}, ${Math.min(255, lum + 5)}, ${lum}, 0.52)`;
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          const tex = new THREE.CanvasTexture(cnv);
+          tex.wrapS = THREE.RepeatWrapping;
+          tex.wrapT = THREE.RepeatWrapping;
+          return tex;
+        }
+
+        const shaleStrataTex = createStratifiedShaleTexture();
+        const forestCanopyTex = createForestCanopyTexture();
+
+        // --- 5. RIVE-SUD 3D CALIBRÉE WGS84 : POINTE-LÉVY, PARCOURS DES ANSES, HADLOW, RAFFINERIE JEAN-GAULIN, ETCHEMIN & CHAUDIÈRE ---
         const cityLightsMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
         const cityLightsList = [];
 
         const southShoreGroup = new THREE.Group();
         scene.add(southShoreGroup);
 
-        const southTerrainMat = new THREE.MeshLambertMaterial({ color: 0x1e3a2f, side: THREE.DoubleSide });
-        const southForestMat = new THREE.MeshLambertMaterial({ color: 0x143725, side: THREE.DoubleSide });
-        const southHighlandMat = new THREE.MeshLambertMaterial({ color: 0x193222, side: THREE.DoubleSide });
+        const southTerrainMat = new THREE.MeshLambertMaterial({ color: 0x1e3a2f, map: forestCanopyTex, side: THREE.DoubleSide });
+        const southForestMat = new THREE.MeshLambertMaterial({ color: 0x143725, map: forestCanopyTex, side: THREE.DoubleSide });
+        const southHighlandMat = new THREE.MeshLambertMaterial({ color: 0x193222, map: forestCanopyTex, side: THREE.DoubleSide });
         const southRidgeMat = new THREE.MeshLambertMaterial({ color: 0x1f2e26, side: THREE.DoubleSide });
-        const southCliffRockMat = new THREE.MeshLambertMaterial({ color: 0x334155, side: THREE.DoubleSide });
+        const southCliffRockMat = new THREE.MeshPhongMaterial({
+          color: 0x334155,
+          map: shaleStrataTex,
+          bumpMap: shaleStrataTex,
+          bumpScale: 1.35,
+          shininess: 8,
+          side: THREE.DoubleSide
+        });
         const levisRoofRed = new THREE.MeshLambertMaterial({ color: 0x991b1b });
         const levisRoofBlue = new THREE.MeshLambertMaterial({ color: 0x1e3a8a });
         const levisRoofCopper = new THREE.MeshLambertMaterial({ color: 0x0f766e });
         const levisWallMat = new THREE.MeshLambertMaterial({ color: 0xd6d3d1 });
         const churchZincMat = new THREE.MeshPhongMaterial({ color: 0xa8b2bc, shininess: 85 });
 
-        // Helper universel de generation de ruban de terrain 3D continu (BufferGeometry)
+        // Helper universel de génération de ruban de terrain 3D continu (BufferGeometry avec coordonnées UV géologiques)
         function createTerrainRibbon(slices, M) {
           const vertices = [];
+          const uvs = [];
           const indices = [];
           const N = slices.length - 1;
+          const midJ = Math.min(M - 1, Math.floor(M / 2));
+          let cumArcU = 0;
 
           for (let i = 0; i <= N; i++) {
             const pts = slices[i];
+            if (i > 0) {
+              cumArcU += pts[midJ].distanceTo(slices[i - 1][midJ]) / 62.0;
+            }
+            let cumCrossV = 0;
             for (let j = 0; j < M; j++) {
+              if (j > 0) {
+                cumCrossV += pts[j].distanceTo(pts[j - 1]) / 46.0;
+              }
               vertices.push(pts[j].x, pts[j].y, pts[j].z);
+              uvs.push(cumArcU, cumCrossV);
             }
           }
 
@@ -36503,42 +36615,45 @@
 
           const geo = new THREE.BufferGeometry();
           geo.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
+          geo.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
           geo.setIndex(indices);
           geo.computeVertexNormals();
           return geo;
         }
 
-        // Fonction de profil côtier Rive-Sud fidèle à la géomorphologie réelle du fleuve Saint-Laurent :
-        // - Lauzon & Chantier Maritime Davie en aval (68-76°) : ~1490m -> 1240m
-        // - Pointe-Lévy / Quai Paquet / Terrasse de Lévis (77-86°) : promontoire à ~1170m
-        // - Anse Tibbits & falaise de Hadlow Cove (86-118°) : courbe côtière 1170m -> 395m
-        // - Embouchure de la Rivière Etchemin (119-131°, creux estuarien à 124.5°) : échancrure à ~455m
-        // - Pointe de Saint-Romuald — Enracinement réel du môle d'enrochement Valero (146-154°) : avancée à ~316m
-        // - Anse de Saint-Romuald (158-184°) : anse abritée à ~352m
-        // - Pointe & Parc de l'Anse Benson (186-198°) : ~342m -> 395m
-        // - Embouchure de la Rivière Chaudière (221-230°, échancrure à 225.5°) -> Culée Sud des Ponts (234°, 920m)
+        // Profil côtier Rive-Sud fidèle aux relèvements WGS84 réels depuis le Quai Valero (46.78183°N, -71.21000°O) :
+        // - Pointe-De Lévy / Quai Paquet / Traverse de Lévis au goulet NNE (27.2°–29.5°) : ~1235m (5,05 km réel)
+        // - Parcours des Anses / Anse Tibbits / Anse Patton (31°–96°) : courbe du Coude de Québec 1185m -> 445m
+        // - Grève-Gilmour / Hadlow Cove (106°–138°) : falaise côtière proche derrière le Poste 86 (398m -> 332m)
+        // - Pointe de Hadlow / Saint-Romuald — Enracinement réel du môle d'enrochement Valero (150.0°) : 316m (~420m réel)
+        // - Anse de Saint-Romuald (160°–195°) : 338m -> 455m (sous le Bat-Signal à 175°!)
+        // - Pointe Atkinson & Embouchure de la Rivière Etchemin en AMONT SO (224.3°) : entaille estuarienne à 775m (2,88 km réel!)
+        // - Pointe & Parc de l'Anse Benson (226.5°) : 895m (4,3 km réel)
+        // - Embouchure de la Rivière Chaudière (230.1°) : entaille fluviale à 1235m (6,87 km réel)
+        // - Culée Sud des Ponts de Québec & Pierre-Laporte (232.6°) : 1365m (7,15 km réel)
         const SOUTH_SHORE_CONTROL_PTS = [
-          [68.0, 1510],
-          [73.5, 1425],
-          [79.5, 1165],
-          [85.0, 1175],
-          [96.0, 880],
-          [108.0, 560],
-          [118.0, 395],
-          [124.5, 458], // Embouchure de la Rivière Etchemin
-          [131.5, 386],
-          [141.0, 342],
-          [150.2, 316], // Pointe de Saint-Romuald (racine exacte du môle Valero)
-          [157.0, 336],
-          [168.0, 354], // Anse de Saint-Romuald
-          [181.0, 350],
-          [190.0, 342], // Pointe de l'Anse Benson
-          [200.0, 405],
-          [212.0, 585],
-          [221.0, 760],
-          [225.5, 848], // Embouchure de la Rivière Chaudière
-          [229.5, 835],
-          [234.0, 920]  // Culée Sud des Ponts de Québec & Pierre-Laporte
+          [27.2, 1235], // Pointe-De Lévy & Quai Paquet (Goulet de Québec–Lévis)
+          [31.0, 1185],
+          [38.0, 1075], // Anse aux Sauvages / Parcours des Anses Nord
+          [48.0, 920],  // Anse Tibbits
+          [60.0, 760],  // Parcours des Anses Centre
+          [74.0, 610],  // Anse Patton
+          [90.0, 485],  // Grève-Gilmour Est
+          [106.0, 398], // Hadlow Cove
+          [122.0, 352], // Falaise de Hadlow (arrière-plan Poste 86)
+          [136.0, 332],
+          [150.0, 316], // Racine exacte du môle d'enrochement Valero
+          [160.0, 338],
+          [175.0, 368], // Vieux-Saint-Romuald
+          [192.0, 435],
+          [208.0, 545], // Approche Pointe Atkinson
+          [220.0, 680], // Pointe Atkinson
+          [224.3, 775], // Embouchure réelle de la Rivière Etchemin (OSO 224.3°)
+          [226.5, 895], // Pointe & Parc de l'Anse Benson
+          [228.5, 1060],
+          [230.1, 1235], // Embouchure réelle de la Rivière Chaudière (230.1°)
+          [231.4, 1295],
+          [232.6, 1365]  // Culée Sud des Ponts de Québec & Pierre-Laporte
         ];
 
         function getSouthShoreDist(az) {
@@ -36557,49 +36672,49 @@
           return 350;
         }
 
-        // Hauteur réaliste de la falaise Rive-Sud avec vallées encaissées aux rivières Etchemin (124.5°) et Chaudière (225.5°)
+        // Hauteur réaliste de la falaise de Lévis / Hadlow / Saint-Romuald avec vallées encaissées aux rivières Etchemin (224.3°) et Chaudière (230.1°)
         function getSouthCliffHeight(az) {
-          let h = az >= 216 ? 48.0 : (az <= 92 ? 45.0 : (az <= 116 ? 39.0 : (az >= 188 && az <= 216 ? 42.5 : 35.5)));
-          const etchFactor = Math.exp(-Math.pow((az - 124.5) / 3.8, 2));
-          const chaudFactor = Math.exp(-Math.pow((az - 225.5) / 3.4, 2));
-          h -= etchFactor * 25.5;
-          h -= chaudFactor * 30.0;
+          let h = az <= 45 ? 52.0 : (az <= 95 ? 44.0 : (az <= 165 ? 38.0 : (az >= 227 ? 49.5 : 41.0)));
+          const etchFactor = Math.exp(-Math.pow((az - 224.3) / 1.9, 2));
+          const chaudFactor = Math.exp(-Math.pow((az - 230.1) / 1.4, 2));
+          h -= etchFactor * 27.0;
+          h -= chaudFactor * 31.0;
           return Math.max(8.5, h);
         }
 
         // Matériau de schiste ordovicien humide pour les battures intertidales (émergent à marée basse, submergées à marée haute)
-        const southForeshoreRockMat = new THREE.MeshLambertMaterial({ color: 0x2c353d });
-        const erraticBoulderMat = new THREE.MeshLambertMaterial({ color: 0x475569 });
+        const southForeshoreRockMat = new THREE.MeshLambertMaterial({ color: 0x3f464d, map: shaleStrataTex });
+        const erraticBoulderMat = new THREE.MeshLambertMaterial({ color: 0x525b66 });
 
-        // MODELISATION DU TERRAIN RIVE-SUD (Battures intertidales de schiste + Terrasse Route 132 + Falaise + Plateau CN + Appalaches)
+        // MODÉLISATION DU TERRAIN RIVE-SUD (Battures intertidales de schiste + Terrasse Parcours des Anses / R132 + Falaise + Plateau St-Romuald + Appalaches)
         const southForeshoreSlices = [];
         const southTerraceSlices = [];
         const southCliffSlices = [];
         const southPlateauSlices = [];
         const southHighlandSlices = [];
 
-        for (let az = 68; az <= 234; az += 1.5) {
+        for (let az = 27.2; az <= 232.65; az += 1.25) {
           const dCoast = getSouthShoreDist(az);
-          const isBridgeRamp = az >= 216;
-          const isMoleRoot = az >= 147.0 && az <= 153.5;
-          const etchDip = Math.exp(-Math.pow((az - 124.5) / 3.2, 2));
-          const chaudDip = Math.exp(-Math.pow((az - 225.5) / 2.8, 2));
+          const isBridgeRamp = az >= 227.0;
+          const isMoleRoot = az >= 147.0 && az <= 153.2;
+          const etchDip = Math.exp(-Math.pow((az - 224.3) / 1.6, 2));
+          const chaudDip = Math.exp(-Math.pow((az - 230.1) / 1.2, 2));
           const baseRoadY = isBridgeRamp
-            ? (5.4 + Math.max(0, (az - 216) / (234 - 216)) * 38.4)
-            : (az <= 112 ? 4.5 : (isMoleRoot ? 5.9 : 5.3));
+            ? (5.4 + Math.max(0, (az - 227.0) / (232.6 - 227.0)) * 41.8)
+            : (az <= 148 ? 4.8 : (isMoleRoot ? 5.9 : 5.3));
           const hillH = getSouthCliffHeight(az);
-          const bankCrestY = baseRoadY - etchDip * 2.2 - chaudDip * 14.0;
+          const bankCrestY = baseRoadY - etchDip * 2.2 - chaudDip * 12.0;
 
-          // 0. Battures rocheuses intertidales du Saint-Laurent (Ordovicien — découvre à marée basse sous waterLevelY!)
-          const battureWidth = (az >= 148 && az <= 153) ? 24 : (az >= 118 && az <= 205 ? 62 : 48);
+          // 0. Battures rocheuses intertidales du Saint-Laurent (Grève-Gilmour, Hadlow & Saint-Romuald — découvrent à marée basse!)
+          const battureWidth = (az >= 147.5 && az <= 153.0) ? 22 : (az >= 85 && az <= 218 ? 64 : 44);
           southForeshoreSlices.push([
             azDistToVec3(az, dCoast - 26 - battureWidth, -2.5),
-            azDistToVec3(az, dCoast - 26 - battureWidth * 0.55, -0.95),
-            azDistToVec3(az, dCoast - 28, 0.35),
-            azDistToVec3(az, dCoast - 20, 1.35)
+            azDistToVec3(az, dCoast - 26 - battureWidth * 0.55, -0.92),
+            azDistToVec3(az, dCoast - 28, 0.38),
+            azDistToVec3(az, dCoast - 20, 1.38)
           ]);
 
-          // 1. Berge d'enrochement et terrasse côtière continue (portant la Route 132, le môle Valero et l'Anse Benson)
+          // 1. Berge d'enrochement et terrasse côtière continue (Parcours des Anses à l'Est, môle Valero à 150°, Chemin du Fleuve à l'Ouest)
           southTerraceSlices.push([
             azDistToVec3(az, dCoast - 22, 1.15),
             azDistToVec3(az, dCoast - 14, Math.max(1.8, bankCrestY * 0.62)),
@@ -36607,26 +36722,26 @@
             azDistToVec3(az, dCoast + 6, Math.max(2.6, bankCrestY + 0.55))
           ]);
 
-          // 2. Paroi rocheuse abrupte de la falaise de Lévis / Saint-Romuald (avec entailles fluviales Etchemin & Chaudière)
+          // 2. Paroi rocheuse stratifiée abrupte de la falaise de Lévis / Hadlow / Saint-Romuald
           southCliffSlices.push([
             azDistToVec3(az, dCoast + 6, Math.max(2.6, bankCrestY + 0.55)),
-            azDistToVec3(az, dCoast + 25, (Math.max(2.6, bankCrestY) + hillH) * 0.53),
+            azDistToVec3(az, dCoast + 25, (Math.max(2.6, bankCrestY) + hillH) * 0.54),
             azDistToVec3(az, dCoast + 48, hillH)
           ]);
 
-          // 3. Plateau supérieur continental & couloir ferroviaire CN
+          // 3. Plateau supérieur de Lévis & Saint-Romuald (portant la Raffinerie Jean-Gaulin à 136°–157° et la voie CN)
           southPlateauSlices.push([
             azDistToVec3(az, dCoast + 48, hillH),
-            azDistToVec3(az, dCoast + 165, Math.max(hillH + 1.0, 39.5)),
-            azDistToVec3(az, dCoast + 420, 44.5),
-            azDistToVec3(az, dCoast + 780, 48.5)
+            azDistToVec3(az, dCoast + 175, Math.max(hillH + 1.2, 41.0)),
+            azDistToVec3(az, dCoast + 440, 45.5),
+            azDistToVec3(az, dCoast + 820, 50.0)
           ]);
 
-          // 4. Hautes collines de Chaudière-Appalaches à l'horizon Sud
+          // 4. Contreforts de Chaudière-Appalaches à l'horizon Sud-Est / Sud
           southHighlandSlices.push([
-            azDistToVec3(az, dCoast + 780, 48.5),
-            azDistToVec3(az, dCoast + 1400, 76.0),
-            azDistToVec3(az, 2450, 116.0)
+            azDistToVec3(az, dCoast + 820, 50.0),
+            azDistToVec3(az, dCoast + 1450, 78.0),
+            azDistToVec3(az, 2650, 118.0)
           ]);
         }
 
@@ -36636,9 +36751,30 @@
         );
         southShoreGroup.add(southForeshoreMesh);
 
-        // Blocs erratiques glaciaires sur les battures de Saint-Romuald et de l'Anse Benson (émergent à marée basse!)
-        for (let bIdx = 0; bIdx < 38; bIdx++) {
-          const bAz = 104 + (bIdx * 3.1) % 114;
+        // Aile côtière aval de Lauzon, Cale sèche Champlain & Beaumont (Az 27.2° -> 45°, 1235m -> 2080m le long du Chenal du Sud face à l'Île d'Orléans)
+        const lauzonCliffSlices = [];
+        const lauzonPlateauSlices = [];
+        for (let lAz = 27.2; lAz <= 45.2; lAz += 1.5) {
+          const uL = (lAz - 27.2) / 18.0;
+          const dLauzon = 1235 + uL * 845;
+          const hLauzon = 48.0 - uL * 10.0;
+          lauzonCliffSlices.push([
+            azDistToVec3(lAz, dLauzon - 18, 0.4),
+            azDistToVec3(lAz, dLauzon, 5.2),
+            azDistToVec3(lAz, dLauzon + 36, hLauzon)
+          ]);
+          lauzonPlateauSlices.push([
+            azDistToVec3(lAz, dLauzon + 36, hLauzon),
+            azDistToVec3(lAz, dLauzon + 220, hLauzon + 6.0),
+            azDistToVec3(lAz, dLauzon + 620, 66.0)
+          ]);
+        }
+        southShoreGroup.add(new THREE.Mesh(createTerrainRibbon(lauzonCliffSlices, 3), southCliffRockMat));
+        southShoreGroup.add(new THREE.Mesh(createTerrainRibbon(lauzonPlateauSlices, 3), southForestMat));
+
+        // Blocs erratiques glaciaires sur les battures de Grève-Gilmour, Hadlow et Saint-Romuald (émergent à marée basse!)
+        for (let bIdx = 0; bIdx < 44; bIdx++) {
+          const bAz = 72 + (bIdx * 3.4) % 148;
           if (bAz > 146 && bAz < 155) continue;
           const bDist = getSouthShoreDist(bAz) - 34 - (bIdx % 4) * 9.5;
           const bElev = -1.15 + (bIdx % 5) * 0.34;
@@ -36677,10 +36813,10 @@
         );
         southShoreGroup.add(southHighlandsMesh);
 
-        // Pont routier métallique de la Route 132 franchissant l'embouchure de la Rivière Etchemin (Az 124.5°)
+        // Pont routier métallique de la Route 132 franchissant la vraie embouchure de la Rivière Etchemin en amont OSO (Az 224.3°)
         const etcheminBridgeGroup = new THREE.Group();
-        const etchP1 = azDistToVec3(122.2, getSouthShoreDist(122.2) - 8, 5.2);
-        const etchP2 = azDistToVec3(126.8, getSouthShoreDist(126.8) - 8, 5.2);
+        const etchP1 = azDistToVec3(223.1, getSouthShoreDist(223.1) - 8, 5.2);
+        const etchP2 = azDistToVec3(225.4, getSouthShoreDist(225.4) - 8, 5.2);
         const etchMid = new THREE.Vector3().addVectors(etchP1, etchP2).multiplyScalar(0.5);
         const etchSpanLen = etchP1.distanceTo(etchP2);
         etcheminBridgeGroup.position.copy(etchMid);
@@ -36696,22 +36832,22 @@
 
         [-5.5, 5.5].forEach((tx) => {
           const etchTruss = new THREE.Mesh(
-            new THREE.BoxGeometry(0.45, 2.6, etchSpanLen),
+            new THREE.BoxGeometry(0.45, 2.8, etchSpanLen),
             new THREE.MeshLambertMaterial({ color: 0x64748b })
           );
-          etchTruss.position.set(tx, 1.3, 0);
+          etchTruss.position.set(tx, 1.4, 0);
           etcheminBridgeGroup.add(etchTruss);
         });
 
-        // Berges continues de Saint-Nicolas en amont des ponts (Az 234 deg a 258 deg, 920m a 2300m)
+        // Berges continues de Saint-Nicolas en amont de la culée Sud des ponts (Az 232.6° -> 225°, 1365m -> 2450m)
         const stNicolasSlices = [];
-        for (let d = 920; d <= 2300; d += 80) {
-          const upAz = 234.0 - ((d - 920) / 1380) * 11.0;
+        for (let d = 1365; d <= 2485; d += 80) {
+          const upAz = 232.6 - ((d - 1365) / 1120) * 7.2;
           stNicolasSlices.push([
             azDistToVec3(upAz, d - 38, -1.2),
             azDistToVec3(upAz, d - 20, 1.2),
-            azDistToVec3(upAz, d, 24.0),
-            azDistToVec3(upAz, d + 52, 45.0)
+            azDistToVec3(upAz, d, 26.0),
+            azDistToVec3(upAz, d + 56, 48.0)
           ]);
         }
         const stNicolasMesh = new THREE.Mesh(
@@ -36720,12 +36856,12 @@
         );
         southShoreGroup.add(stNicolasMesh);
 
-        // Architecture patrimoniale de Levis (Terrasse de Levis & Eglise Notre-Dame / Saint-Joseph au loin en aval : Azimut 83.5 deg)
+        // Architecture patrimoniale du Vieux-Lévis (Terrasse de Lévis & Église Notre-Dame-de-la-Victoire au-dessus de la Pointe-Lévy : Az 29.2°)
         const levisChurchGroup = new THREE.Group();
-        const churchPos = azDistToVec3(83.5, getSouthShoreDist(83.5) + 28, 45);
+        const churchPos = azDistToVec3(29.2, getSouthShoreDist(29.2) + 34, getSouthCliffHeight(29.2));
         levisChurchGroup.position.copy(churchPos);
-        levisChurchGroup.rotation.y = (20 * Math.PI) / 180;
-        levisChurchGroup.scale.set(1.55, 1.55, 1.55);
+        levisChurchGroup.rotation.y = (-55 * Math.PI) / 180;
+        levisChurchGroup.scale.set(1.6, 1.6, 1.6);
         southShoreGroup.add(levisChurchGroup);
 
         const churchBody = new THREE.Mesh(new THREE.BoxGeometry(20, 16, 32), levisWallMat);
@@ -36745,10 +36881,10 @@
         churchSpirePin.position.set(0, 46, 14);
         levisChurchGroup.add(churchSpirePin);
 
-        // Maisons patrimoniales sur la falaise de Lévis, Hadlow et Vieux-Saint-Romuald
-        for (let h = 0; h < 26; h++) {
-          const hAz = h < 16 ? (78 + (h % 8) * 3.8) : (160 + (h - 16) * 2.6);
-          const hDist = getSouthShoreDist(hAz) + 32 + Math.floor(h / 10) * 48;
+        // Maisons patrimoniales sur la falaise de Lévis (28°–52°) et Vieux-Saint-Romuald (165°–205°)
+        for (let h = 0; h < 30; h++) {
+          const hAz = h < 16 ? (28.5 + (h % 8) * 2.8) : (164 + (h - 16) * 2.9);
+          const hDist = getSouthShoreDist(hAz) + 34 + Math.floor(h / 10) * 44;
           const hY = getSouthCliffHeight(hAz) + 1.5 + (h % 3) * 1.4;
           const hPos = azDistToVec3(hAz, hDist, hY);
           const house = new THREE.Mesh(
@@ -36766,8 +36902,8 @@
           southShoreGroup.add(hRoof);
         }
 
-        // Poste côtier de vannes & collecteur terrestre Valero à la racine exacte du môle d'enrochement (Az 150.2°, Dist 330m)
-        const shoreStationPos = azDistToVec3(150.2, 330, 6.8);
+        // Poste côtier de vannes & collecteur terrestre Valero à la racine exacte du môle d'enrochement (Az 150.0°, Dist 326m)
+        const shoreStationPos = azDistToVec3(150.0, 326, 6.8);
         const shorePumpHouse = new THREE.Mesh(
           new THREE.BoxGeometry(16, 6.2, 10.5),
           new THREE.MeshLambertMaterial({ color: 0x475569 })
@@ -36776,18 +36912,19 @@
         shorePumpHouse.rotation.y = (22 * Math.PI) / 180;
         southShoreGroup.add(shorePumpHouse);
 
-        // --- RAFFINERIE JEAN-GAULIN (AZIMUT 194 DEG A 216 DEG, DIST 530m-650m — 3,1 KM REEL, PLUS PROCHE QUE LES PONTS DE QUEBEC QUI SONT A 885m-920m / 4,5 KM!) ---
+        // --- RAFFINERIE JEAN-GAULIN VALERO À SON VRAI EMPLACEMENT WGS84 (PLATEAU SUD-EST DE SAINT-ROMUALD, AZ 136°–157°, 3,4 KM RÉEL DERRIÈRE LE QUAI!) ---
         const tankWhiteMat = new THREE.MeshLambertMaterial({ color: 0xe2e8f0 });
         const tankRoofMat = new THREE.MeshLambertMaterial({ color: 0x94a3b8 });
+        const tankBermMat = new THREE.MeshLambertMaterial({ color: 0x334155 });
         const unitSteelMat = new THREE.MeshPhongMaterial({ color: 0x94a3b8, shininess: 65 });
 
-        // Grand parc de 26 reservoirs cylindriques blancs a toit flottant/conique sur le plateau de St-Romuald (Dist 530m-650m < Ponts 885m!)
+        // Grand parc de 26 réservoirs cylindriques blancs à toit flottant/conique avec merlons de rétention sur le plateau SE (Az 136°–157°, Dist 485m–675m)
         for (let i = 0; i < 26; i++) {
-          const tAz = 194 + (i % 9) * 2.5;
-          const tDist = 530 + Math.floor(i / 9) * 52 + (i % 2) * 18;
-          const radius = i % 3 === 0 ? 15.0 : i % 2 === 0 ? 11.8 : 9.2;
-          const height = i % 3 === 0 ? 16.5 : 13.0;
-          const groundY = 41 + Math.floor(i / 9) * 3.5;
+          const tAz = 136.0 + (i % 9) * 2.4;
+          const tDist = 485 + Math.floor(i / 9) * 62 + (i % 2) * 20;
+          const radius = i % 3 === 0 ? 15.2 : i % 2 === 0 ? 12.0 : 9.4;
+          const height = i % 3 === 0 ? 17.0 : 13.5;
+          const groundY = 40.5 + Math.floor(i / 9) * 2.6;
           const tPos = azDistToVec3(tAz, tDist, groundY + height / 2);
 
           const tank = new THREE.Mesh(
@@ -36798,20 +36935,30 @@
           southShoreGroup.add(tank);
 
           const roof = new THREE.Mesh(
-            new THREE.ConeGeometry(radius + 0.4, 3.4, 18),
+            new THREE.ConeGeometry(radius + 0.4, 3.2, 18),
             tankRoofMat
           );
-          roof.position.set(tPos.x, tPos.y + height / 2 + 1.7, tPos.z);
+          roof.position.set(tPos.x, tPos.y + height / 2 + 1.6, tPos.z);
           southShoreGroup.add(roof);
+
+          if (i % 3 === 0) {
+            const berm = new THREE.Mesh(
+              new THREE.TorusGeometry(radius + 5.5, 1.2, 6, 18),
+              tankBermMat
+            );
+            berm.rotation.x = Math.PI / 2;
+            berm.position.set(tPos.x, groundY + 0.8, tPos.z);
+            southShoreGroup.add(berm);
+          }
         }
 
-        // Unites de procedes de la raffinerie (Tours de distillation & FCC, Az 201-209 deg, Dist 585m-615m)
-        [201.5, 203.2, 205.0, 206.8, 208.5].forEach((uAz, uIdx) => {
-          const uDist = 585 + (uIdx % 2) * 28;
-          const uH = 38 + (uIdx % 3) * 12;
-          const uPos = azDistToVec3(uAz, uDist, 43 + uH / 2);
+        // Unités de procédés de la Raffinerie Jean-Gaulin (Tours de distillation atmosphérique/sous vide & FCC, Az 141°–149°, Dist 565m–605m)
+        [141.2, 143.0, 144.8, 146.6, 148.4].forEach((uAz, uIdx) => {
+          const uDist = 565 + (uIdx % 2) * 28;
+          const uH = 40 + (uIdx % 3) * 13;
+          const uPos = azDistToVec3(uAz, uDist, 42.5 + uH / 2);
           const tower = new THREE.Mesh(
-            new THREE.CylinderGeometry(3.4, 4.4, uH, 12),
+            new THREE.CylinderGeometry(3.4, 4.5, uH, 12),
             unitSteelMat
           );
           tower.position.copy(uPos);
@@ -36826,11 +36973,11 @@
           cityLightsList.push(uLight);
         });
 
-        // Torcheres 3D de la Raffinerie Jean-Gaulin (Azimut 203.5 deg et 207.5 deg, Dist 610m — nettement plus proches que les Ponts a 885m!)
+        // Torchères 3D de la Raffinerie Jean-Gaulin sur le plateau Sud-Est (Az 142.5° et 146.5°, Dist 595m — visibles au-dessus de la falaise de Hadlow!)
         const flares3D = [];
-        [203.5, 207.5].forEach((fAz, idx) => {
-          const fPos = azDistToVec3(fAz, 610, 45);
-          const stackHeight = idx === 0 ? 66 : 54;
+        [142.5, 146.5].forEach((fAz, idx) => {
+          const fPos = azDistToVec3(fAz, 595, 44.0);
+          const stackHeight = idx === 0 ? 68 : 56;
           const stack = new THREE.Mesh(
             new THREE.CylinderGeometry(1.3, 2.2, stackHeight, 10),
             new THREE.MeshLambertMaterial({ color: 0x64748b })
@@ -36863,13 +37010,13 @@
           });
         });
 
-        // Lumieres nocturnes de Levis et St-Romuald
-        for (let i = 0; i < 82; i++) {
-          const lAz = 73 + Math.random() * 145;
-          const isWaterfront = i < 32;
+        // Lumières nocturnes urbaines de Lévis, Parcours des Anses et Saint-Romuald
+        for (let i = 0; i < 96; i++) {
+          const lAz = 28 + (i * 2.1) % 202;
+          const isWaterfront = i < 36;
           const baseD = getSouthShoreDist(lAz);
-          const lY = isWaterfront ? 5.2 : Math.max(18, getSouthCliffHeight(lAz) - 4) + Math.random() * 24;
-          const lDist = isWaterfront ? (baseD - 9) : (baseD + 35 + Math.random() * 140);
+          const lY = isWaterfront ? 5.2 : Math.max(18, getSouthCliffHeight(lAz) - 3) + (i % 5) * 4.5;
+          const lDist = isWaterfront ? (baseD - 9) : (baseD + 35 + (i % 7) * 22);
           const lPos = azDistToVec3(lAz, lDist, lY);
           const lMesh = new THREE.Mesh(
             new THREE.BoxGeometry(2.8, 2.4, 2.8),
@@ -36880,32 +37027,69 @@
           cityLightsList.push(lMesh);
         }
 
-        // --- ROUTE 132 (CHEMIN DU FLEUVE / BOUL. GUILLAUME-COUTURE / MARIE-VICTORIN) RIVE-SUD & CIRCULATION ---
+        // --- PARCOURS DES ANSES (PISTE CYCLABLE & PROMENADE RIVERAINES LÉVIS/HADLOW, AZ 29°–148°) ---
+        const ansesWaypoints = [];
+        for (let az = 29; az <= 148; az += 3.5) {
+          ansesWaypoints.push(azDistToVec3(az, getSouthShoreDist(az) - 8.0, 4.95));
+        }
+        const ansesCurve = new THREE.CatmullRomCurve3(ansesWaypoints);
+        const ansesAsphaltMat = new THREE.MeshLambertMaterial({ color: 0x293241 });
+        const ansesBikeLaneMat = new THREE.MeshLambertMaterial({ color: 0x9a3412 });
+        const steelGuardMat = new THREE.MeshLambertMaterial({ color: 0x94a3b8 });
+        const lampPostMat = new THREE.MeshLambertMaterial({ color: 0x475569 });
+        const lampBulbMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
+
+        const ansesPts = ansesCurve.getPoints(44);
+        for (let i = 0; i < ansesPts.length - 1; i++) {
+          const p1 = ansesPts[i];
+          const p2 = ansesPts[i + 1];
+          const segLen = p1.distanceTo(p2);
+          const segCenter = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
+          const pathMesh = new THREE.Mesh(new THREE.BoxGeometry(5.6, 0.35, segLen + 0.25), ansesAsphaltMat);
+          pathMesh.position.copy(segCenter);
+          pathMesh.lookAt(p2);
+          southShoreGroup.add(pathMesh);
+
+          const bikeStripe = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.38, segLen + 0.2), ansesBikeLaneMat);
+          bikeStripe.position.set(-1.3, 0.02, 0);
+          pathMesh.add(bikeStripe);
+
+          const seawallRail = new THREE.Mesh(new THREE.BoxGeometry(0.32, 1.1, segLen + 0.2), steelGuardMat);
+          seawallRail.position.set(-2.75, 0.6, 0);
+          pathMesh.add(seawallRail);
+
+          if (i % 4 === 0) {
+            const pLamp = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.2, 5.6, 6), lampPostMat);
+            pLamp.position.set(2.9, 2.8, 0);
+            pathMesh.add(pLamp);
+            const pBulb = new THREE.Mesh(new THREE.SphereGeometry(0.36, 6, 6), lampBulbMat);
+            pBulb.position.set(2.9, 5.7, 0);
+            pathMesh.add(pBulb);
+          }
+        }
+
+        // --- CHEMIN DU FLEUVE / ROUTE 132 & RAMPE DES PONTS (SAINT-ROMUALD -> ETCHEMIN -> CHAUDIÈRE -> PONTS, AZ 153°–232.6°) ---
         const r132Waypoints = [];
-        for (let az = 88; az <= 234; az += 3.0) {
+        for (let az = 153; az <= 232.5; az += 2.2) {
           const dCoast = getSouthShoreDist(az);
-          const isBridge = az >= 216;
-          const roadY = isBridge ? (5.4 + ((az - 216) / (234 - 216)) * 38.4) : (az <= 112 ? 4.5 : 5.4);
+          const isBridge = az >= 227.0;
+          const roadY = isBridge ? (5.4 + ((az - 227.0) / (232.6 - 227.0)) * 41.8) : 5.4;
           r132Waypoints.push(azDistToVec3(az, dCoast - 7.5, roadY));
         }
+        r132Waypoints.push(azDistToVec3(232.6, getSouthShoreDist(232.6) - 7.5, 47.2));
         const route132Curve = new THREE.CatmullRomCurve3(r132Waypoints);
         window.route132Curve = route132Curve;
 
         const route132RoadMat = new THREE.MeshLambertMaterial({ color: 0x1e2530 });
         const roadYellowStripeMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
         const roadWhiteStripeMat = new THREE.MeshBasicMaterial({ color: 0xf8fafc });
-        const steelGuardMat = new THREE.MeshLambertMaterial({ color: 0x94a3b8 });
-        const lampPostMat = new THREE.MeshLambertMaterial({ color: 0x475569 });
-        const lampBulbMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
 
-        // Construction du ruban asphalte continu de la Route 132
-        const r132Samples = 58;
+        const r132Samples = 48;
         const r132Pts = route132Curve.getPoints(r132Samples);
         for (let i = 0; i < r132Samples; i++) {
           const p1 = r132Pts[i];
           const p2 = r132Pts[i + 1];
-          const segVec = new THREE.Vector3().subVectors(p2, p1);
-          const segLen = segVec.length();
+          const segLen = p1.distanceTo(p2);
           const segCenter = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
 
           const roadMesh = new THREE.Mesh(
@@ -36916,7 +37100,6 @@
           roadMesh.lookAt(p2);
           southShoreGroup.add(roadMesh);
 
-          // Double ligne mediane jaune
           [-0.22, 0.22].forEach((stripeOff) => {
             const stripe = new THREE.Mesh(
               new THREE.BoxGeometry(0.24, 0.44, segLen * 0.72),
@@ -36926,7 +37109,6 @@
             roadMesh.add(stripe);
           });
 
-          // Ligne blanche de rive
           [-4.4, 4.4].forEach((edgeOff) => {
             const edgeStripe = new THREE.Mesh(
               new THREE.BoxGeometry(0.28, 0.44, segLen),
@@ -36936,7 +37118,6 @@
             roadMesh.add(edgeStripe);
           });
 
-          // Glissiere de securite en acier galvanise cote fleuve
           const guardrail = new THREE.Mesh(
             new THREE.BoxGeometry(0.35, 1.15, segLen + 0.2),
             steelGuardMat
@@ -36944,7 +37125,6 @@
           guardrail.position.set(-4.95, 0.6, 0);
           roadMesh.add(guardrail);
 
-          // Lampadaires cotiers
           if (i % 4 === 0) {
             const lampPost = new THREE.Mesh(
               new THREE.CylinderGeometry(0.18, 0.24, 7.5, 6),
@@ -36969,7 +37149,7 @@
           }
         }
 
-        // Vehicules animes sur la Route 132 (Rive-Sud)
+        // Véhicules animés sur la Route 132 / Chemin du Fleuve (Rive-Sud)
         const route132Cars = [];
         window.route132Cars = route132Cars;
         const r132CarColors = [0xef4444, 0x3b82f6, 0xf8fafc, 0x10b981, 0x64748b, 0xf59e0b];
@@ -36993,11 +37173,9 @@
           cabBody.position.set(isWestbound ? -0.4 : 0.4, 1.8, 0);
           carGroup.add(cabBody);
 
-          // Phares avant
-          const hlColor = 0xfef08a;
           const hl = new THREE.Mesh(
             new THREE.SphereGeometry(0.35, 6, 6),
-            new THREE.MeshBasicMaterial({ color: hlColor })
+            new THREE.MeshBasicMaterial({ color: 0xfef08a })
           );
           hl.position.set(isWestbound ? 2.15 : -2.15, 0.95, 0.65);
           carGroup.add(hl);
@@ -37005,11 +37183,9 @@
           hl2.position.z = -0.65;
           carGroup.add(hl2);
 
-          // Feux arriere
-          const tlColor = 0xef4444;
           const tl = new THREE.Mesh(
             new THREE.SphereGeometry(0.32, 6, 6),
-            new THREE.MeshBasicMaterial({ color: tlColor })
+            new THREE.MeshBasicMaterial({ color: 0xef4444 })
           );
           tl.position.set(isWestbound ? -2.15 : 2.15, 0.95, 0.65);
           carGroup.add(tl);
@@ -37021,27 +37197,29 @@
           route132Cars.push({
             group: carGroup,
             progress: c / 16,
-            speed: (isWestbound ? 1 : -1) * (0.00035 + (c % 3) * 0.00012),
+            speed: (isWestbound ? 1 : -1) * (0.00038 + (c % 3) * 0.00012),
             laneOffset: isWestbound ? -2.3 : 2.3,
           });
         }
 
-        // --- DETAILS GEOGRAPHIQUES RIVE-SUD ENTRE LE QUAI ET LE PONT DE QUEBEC ---
+        // --- DÉTAILS GÉOGRAPHIQUES RIVE-SUD CALIBRÉS ---
 
-        // 1. Canalisations industrielles aériennes (Pipe-Racks) reliant l'enracinement du môle Valero (150.2°) à la Raffinerie Jean-Gaulin
+        // 1. Canalisations industrielles aériennes (Pipe-Racks) grimpant directement la falaise de Hadlow depuis le môle Valero (150.0°) jusqu'à la Raffinerie Jean-Gaulin (146.5°)
         const pipeRackGroup = new THREE.Group();
         southShoreGroup.add(pipeRackGroup);
         const rackSteelMat = new THREE.MeshLambertMaterial({ color: 0x64748b });
         const crudePipeMat = new THREE.MeshLambertMaterial({ color: 0x334155 });
         const silverPipeMat = new THREE.MeshPhongMaterial({ color: 0x94a3b8, shininess: 70 });
 
-        const rackStart = azDistToVec3(150.2, 330, 6.8);
-        const rackEnd = azDistToVec3(197, 538, 42.0);
+        const rackStart = azDistToVec3(150.0, 326, 6.8);
+        const rackCrest = azDistToVec3(148.5, 378, 39.5);
+        const rackEnd = azDistToVec3(146.2, 492, 41.5);
+        const rackMainCurve = new THREE.CatmullRomCurve3([rackStart, rackCrest, rackEnd]);
         const rackBents = 10;
         for (let b = 0; b <= rackBents; b++) {
           const u = b / rackBents;
-          const bPos = new THREE.Vector3().lerpVectors(rackStart, rackEnd, u);
-          const bHeight = 8.2 + (1 - u) * 2.4;
+          const bPos = rackMainCurve.getPointAt(u);
+          const bHeight = 6.8;
 
           [-2.2, 2.2].forEach((offX) => {
             const leg = new THREE.Mesh(
@@ -37058,32 +37236,33 @@
           beam.position.set(bPos.x, bPos.y + bHeight, bPos.z);
           pipeRackGroup.add(beam);
           const beamLower = beam.clone();
-          beamLower.position.y -= 2.6;
+          beamLower.position.y -= 2.4;
           pipeRackGroup.add(beamLower);
         }
 
         [-1.6, -0.5, 0.5, 1.6].forEach((pOff, pIdx) => {
           const pMat = pIdx === 0 ? crudePipeMat : pIdx === 1 ? silverPipeMat : rackSteelMat;
           const pRadius = pIdx === 0 ? 0.72 : 0.45;
-          const pCurve = new THREE.LineCurve3(
-            new THREE.Vector3(rackStart.x + pOff, rackStart.y + 8.2, rackStart.z),
-            new THREE.Vector3(rackEnd.x + pOff, rackEnd.y + 8.2, rackEnd.z)
-          );
+          const pCurve = new THREE.CatmullRomCurve3([
+            new THREE.Vector3(rackStart.x + pOff, rackStart.y + 6.8, rackStart.z),
+            new THREE.Vector3(rackCrest.x + pOff, rackCrest.y + 6.8, rackCrest.z),
+            new THREE.Vector3(rackEnd.x + pOff, rackEnd.y + 6.8, rackEnd.z)
+          ]);
           const pipeMesh = new THREE.Mesh(
-            new THREE.TubeGeometry(pCurve, 12, pRadius, 8, false),
+            new THREE.TubeGeometry(pCurve, 16, pRadius, 8, false),
             pMat
           );
           pipeRackGroup.add(pipeMesh);
         });
 
-        // 2. Parc fluvial de Saint-Romuald & Anse Benson (Promenade de bois, Belvedere panoramique & Gazebo)
+        // 2. Parc fluvial de l'Anse Benson (entre Rivière Etchemin 224.3° et Rivière Chaudière 230.1° : Az 225.4°–228.0°)
         const anseBensonGroup = new THREE.Group();
         southShoreGroup.add(anseBensonGroup);
         const timberDeckMat = new THREE.MeshLambertMaterial({ color: 0x92400e });
         const cedarRoofMat = new THREE.MeshLambertMaterial({ color: 0x78350f });
         const lawnMat = new THREE.MeshLambertMaterial({ color: 0x2d4a36 });
 
-        for (let az = 186; az <= 198; az += 2.4) {
+        for (let az = 225.5; az <= 228.0; az += 0.8) {
           const dLawn = getSouthShoreDist(az) - 4;
           const lawnPos = azDistToVec3(az, dLawn, 4.6);
           const lawnPatch = new THREE.Mesh(
@@ -37095,12 +37274,11 @@
         }
 
         const bwPtsList = [];
-        for (let az = 184; az <= 200; az += 3.2) {
-          const dBw = getSouthShoreDist(az) - 10;
-          bwPtsList.push(azDistToVec3(az, dBw, 4.8));
+        for (let az = 225.3; az <= 228.2; az += 0.7) {
+          bwPtsList.push(azDistToVec3(az, getSouthShoreDist(az) - 10, 4.8));
         }
         const boardwalkCurve = new THREE.CatmullRomCurve3(bwPtsList);
-        const bwPts = boardwalkCurve.getPoints(24);
+        const bwPts = boardwalkCurve.getPoints(16);
         for (let k = 0; k < bwPts.length - 1; k++) {
           const bp1 = bwPts[k];
           const bp2 = bwPts[k + 1];
@@ -37115,7 +37293,7 @@
           anseBensonGroup.add(plank);
         }
 
-        const gazeboAz = 190.5;
+        const gazeboAz = 226.5;
         const gazeboPos = azDistToVec3(gazeboAz, getSouthShoreDist(gazeboAz) - 8, 5.0);
         const gazeboBase = new THREE.Mesh(
           new THREE.CylinderGeometry(6.2, 6.6, 1.0, 8),
@@ -37144,12 +37322,12 @@
         gazeboRoof.position.set(gazeboPos.x, gazeboPos.y + 7.8, gazeboPos.z);
         anseBensonGroup.add(gazeboRoof);
 
-        // 3. Rampe de chargement ferroviaire Valero sur le plateau (Rail Loading Racks)
+        // 3. Rampe de chargement ferroviaire Valero sur le plateau Sud-Est de la Raffinerie Jean-Gaulin (Az 152°, Dist 595m)
         const railRackGroup = new THREE.Group();
         southShoreGroup.add(railRackGroup);
-        const rackPos = azDistToVec3(208, 590, 42.5);
+        const rackPos = azDistToVec3(152.0, 595, 43.0);
         railRackGroup.position.copy(rackPos);
-        railRackGroup.rotation.y = (28 * Math.PI) / 180;
+        railRackGroup.rotation.y = (24 * Math.PI) / 180;
 
         const canopyRoof = new THREE.Mesh(
           new THREE.BoxGeometry(62, 1.2, 14),
@@ -37176,15 +37354,15 @@
           railRackGroup.add(rArm);
         }
 
-        // 4. Embouchure de la Rivière Chaudière, Pont Ferroviaire CN Chaudière & Marina de la Chaudière
+        // 4. Embouchure de la Rivière Chaudière (Az 230.1°), Viaduc Ferroviaire CN & Marina de la Chaudière
         const chaudiereGroup = new THREE.Group();
         southShoreGroup.add(chaudiereGroup);
 
         const chTrestleMat = new THREE.MeshLambertMaterial({ color: 0x334155 });
         const chPierMat = new THREE.MeshLambertMaterial({ color: 0x94a3b8 });
-        const trestleCenter = azDistToVec3(225.5, 830, 43.8);
+        const trestleCenter = azDistToVec3(230.1, 1215, 46.5);
         chaudiereGroup.position.copy(trestleCenter);
-        chaudiereGroup.rotation.y = (46 * Math.PI) / 180;
+        chaudiereGroup.rotation.y = (36 * Math.PI) / 180;
 
         const trestleDeck = new THREE.Mesh(
           new THREE.BoxGeometry(92, 3.2, 7.2),
@@ -37194,7 +37372,7 @@
         chaudiereGroup.add(trestleDeck);
 
         [-30, 0, 30].forEach((tx) => {
-          const pierHeight = 40;
+          const pierHeight = 42;
           const pier = new THREE.Mesh(
             new THREE.BoxGeometry(6.5, pierHeight, 6.5),
             chPierMat
@@ -37211,11 +37389,11 @@
           chaudiereGroup.add(brace);
         });
 
-        // Marina de la Chaudière ancrée dans l'anse de l'embouchure (en coordonnées monde sur southShoreGroup!)
-        const marinaPos = azDistToVec3(224.8, 804, 1.9);
+        // Marina de la Chaudière ancrée dans l'anse de l'embouchure (Az 229.2°, Dist 1125m)
+        const marinaPos = azDistToVec3(229.2, 1125, 1.9);
         const marinaGroup = new THREE.Group();
         marinaGroup.position.copy(marinaPos);
-        marinaGroup.rotation.y = (45 * Math.PI) / 180;
+        marinaGroup.rotation.y = (38 * Math.PI) / 180;
         southShoreGroup.add(marinaGroup);
 
         for (let p = 0; p < 3; p++) {
@@ -37236,7 +37414,7 @@
           });
         }
 
-        // --- 6. PONTS DE QUEBEC & PIERRE-LAPORTE 3D EN AMONT (AZIMUT 234 DEG A 266 DEG, DIST 920m â€” 4,5 KM REEL, PLUS LOIN QUE LA RAFFINERIE!) ---
+        // --- 6. PONTS DE QUÉBEC & PIERRE-LAPORTE 3D CALIBRÉS WGS84 (GORGE ÉTROITE CAP-ROUGE / CHAUDIÈRE : AZ 232.6° À 241.6°, DIST 1365m — 7,2 KM RÉEL!) ---
         const bridgesGroup = new THREE.Group();
         scene.add(bridgesGroup);
 
@@ -37245,9 +37423,9 @@
         const bridgePierMat = new THREE.MeshLambertMaterial({ color: 0x94a3b8 });
         const cableMat = new THREE.MeshBasicMaterial({ color: 0x4d7c0f });
 
-        // Coordonnees 3D des Culees Rive-Sud (234 deg, 920m) et Rive-Nord (266 deg, 920m)
-        const southAbutmentWorld = azDistToVec3(234, 920, 0);
-        const northAbutmentWorld = azDistToVec3(266, 920, 0);
+        // Coordonnées 3D des Culées Rive-Sud (232.6°, 1365m) et Rive-Nord (241.6°, 1365m) — centre Az 237.1°
+        const southAbutmentWorld = azDistToVec3(232.6, 1365, 0);
+        const northAbutmentWorld = azDistToVec3(241.6, 1365, 0);
         const bCenter = new THREE.Vector3()
           .addVectors(southAbutmentWorld, northAbutmentWorld)
           .multiplyScalar(0.5);
@@ -37255,18 +37433,17 @@
           northAbutmentWorld,
           southAbutmentWorld
         );
-        const realBridgeSpan = spanVec.length(); // ~507.2m d'une rive a l'autre a 920m de distance
-        const shoreToShoreDist = 270.2; // Base locale mise a l'echelle exacte par bridgesGroup.scale.x
+        const realBridgeSpan = spanVec.length(); // ~214.2m dans la gorge encaissée de 9.0° à 1365m
+        const shoreToShoreDist = 270.2;
         const halfSpan = shoreToShoreDist * 0.5;
 
         bridgesGroup.position.copy(bCenter);
         bridgesGroup.rotation.y = Math.atan2(-spanVec.z, spanVec.x);
-        bridgesGroup.scale.set(realBridgeSpan / shoreToShoreDist, 1.0, 1.0);
+        bridgesGroup.scale.set(realBridgeSpan / shoreToShoreDist, 1.08, 1.08);
 
         // Culées massives en béton encastrées dans la falaise Rive-Sud (-halfSpan) et Rive-Nord (+halfSpan)
         [-1, 1].forEach((side) => {
           const abutX = side * (halfSpan - 4);
-          // Culée Pont de Québec + Pierre-Laporte reliant les deux falaises
           const abutmentWall = new THREE.Mesh(
             new THREE.BoxGeometry(28, 50, 68),
             bridgePierMat
@@ -37274,7 +37451,6 @@
           abutmentWall.position.set(abutX + side * 10, 23, -21);
           bridgesGroup.add(abutmentWall);
 
-          // Piliers d'ancrage côtiers (Anchor Piers) au pied de chaque rive
           const anchorPierQC = new THREE.Mesh(
             new THREE.BoxGeometry(10, 48, 12),
             bridgePierMat
@@ -37282,7 +37458,6 @@
           anchorPierQC.position.set(side * 112, 22, 0);
           bridgesGroup.add(anchorPierQC);
 
-          // Massifs d'ancrage des câbles du Pont Pierre-Laporte sur chaque rive
           const cableAnchorPL = new THREE.Mesh(
             new THREE.BoxGeometry(18, 50, 16),
             bridgePierMat
@@ -37294,7 +37469,6 @@
         // Piliers principaux en eau profonde et tours des deux ponts (x = -62 et x = +62)
         [-62, 62].forEach((px) => {
           const sideSign = Math.sign(px);
-          // Piliers en béton dans le fleuve du Pont de Québec
           const pierQC = new THREE.Mesh(
             new THREE.BoxGeometry(15, 34, 15),
             bridgePierMat
@@ -37302,7 +37476,6 @@
           pierQC.position.set(px, 11, 0);
           bridgesGroup.add(pierQC);
 
-          // Tour principale du Pont de Québec
           const towerQC = new THREE.Mesh(
             new THREE.BoxGeometry(9, 90, 9),
             qcBridgeMat
@@ -37310,7 +37483,6 @@
           towerQC.position.set(px, 60, 0);
           bridgesGroup.add(towerQC);
 
-          // Bras cantilever en losange emblématique du Pont de Québec
           const diamond = new THREE.Mesh(
             new THREE.OctahedronGeometry(34, 0),
             qcBridgeMat
@@ -37319,7 +37491,6 @@
           diamond.position.set(px, 64, 0);
           bridgesGroup.add(diamond);
 
-          // Membrures supérieures obliques reliant la tour aux culées de rive et à la travée centrale
           const shoreChord = new THREE.Mesh(
             new THREE.BoxGeometry(58, 2.8, 6.5),
             qcBridgeMat
@@ -37336,7 +37507,6 @@
           riverChord.rotation.z = sideSign * 0.42;
           bridgesGroup.add(riverChord);
 
-          // Piliers et pylônes en H du Pont Pierre-Laporte (en arrière-plan à z = -42)
           const pierPL = new THREE.Mesh(
             new THREE.BoxGeometry(14, 32, 14),
             bridgePierMat
@@ -37351,7 +37521,6 @@
           pylonPL.position.set(px * 1.06, 64, -42);
           bridgesGroup.add(pylonPL);
 
-          // Feux d'aviation rouges au sommet des tours des deux ponts
           const beaconQC = new THREE.Mesh(
             new THREE.SphereGeometry(1.7, 8, 8),
             new THREE.MeshBasicMaterial({ color: 0xef4444 })
@@ -37367,7 +37536,6 @@
           bridgesGroup.add(beaconPL);
         });
 
-        // Travée centrale suspendue en treillis du Pont de Québec (entre x = -24 et x = +24)
         const centerTrussTop = new THREE.Mesh(
           new THREE.BoxGeometry(50, 2.6, 6.8),
           qcBridgeMat
@@ -37375,7 +37543,6 @@
         centerTrussTop.position.set(0, 58, 0);
         bridgesGroup.add(centerTrussTop);
 
-        // Montants verticaux en treillis du Pont de Québec d'une rive à l'autre
         for (let tx = -120; tx <= 120; tx += 15) {
           const distFromTower = Math.min(Math.abs(tx - 62), Math.abs(tx + 62));
           const strutH = Math.max(12, 48 - distFromTower * 0.65);
@@ -37387,8 +37554,7 @@
           bridgesGroup.add(strut);
         }
 
-        // Câbles porteurs paraboliques 3D et suspentes verticales du Pont Pierre-Laporte (d'une rive à l'autre)
-        const plTowerX = 62 * 1.06; // ~65.7m
+        const plTowerX = 62 * 1.06;
         for (let sx = -132; sx <= 132; sx += 11) {
           let cableY = 48;
           if (Math.abs(sx) <= plTowerX) {
@@ -37399,7 +37565,6 @@
               (Math.abs(sx) - plTowerX) / (134 - plTowerX);
             cableY = 114 - normSide * 66;
           }
-          // Suspente verticale reliant le câble porteur au tablier
           const suspH = Math.max(2, cableY - 46);
           const suspender = new THREE.Mesh(
             new THREE.CylinderGeometry(0.28, 0.28, suspH, 6),
@@ -37408,7 +37573,6 @@
           suspender.position.set(sx, 46 + suspH * 0.5, -42);
           bridgesGroup.add(suspender);
 
-          // Segment du câble porteur principal
           const cableNode = new THREE.Mesh(
             new THREE.BoxGeometry(12.2, 1.4, 2.2),
             plBridgeMat
@@ -37417,8 +37581,7 @@
           bridgesGroup.add(cableNode);
         }
 
-        // Tabliers continus des deux ponts encastrés profondément dans la Rive-Sud et la Rive-Nord (aucun vide!)
-        const totalDeckLen = shoreToShoreDist + 130; // ~400m : dépasse de 65m à l'intérieur de chaque falaise
+        const totalDeckLen = shoreToShoreDist + 130;
         const deckQC = new THREE.Mesh(
           new THREE.BoxGeometry(totalDeckLen, 5.2, 9.5),
           qcBridgeMat
@@ -37433,7 +37596,6 @@
         deckPL.position.set(0, 46, -42);
         bridgesGroup.add(deckPL);
 
-        // Phares de véhicules animés traversant les ponts d'une rive à l'autre
         const bridgeCars = [];
         for (let c = 0; c < 28; c++) {
           const isHeadlight = c % 2 === 0;
@@ -37456,15 +37618,29 @@
           });
         }
 
-        // --- 7. RIVE-NORD 3D : QUÉBEC, CAP-DIAMANT, CHÂTEAU FRONTENAC, CITADELLE, LAURENTIDES (246° à 425° / 65°) ---
+        // --- 7. RIVE-NORD 3D : QUÉBEC, CAP-DIAMANT, CHÂTEAU FRONTENAC, ANSE AU FOULON, BEAUPORT (CALIBRAGE WGS84 241.6° À 26°) ---
         const northShoreGroup = new THREE.Group();
         scene.add(northShoreGroup);
 
-        const northCliffMat = new THREE.MeshLambertMaterial({ color: 0x223328, side: THREE.DoubleSide });
-        const northBridgeRockMat = new THREE.MeshLambertMaterial({ color: 0x334155, side: THREE.DoubleSide });
-        const capDiamantRockMat = new THREE.MeshLambertMaterial({ color: 0x2a3d32, side: THREE.DoubleSide });
-        const northPlateauMat = new THREE.MeshLambertMaterial({ color: 0x1a3322, side: THREE.DoubleSide });
-        const northFoothillsMat = new THREE.MeshLambertMaterial({ color: 0x142b1d, side: THREE.DoubleSide });
+        const northCliffMat = new THREE.MeshLambertMaterial({ color: 0x223328, map: shaleStrataTex, side: THREE.DoubleSide });
+        const northBridgeRockMat = new THREE.MeshPhongMaterial({
+          color: 0x334155,
+          map: shaleStrataTex,
+          bumpMap: shaleStrataTex,
+          bumpScale: 0.55,
+          shininess: 8,
+          side: THREE.DoubleSide,
+        });
+        const capDiamantRockMat = new THREE.MeshPhongMaterial({
+          color: 0x2a3d32,
+          map: shaleStrataTex,
+          bumpMap: shaleStrataTex,
+          bumpScale: 0.72,
+          shininess: 8,
+          side: THREE.DoubleSide,
+        });
+        const northPlateauMat = new THREE.MeshLambertMaterial({ color: 0x1a3322, map: forestCanopyTex, side: THREE.DoubleSide });
+        const northFoothillsMat = new THREE.MeshLambertMaterial({ color: 0x142b1d, map: forestCanopyTex, side: THREE.DoubleSide });
         const northLaurentidesMat = new THREE.MeshLambertMaterial({ color: 0x16222b, side: THREE.DoubleSide });
         const qcStoneMat = new THREE.MeshLambertMaterial({ color: 0x94a3b8 });
         const qcRampartMat = new THREE.MeshLambertMaterial({ color: 0x64748b });
@@ -37477,45 +37653,42 @@
         const davieWhiteMat = new THREE.MeshLambertMaterial({ color: 0xf8fafc });
         const davieSteelMat = new THREE.MeshLambertMaterial({ color: 0x475569 });
 
-        // Profil geomorphologique reel de la Rive-Nord (axe continu 265..390 deg) :
-        // - Culee Nord des Ponts / Cap-Rouge (266 deg) : dist 920m, falaise 58m
-        // - Quai des Cageux / Plage Jacques-Cartier (279 deg) : dist 695m
-        // - Pointe de Puiseaux / Sillery (302 deg) : promontoire avance a 472m
-        // - Anse au Foulon & Bassin Brown (312-321 deg) : anse portuaire en retrait a 518m (quais en eau profonde)
-        // - Cap-Blanc (328 deg) : dist 760m, falaise remontant a 74m
-        // - Promontoire du Cap-Diamant / Citadelle / Chateau Frontenac (333-344 deg) : dist 1105-1125m, paroi abrupte 78m
-        // - Pointe-a-Carcy / Place Royale / Gare Fluviale (346-350 deg) : chute abrupte du Cap-Diamant vers la Basse-Ville (74m -> 8.5m)
-        // - Vieux-Port / Bassin Louise / Silos Bunge (352-6 deg) : peninsule portuaire basse (y ~ 7.5m, dist 1380-1405m)
-        // - Terminaux de Beauport / Quais 50-53 (10.5 deg) : pointe portuaire industrielle a 1525m
-        // - Baie de Beauport & Battures de Beauport (16-22 deg) : grande baie incurvee a 2260m
-        // - Culee Nord Pont de l'Ile d'Orleans (26.4 deg) : dist 1950m
+        // Profil géomorphologique réel WGS84 de la Rive-Nord vu du Quai Valero (46.78183°N, -71.21000°W) :
+        // - Culée Nord des Ponts / Sainte-Foy (241.6°) : dist 1365m (7,2 km réel), falaise 58m
+        // - Quai des Cageux / Plage Jacques-Cartier (249.5°) : dist 885m
+        // - Yacht Club & Anse de Sillery (256.0°) -> Pointe à Puiseaux / Église St-Michel (261.0°, dist 655m)
+        // - Anse au Foulon Quais 101-108, Silos & IMTT (278°-302°) : en face Ouest-Nord-Ouest à 495m (1,8 km réel)
+        // - Bassin Brown / Garde Côtière Canadienne (306°-308°) : dist 515m (1,9 km réel)
+        // - Cap-Blanc & Escalier (342°) : dist 650m, falaise 73m
+        // - Promontoire du Cap-Diamant : Citadelle (3.5°, 865m) & Château Frontenac / Terrasse Dufferin (6.1°, 895m — 3,4 km réel!)
+        // - Pointe-à-Carcy / Gare Fluviale (8.8°, 1045m) : goulet de Québec face à Pointe-De Lévy (27.2°, 1235m)
+        // - Bassin Louise & Silos Bunge (9.8°-11.5°, 1115-1165m — 4,3 km réel)
+        // - Terminaux de Beauport Quais 50-53 (14.0°, 1360m) -> Baie de Beauport (17.5°, 1760m)
+        // - Culée Nord Pont de l'Île d'Orléans / Montmorency (20.8°, 1960m — 10,2 km réel)
         const NORTH_SHORE_CONTROL_PTS = [
-          [264.0, 950, 58.0],
-          [266.0, 920, 58.0],
-          [273.0, 805, 55.0],
-          [279.0, 695, 52.0],
-          [289.0, 560, 50.0],
-          [297.0, 492, 51.0],
-          [302.0, 472, 53.0], // Pointe de Puiseaux (Sillery)
-          [308.0, 488, 51.0],
-          [313.0, 518, 49.0], // Anse au Foulon (retrait portuaire)
-          [320.5, 518, 50.0], // Bassin Brown
-          [325.0, 635, 64.0],
-          [328.0, 760, 73.0], // Cap-Blanc
-          [333.0, 1105, 77.5], // La Citadelle / Cap-Diamant
-          [339.5, 1118, 78.0], // Terrasse Dufferin & Chateau Frontenac
-          [344.0, 1128, 76.5], // Remparts Est
-          [346.8, 1165, 54.0], // Cote de la Montagne / Pointe-a-Carcy
-          [349.5, 1295, 14.0], // Basse-Ville / Rue Dalhousie
-          [352.5, 1378, 8.2],  // Entree Bassin Louise / Vieux-Port
-          [359.0, 1388, 7.8],  // Quai Saint-Andre / Silos Bunge Ouest
-          [365.5, 1398, 7.8],  // Silos Bunge Est / Estuaire Saint-Charles (5.5 deg)
-          [370.5, 1525, 8.0],  // Terminaux de Beauport - Quais 50-53 (10.5 deg)
-          [374.5, 1890, 14.0], // Entree Baie de Beauport (14.5 deg)
-          [379.5, 2255, 24.0], // Fond de la Baie de Beauport (19.5 deg)
-          [382.5, 2240, 32.0], // Cote de Beaupre Ouest (22.5 deg)
-          [386.4, 1950, 42.0], // Culee Nord Pont Ile d'Orleans (26.4 deg)
-          [392.0, 1935, 48.0]
+          [240.0, 1410, 58.0],
+          [241.6, 1365, 58.0], // Culée Nord Ponts de Québec & Pierre-Laporte
+          [245.5, 1080, 56.0], // Cap-au-Diable / Sainte-Foy
+          [249.5, 885, 53.0],  // Quai des Cageux / Plage Jacques-Cartier
+          [256.0, 735, 52.0],  // Yacht Club & Anse de Sillery
+          [261.0, 655, 54.0],  // Pointe à Puiseaux (Sillery)
+          [269.0, 575, 51.0],  // Promenade Samuel-De Champlain Ouest
+          [278.0, 515, 49.0],  // Anse au Foulon Ouest (Quai 101)
+          [295.0, 495, 49.5],  // Anse au Foulon Centre (Quais 103-106 / Silos / IMTT)
+          [308.0, 515, 51.0],  // Bassin Brown / Garde Côtière Canadienne (Quai 98)
+          [324.0, 565, 62.0],  // Promenade Samuel-De Champlain Est
+          [342.0, 650, 73.0],  // Cap-Blanc
+          [355.0, 765, 76.5],  // Plaines d'Abraham / Cap-aux-Diamants Sud
+          [363.5, 865, 78.5],  // La Citadelle de Québec (3.5°)
+          [366.1, 895, 79.0],  // Terrasse Dufferin & Château Frontenac (6.1°)
+          [367.5, 925, 68.0],  // Côte de la Montagne / Funiculaire (7.5°)
+          [368.8, 1045, 13.5], // Pointe-à-Carcy / Place Royale / Gare Fluviale (8.8°)
+          [369.8, 1115, 8.2],  // Entrée Bassin Louise / Vieux-Port (9.8°)
+          [371.2, 1165, 7.8],  // Silos Bunge / Estuaire Saint-Charles (11.2°)
+          [374.0, 1360, 8.0],  // Terminaux de Beauport - Quais 50-53 (14.0°)
+          [377.5, 1760, 16.0], // Baie de Beauport & Battures (17.5°)
+          [380.8, 1960, 38.0], // Culée Nord Pont de l'Île d'Orléans (20.8°)
+          [386.0, 2120, 48.0], // Côte-de-Beaupré / L'Ange-Gardien (26.0°)
         ];
 
         function toContinuousNorthAz(normAz) {
@@ -37541,11 +37714,11 @@
               const f = (1 - Math.cos(u * Math.PI)) * 0.5;
               return {
                 dist: p0[1] + (p1[1] - p0[1]) * f,
-                cliffH: p0[2] + (p1[2] - p0[2]) * f
+                cliffH: p0[2] + (p1[2] - p0[2]) * f,
               };
             }
           }
-          return { dist: 1390, cliffH: 48.0 };
+          return { dist: 1120, cliffH: 48.0 };
         }
 
         function getNorthShoreDist(normAz) {
@@ -37560,27 +37733,28 @@
 
         const northForeshoreRockMat = new THREE.MeshStandardMaterial({
           color: 0x3b4248,
+          map: shaleStrataTex,
           roughness: 0.9,
-          metalness: 0.06
+          metalness: 0.06,
         });
 
-        // MODELISATION DU TERRAIN RIVE-NORD (Battures intertidales, terrasse Champlain, falaise Cap-Diamant, Vieux-Port bas et plateau)
+        // MODÉLISATION DU TERRAIN RIVE-NORD (Battures intertidales, terrasse Champlain, falaise schisteuse Cap-Diamant, Vieux-Port bas & Laurentides)
         const northForeshoreSlices = [];
         const northTerraceSlices = [];
         const northCliffSlices = [];
         const northPlateauSlices = [];
         const northMountainSlices = [];
 
-        for (let cAz = 266; cAz <= 388; cAz += 1.5) {
+        for (let cAz = 241.6; cAz <= 385.5; cAz += 1.4) {
           const normAz = cAz % 360;
           const prof = sampleNorthShoreProfile(normAz);
           const dBase = prof.dist;
           const cliffH = prof.cliffH;
 
-          // Zones de quais portuaires dragues en eau profonde (pas de batture emergente devant les quais verticaux)
-          const isDeepQuay = (cAz >= 311.5 && cAz <= 322.0) || (cAz >= 346.5 && cAz <= 372.5);
-          const isBeauportFlats = cAz > 373.0 && cAz <= 385.0;
-          const battureWidth = isDeepQuay ? 4 : (isBeauportFlats ? 125 : 44);
+          // Quais portuaires dragués en eau profonde (Anse au Foulon 276°-311° & Vieux-Port / Beauport 8°-15.5°)
+          const isDeepQuay = (cAz >= 276.0 && cAz <= 311.0) || (cAz >= 368.0 && cAz <= 375.5);
+          const isBeauportFlats = cAz > 375.5 && cAz <= 381.5;
+          const battureWidth = isDeepQuay ? 4 : (isBeauportFlats ? 120 : 42);
           const battureTopY = isDeepQuay ? -2.4 : (isBeauportFlats ? 1.55 : 1.25);
 
           // 0. Battures intertidales Rive-Nord (Plage Jacques-Cartier, Sillery, Cap-Blanc, Battures de Beauport)
@@ -37588,40 +37762,42 @@
             azDistToVec3(normAz, dBase - 35 - battureWidth, -2.2),
             azDistToVec3(normAz, dBase - 35 - battureWidth * 0.58, isDeepQuay ? -2.3 : 0.25),
             azDistToVec3(normAz, dBase - 35 - battureWidth * 0.2, isDeepQuay ? -2.4 : battureTopY * 0.78),
-            azDistToVec3(normAz, dBase - 35, battureTopY)
+            azDistToVec3(normAz, dBase - 35, battureTopY),
           ]);
 
-          // 1. Terrasse cotiere continue (Promenade Samuel-De Champlain, Quais Anse-au-Foulon, Basse-Ville & Vieux-Port)
+          // 1. Terrasse côtière continue (Promenade Samuel-De Champlain, Quais Anse-au-Foulon, Basse-Ville & Vieux-Port)
           northTerraceSlices.push([
             azDistToVec3(normAz, dBase - 36, isDeepQuay ? -1.8 : 0.6),
             azDistToVec3(normAz, dBase - 28, isDeepQuay ? 4.2 : 2.6),
             azDistToVec3(normAz, dBase - 16, 4.1),
-            azDistToVec3(normAz, dBase - 4, 4.9)
+            azDistToVec3(normAz, dBase - 4, 4.9),
           ]);
 
-          // 2. Paroi rocheuse abrupte (Sillery -> Cap-Blanc -> Cap-Diamant, puis chute reelle a Pointe-a-Carcy)
+          // 2. Paroi rocheuse abrupte (Sainte-Foy -> Sillery -> Cap-Blanc -> Cap-Diamant, puis chute abrupte à Pointe-à-Carcy)
+          const rockJitter = Math.sin(cAz * 2.1) * 2.2;
           northCliffSlices.push([
             azDistToVec3(normAz, dBase - 4, 4.9),
-            azDistToVec3(normAz, dBase + 8, 4.9 + (cliffH - 4.9) * 0.52),
-            azDistToVec3(normAz, dBase + 24, cliffH)
+            azDistToVec3(normAz, dBase + 8 + rockJitter * 0.5, 4.9 + (cliffH - 4.9) * 0.54),
+            azDistToVec3(normAz, dBase + 24 + rockJitter, cliffH),
           ]);
 
-          // 3. Plateau continental (Plaines d'Abraham & Haute-Ville, et plaine basse de l'estuaire Saint-Charles / Limoilou remontant vers Charlesbourg)
-          const isLowHarbor = cAz >= 349.0 && cAz <= 376.0;
-          const midPlainH = isLowHarbor ? Math.max(cliffH, 11.5) : cliffH + 1.5;
-          const inlandEscarpH = isLowHarbor ? 52.0 : 74.0;
+          // 3. Plateau continental (Sainte-Foy, Plaines d'Abraham & Haute-Ville, puis basse vallée de la Saint-Charles / Limoilou remontant vers Charlesbourg)
+          const isLowHarbor = cAz >= 368.5 && cAz <= 378.5;
+          const midPlainH = isLowHarbor ? Math.max(cliffH, 11.5) : cliffH + 2.0;
+          const inlandEscarpH = isLowHarbor ? 52.0 : 76.0;
           northPlateauSlices.push([
-            azDistToVec3(normAz, dBase + 24, cliffH),
+            azDistToVec3(normAz, dBase + 24 + rockJitter, cliffH),
             azDistToVec3(normAz, dBase + 190, midPlainH),
             azDistToVec3(normAz, dBase + 460, inlandEscarpH),
-            azDistToVec3(normAz, dBase + 860, 86.0)
+            azDistToVec3(normAz, dBase + 860, 88.0),
           ]);
 
-          // 4. Chaine des Laurentides a l'horizon boreal
+          // 4. Bouclier Canadien / Chaîne des Laurentides à l'horizon boréal (Mont Sainte-Anne, Lac-Beauport, Stoneham, Valcartier)
+          const laurentianRidgeH = 195.0 + Math.sin(cAz * 0.14) * 32.0 + Math.cos(cAz * 0.37) * 14.0;
           northMountainSlices.push([
-            azDistToVec3(normAz, dBase + 860, 86.0),
-            azDistToVec3(normAz, dBase + 1600, 142.0),
-            azDistToVec3(normAz, 3300, 222.0)
+            azDistToVec3(normAz, dBase + 860, 88.0),
+            azDistToVec3(normAz, dBase + 1580, 138.0 + Math.sin(cAz * 0.21) * 16.0),
+            azDistToVec3(normAz, 3320, laurentianRidgeH),
           ]);
         }
 
@@ -37656,15 +37832,15 @@
         );
         northShoreGroup.add(northMountainsMesh);
 
-        // Berges continues de Cap-Rouge en amont des ponts (Az 266 deg a 282 deg, 920m a 2200m)
+        // Falaises de Cap-Rouge & Saint-Augustin en amont de la culée Nord des Ponts (Az 241.6° à 248°, 1365m à 2485m)
         const capRougeSlices = [];
-        for (let d = 920; d <= 2300; d += 80) {
-          const upAz = 266.5 + ((d - 920) / 1280) * 9.0;
+        for (let d = 1365; d <= 2485; d += 80) {
+          const upAz = 241.6 + ((d - 1365) / 1120) * 6.2;
           capRougeSlices.push([
             azDistToVec3(upAz, d - 24, 0.8),
             azDistToVec3(upAz, d, 28.0),
             azDistToVec3(upAz, d + 48, 56.0),
-            azDistToVec3(upAz, d + 220, 58.0)
+            azDistToVec3(upAz, d + 240, 60.0),
           ]);
         }
         const capRougeMesh = new THREE.Mesh(
@@ -37675,7 +37851,7 @@
 
         // --- BOULEVARD CHAMPLAIN / PROMENADE SAMUEL-DE CHAMPLAIN (ROUTE 136) RIVE-NORD & CIRCULATION ---
         const champlainPts = [];
-        for (let az = 266; az <= 346; az += 2.5) {
+        for (let az = 242; az <= 366; az += 2.5) {
           const normAz = az % 360;
           const wDist = getNorthShoreDist(normAz) - 18;
           champlainPts.push(azDistToVec3(normAz, wDist, 4.15));
@@ -37690,8 +37866,7 @@
         const champlainPoleMat = new THREE.MeshLambertMaterial({ color: 0x475569 });
         const champlainBulbMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
 
-        // Ruban continu d'asphalte, marquage et muret de soutenement
-        const chSamples = 64;
+        const chSamples = 72;
         const chPathPts = champlainRoadCurve.getPoints(chSamples);
         for (let i = 0; i < chSamples; i++) {
           const p1 = chPathPts[i];
@@ -37708,7 +37883,6 @@
           roadMesh.lookAt(p2);
           northShoreGroup.add(roadMesh);
 
-          // Ligne mediane jaune
           const stripe = new THREE.Mesh(
             new THREE.BoxGeometry(0.26, 0.48, segLen * 0.65),
             champlainYellowMat
@@ -37716,7 +37890,6 @@
           stripe.position.set(0, 0.05, 0);
           roadMesh.add(stripe);
 
-          // Lignes blanches de rive
           [-5.1, 5.1].forEach((edgeOff) => {
             const edgeStripe = new THREE.Mesh(
               new THREE.BoxGeometry(0.28, 0.48, segLen),
@@ -37726,7 +37899,6 @@
             roadMesh.add(edgeStripe);
           });
 
-          // Muret de soutenement et parapet en granit cote fleuve
           const seawall = new THREE.Mesh(
             new THREE.BoxGeometry(1.2, 1.8, segLen + 0.25),
             champlainSeawallMat
@@ -37734,7 +37906,6 @@
           seawall.position.set(5.8, 0.7, 0);
           roadMesh.add(seawall);
 
-          // Lampadaires contemporains
           if (i % 3 === 0) {
             const lampPost = new THREE.Mesh(
               new THREE.CylinderGeometry(0.18, 0.25, 8.2, 6),
@@ -37759,11 +37930,11 @@
           }
         }
 
-        // Vehicules animes sur Boulevard Champlain (Rive-Nord)
+        // Véhicules animés sur Boulevard Champlain (Rive-Nord)
         const champlainCars = [];
         window.champlainCars = champlainCars;
         const chCarColors = [0xdc2626, 0x2563eb, 0xf8fafc, 0x059669, 0xd97706, 0x475569];
-        for (let c = 0; c < 22; c++) {
+        for (let c = 0; c < 24; c++) {
           const isWestbound = c % 2 === 0;
           const carGroup = new THREE.Group();
           const bodyMat = new THREE.MeshLambertMaterial({
@@ -37783,7 +37954,6 @@
           cabBody.position.set(isWestbound ? -0.4 : 0.4, 1.8, 0);
           carGroup.add(cabBody);
 
-          // Phares avant
           const hl = new THREE.Mesh(
             new THREE.SphereGeometry(0.35, 6, 6),
             new THREE.MeshBasicMaterial({ color: 0xfef08a })
@@ -37794,7 +37964,6 @@
           hl2.position.z = -0.65;
           carGroup.add(hl2);
 
-          // Feux arriere
           const tl = new THREE.Mesh(
             new THREE.SphereGeometry(0.32, 6, 6),
             new THREE.MeshBasicMaterial({ color: 0xef4444 })
@@ -37808,19 +37977,19 @@
           northShoreGroup.add(carGroup);
           champlainCars.push({
             group: carGroup,
-            progress: c / 22,
-            speed: (isWestbound ? 1 : -1) * (0.00042 + (c % 4) * 0.0001),
+            progress: c / 24,
+            speed: (isWestbound ? 1 : -1) * (0.00040 + (c % 4) * 0.0001),
             laneOffset: isWestbound ? -2.5 : 2.5,
           });
         }
 
-        // --- DETAILS GEOGRAPHIQUES RIVE-NORD ENTRE LE PONT DE QUEBEC ET LE PORT DE BEAUPORT ---
+        // --- DÉTAILS GÉOGRAPHIQUES RÉELS RIVE-NORD (CALIBRÉS WGS84) ---
 
-        // 1. Quai et Tour d'observation des Cageux (Promenade Samuel-De Champlain, Az 279 deg)
+        // 1. Quai et Tour d'observation des Cageux (Promenade Samuel-De Champlain, Az 249.5°)
         const cageuxGroup = new THREE.Group();
-        const cageuxPos = azDistToVec3(279, getNorthShoreDist(279) - 18, 4.1);
+        const cageuxPos = azDistToVec3(249.5, getNorthShoreDist(249.5) - 18, 4.1);
         cageuxGroup.position.copy(cageuxPos);
-        cageuxGroup.rotation.y = ((279 - 90) * Math.PI) / 180;
+        cageuxGroup.rotation.y = ((249.5 - 90) * Math.PI) / 180;
         northShoreGroup.add(cageuxGroup);
 
         const cageuxPier = new THREE.Mesh(
@@ -37864,11 +38033,11 @@
         cageuxPavilion.position.set(22, 2.6, 0);
         cageuxGroup.add(cageuxPavilion);
 
-        // 2. Marina & Yacht Club de Sillery / Anse de Sillery (Az 297 deg)
+        // 2. Marina & Yacht Club de Sillery / Anse de Sillery (Az 256.5°)
         const silleryGroup = new THREE.Group();
-        const silleryPos = azDistToVec3(297, getNorthShoreDist(297) - 22, 1.8);
+        const silleryPos = azDistToVec3(256.5, getNorthShoreDist(256.5) - 22, 1.8);
         silleryGroup.position.copy(silleryPos);
-        silleryGroup.rotation.y = ((297 - 90) * Math.PI) / 180;
+        silleryGroup.rotation.y = ((256.5 - 90) * Math.PI) / 180;
         northShoreGroup.add(silleryGroup);
 
         const breakwater = new THREE.Mesh(
@@ -37912,11 +38081,11 @@
         yClubHouse.position.set(0, 3.1, 10);
         silleryGroup.add(yClubHouse);
 
-        // 3. Eglise Saint-Michel de Sillery sur la Pointe de Puiseaux (Az 302.5 deg)
+        // 3. Église Saint-Michel de Sillery sur la Pointe à Puiseaux (Az 261.2°)
         const stMichelGroup = new THREE.Group();
-        const stMichelPos = azDistToVec3(302.5, getNorthShoreDist(302.5) + 36, getNorthCliffHeight(302.5) + 0.5);
+        const stMichelPos = azDistToVec3(261.2, getNorthShoreDist(261.2) + 32, getNorthCliffHeight(261.2) + 0.5);
         stMichelGroup.position.copy(stMichelPos);
-        stMichelGroup.rotation.y = (130 * Math.PI) / 180;
+        stMichelGroup.rotation.y = (165 * Math.PI) / 180;
         northShoreGroup.add(stMichelGroup);
 
         const stMichelBody = new THREE.Mesh(
@@ -37948,31 +38117,67 @@
         stMichelSpire.position.set(0, 48, 14);
         stMichelGroup.add(stMichelSpire);
 
-        // 4. Installations Portuaires de l'Anse-au-Foulon & Garde Cotiere (Quais 101-108, Az 316.5 deg)
+        // 4. Secteur Portuaire de l'Anse au Foulon (Quais 101-108, Silos à grains & Réservoirs IMTT — en face à Az 294°, dist 472m!)
         const foulonGroup = new THREE.Group();
-        const foulonPos = azDistToVec3(316.5, getNorthShoreDist(316.5) - 24, 3.8);
+        const foulonPos = azDistToVec3(294.0, getNorthShoreDist(294.0) - 24, 3.8);
         foulonGroup.position.copy(foulonPos);
-        foulonGroup.rotation.y = ((316.5 - 90) * Math.PI) / 180;
+        foulonGroup.rotation.y = ((294.0 - 90) * Math.PI) / 180;
         northShoreGroup.add(foulonGroup);
 
         const foulonWharf = new THREE.Mesh(
-          new THREE.BoxGeometry(132, 4.8, 24),
+          new THREE.BoxGeometry(176, 4.8, 28),
           seawallMat
         );
         foulonWharf.position.set(0, 0.4, -8);
         foulonGroup.add(foulonWharf);
 
-        [-34, 32].forEach((hx) => {
+        // Hangars maritimes des Quais 103-105
+        [-12, 30].forEach((hx) => {
           const shed = new THREE.Mesh(
-            new THREE.BoxGeometry(42, 9.8, 17),
+            new THREE.BoxGeometry(34, 9.2, 16),
             new THREE.MeshLambertMaterial({ color: 0x475569 })
           );
-          shed.position.set(hx, 6.2, 2);
+          shed.position.set(hx, 6.0, 0);
           foulonGroup.add(shed);
         });
 
+        // Batterie de silos blancs en béton de l'Anse au Foulon (repère visuel majeur juste en face de Valero!)
+        const foulonSiloMat = new THREE.MeshLambertMaterial({ color: 0xe2e8f0 });
+        const foulonCapMat = new THREE.MeshLambertMaterial({ color: 0x64748b });
+        for (let fs = 0; fs < 12; fs++) {
+          const sx = -72 + (fs % 6) * 7.6;
+          const sz = 7.5 + Math.floor(fs / 6) * 7.8;
+          const fSilo = new THREE.Mesh(
+            new THREE.CylinderGeometry(3.7, 3.7, 32, 12),
+            foulonSiloMat
+          );
+          fSilo.position.set(sx, 17.5, sz);
+          foulonGroup.add(fSilo);
+        }
+        const foulonHeadhouse = new THREE.Mesh(
+          new THREE.BoxGeometry(47, 6.8, 15.5),
+          foulonCapMat
+        );
+        foulonHeadhouse.position.set(-53, 36.8, 11.4);
+        foulonGroup.add(foulonHeadhouse);
+
+        // Parc de réservoirs blancs de vrac liquide IMTT Québec (Anse au Foulon Est / Quais 106-107)
+        const imttTankMat = new THREE.MeshPhongMaterial({ color: 0xf1f5f9, shininess: 35 });
+        for (let it = 0; it < 8; it++) {
+          const tx = 54 + (it % 4) * 12.0;
+          const tz = 3.0 + Math.floor(it / 4) * 12.5;
+          const tr = it % 2 === 0 ? 5.2 : 4.4;
+          const th = it % 2 === 0 ? 13.5 : 15.5;
+          const imttTank = new THREE.Mesh(
+            new THREE.CylinderGeometry(tr, tr, th, 14),
+            imttTankMat
+          );
+          imttTank.position.set(tx, 1.5 + th * 0.5, tz);
+          foulonGroup.add(imttTank);
+        }
+
         const craneMat = new THREE.MeshLambertMaterial({ color: 0x0284c7 });
-        [-16, 20].forEach((cx) => {
+        [-28, 16].forEach((cx) => {
           const craneBase = new THREE.Mesh(
             new THREE.BoxGeometry(5.5, 12, 5.5),
             craneMat
@@ -37989,11 +38194,11 @@
           foulonGroup.add(craneJib);
         });
 
-        // 5. Falaise de Cap-Blanc et Escalier du Cap-Blanc (Az 328 deg)
+        // 5. Falaise de Cap-Blanc, Église Notre-Dame-de-la-Garde & Escalier du Cap-Blanc (Az 342°)
         const capBlancGroup = new THREE.Group();
-        const capBlancPos = azDistToVec3(328, getNorthShoreDist(328) - 4, 4.2);
+        const capBlancPos = azDistToVec3(342, getNorthShoreDist(342) - 4, 4.2);
         capBlancGroup.position.copy(capBlancPos);
-        capBlancGroup.rotation.y = ((328 - 90) * Math.PI) / 180;
+        capBlancGroup.rotation.y = ((342 - 90) * Math.PI) / 180;
         northShoreGroup.add(capBlancGroup);
 
         const stairWoodMat = new THREE.MeshLambertMaterial({ color: 0x92400e });
@@ -38005,7 +38210,7 @@
             stairWoodMat
           );
           flight.rotation.x = 0.42;
-          flight.position.set((st % 2 === 0 ? -1.5 : 1.5), stY + 4, stZ);
+          flight.position.set(st % 2 === 0 ? -1.5 : 1.5, stY + 4, stZ);
           capBlancGroup.add(flight);
 
           const landing = new THREE.Mesh(
@@ -38031,9 +38236,9 @@
         ndGardeRoof.rotation.y = Math.PI / 4;
         capBlancGroup.add(ndGardeRoof);
 
-        // 6. Plaines d'Abraham & Tour Martello 1 (Az 333 deg, au sommet du plateau)
+        // 6. Plaines d'Abraham & Tour Martello 1 (Az 357°, au sommet du plateau)
         const martelloGroup = new THREE.Group();
-        const martelloPos = azDistToVec3(333, getNorthShoreDist(333) + 70, getNorthCliffHeight(333) - 1.5);
+        const martelloPos = azDistToVec3(357, getNorthShoreDist(357) + 65, getNorthCliffHeight(357) - 1.5);
         martelloGroup.position.copy(martelloPos);
         northShoreGroup.add(martelloGroup);
 
@@ -38051,12 +38256,12 @@
         martelloParapet.position.set(0, 11, 0);
         martelloGroup.add(martelloParapet);
 
-        // LA CITADELLE DE QUEBEC (Azimut 333.5 deg, au sommet du Cap-Diamant)
+        // LA CITADELLE DE QUÉBEC (Azimut réel 3.5°, au sommet du Cap-Diamant — 3,2 km réel)
         const citadelleGroup = new THREE.Group();
-        const citadellePos = azDistToVec3(333.5, getNorthShoreDist(333.5) + 30, getNorthCliffHeight(333.5));
+        const citadellePos = azDistToVec3(3.5, getNorthShoreDist(3.5) + 28, getNorthCliffHeight(3.5));
         citadelleGroup.position.copy(citadellePos);
-        citadelleGroup.rotation.y = (152 * Math.PI) / 180;
-        citadelleGroup.scale.set(1.65, 1.65, 1.65);
+        citadelleGroup.rotation.y = (183 * Math.PI) / 180;
+        citadelleGroup.scale.set(1.55, 1.55, 1.55);
         northShoreGroup.add(citadelleGroup);
 
         const rampartMain = new THREE.Mesh(
@@ -38089,15 +38294,15 @@
         flag.position.set(3, 25, 0);
         citadelleGroup.add(flag);
 
-        // TERRASSE DUFFERIN (Azimut 339 deg, au pied du Chateau Frontenac)
-        const dufferinPos = azDistToVec3(339, getNorthShoreDist(339) + 24, getNorthCliffHeight(339));
+        // TERRASSE DUFFERIN (Azimut réel 5.8°, au pied du Château Frontenac)
+        const dufferinPos = azDistToVec3(5.8, getNorthShoreDist(5.8) + 22, getNorthCliffHeight(5.8));
         const dufferinBoardwalk = new THREE.Mesh(
           new THREE.BoxGeometry(64, 2.5, 12),
           new THREE.MeshLambertMaterial({ color: 0x78350f })
         );
         dufferinBoardwalk.position.copy(dufferinPos);
-        dufferinBoardwalk.rotation.y = (158 * Math.PI) / 180;
-        dufferinBoardwalk.scale.set(1.65, 1.65, 1.65);
+        dufferinBoardwalk.rotation.y = (186 * Math.PI) / 180;
+        dufferinBoardwalk.scale.set(1.55, 1.55, 1.55);
         northShoreGroup.add(dufferinBoardwalk);
 
         [-22, 0, 22].forEach((kx) => {
@@ -38116,12 +38321,12 @@
           dufferinBoardwalk.add(kioskRoof);
         });
 
-        // CHATEAU FRONTENAC 3D (Azimut 340 deg, au sommet du Cap-Diamant)
+        // CHÂTEAU FRONTENAC & ÉDIFICE PRICE 3D (Azimut réel WGS84 6.1°, dist 895m — 3,4 km NNE!)
         const chateauGroup = new THREE.Group();
-        const chateauPos = azDistToVec3(340, getNorthShoreDist(340) + 48, getNorthCliffHeight(340));
+        const chateauPos = azDistToVec3(6.1, getNorthShoreDist(6.1) + 44, getNorthCliffHeight(6.1));
         chateauGroup.position.copy(chateauPos);
-        chateauGroup.rotation.y = (160 * Math.PI) / 180;
-        chateauGroup.scale.set(1.75, 1.75, 1.75);
+        chateauGroup.rotation.y = (186 * Math.PI) / 180;
+        chateauGroup.scale.set(1.65, 1.65, 1.65);
         scene.add(chateauGroup);
 
         const brickMat = new THREE.MeshLambertMaterial({ color: 0x9a3412 });
@@ -38173,7 +38378,7 @@
           new THREE.BoxGeometry(13, 38, 13),
           new THREE.MeshLambertMaterial({ color: 0x64748b })
         );
-        priceTower.position.set(52, 19, -8);
+        priceTower.position.set(48, 19, -8);
         chateauGroup.add(priceTower);
 
         const priceRoof = new THREE.Mesh(
@@ -38181,15 +38386,15 @@
           copperRoofMat
         );
         priceRoof.rotation.y = Math.PI / 4;
-        priceRoof.position.set(52, 44, -8);
+        priceRoof.position.set(48, 44, -8);
         chateauGroup.add(priceRoof);
 
-        // Tour de l'Hotel du Parlement du Quebec (Azimut 329 deg, Colline Parlementaire)
+        // Hôtel du Parlement du Québec (Azimut réel 1.5°, Colline Parlementaire)
         const parliamentGroup = new THREE.Group();
-        const parliamentPos = azDistToVec3(329, 1160, 76);
+        const parliamentPos = azDistToVec3(1.5, getNorthShoreDist(1.5) + 115, 78);
         parliamentGroup.position.copy(parliamentPos);
-        parliamentGroup.rotation.y = (148 * Math.PI) / 180;
-        parliamentGroup.scale.set(1.65, 1.65, 1.65);
+        parliamentGroup.rotation.y = (182 * Math.PI) / 180;
+        parliamentGroup.scale.set(1.55, 1.55, 1.55);
         northShoreGroup.add(parliamentGroup);
 
         const parliamentMain = new THREE.Mesh(
@@ -38214,78 +38419,78 @@
         parliamentSpire.position.set(0, 50, 0);
         parliamentGroup.add(parliamentSpire);
 
-        // Architecture patrimoniale du Vieux-Quebec : Haute-Ville (329-344 deg) + Basse-Ville / Place Royale (342-351 deg)
+        // Architecture patrimoniale du Vieux-Québec : Haute-Ville (358°-367°) + Basse-Ville / Place Royale (366.8°-369.5°)
         for (let h = 0; h < 28; h++) {
           const isBasseVille = h >= 18;
           const hAz = isBasseVille
-            ? (341.5 + (h - 18) * 0.95)
-            : (329.5 + (h % 9) * 1.65);
-          const baseD = getNorthShoreDist(hAz);
+            ? (366.8 + (h - 18) * 0.28)
+            : (358.5 + (h % 9) * 0.95);
+          const normHAz = hAz % 360;
+          const baseD = getNorthShoreDist(normHAz);
           const hDist = isBasseVille
             ? (baseD - 18 + (h % 2) * 14)
             : (baseD + 36 + Math.floor(h / 9) * 58);
           const hY = isBasseVille
             ? (9.5 + (h % 3) * 1.2)
-            : (getNorthCliffHeight(hAz) + 4.5 + (h % 3) * 1.8);
-          const hPos = azDistToVec3(hAz % 360, hDist, hY);
+            : (getNorthCliffHeight(normHAz) + 4.5 + (h % 3) * 1.8);
+          const hPos = azDistToVec3(normHAz, hDist, hY);
 
           const qHouse = new THREE.Mesh(
             new THREE.BoxGeometry(14 + (h % 4) * 2, 11, 12 + (h % 3) * 2),
             qcStoneMat
           );
           qHouse.position.copy(hPos);
-          qHouse.rotation.y = (hAz * Math.PI) / 180;
+          qHouse.rotation.y = (normHAz * Math.PI) / 180;
           northShoreGroup.add(qHouse);
 
           const roofMat = h % 4 === 0 ? qcRoofCopper : h % 4 === 1 ? qcRoofTin : h % 4 === 2 ? qcRoofRed : qcRoofDark;
           const qRoof = new THREE.Mesh(new THREE.ConeGeometry(11, 7.5, 4), roofMat);
           qRoof.position.set(hPos.x, hPos.y + 8.8, hPos.z);
-          qRoof.rotation.y = Math.PI / 4 + (hAz * Math.PI) / 180;
+          qRoof.rotation.y = Math.PI / 4 + (normHAz * Math.PI) / 180;
           northShoreGroup.add(qRoof);
         }
 
-        // --- VIEUX-PORT DE QUEBEC, POINTE-A-CARCY, BASSIN LOUISE & SILOS BUNGE (351 deg a 6 deg) ---
+        // --- VIEUX-PORT DE QUÉBEC, POINTE-À-CARCY, BASSIN LOUISE & SILOS BUNGE (8.5° À 12.2°) ---
         const vieuxPortQuayGroup = new THREE.Group();
-        const vpCenterPos = azDistToVec3(0.5, getNorthShoreDist(0.5) - 18, 3.8);
+        const vpCenterPos = azDistToVec3(9.8, getNorthShoreDist(9.8) - 18, 3.8);
         vieuxPortQuayGroup.position.copy(vpCenterPos);
-        vieuxPortQuayGroup.rotation.y = ((-90 + 0.5) * Math.PI) / 180;
+        vieuxPortQuayGroup.rotation.y = ((-90 + 9.8) * Math.PI) / 180;
         northShoreGroup.add(vieuxPortQuayGroup);
 
         const vpConcreteSlab = new THREE.Mesh(
-          new THREE.BoxGeometry(265, 5.2, 46),
+          new THREE.BoxGeometry(235, 5.2, 44),
           seawallMat
         );
         vpConcreteSlab.position.set(0, 0.8, 0);
         vieuxPortQuayGroup.add(vpConcreteSlab);
 
-        // Silos a grains Bunge du Port de Quebec (Bassin Louise, Azimut 357.5 deg a 5.5 deg — sur la peninsule basse y = 7.8m!)
+        // Silos à grains Bunge du Port de Québec (Bassin Louise, Azimut réel 10.2° à 11.8° — péninsule basse y = 7.8m)
         const siloMat = new THREE.MeshLambertMaterial({ color: 0xe2e8f0 });
         const siloCapMat = new THREE.MeshLambertMaterial({ color: 0x64748b });
         for (let s = 0; s < 14; s++) {
-          const sAz = (357.5 + Math.floor(s / 2) * 1.05) % 360;
+          const sAz = (10.1 + Math.floor(s / 2) * 0.28) % 360;
           const sDist = getNorthShoreDist(sAz) + 12 + (s % 2) * 22;
           const sPos = azDistToVec3(sAz, sDist, 30.5);
           const silo = new THREE.Mesh(
-            new THREE.CylinderGeometry(8.2, 8.2, 46, 12),
+            new THREE.CylinderGeometry(7.8, 7.8, 46, 12),
             siloMat
           );
           silo.position.copy(sPos);
           northShoreGroup.add(silo);
         }
-        // Galerie d'ensilage superieure (headhouse) au sommet des silos Bunge
         const bungeHeadhouse = new THREE.Mesh(
-          new THREE.BoxGeometry(118, 9.5, 20),
+          new THREE.BoxGeometry(108, 9.5, 20),
           siloCapMat
         );
-        bungeHeadhouse.position.copy(azDistToVec3(1.0, getNorthShoreDist(1.0) + 22, 56.5));
-        bungeHeadhouse.rotation.y = ((1.0 - 90) * Math.PI) / 180;
+        bungeHeadhouse.position.copy(azDistToVec3(11.0, getNorthShoreDist(11.0) + 22, 56.5));
+        bungeHeadhouse.rotation.y = ((11.0 - 90) * Math.PI) / 180;
         northShoreGroup.add(bungeHeadhouse);
 
-        // --- TERMINAUX DE BEAUPORT (QUAIS 50-53, Azimut 10.5 deg, dist 1510m) ---
+        // --- TERMINAUX DE BEAUPORT (QUAIS 50-53, Azimut réel 14.0°, dist 1340m) ---
         const beauportPortGroup = new THREE.Group();
-        const beauportQuayPos = azDistToVec3(10.5, getNorthShoreDist(10.5) - 24, 3.6);
+        const beauportQuayPos = azDistToVec3(14.0, getNorthShoreDist(14.0) - 24, 3.6);
         beauportPortGroup.position.copy(beauportQuayPos);
-        beauportPortGroup.rotation.y = ((10.5 - 90) * Math.PI) / 180;
+        beauportPortGroup.rotation.y = ((14.0 - 90) * Math.PI) / 180;
         northShoreGroup.add(beauportPortGroup);
 
         const beauportMole = new THREE.Mesh(
@@ -38295,7 +38500,6 @@
         beauportMole.position.set(0, 0.5, 0);
         beauportPortGroup.add(beauportMole);
 
-        // Reservoirs de vrac liquide & silos Terminaux de Beauport (IMTT / Quai 50-52)
         const bpTankMat = new THREE.MeshLambertMaterial({ color: 0xf1f5f9 });
         [-44, -18, 10, 36].forEach((tx, idx) => {
           const r = idx % 2 === 0 ? 11.5 : 9.2;
@@ -38308,7 +38512,6 @@
           beauportPortGroup.add(tank);
         });
 
-        // Portique de chargement mineralier Quai 53
         const bpLoader = new THREE.Mesh(
           new THREE.BoxGeometry(8.0, 22.0, 8.0),
           new THREE.MeshLambertMaterial({ color: 0xb91c1c })
@@ -38316,24 +38519,24 @@
         bpLoader.position.set(54, 14.0, -10);
         beauportPortGroup.add(bpLoader);
 
-        // Lumieres nocturnes realistes suivant l'elevation reelle de chaque secteur (Cap-Diamant haut vs Vieux-Port/Limoilou bas)
-        for (let i = 0; i < 165; i++) {
-          const lAz = 268 + Math.random() * 116;
+        // Lumières nocturnes réalistes de Québec, Sainte-Foy, Sillery, Vieux-Port, Limoilou & Beauport
+        for (let i = 0; i < 175; i++) {
+          const lAz = 243 + Math.random() * 140;
           const normAz = lAz % 360;
-          const isWaterfront = i < 55;
-          const isCliffRim = i >= 55 && i < 88;
+          const isWaterfront = i < 58;
+          const isCliffRim = i >= 58 && i < 95;
           const cliffRimH = getNorthCliffHeight(normAz);
           const baseND = getNorthShoreDist(normAz);
           const lDist = isWaterfront
             ? (baseND - 18)
             : isCliffRim
               ? (baseND + 20)
-              : (baseND + 45 + Math.random() * 180);
+              : (baseND + 45 + Math.random() * 190);
           const lY = isWaterfront
             ? 5.8
             : isCliffRim
               ? (cliffRimH + 1.8 + Math.random() * 2.0)
-              : (cliffRimH + 6.0 + Math.random() * 22.0);
+              : (cliffRimH + 6.0 + Math.random() * 24.0);
           const lPos = azDistToVec3(normAz, lDist, lY);
           const lMesh = new THREE.Mesh(
             new THREE.BoxGeometry(3.2, 2.8, 3.2),
@@ -38344,79 +38547,87 @@
           cityLightsList.push(lMesh);
         }
 
-        // --- 8. GRAND PANORAMA 3D DE L'ILE D'ORLEANS (AZIMUT 33.5 DEG A 69 DEG, DIST 2120m A 2950m â€” 14,2 KM+ REEL!) ---
+        // --- 8. ÎLE D'ORLÉANS SCULPTÉE EN CONTINU (AZIMUT RÉEL WGS84 25.8° À 48.5°, DIST 2085m À 2720m — 9,8 À 18 KM!) ---
         const ileOrleansGroup = new THREE.Group();
         scene.add(ileOrleansGroup);
 
-        const ileCliffMat = new THREE.MeshLambertMaterial({ color: 0x223a2f });
-        const ileForestMat = new THREE.MeshLambertMaterial({ color: 0x144929 });
-        const ilePastureMat = new THREE.MeshLambertMaterial({ color: 0x2d6a4f });
+        const ileCliffMat = new THREE.MeshLambertMaterial({ color: 0x223a2f, map: shaleStrataTex, side: THREE.DoubleSide });
+        const ileForestMat = new THREE.MeshLambertMaterial({ color: 0x144929, map: forestCanopyTex, side: THREE.DoubleSide });
+        const ilePastureMat = new THREE.MeshLambertMaterial({ color: 0x2d6a4f, map: forestCanopyTex, side: THREE.DoubleSide });
         const ileCropGoldMat = new THREE.MeshLambertMaterial({ color: 0xb45309 });
         const ileOrchardMat = new THREE.MeshLambertMaterial({ color: 0x3f6212 });
-        const ileBeachMat = new THREE.MeshLambertMaterial({ color: 0x64748b });
+        const ileBeachMat = new THREE.MeshLambertMaterial({ color: 0x64748b, map: shaleStrataTex, side: THREE.DoubleSide });
         const ileHouseMat = new THREE.MeshLambertMaterial({ color: 0xf8fafc });
         const ileBarnRed = new THREE.MeshLambertMaterial({ color: 0x991b1b });
 
-        // TIER 1 : Ligne de cote et promontoires insulaires d'un bout a l'autre de l'Ile (33.5 deg a 69 deg, dist 2120m-2950m)
-        for (let az = 33.5; az <= 69; az += 2.4) {
-          const isTip = az <= 36.5;
-          const isMidIsland = az > 36.5 && az <= 55;
-          const baseDist = isTip ? 2120 : isMidIsland ? (2150 + (az - 36.5) * 22) : (2560 + (az - 55) * 28);
-          const shoreH = isTip ? 38 : isMidIsland ? 34 : 28;
-          const topR = isTip ? 75 : 95;
-          const botR = isTip ? 115 : 145;
-
-          const shorePos = azDistToVec3(az, baseDist, shoreH / 2 - 2);
-          const shoreBlock = new THREE.Mesh(
-            new THREE.CylinderGeometry(topR, botR, shoreH + 4, 12),
-            isTip ? northBridgeRockMat : ileCliffMat
-          );
-          shoreBlock.position.copy(shorePos);
-          ileOrleansGroup.add(shoreBlock);
-
-          const beachPos = azDistToVec3(az, baseDist - 55, 0.5);
-          const beach = new THREE.Mesh(
-            new THREE.CylinderGeometry(topR + 18, botR + 24, 2.2, 10),
-            ileBeachMat
-          );
-          beach.position.copy(beachPos);
-          ileOrleansGroup.add(beach);
+        function getIleOrleansShoreDist(az) {
+          const u = Math.max(0, Math.min(1, (az - 25.8) / (48.5 - 25.8)));
+          return 2085 + u * 635 + Math.sin(u * Math.PI * 2.2) * 28;
         }
 
-        // TIER 2 : Grand plateau agricole et collines centrales de l'Ile d'Orleans
-        for (let az = 34.5; az <= 68; az += 3.2) {
-          const dist = 2280 + (az - 34) * 26;
-          const platH = 54 + Math.sin(az * 0.16) * 12;
-          const pPos = azDistToVec3(az, dist, platH / 2 - 2);
+        // Maillages continus (createTerrainRibbon) de l'Île d'Orléans : battures -> falaise boisée -> plateau agricole -> crête centrale
+        const ileBeachSlices = [];
+        const ileBluffSlices = [];
+        const ilePlateauSlices = [];
+        const ileCrestSlices = [];
 
-          const fieldMat = az % 3 === 0 ? ileCropGoldMat : az % 3 === 1 ? ileOrchardMat : ilePastureMat;
-          const plateau = new THREE.Mesh(
-            new THREE.CylinderGeometry(110, 165, platH + 6, 12),
-            fieldMat
-          );
-          plateau.position.copy(pPos);
-          ileOrleansGroup.add(plateau);
+        for (let az = 25.8; az <= 48.6; az += 1.0) {
+          const tipTaper = Math.min(1, (az - 25.6) / 2.2) * Math.min(1, (48.8 - az) / 2.4);
+          const dShore = getIleOrleansShoreDist(az);
+          const bluffH = (26 + Math.sin((az - 25) * 0.25) * 8) * (0.45 + 0.55 * tipTaper);
+          const platH = (52 + Math.sin((az - 24) * 0.19) * 10) * (0.42 + 0.58 * tipTaper);
+          const crestH = (78 + Math.cos((az - 34) * 0.16) * 12) * (0.38 + 0.62 * tipTaper);
+
+          ileBeachSlices.push([
+            azDistToVec3(az, dShore - 52, -1.6),
+            azDistToVec3(az, dShore - 26, 0.55),
+            azDistToVec3(az, dShore - 4, 2.1),
+          ]);
+
+          ileBluffSlices.push([
+            azDistToVec3(az, dShore - 4, 2.1),
+            azDistToVec3(az, dShore + 14, bluffH * 0.56),
+            azDistToVec3(az, dShore + 34, bluffH),
+          ]);
+
+          ilePlateauSlices.push([
+            azDistToVec3(az, dShore + 34, bluffH),
+            azDistToVec3(az, dShore + 125, (bluffH + platH) * 0.52),
+            azDistToVec3(az, dShore + 255, platH),
+          ]);
+
+          ileCrestSlices.push([
+            azDistToVec3(az, dShore + 255, platH),
+            azDistToVec3(az, dShore + 420, crestH),
+            azDistToVec3(az, dShore + 610, crestH * 0.62),
+          ]);
         }
 
-        // TIER 3 : Cretes interieures boisees et arriere-pays de l'Ile
-        for (let az = 36; az <= 66; az += 4.5) {
-          const dist = 2520 + (az - 36) * 30;
-          const ridgeH = 74 + Math.cos(az * 0.14) * 14;
-          const rPos = azDistToVec3(az, dist, ridgeH / 2 - 4);
-          const forestRidge = new THREE.Mesh(
-            new THREE.CylinderGeometry(150, 220, ridgeH + 8, 10),
-            ileForestMat
+        ileOrleansGroup.add(new THREE.Mesh(createTerrainRibbon(ileBeachSlices, 3), ileBeachMat));
+        ileOrleansGroup.add(new THREE.Mesh(createTerrainRibbon(ileBluffSlices, 3), ileCliffMat));
+        ileOrleansGroup.add(new THREE.Mesh(createTerrainRibbon(ilePlateauSlices, 3), ilePastureMat));
+        ileOrleansGroup.add(new THREE.Mesh(createTerrainRibbon(ileCrestSlices, 3), ileForestMat));
+
+        // Parcelles agricoles en lanières seigneuriales (vergers et champs dorés) sur le coteau Sud de l'Île
+        for (let fIdx = 0; fIdx < 12; fIdx++) {
+          const fAz = 28.2 + fIdx * 1.65;
+          const fDist = getIleOrleansShoreDist(fAz) + 115;
+          const strip = new THREE.Mesh(
+            new THREE.BoxGeometry(26, 2.4, 135),
+            fIdx % 2 === 0 ? ileCropGoldMat : ileOrchardMat
           );
-          forestRidge.position.copy(rPos);
-          ileOrleansGroup.add(forestRidge);
+          strip.position.copy(azDistToVec3(fAz, fDist, 39));
+          strip.rotation.y = (fAz * Math.PI) / 180;
+          strip.rotation.x = 0.10;
+          ileOrleansGroup.add(strip);
         }
 
-        // --- VILLAGE HISTORIQUE DE SAINTE-PETRONILLE (BOUT DE L'ILE, AZIMUT 34.8 DEG, DIST 2130m) ---
+        // --- VILLAGE HISTORIQUE DE SAINTE-PÉTRONILLE (BOUT DE L'ÎLE, AZIMUT RÉEL 26.8°, DIST 2105m — 9,8 KM!) ---
         const stePetronilleGroup = new THREE.Group();
-        const stePPos = azDistToVec3(34.8, 2130, 36);
+        const stePPos = azDistToVec3(26.8, getIleOrleansShoreDist(26.8) + 38, 28);
         stePetronilleGroup.position.copy(stePPos);
-        stePetronilleGroup.rotation.y = (145 * Math.PI) / 180;
-        stePetronilleGroup.scale.set(1.85, 1.85, 1.85);
+        stePetronilleGroup.rotation.y = (152 * Math.PI) / 180;
+        stePetronilleGroup.scale.set(1.75, 1.75, 1.75);
         ileOrleansGroup.add(stePetronilleGroup);
 
         const churchBodyP = new THREE.Mesh(new THREE.BoxGeometry(18, 14, 28), ileHouseMat);
@@ -38437,11 +38648,11 @@
         stePetronilleGroup.add(churchPinP);
 
         for (let v = 0; v < 14; v++) {
-          const vAz = 33.8 + (v % 7) * 0.9;
-          const vDist = 2110 + Math.floor(v / 7) * 55;
-          const vPos = azDistToVec3(vAz, vDist, 36 + Math.random() * 5);
+          const vAz = 26.2 + (v % 7) * 0.55;
+          const vDist = getIleOrleansShoreDist(vAz) + 35 + Math.floor(v / 7) * 52;
+          const vPos = azDistToVec3(vAz, vDist, 27 + (v % 3) * 2.5);
           const villa = new THREE.Mesh(
-            new THREE.BoxGeometry(14 + Math.random() * 5, 10, 12 + Math.random() * 4),
+            new THREE.BoxGeometry(14 + (v % 4) * 2, 10, 12 + (v % 3) * 2),
             ileHouseMat
           );
           villa.position.copy(vPos);
@@ -38457,12 +38668,12 @@
           ileOrleansGroup.add(vRoof);
         }
 
-        // --- VILLAGE DE SAINT-LAURENT D'ORLEANS & MARINA (AZIMUT 49 DEG, DIST 2380m) ---
+        // --- VILLAGE DE SAINT-LAURENT-DE-L'ÎLE-D'ORLÉANS & QUAI (AZIMUT 37.5°, DIST 2390m) ---
         const stLaurentGroup = new THREE.Group();
-        const stLPos = azDistToVec3(49, 2380, 32);
+        const stLPos = azDistToVec3(37.5, getIleOrleansShoreDist(37.5) + 36, 32);
         stLaurentGroup.position.copy(stLPos);
-        stLaurentGroup.rotation.y = (130 * Math.PI) / 180;
-        stLaurentGroup.scale.set(1.85, 1.85, 1.85);
+        stLaurentGroup.rotation.y = (142 * Math.PI) / 180;
+        stLaurentGroup.scale.set(1.75, 1.75, 1.75);
         ileOrleansGroup.add(stLaurentGroup);
 
         const churchStL = new THREE.Mesh(new THREE.BoxGeometry(16, 13, 26), ileHouseMat);
@@ -38474,15 +38685,15 @@
         stLaurentGroup.add(churchSpireStL);
 
         const stLWharf = new THREE.Mesh(new THREE.BoxGeometry(6, 3.5, 52), concreteMat);
-        stLWharf.position.set(12, 1.8, -10);
+        stLWharf.position.set(12, -12, -18);
         stLaurentGroup.add(stLWharf);
 
-        // --- VILLAGE DE SAINT-JEAN D'ORLEANS (AZIMUT 59 DEG, DIST 2680m) ---
+        // --- VILLAGE DE SAINT-JEAN-DE-L'ÎLE-D'ORLÉANS (AZIMUT 45.5°, DIST 2620m) ---
         const stJeanGroup = new THREE.Group();
-        const stJPos = azDistToVec3(59, 2680, 28);
+        const stJPos = azDistToVec3(45.5, getIleOrleansShoreDist(45.5) + 38, 28);
         stJeanGroup.position.copy(stJPos);
-        stJeanGroup.rotation.y = (115 * Math.PI) / 180;
-        stJeanGroup.scale.set(1.85, 1.85, 1.85);
+        stJeanGroup.rotation.y = (132 * Math.PI) / 180;
+        stJeanGroup.scale.set(1.75, 1.75, 1.75);
         ileOrleansGroup.add(stJeanGroup);
 
         const churchStJ = new THREE.Mesh(new THREE.BoxGeometry(18, 14, 28), ileHouseMat);
@@ -38494,9 +38705,9 @@
         stJeanGroup.add(spireStJ);
 
         for (let b = 0; b < 18; b++) {
-          const bAz = 39 + b * 1.6;
-          const bDist = 2220 + (b % 4) * 85;
-          const bPos = azDistToVec3(bAz, bDist, 34 + Math.random() * 8);
+          const bAz = 29.5 + b * 0.98;
+          const bDist = getIleOrleansShoreDist(bAz) + 68 + (b % 3) * 58;
+          const bPos = azDistToVec3(bAz, bDist, 36 + (b % 4) * 3);
           const isBarn = b % 3 === 0;
 
           const building = new THREE.Mesh(
@@ -38517,34 +38728,34 @@
           }
         }
 
-        // Grande Roue 3D de la Traverse de Levis (Azimut 80 deg, Dist 1170m â€” 6,4 km reel, au loin a Levis!)
-        const ferrisPos = azDistToVec3(80, 1170, 32);
+        // Grande Roue / Quai Paquet de Lévis (Azimut réel WGS84 27.8°, Dist 1225m — 5,05 km NNE au Quai Paquet!)
+        const ferrisPos = azDistToVec3(27.8, getSouthShoreDist(27.8) - 10, 22);
         const ferrisWheelGroup = new THREE.Group();
         ferrisWheelGroup.position.copy(ferrisPos);
-        ferrisWheelGroup.rotation.y = (-10 * Math.PI) / 180;
-        ferrisWheelGroup.scale.set(1.55, 1.55, 1.55);
+        ferrisWheelGroup.rotation.y = (-62 * Math.PI) / 180;
+        ferrisWheelGroup.scale.set(1.45, 1.45, 1.45);
         scene.add(ferrisWheelGroup);
 
         const wheelRim = new THREE.Mesh(
-          new THREE.TorusGeometry(16, 0.85, 8, 28),
+          new THREE.TorusGeometry(14, 0.85, 8, 28),
           new THREE.MeshBasicMaterial({ color: 0x38bdf8 })
         );
         ferrisWheelGroup.add(wheelRim);
 
         for (let s = 0; s < 6; s++) {
           const spoke = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.3, 0.3, 32, 6),
+            new THREE.CylinderGeometry(0.3, 0.3, 28, 6),
             new THREE.MeshBasicMaterial({ color: 0xf472b6 })
           );
           spoke.rotation.z = (s * Math.PI) / 6;
           ferrisWheelGroup.add(spoke);
         }
 
-        // Voiliers 3D sur le fleuve
+        // Voiliers 3D en plaisance dans le bassin fluvial ouvert devant Sillery / Cap-Blanc (Az 318° à 356°, dist 245-380m)
         const sailboats3D = [];
         for (let sb = 0; sb < 6; sb++) {
-          const sbAz = 86 + sb * 5.5;
-          const sbDist = 340 + (sb % 3) * 95;
+          const sbAz = 318 + sb * 7.5;
+          const sbDist = 245 + (sb % 3) * 62;
           const sbGroup = new THREE.Group();
           const sbPos = azDistToVec3(sbAz, sbDist, 0);
           sbGroup.position.copy(sbPos);
@@ -38583,11 +38794,40 @@
         const floeDriftMat = new THREE.MeshLambertMaterial({ color: 0xf1f5f9 });
         const logMat = new THREE.MeshLambertMaterial({ color: 0x78350f });
 
-        // Paramètres géométriques du fleuve Saint-Laurent :
-        // Axe aligné entre l'amont (Ponts de Québec, Az 248°) et l'aval (Île d'Orléans, Az 58°)
+        // Paramètres géométriques réels du fleuve Saint-Laurent (« Coude de Québec ») :
+        // Courbe de Bézier quadratique suivant l'axe en eau libre entre l'aval (Goulet Québec–Lévis, Az 19°, 1020m),
+        // le coude fluvial devant les Postes 86/87 Valero, et l'amont (Gorge des Ponts de Québec, Az 237°, 1120m).
+        const COUDE_RIVER_P0 = { x: 332.0, z: -964.0 }; // Aval : Goulet Québec–Lévis (Az 19.0°, dist 1020m)
+        const COUDE_RIVER_P1 = { x: 95.0, z: 95.0 };    // Inflexion du Coude de Québec au large du terminal Valero
+        const COUDE_RIVER_P2 = { x: -939.0, z: 610.0 }; // Amont : Approche des Ponts de Québec (Az 237.0°, dist 1120m)
         const riverP0 = new THREE.Vector3(80.4, 0, 75.0);
-        const riverTangent = new THREE.Vector3(-0.8826, 0, 0.4701).normalize();
-        const riverNormal = new THREE.Vector3(-0.4701, 0, -0.8826).normalize();
+        const riverTangent = new THREE.Vector3(-0.78, 0, 0.62).normalize();
+        const riverNormal = new THREE.Vector3(-0.62, 0, -0.78).normalize();
+
+        function sampleCoudeRiverFrame(s, out) {
+          const u = Math.max(0, Math.min(1, (s + 920) / 1840));
+          const om = 1 - u;
+          const x = om * om * COUDE_RIVER_P0.x + 2 * om * u * COUDE_RIVER_P1.x + u * u * COUDE_RIVER_P2.x;
+          const z = om * om * COUDE_RIVER_P0.z + 2 * om * u * COUDE_RIVER_P1.z + u * u * COUDE_RIVER_P2.z;
+          const dux = 2 * om * (COUDE_RIVER_P1.x - COUDE_RIVER_P0.x) + 2 * u * (COUDE_RIVER_P2.x - COUDE_RIVER_P1.x);
+          const duz = 2 * om * (COUDE_RIVER_P1.z - COUDE_RIVER_P0.z) + 2 * u * (COUDE_RIVER_P2.z - COUDE_RIVER_P1.z);
+          const len = Math.hypot(dux, duz) || 1;
+          const tx = dux / len;
+          const tz = duz / len;
+          const nx = -tz;
+          const nz = tx;
+          // Rétrécissement naturel dans le goulet Québec–Lévis (u->0) et la gorge des Ponts (u->1), bassin élargi devant Sillery/Valero (u~0.5)
+          const widthScale = 0.46 + 0.54 * Math.sin(u * Math.PI);
+          const target = out || {};
+          target.x = x;
+          target.z = z;
+          target.tx = tx;
+          target.tz = tz;
+          target.nx = nx;
+          target.nz = nz;
+          target.widthScale = widthScale;
+          return target;
+        }
 
         // Helper universel de création de plaque polygonale irrégulière (Shape extrudée biseautée)
         function createFloeShapeGeometry(radius, sides, irregularity, height) {
@@ -38655,11 +38895,11 @@
 
           const initS = -880 + (f * 27.5) + (Math.sin(f * 3.1) * 15);
           const lane = f % 5;
-          const baseN = lane === 0 ? (-20 + (f % 3) * 16) :
-                        lane === 1 ? (35 + (f % 4) * 22) :
-                        lane === 2 ? (130 + (f % 5) * 24) :
-                        lane === 3 ? (250 + (f % 4) * 26) :
-                                     (360 + (f % 3) * 28);
+          const baseN = lane === 0 ? (-128 + (f % 3) * 12) :
+                        lane === 1 ? (-66 + (f % 4) * 12) :
+                        lane === 2 ? (-12 + (f % 5) * 11) :
+                        lane === 3 ? (52 + (f % 4) * 12) :
+                                     (108 + (f % 3) * 12);
 
           floes3D.push({
             group: floeGroup,
@@ -38775,7 +39015,7 @@
             sprite,
             baseScale,
             s: -750 + (sm * 42) + (Math.random() - 0.5) * 20,
-            baseN: -15 + (sm % 6) * 70,
+            baseN: -120 + (sm % 6) * 48,
             phase: sm * 1.25,
             dirX: Math.cos(sm * 0.7),
             dirZ: Math.sin(sm * 0.7)
@@ -39031,12 +39271,12 @@
         // LANDMARKS & DETAILS HISTORIQUES DU FLEUVE SAINT-LAURENT CALIBRES EN PROFONDEUR
         // =========================================================================
 
-        // --- 10. PORT DE QUEBEC & GRAND PAQUEBOT DE CROISIERE 3D (BASSIN LOUISE, AZIMUT 354 DEG, DIST 1390m â€” 7,4 KM REEL!) ---
+        // --- 10. PORT DE QUÉBEC & GRAND PAQUEBOT DE CROISIÈRE 3D (QUAI 22 POINTE-À-CARCY, AZIMUT RÉEL WGS84 8.4°, DIST 1005m — 4,1 KM RÉEL!) ---
         const cruiseShipGroup = new THREE.Group();
-        const cruisePos = azDistToVec3(354, 1390, 0);
+        const cruisePos = azDistToVec3(8.4, 1005, 0);
         cruiseShipGroup.position.copy(cruisePos);
-        cruiseShipGroup.rotation.y = (175 * Math.PI) / 180;
-        cruiseShipGroup.scale.set(1.5, 1.5, 1.5);
+        cruiseShipGroup.rotation.y = (196 * Math.PI) / 180;
+        cruiseShipGroup.scale.set(1.45, 1.45, 1.45);
         scene.add(cruiseShipGroup);
 
         const cruiseHullWhite = new THREE.MeshLambertMaterial({ color: 0xf8fafc });
@@ -39083,16 +39323,17 @@
         cRadar.position.set(28, 26, 0);
         cruiseShipGroup.add(cRadar);
 
-        [-28, 28].forEach((gx) => {
+        const craneQuayPos = azDistToVec3(8.6, 1034, 12);
+        [-22, 22].forEach((gx) => {
           const gBase = new THREE.Mesh(new THREE.BoxGeometry(8, 24, 8), portCraneMat);
-          gBase.position.set(cruisePos.x + gx, 12, cruisePos.z + 22);
+          gBase.position.set(craneQuayPos.x + gx, 12, craneQuayPos.z);
           scene.add(gBase);
           const gBoom = new THREE.Mesh(new THREE.BoxGeometry(32, 1.8, 1.8), portCraneMat);
-          gBoom.position.set(cruisePos.x + gx + 12, 28, cruisePos.z + 22);
+          gBoom.position.set(craneQuayPos.x + gx + 10, 28, craneQuayPos.z + 4);
           scene.add(gBoom);
         });
 
-        // --- 11. PONT SUSPENDU DE L'ILE D'ORLEANS (RELIANT LA RIVE-NORD 26.4 DEG A 1950m A L'ILE D'ORLEANS 33.8 DEG A 2120m — 14,2 KM REEL!) ---
+        // --- 11. PONT SUSPENDU DE L'ÎLE D'ORLÉANS (RELIANT BEAUPORT 20.8° À 1960m À SAINTE-PÉTRONILLE 26.2° À 2085m — 10,2 KM RÉEL!) ---
         const orleansBridgeGroup = new THREE.Group();
         scene.add(orleansBridgeGroup);
 
@@ -39100,8 +39341,8 @@
         const orleansPierMat = new THREE.MeshLambertMaterial({ color: 0x94a3b8 });
         const orleansCableMat = new THREE.MeshBasicMaterial({ color: 0x22c55e });
 
-        const mainlandAbutmentWorld = azDistToVec3(26.4, 1950, 28);
-        const orleansAbutmentWorld = azDistToVec3(33.8, 2120, 22);
+        const mainlandAbutmentWorld = azDistToVec3(20.8, 1960, 28);
+        const orleansAbutmentWorld = azDistToVec3(26.2, 2085, 24);
 
         const orlCenter = new THREE.Vector3()
           .addVectors(mainlandAbutmentWorld, orleansAbutmentWorld)
@@ -39196,12 +39437,18 @@
           });
         }
 
-        // --- 13. CHANTIER MARITIME DAVIE & GRUE PORTIQUE GEANTE (LAUZON, AZIMUT 73.8 DEG, RIVE-SUD EN AVAL DE LEVIS) ---
+        // Fonction de distance côtière aval de Lauzon / Beaumont (Az 27.2° à 45.2°, Chenal du Sud face à l'Île d'Orléans)
+        function getLauzonShoreDist(az) {
+          const u = Math.max(0, Math.min(1, (az - 27.2) / 18.0));
+          return 1235 + u * 845 + Math.sin(u * Math.PI) * 45;
+        }
+
+        // --- 13. CHANTIER MARITIME DAVIE & GRUE PORTIQUE GÉANTE (LAUZON, AZIMUT RÉEL WGS84 31.8° — 6,6 KM NNE EN AVAL DE LÉVIS!) ---
         const davieGroup = new THREE.Group();
-        const daviePos = azDistToVec3(73.8, getSouthShoreDist(73.8) - 18, 12.5);
+        const daviePos = azDistToVec3(31.8, getLauzonShoreDist(31.8) - 18, 11.5);
         davieGroup.position.copy(daviePos);
-        davieGroup.rotation.y = (16 * Math.PI) / 180;
-        davieGroup.scale.set(1.65, 1.65, 1.65);
+        davieGroup.rotation.y = (-35 * Math.PI) / 180;
+        davieGroup.scale.set(1.55, 1.55, 1.55);
         southShoreGroup.add(davieGroup);
 
         // Grue Portique Géante "Goliath" Davie (54m de hauteur, 44m d'envergure)
@@ -39435,24 +39682,24 @@
         towLineStern.visible = false;
         scene.add(towLineStern);
 
-        // Positions de repère maritime (Waypoints du Chenal des Grands Navires)
-        const TANKER_DOCKED_POS = tankerBasePos.clone(); // Section 87 Valero cote fleuve (76.44, 0, 60.52)
-        const TANKER_DOCKED_ROT = (202 * Math.PI) / 180; // Nez vers les Ponts de Quebec (248 deg Az), Timonerie vers l'Ile d'Orleans (68 deg Az)
-        const TANKER_CLEAR_POS = new THREE.Vector3(72.44, 0, 21.02); // Degagement au large dans le fleuve (az ~106 deg, dist ~75m)
+        // Positions de repère maritime (Waypoints calibrés du Chenal des Grands Navires et du Goulet Québec–Lévis)
+        const TANKER_DOCKED_POS = tankerBasePos.clone(); // Section 87 Valero côté fleuve (76.44, 0, 60.52)
+        const TANKER_DOCKED_ROT = (202 * Math.PI) / 180; // Nez vers les Ponts de Québec (237° Az), Timonerie vers l'Île d'Orléans
+        const TANKER_CLEAR_POS = new THREE.Vector3(72.44, 0, 21.02); // Dégagement au large dans le fleuve (az ~106°, dist ~75m)
         const TANKER_CLEAR_ROT = (200 * Math.PI) / 180;
-        const TANKER_TURN_POS = new THREE.Vector3(115.0, 0, -95.0); // Bassin d'evitage en eau profonde (az ~50 deg, dist ~149m)
-        const TANKER_TURN_ROT = (130 * Math.PI) / 180; // Pivotement vers l'aval
-        const TANKER_CHANNEL_POS = azDistToVec3(38, 860, 0); // Chenal maritime entre Quebec et Levis vers l'Ile d'Orleans
-        const TANKER_CHANNEL_ROT = (60.7 * Math.PI) / 180; // Trajectoire aval vers l'Ile d'Orleans
-        const TANKER_ARRIVE_CHAN_ROT = (240.7 * Math.PI) / 180; // Trajectoire amont depuis l'Ile d'Orleans (nez vers les Ponts)
+        const TANKER_TURN_POS = new THREE.Vector3(105.0, 0, -115.0); // Bassin d'évitage en eau profonde dans le Coude de Québec (az ~42°, dist ~156m)
+        const TANKER_TURN_ROT = (118 * Math.PI) / 180; // Pivotement vers le goulet aval
+        const TANKER_CHANNEL_POS = azDistToVec3(18.5, 920, 0); // Chenal maritime dans le Goulet Québec–Lévis vers l'Île d'Orléans
+        const TANKER_CHANNEL_ROT = (71.5 * Math.PI) / 180; // Trajectoire aval (NNE ~18.5°) vers l'Île d'Orléans
+        const TANKER_ARRIVE_CHAN_ROT = (251.5 * Math.PI) / 180; // Trajectoire amont depuis l'Île d'Orléans (nez vers le Coude / Ponts)
         const TANKER_ARRIVE_TURN_ROT = (215 * Math.PI) / 180;
 
-        // Base des remorqueurs Groupe Ocean au Bassin Louise / Port de Quebec (Azimut 356.5 deg, au-dela du Cap-Diamant a dist 1360m — 7.4 km reel!)
-        const bassinLouisePos = azDistToVec3(356.5, 1360, 0);
+        // Base des remorqueurs Groupe Océan au Bassin Louise / Vieux-Port de Québec (Azimut réel WGS84 9.8°, dist 1090m — 4,3 km réel!)
+        const bassinLouisePos = azDistToVec3(9.8, 1090, 0);
         const bassinLouiseGroup = new THREE.Group();
         bassinLouiseGroup.position.copy(bassinLouisePos);
-        bassinLouiseGroup.rotation.y = (176 * Math.PI) / 180;
-        bassinLouiseGroup.scale.set(1.65, 1.65, 1.65);
+        bassinLouiseGroup.rotation.y = (190 * Math.PI) / 180;
+        bassinLouiseGroup.scale.set(1.55, 1.55, 1.55);
         scene.add(bassinLouiseGroup);
 
         const blPier = new THREE.Mesh(
@@ -39483,10 +39730,12 @@
         oceanRoofStripe.position.set(0, 11.2, -2.0);
         bassinLouiseGroup.add(oceanRoofStripe);
 
-        // Positions d'attache des remorqueurs Ocean Taiga & K. Rusby au Bassin Louise (Port de Quebec, Az 356 deg, dist 1335m — 7.4 km reel)
-        const TUG_STANDBY_BOW = azDistToVec3(355.6, 1335, 0);
-        const TUG_STANDBY_STERN = azDistToVec3(357.4, 1335, 0);
-        const TUG_BASSIN_ROT = (-72 * Math.PI) / 180; // Orientes vers le chenal du Saint-Laurent (Sud-Sud-Est), prets a appareiller
+        // Positions d'attache des remorqueurs Océan Taiga & K. Rusby au Bassin Louise (Az 9.5°–10.2°, dist 1065m — 4,3 km réel)
+        // + Waypoint fluvial TUG_NARROWS_WP dans le Goulet Québec–Lévis contournant le promontoire du Cap-Diamant en eau libre
+        const TUG_STANDBY_BOW = azDistToVec3(9.5, 1065, 0);
+        const TUG_STANDBY_STERN = azDistToVec3(10.2, 1065, 0);
+        const TUG_NARROWS_WP = azDistToVec3(16.5, 585, 0);
+        const TUG_BASSIN_ROT = (-108 * Math.PI) / 180; // Orientés vers le Goulet du Saint-Laurent, prêts à appareiller
 
         // Helper pour positionner un remorqueur en coordonnées relatives au navire
         function getShipRelativeVec3(centerPos, rotY, localX, localZ) {
@@ -39711,9 +39960,9 @@
         document.getElementById("tug-sim-toggle-btn")?.addEventListener("click", () => {
           document.getElementById("tug-maneuver-hud")?.classList.toggle("minimized");
         });
-        // --- 16. PHARE HISTORIQUE DE LA POINTE-LÉVY (AZIMUT 82°, RIVE-SUD) ---
+        // --- 16. PHARE HISTORIQUE DE LA POINTE-LÉVY / CÔTE DE LAUZON (AZIMUT RÉEL 28.6°, RIVE-SUD) ---
         const lighthouseGroup = new THREE.Group();
-        const lhPos = azDistToVec3(82, getSouthShoreDist(82) + 26, getSouthCliffHeight(82) + 0.5);
+        const lhPos = azDistToVec3(28.6, getLauzonShoreDist(28.6) + 18, 36.5);
         lighthouseGroup.position.copy(lhPos);
         southShoreGroup.add(lighthouseGroup);
 
@@ -39748,11 +39997,11 @@
         lighthouseBeam.position.set(0, 20.2, 0);
         lighthouseGroup.add(lighthouseBeam);
 
-        // --- 17. FUNICULAIRE DU VIEUX-QUÉBEC SUR LA FALAISE DU CAP-DIAMANT (AZIMUT 341°, DIST 1105m) ---
+        // --- 17. FUNICULAIRE DU VIEUX-QUÉBEC SUR LA FALAISE DU CAP-DIAMANT SOUS LE FRONTENAC (AZIMUT RÉEL 7.2°, DIST 942m) ---
         const funicularGroup = new THREE.Group();
-        const funicPos = azDistToVec3(341, getNorthShoreDist(341) - 10, 44);
+        const funicPos = azDistToVec3(7.2, getNorthShoreDist(7.2) - 8, 42);
         funicularGroup.position.copy(funicPos);
-        funicularGroup.rotation.y = (161 * Math.PI) / 180;
+        funicularGroup.rotation.y = (187 * Math.PI) / 180;
         northShoreGroup.add(funicularGroup);
 
         const railTrack = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.8, 48), new THREE.MeshLambertMaterial({ color: 0xdc2626 }));
@@ -39801,9 +40050,20 @@
           });
         }
 
-        // --- 19. VRACQUIER DE LA VOIE MARITIME DU SAINT-LAURENT ("CSL SAINT-LAURENT") EN TRANSIT ---
+        // --- 19. VRACQUIER DE LA VOIE MARITIME DU SAINT-LAURENT ("CSL SAINT-LAURENT") EN TRANSIT SUR LE COUDE DE QUÉBEC ---
         const seawayCargoGroup = new THREE.Group();
         scene.add(seawayCargoGroup);
+
+        // Trajectoire courbe authentique du Chenal des Grands Navires (Chenal du Nord Î.O. -> Goulet Québec–Lévis -> Coude Valero -> Gorge des Ponts)
+        const seawayCargoCurve = new THREE.CatmullRomCurve3([
+          azDistToVec3(23.5, 1680, 0),
+          azDistToVec3(18.8, 1120, 0),
+          azDistToVec3(14.0, 680, 0),
+          azDistToVec3(345.0, 295, 0),
+          azDistToVec3(252.0, 360, 0),
+          azDistToVec3(239.0, 820, 0),
+          azDistToVec3(237.1, 1365, 0),
+        ]);
 
         const cargoHull = new THREE.Mesh(
           new THREE.BoxGeometry(64, 5.2, 11.5),
@@ -39854,84 +40114,135 @@
         cargoWake.position.set(0, 0.2, 0);
         seawayCargoGroup.add(cargoWake);
 
-        // --- 20. DETAILS DU PAYSAGE REEL : FORETS 3D, TRAIN COTIER, PYLONES HYDRO-QUEBEC 735kV, GARDE COTIERE & GARES STQ ---
-        // A. Bosquets de forets mixtes 3D (Epinettes boreales, Erables & Bouleaux) sur les falaises Rive-Sud, Rive-Nord et Ile d'Orleans
+        // --- 20. DÉTAILS DU PAYSAGE RÉEL : FORÊTS DENSES GPU-INSTANCIÉES (~1 720 ARBRES), TRAIN CN, HYDRO-QUÉBEC 735kV, GARDE CÔTIÈRE & GARES STQ ---
+        // A. Forêts laurentiennes & appalachiennes mixtes haute densité par GPU Instancing (THREE.InstancedMesh — 3 draw calls!)
         const pineDarkMat = new THREE.MeshLambertMaterial({ color: 0x0f3923 });
         const mapleGreenMat = new THREE.MeshLambertMaterial({ color: 0x1e4d2b });
         const mapleAutumnMat = new THREE.MeshLambertMaterial({ color: 0xb45309 });
-        const pineGeo = new THREE.ConeGeometry(4.2, 13.5, 6);
-        const deciduousGeo = new THREE.DodecahedronGeometry(4.8, 0);
+        const pineGeo = new THREE.ConeGeometry(4.4, 14.5, 6);
+        pineGeo.translate(0, 5.2, 0);
+        const deciduousGeo = new THREE.DodecahedronGeometry(5.0, 0);
+        deciduousGeo.translate(0, 4.2, 0);
 
-        // Foret sur la falaise de Saint-Romuald et Levis (Az 76 a 228 — suivant l'elevation reelle des vallees Etchemin/Chaudiere)
-        for (let tIdx = 0; tIdx < 95; tIdx++) {
-          const tAz = 76 + (tIdx * 1.6) % 152;
-          if (tAz > 145 && tAz < 156) continue; // Degager l'enracinement du mole d'enrochement Valero (150.2 deg)
-          if ((tAz > 122 && tAz < 127) || (tAz > 222 && tAz < 229)) continue; // Embouchures Rivieres Etchemin & Chaudiere
-          const tDist = getSouthShoreDist(tAz) + 22 + (tIdx % 5) * 32;
-          const tY = getSouthCliffHeight(tAz) + 2.5 + (tIdx % 4) * 3.2;
-          const tPos = azDistToVec3(tAz, tDist, tY);
-          const isPine = tIdx % 3 !== 0;
-          const treeMesh = new THREE.Mesh(
-            isPine ? pineGeo : deciduousGeo,
-            isPine ? pineDarkMat : (tIdx % 7 === 0 ? mapleAutumnMat : mapleGreenMat)
-          );
-          treeMesh.position.copy(tPos);
-          const sc = 0.8 + (tIdx % 4) * 0.22;
-          treeMesh.scale.set(sc, sc * (isPine ? 1.15 : 0.9), sc);
-          southShoreGroup.add(treeMesh);
+        const pineInstances = [];
+        const mapleGreenInstances = [];
+        const mapleAutumnInstances = [];
+        function pushForestTree(pos, sc, rotY, seed) {
+          const kind = seed % 9;
+          if (kind < 5) {
+            pineInstances.push({ pos, sx: sc * 0.92, sy: sc * 1.18, sz: sc * 0.92, rotY });
+          } else if (kind === 8) {
+            mapleAutumnInstances.push({ pos, sx: sc * 1.05, sy: sc * 0.92, sz: sc * 1.05, rotY });
+          } else {
+            mapleGreenInstances.push({ pos, sx: sc, sy: sc * 0.94, sz: sc, rotY });
+          }
         }
 
-        // Foret sur le Cap-Diamant, Plaines d'Abraham, Sillery et Sainte-Foy (Az 268 a 335)
-        for (let tIdx = 0; tIdx < 80; tIdx++) {
-          const tAz = 268 + (tIdx * 0.85) % 67;
-          const tDist = getNorthShoreDist(tAz) + 28 + (tIdx % 4) * 26;
-          const tY = getNorthCliffHeight(tAz) + 2.5 + (tIdx % 5) * 2.8;
+        // 1) Falaise boisée de Hadlow, Saint-Romuald, Lévis et Charny (Az 29° à 231.5° — ~720 arbres)
+        for (let tIdx = 0; tIdx < 720; tIdx++) {
+          const tAz = 29.0 + ((tIdx * 0.281 + (tIdx % 7) * 0.13) % 202.5);
+          if (tAz > 146.5 && tAz < 153.5 && (tIdx % 5) < 2) continue; // Enracinement du môle Valero (150°)
+          if ((tAz > 223.1 && tAz < 225.5) || (tAz > 229.1 && tAz < 231.2)) continue; // Embouchures Rivières Etchemin & Chaudière
+          const row = tIdx % 6;
+          const inlandOff = 18 + row * 38 + ((tIdx * 17) % 19);
+          const tDist = getSouthShoreDist(tAz) + inlandOff;
+          if (tAz > 135.0 && tAz < 158.0 && tDist > 455 && tDist < 760) continue; // Dégager le plateau industriel Raffinerie Jean-Gaulin
+          const slopeRise = Math.min(26, Math.max(0, (inlandOff - 24) * 0.09));
+          const tY = getSouthCliffHeight(tAz) + slopeRise + 0.6;
           const tPos = azDistToVec3(tAz, tDist, tY);
-          const isPine = tIdx % 2 === 0;
-          const treeMesh = new THREE.Mesh(
-            isPine ? pineGeo : deciduousGeo,
-            isPine ? pineDarkMat : (tIdx % 5 === 0 ? mapleAutumnMat : mapleGreenMat)
-          );
-          treeMesh.position.copy(tPos);
-          northShoreGroup.add(treeMesh);
+          const sc = 0.78 + (tIdx % 5) * 0.19;
+          pushForestTree(tPos, sc, (tIdx * 1.37) % (Math.PI * 2), tIdx);
         }
 
-        // Bosquets boises sur l'Ile d'Orleans (Az 35 a 67)
-        for (let tIdx = 0; tIdx < 65; tIdx++) {
-          const tAz = 35 + (tIdx * 0.5) % 32;
-          const tDist = 2160 + (tAz - 35) * 22 + (tIdx % 3) * 38;
-          const tY = 24 + (tIdx % 4) * 4;
+        // 2) Côte boisée aval de Lauzon / Beaumont (Az 28.4° à 44.8° — ~220 arbres)
+        for (let tIdx = 0; tIdx < 220; tIdx++) {
+          const tAz = 28.4 + ((tIdx * 0.074 + (tIdx % 5) * 0.09) % 16.4);
+          if (tAz > 30.8 && tAz < 33.1 && (tIdx % 4) < 2) continue; // Dégager la cale sèche Champlain de Chantier Davie
+          const inlandOff = 22 + (tIdx % 5) * 34 + ((tIdx * 13) % 15);
+          const tDist = getLauzonShoreDist(tAz) + inlandOff;
+          const tY = 34 + Math.min(18, inlandOff * 0.07);
           const tPos = azDistToVec3(tAz, tDist, tY);
-          const treeMesh = new THREE.Mesh(
-            tIdx % 2 === 0 ? pineGeo : deciduousGeo,
-            tIdx % 6 === 0 ? mapleAutumnMat : mapleGreenMat
-          );
-          treeMesh.position.copy(tPos);
-          ileOrleansGroup.add(treeMesh);
+          const sc = 0.82 + (tIdx % 4) * 0.20;
+          pushForestTree(tPos, sc, (tIdx * 2.11) % (Math.PI * 2), tIdx + 3);
         }
 
-        // --- VOIE FERREE DU CN & CONVOI FERROVIAIRE CITERNE AUTHENTIQUE RIVE-SUD / PONT DE QUEBEC ---
-        const cnRailSouthAbut = azDistToVec3(234, 920, 46.8);
-        const cnRailNorthAbut = azDistToVec3(266, 920, 46.8);
+        // 3) Cap-Rouge, Sillery, Bois-de-Coulonge, Plaines d'Abraham & Beauport (Az 242.5° à 384° — ~520 arbres)
+        for (let tIdx = 0; tIdx < 520; tIdx++) {
+          const rawAz = 242.5 + ((tIdx * 0.272 + (tIdx % 6) * 0.14) % 141.5);
+          const normAz = rawAz % 360;
+          const row = tIdx % 5;
+          const inlandOff = 24 + row * 36 + ((tIdx * 11) % 17);
+          // Dégager le cœur bâti de la Haute-Ville (Frontenac/Vieux-Port) près du rebord
+          if (normAz > 3.5 && normAz < 14.5 && inlandOff < 95) continue;
+          const tDist = getNorthShoreDist(normAz) + inlandOff;
+          const slopeRise = Math.min(22, Math.max(0, (inlandOff - 28) * 0.08));
+          const tY = getNorthCliffHeight(normAz) + slopeRise + 0.6;
+          const tPos = azDistToVec3(normAz, tDist, tY);
+          const sc = 0.80 + (tIdx % 5) * 0.18;
+          pushForestTree(tPos, sc, (tIdx * 1.73) % (Math.PI * 2), tIdx + 1);
+        }
+
+        // 4) Falaises boisées et crête forestière centrale de l'Île d'Orléans (Az 26.2° à 48.0° — ~260 arbres)
+        for (let tIdx = 0; tIdx < 260; tIdx++) {
+          const tAz = 26.2 + ((tIdx * 0.084 + (tIdx % 5) * 0.07) % 21.8);
+          const onCrest = tIdx % 3 !== 0;
+          const inlandOff = onCrest
+            ? (265 + (tIdx % 5) * 46 + ((tIdx * 19) % 24))
+            : (20 + (tIdx % 3) * 14);
+          const tDist = getIleOrleansShoreDist(tAz) + inlandOff;
+          const tipTaper = Math.min(1, (tAz - 25.6) / 2.2) * Math.min(1, (48.8 - tAz) / 2.4);
+          const baseY = onCrest ? (56 + (inlandOff - 265) * 0.09) : 25;
+          const tY = baseY * (0.44 + 0.56 * tipTaper);
+          const tPos = azDistToVec3(tAz, tDist, tY);
+          const sc = 0.88 + (tIdx % 4) * 0.22;
+          pushForestTree(tPos, sc, (tIdx * 0.93) % (Math.PI * 2), tIdx + 5);
+        }
+
+        function buildInstancedForestMesh(geo, mat, list) {
+          if (!list.length) return null;
+          const im = new THREE.InstancedMesh(geo, mat, list.length);
+          const dummy = new THREE.Object3D();
+          for (let i = 0; i < list.length; i++) {
+            const it = list[i];
+            dummy.position.copy(it.pos);
+            dummy.rotation.set(0, it.rotY, 0);
+            dummy.scale.set(it.sx, it.sy, it.sz);
+            dummy.updateMatrix();
+            im.setMatrixAt(i, dummy.matrix);
+          }
+          im.instanceMatrix.needsUpdate = true;
+          im.frustumCulled = false;
+          scene.add(im);
+          return im;
+        }
+        buildInstancedForestMesh(pineGeo, pineDarkMat, pineInstances);
+        buildInstancedForestMesh(deciduousGeo, mapleGreenMat, mapleGreenInstances);
+        buildInstancedForestMesh(deciduousGeo, mapleAutumnMat, mapleAutumnInstances);
+
+        // --- VOIE FERRÉE DU CN & CONVOI FERROVIAIRE CITERNE AUTHENTIQUE (RAFFINERIE VALERO -> VIADUC CHAUDIÈRE -> PONT DE QUÉBEC 232.6°–241.6°) ---
+        const cnRailSouthAbut = azDistToVec3(232.6, 1365, 50.4);
+        const cnRailNorthAbut = azDistToVec3(241.6, 1365, 50.4);
         const cnRailWaypoints = [
-          azDistToVec3(194, 590, 42.5),
-          azDistToVec3(206, 675, 43.2),
-          azDistToVec3(218, 760, 43.8),
-          azDistToVec3(226, 825, 44.8),
+          azDistToVec3(156.0, 590, 42.5),
+          azDistToVec3(176.0, 620, 43.4),
+          azDistToVec3(196.0, 685, 44.5),
+          azDistToVec3(214.0, 760, 45.8),
+          azDistToVec3(224.3, 835, 47.0),
+          azDistToVec3(230.1, 1215, 48.8),
           cnRailSouthAbut,
           new THREE.Vector3(
             cnRailSouthAbut.x * 0.67 + cnRailNorthAbut.x * 0.33,
-            46.8,
+            50.4,
             cnRailSouthAbut.z * 0.67 + cnRailNorthAbut.z * 0.33
           ),
           new THREE.Vector3(
             cnRailSouthAbut.x * 0.33 + cnRailNorthAbut.x * 0.67,
-            46.8,
+            50.4,
             cnRailSouthAbut.z * 0.33 + cnRailNorthAbut.z * 0.67
           ),
           cnRailNorthAbut,
-          azDistToVec3(272, 940, 47.0),
-          azDistToVec3(280, 960, 47.5),
+          azDistToVec3(245.5, 1410, 50.6),
+          azDistToVec3(249.5, 1455, 51.0),
         ];
         const cnRailCurve = new THREE.CatmullRomCurve3(cnRailWaypoints);
         window.cnRailCurve = cnRailCurve;
@@ -40152,16 +40463,18 @@
           }
         }
 
-        // C. Pylones Geants Hydro-Quebec 735 kV (Traverse du fleuve Saint-Laurent Rive-Sud <-> Ile d'Orleans)
+        // C. Pylônes Géants Hydro-Québec 735 kV & Câbles de traversée aérienne (Beaumont/Lauzon 36.8° <-> Île d'Orléans 35.5°)
         const hydroRedMat = new THREE.MeshLambertMaterial({ color: 0xdc2626 });
         const hydroWhiteMat = new THREE.MeshLambertMaterial({ color: 0xf8fafc });
         const hydroBeacons = [];
+        const hydroCrossArmCenters = [];
         [
-          { az: 71.5, dist: 1280, baseH: 34 },
-          { az: 65.5, dist: 2350, baseH: 24 },
+          { az: 36.8, dist: getLauzonShoreDist(36.8) + 28, baseH: 36 },
+          { az: 35.5, dist: getIleOrleansShoreDist(35.5) + 24, baseH: 26 },
         ].forEach((hp) => {
           const pGroup = new THREE.Group();
-          pGroup.position.copy(azDistToVec3(hp.az, hp.dist, hp.baseH));
+          const baseWorld = azDistToVec3(hp.az, hp.dist, hp.baseH);
+          pGroup.position.copy(baseWorld);
           scene.add(pGroup);
 
           for (let tier = 0; tier < 6; tier++) {
@@ -40176,6 +40489,7 @@
           const crossArm = new THREE.Mesh(new THREE.BoxGeometry(34, 2.2, 2.2), hydroRedMat);
           crossArm.position.y = 84;
           pGroup.add(crossArm);
+          hydroCrossArmCenters.push(new THREE.Vector3(baseWorld.x, baseWorld.y + 84, baseWorld.z));
 
           const hBeacon = new THREE.Mesh(
             new THREE.SphereGeometry(1.5, 8, 8),
@@ -40186,11 +40500,30 @@
           hydroBeacons.push(hBeacon);
         });
 
-        // D. Base de la Garde Cotiere Canadienne (Bassin Brown, Az 318) & Brise-Glace NGCC Pierre Radisson
-        const ccgPos = azDistToVec3(318, getNorthShoreDist(318) - 38, 0);
+        // Caténaires haute tension 735 kV franchissant le Chenal du Sud vers l'Île d'Orléans (tirant d'air maritime ~51m)
+        if (hydroCrossArmCenters.length === 2) {
+          const hCableMat = new THREE.LineBasicMaterial({ color: 0x94a3b8, transparent: true, opacity: 0.55 });
+          [-12, 0, 12].forEach((latOff) => {
+            const cPts = [];
+            for (let s = 0; s <= 24; s++) {
+              const t = s / 24;
+              const sag = Math.sin(t * Math.PI) * 34;
+              cPts.push(new THREE.Vector3(
+                hydroCrossArmCenters[0].x + (hydroCrossArmCenters[1].x - hydroCrossArmCenters[0].x) * t + latOff * 0.6,
+                hydroCrossArmCenters[0].y + (hydroCrossArmCenters[1].y - hydroCrossArmCenters[0].y) * t - sag,
+                hydroCrossArmCenters[0].z + (hydroCrossArmCenters[1].z - hydroCrossArmCenters[0].z) * t - latOff * 0.6
+              ));
+            }
+            const cLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints(cPts), hCableMat);
+            scene.add(cLine);
+          });
+        }
+
+        // D. Base de la Garde Côtière Canadienne (Quai de la Reine / Foulon Est, Az réel WGS84 306.5°) & Brise-Glace NGCC Pierre Radisson
+        const ccgPos = azDistToVec3(306.5, getNorthShoreDist(306.5) - 38, 0);
         const ccgIcebreaker = new THREE.Group();
         ccgIcebreaker.position.copy(ccgPos);
-        ccgIcebreaker.rotation.y = (140 * Math.PI) / 180;
+        ccgIcebreaker.rotation.y = (126 * Math.PI) / 180;
         scene.add(ccgIcebreaker);
 
         const ccgHull = new THREE.Mesh(
@@ -40221,11 +40554,11 @@
         ccgFunnel.position.set(-2, 14.5, 0);
         ccgIcebreaker.add(ccgFunnel);
 
-        // E. Gares Fluviales STQ : Gare Fluviale de Quebec (Quai 92 / Pointe-a-Carcy Az 347.2) & Quai Paquet a Levis (Az 79.5)
-        const gareFluvialeQcPos = azDistToVec3(347.2, getNorthShoreDist(347.2) - 34, 3.8);
+        // E. Gares Fluviales STQ : Gare Fluviale de Québec (Quai Chouinard Az réel 8.8°) & Quai Paquet à Lévis (Az réel 27.5°)
+        const gareFluvialeQcPos = azDistToVec3(8.8, getNorthShoreDist(8.8) - 32, 3.8);
         const gareFluvialeQcGroup = new THREE.Group();
         gareFluvialeQcGroup.position.copy(gareFluvialeQcPos);
-        gareFluvialeQcGroup.rotation.y = (168 * Math.PI) / 180;
+        gareFluvialeQcGroup.rotation.y = (189 * Math.PI) / 180;
         scene.add(gareFluvialeQcGroup);
 
         const gareQcTerminal = new THREE.Mesh(
@@ -40249,13 +40582,13 @@
         gareQcRamp.position.set(-14, 1.8, 8);
         gareFluvialeQcGroup.add(gareQcRamp);
 
-        const quaiPaquetPos = azDistToVec3(79.5, getSouthShoreDist(79.5) - 24, 3.5);
+        const quaiPaquetPos = azDistToVec3(27.5, getSouthShoreDist(27.5) - 24, 3.5);
         const quaiPaquetTerminal = new THREE.Mesh(
           new THREE.BoxGeometry(28, 6.5, 12),
           new THREE.MeshLambertMaterial({ color: 0x1e293b })
         );
         quaiPaquetTerminal.position.copy(quaiPaquetPos);
-        quaiPaquetTerminal.rotation.y = (-10 * Math.PI) / 180;
+        quaiPaquetTerminal.rotation.y = (-62 * Math.PI) / 180;
         scene.add(quaiPaquetTerminal);
 
         const quaiPaquetGlass = new THREE.Mesh(
@@ -40264,7 +40597,7 @@
         );
         quaiPaquetGlass.position.copy(quaiPaquetPos);
         quaiPaquetGlass.position.y += 0.5;
-        quaiPaquetGlass.rotation.y = (-10 * Math.PI) / 180;
+        quaiPaquetGlass.rotation.y = (-62 * Math.PI) / 180;
         scene.add(quaiPaquetGlass);
 
         // F. Collier lumineux nocturne sur les Ponts de Quebec et Pierre-Laporte
@@ -40316,7 +40649,7 @@
             touchVelAz = 0;
             touchVelAlt = 0;
             if (key === "bridge") {
-              camTargetAz = 250;
+              camTargetAz = 237;
             } else if (key === "tug") {
               camTargetAz = 128;
             }
@@ -40393,14 +40726,16 @@
           document.querySelectorAll(".ar-label-3d").forEach((el) => el.classList.remove("active-pin"));
         });
 
-                        // Fonction de calcul de distance maritime reelle pour les navires en mouvement entre St-Romuald (0.11 km, d3d=110) et Bassin Louise / Port de Quebec (7.4 km, d3d=1335)
+        // Calcul géodésique calibré WGS84 des distances maritimes réelles depuis les Postes 86/87 Valero (46.7818° N, -71.2100° W)
         function computeDynamicRealDistStr(worldVec3) {
           const d3d = Math.hypot(worldVec3.x, worldVec3.z);
           if (d3d <= 145) {
             return Math.round(d3d) + " m";
           }
-          const ratio = Math.max(0, (d3d - 110) / (1335 - 110));
-          const realKm = 0.11 + ratio * 7.29;
+          const az = ((Math.atan2(worldVec3.x, -worldVec3.z) * 180) / Math.PI + 360) % 360;
+          const isUpstream = az >= 195 && az <= 265;
+          const kmPerUnit = isUpstream ? (7.09 / (1365 - 110)) : (4.19 / (1065 - 110));
+          const realKm = 0.11 + Math.max(0, d3d - 110) * kmPerUnit;
           if (realKm < 1.0) {
             return Math.round(realKm * 1000) + " m";
           }
@@ -40494,7 +40829,7 @@
             getRealDist: () => computeDynamicRealDistStr(tugBow.group.position),
             getStatus: () => {
               const tm = window.tugManeuver;
-              if (!tm || tm.state === "docked" || tm.state === "departed") return "\u00C0 quai Bassin Louise (7,4 km)";
+              if (!tm || tm.state === "docked" || tm.state === "departed") return "\u00C0 quai Bassin Louise (4,3 km)";
               if (tm.state === "departing" && tm.progress < 0.25) return "En route depuis Bassin Louise (12.5 nds)";
               if (tm.state === "departing" && tm.progress > 0.86) return "Retour vers Bassin Louise (11.8 nds)";
               if (tm.state === "arriving" && tm.progress > 0.78) return "Retour vers Bassin Louise (11.8 nds)";
@@ -40511,7 +40846,7 @@
             getRealDist: () => computeDynamicRealDistStr(tugStern.group.position),
             getStatus: () => {
               const tm = window.tugManeuver;
-              if (!tm || tm.state === "docked" || tm.state === "departed") return "\u00C0 quai Bassin Louise (7,4 km)";
+              if (!tm || tm.state === "docked" || tm.state === "departed") return "\u00C0 quai Bassin Louise (4,3 km)";
               if (tm.state === "departing" && tm.progress < 0.25) return "En route depuis Bassin Louise (12.5 nds)";
               if (tm.state === "departing" && tm.progress > 0.86) return "Retour vers Bassin Louise (11.8 nds)";
               if (tm.state === "arriving" && tm.progress > 0.78) return "Retour vers Bassin Louise (11.8 nds)";
@@ -40573,81 +40908,81 @@
             id: "bassin_louise",
             icon: "\u2693",
             label: "Bassin Louise (Tugs)",
-            sub: "Port de Qu\u00e9bec & Base Groupe Oc\u00e9an \u2022 Silos Bunge",
-            draft: "Distance r\u00e9elle : 7,4 km (4.0 NM)",
+            sub: "Vieux-Port de Qu\u00e9bec & Base Groupe Oc\u00e9an \u2022 Silos Bunge (10\u00B0)",
+            draft: "Distance r\u00e9elle : 4,3 km (2.3 NM)",
             getPos: () => new THREE.Vector3(bassinLouisePos.x, 42, bassinLouisePos.z),
-            getRealDist: () => "7,4 km",
+            getRealDist: () => "4,3 km",
             getStatus: () => "Port d'attache Groupe Oc\u00e9an",
           },
           {
             id: "refinery_jg",
             icon: "\uD83C\uDFED",
             label: "Raffinerie Jean-Gaulin",
-            sub: "Complexe industriel \u2022 Plateau Sud-Ouest (Route des \u00celes)",
-            draft: "Distance r\u00e9elle : 3,1 km SO (Plus proche que les Ponts)",
-            getPos: () => azDistToVec3(204, 600, 92),
-            getRealDist: () => "3,1 km",
+            sub: "Complexe industriel Valero \u2022 Plateau Sud-Est (Saint-Romuald)",
+            draft: "Distance r\u00e9elle : 3,4 km SE (144\u00B0 \u2022 Pipeline direct)",
+            getPos: () => azDistToVec3(144, 575, 92),
+            getRealDist: () => "3,4 km",
             getStatus: () => "Op\u00e9rationnelle \u2022 Torch\u00e8res actives",
           },
           {
             id: "bridges",
             icon: "\uD83C\uDF09",
             label: "Ponts de Qu\u00e9bec",
-            sub: "Pont Pierre-Laporte & Pont de Qu\u00e9bec (Amont OSO)",
-            draft: "Tirant d'air : 45.7m \u2022 Dist : 4,5 km",
+            sub: "Pont Pierre-Laporte & Pont de Qu\u00e9bec (Amont OSO 237\u00B0)",
+            draft: "Tirant d'air : 45.7m \u2022 Dist : 7,2 km",
             getPos: () => new THREE.Vector3(bCenter.x, 115, bCenter.z),
-            getRealDist: () => "4,5 km",
+            getRealDist: () => "7,2 km",
             getStatus: () => "Circulation fluide",
           },
           {
             id: "ccg_radisson",
             icon: "\uD83D\uDEA2",
             label: "NGCC Pierre Radisson",
-            sub: "Base Garde C\u00f4ti\u00e8re Canadienne \u2022 Bassin Brown (Sillery)",
-            draft: "7.2m / 13 600 BHP \u2022 Dist : 2,4 km",
+            sub: "Base Garde C\u00f4ti\u00e8re Canadienne \u2022 Quai de la Reine (306\u00B0)",
+            draft: "7.2m / 13 600 BHP \u2022 Dist : 1,9 km",
             getPos: () => new THREE.Vector3(ccgIcebreaker.position.x, 19, ccgIcebreaker.position.z),
-            getRealDist: () => "2,4 km",
-            getStatus: () => "\u00C0 quai Base GCC (318\u00B0)",
+            getRealDist: () => "1,9 km",
+            getStatus: () => "\u00C0 quai Base GCC (306\u00B0)",
           },
           {
             id: "frontenac",
             icon: "\uD83C\uDFF0",
             label: "Ch\u00e2teau Frontenac",
-            sub: "Cap-Diamant & Terrasse Dufferin (Vieux-Qu\u00e9bec)",
-            draft: "Altitude +135m \u2022 Dist : 6,1 km",
+            sub: "Cap-Diamant & Terrasse Dufferin (Vieux-Qu\u00e9bec 6\u00B0)",
+            draft: "Altitude +98m \u2022 Dist : 3,4 km",
             getPos: () => new THREE.Vector3(chateauPos.x, 148, chateauPos.z),
-            getRealDist: () => "6,1 km",
+            getRealDist: () => "3,4 km",
             getStatus: () => "Rep\u00e8re visuel Vieux-Qu\u00e9bec",
           },
           {
             id: "ferry",
             icon: "\u26F4\uFE0F",
             label: "Traversier QC-L\u00e9vis",
-            sub: "NM Alphonse-Desjardins \u2022 Traverse Qu\u00e9bec\u2013L\u00e9vis",
-            draft: "4.6m / 600 pass. \u2022 Dist : 6,4 km",
+            sub: "NM Alphonse-Desjardins \u2022 Traverse Qu\u00e9bec\u2013L\u00e9vis (9\u00B0 \u2194 28\u00B0)",
+            draft: "4.6m / 600 pass. \u2022 Dist : 4,5 km",
             getPos: () => new THREE.Vector3(ferryGroup.position.x, ferryGroup.position.y + 16, ferryGroup.position.z),
-            getRealDist: () => "6,4 km",
+            getRealDist: () => computeDynamicRealDistStr(ferryGroup.position),
             getStatus: () => "Travers\u00e9e en cours (11.5 nds)",
           },
           {
             id: "davie",
             icon: "\uD83C\uDFD7\uFE0F",
             label: "Chantier Davie",
-            sub: "Cale s\u00e8che Champlain & Grue Goliath \u2022 Lauzon",
-            draft: "Hauteur grue 54m \u2022 Dist : 9,2 km",
+            sub: "Cale s\u00e8che Champlain & Grue Goliath \u2022 Lauzon (31.8\u00B0)",
+            draft: "Hauteur grue 54m \u2022 Dist : 6,6 km",
             getPos: () => new THREE.Vector3(daviePos.x, 96, daviePos.z),
-            getRealDist: () => "9,2 km",
+            getRealDist: () => "6,6 km",
             getStatus: () => "Construction navale active",
           },
           {
             id: "pont_orleans",
             icon: "\uD83C\uDF09",
             label: "Pont \u00cele d'Orl\u00e9ans",
-            sub: "Chenal du Nord \u2022 Beauport \u2194 Sainte-P\u00e9tronille",
-            draft: "Tirant d'air 32m \u2022 Dist : 14,2 km",
+            sub: "Chenal du Nord \u2022 Beauport \u2194 Sainte-P\u00e9tronille (23.5\u00B0)",
+            draft: "Tirant d'air 32m \u2022 Dist : 10,2 km",
             getPos: () => new THREE.Vector3(orlCenter.x, 98, orlCenter.z),
-            getRealDist: () => "14,2 km",
-            getStatus: () => "Relie Rive-Nord (26\u00B0) \u00e0 l'\u00cele (34\u00B0)",
+            getRealDist: () => "10,2 km",
+            getStatus: () => "Relie Beauport (21\u00B0) \u00e0 l'\u00cele (26\u00B0)",
           },
           {
             id: "cargo",
@@ -40813,6 +41148,9 @@
               ? "🌐 3D: ON"
               : "🖼️ Mode: 2D";
             toggle3DBtn.classList.toggle("active-cam", window.mode3DActive);
+            if (typeof window.syncLandmarkButtonsMode === "function") {
+              window.syncLandmarkButtonsMode();
+            }
           });
         }
 
@@ -40975,6 +41313,12 @@
           { mat: northPlateauMat, role: "foliage", base: 0x1a3322, autumn: 0x66441f, dormant: 0x2f382e, frost: 0x617382, winter: 0xf1f5f9 },
           { mat: northFoothillsMat, role: "foliage", base: 0x142b1d, autumn: 0x5d3b1b, dormant: 0x283229, frost: 0x586a79, winter: 0xdbeafe },
           { mat: northLaurentidesMat, role: "evergreen", base: 0x16222b, autumn: 0x222c34, dormant: 0x1d2730, frost: 0x4b5e70, winter: 0xf8fafc },
+          { mat: ileCliffMat, role: "rock", base: 0x223a2f, autumn: 0x3b3d2d, dormant: 0x303935, frost: 0x556779, winter: 0x8ba0b5 },
+          { mat: ileBeachMat, role: "rock", base: 0x64748b, autumn: 0x627084, dormant: 0x586577, frost: 0x7a8b9e, winter: 0xcbd5e1 },
+          { mat: ileForestMat, role: "foliage", base: 0x144929, autumn: 0x7c3f16, dormant: 0x2d382c, frost: 0x596c7b, winter: 0xdbeafe },
+          { mat: ilePastureMat, role: "foliage", base: 0x2d6a4f, autumn: 0x85622a, dormant: 0x3f4739, frost: 0x6a7c8b, winter: 0xf1f5f9 },
+          { mat: ileOrchardMat, role: "foliage", base: 0x3f6212, autumn: 0xb45309, dormant: 0x4a4233, frost: 0x6c7a86, winter: 0xe2e8f0 },
+          { mat: ileCropGoldMat, role: "foliage", base: 0xb45309, autumn: 0x92400e, dormant: 0x5c4938, frost: 0x78828c, winter: 0xf1f5f9 },
           { mat: pineDarkMat, role: "evergreen", base: 0x0f3923, autumn: 0x123823, dormant: 0x133322, frost: 0x3d5c52, winter: 0xa4b8ac },
           { mat: mapleGreenMat, role: "mapleGreen", base: 0x1e4d2b, autumn: 0xc2590c, dormant: 0x463d33, frost: 0x6b7783, winter: 0xd5dde5 },
           { mat: mapleAutumnMat, role: "mapleAutumn", base: 0x2d5a2e, autumn: 0xb45309, dormant: 0x4d4035, frost: 0x6f7984, winter: 0xd5dde5 },
@@ -41066,14 +41410,14 @@
           });
         }
 
-        // Cliquer sur la minimap oriente la camera 3D vers l'azimut correspondant par rapport au Quai Sec. 87
+        // Cliquer sur la minimap oriente la caméra 3D vers l'azimut WGS84 correspondant depuis les Postes 86/87 Valero
         if (wmmCanvas) {
           wmmCanvas.addEventListener("click", (e) => {
             e.stopPropagation();
             const rect = wmmCanvas.getBoundingClientRect();
             const mx = ((e.clientX - rect.left) / Math.max(1, rect.width)) * 244;
             const my = ((e.clientY - rect.top) / Math.max(1, rect.height)) * 142;
-            const qx = 92, qy = 92; // Position du Quai Sec. 87 sur la minimap
+            const qx = 106, qy = 94; // Position géographique calibrée des Postes 86/87 Valero sur la minimap
             const dx = mx - qx;
             const dy = my - qy;
             if (Math.hypot(dx, dy) > 4) {
@@ -41133,7 +41477,7 @@
 
           if (!wmmCtx || !wmmHudEl || wmmHudEl.classList.contains("hidden-minimap") || wmmHudEl.classList.contains("collapsed-minimap")) return;
           const W = 244, H = 142;
-          const qx = 92, qy = 92; // Quai St-Romuald Sec. 87
+          const qx = 106, qy = 94; // Postes 86 & 87 Valero (Saint-Romuald / Lévis — 46.7818°N, -71.2100°W)
           const simActiveWmm = Boolean(window.tempSimState && window.tempSimState.active);
           const tempC = simActiveWmm
             ? window.tempSimState.airTemp
@@ -41153,7 +41497,7 @@
             (tempC <= 0.4 && (c.rain || 0) === 0)
           );
 
-          // 1. Fond de carte terrestre (Rive-Nord Quebec & Rive-Sud Levis/St-Romuald)
+          // 1. Fond de carte terrestre (Rive-Nord Québec & Rive-Sud Lévis/St-Romuald)
           wmmCtx.fillStyle = c.isNight ? "#071120" : "#0c192c";
           wmmCtx.fillRect(0, 0, W, H);
 
@@ -41162,19 +41506,16 @@
             const tNorm = Math.max(0, Math.min(1, (tempC + 25) / 57)); // -25°C -> +32°C
             let rT, gT, bT;
             if (tNorm < 0.44) {
-              // Arctique (-25°C -> 0°C) : violet/indigo polaire -> cyan glacé
               const u = tNorm / 0.44;
               rT = Math.round(56 - u * 20);
               gT = Math.round(78 + u * 118);
               bT = Math.round(225 + u * 25);
             } else if (tNorm < 0.72) {
-              // Tempéré (0°C -> +16°C) : cyan -> émeraude -> jaune doux
               const u = (tNorm - 0.44) / 0.28;
               rT = Math.round(36 + u * 184);
               gT = Math.round(196 + u * 14);
               bT = Math.round(250 - u * 175);
             } else {
-              // Chaud / Canicule (+16°C -> +32°C+) : ambre -> corail ardent
               const u = (tNorm - 0.72) / 0.28;
               rT = Math.round(220 + u * 28);
               gT = Math.round(210 - u * 128);
@@ -41188,43 +41529,46 @@
             wmmCtx.fillRect(0, 0, W, H);
           }
 
-          // 2. Chenal du Fleuve Saint-Laurent (Géomorphologie réelle : anses, caps, Bassin Louise, Etchemin/Chaudière & Quai en T 86/87)
+          // 2. Fleuve Saint-Laurent calibré WGS84 (« Coude de Québec », Goulet Québec–Lévis, Bassin Louise, Chaudière/Etchemin & Estuaire)
           wmmCtx.save();
           wmmCtx.beginPath();
-          // Rive Nord : Cap-Rouge -> Sillery -> Anse au Foulon -> Cap-Diamant -> Pointe-à-Carcy / Bassin Louise -> Terminaux & Baie de Beauport
-          wmmCtx.moveTo(0, 96);
-          wmmCtx.lineTo(44, 83);
-          wmmCtx.lineTo(74, 71);
-          wmmCtx.lineTo(96, 56);
-          wmmCtx.lineTo(112, 50);
-          wmmCtx.lineTo(130, 46);
-          wmmCtx.lineTo(137, 45);
-          wmmCtx.lineTo(135, 37); // Darse Bassin Louise
-          wmmCtx.lineTo(143, 35);
-          wmmCtx.lineTo(146, 39); // Môle Bunge / Vieux-Port
-          wmmCtx.lineTo(162, 25); // Battures / Terminaux de Beauport (Quais 50-53)
-          wmmCtx.lineTo(186, 14);
-          wmmCtx.lineTo(214, 8);
-          wmmCtx.lineTo(244, 4);
-          // Rive Sud : Beaumont -> Lauzon (Davie) -> Pointe-Lévy -> Etchemin -> Pointe St-Romuald (Valero) -> Anse Benson -> Chaudière -> Ponts
-          wmmCtx.lineTo(244, 48);
-          wmmCtx.lineTo(184, 57);
-          wmmCtx.lineTo(162, 62);
-          wmmCtx.lineTo(148, 68);
-          wmmCtx.lineTo(126, 78);
-          wmmCtx.lineTo(112, 86);
-          wmmCtx.lineTo(109, 91); // Embouchure Rivière Etchemin
-          wmmCtx.lineTo(105, 88);
-          wmmCtx.lineTo(97, 94);  // Enracinement Môle Valero (St-Romuald)
-          wmmCtx.lineTo(80, 100); // Anse de Saint-Romuald
-          wmmCtx.lineTo(64, 101); // Anse Benson
-          wmmCtx.lineTo(54, 103);
-          wmmCtx.lineTo(50, 109); // Embouchure Rivière Chaudière
-          wmmCtx.lineTo(46, 103);
-          wmmCtx.lineTo(36, 104);
-          wmmCtx.lineTo(0, 118);
+          // Rive-Nord : Saint-Augustin -> Cap-Rouge -> Ponts (44,125) -> Sillery -> Anse au Foulon (87,83) -> Cap-Blanc -> Cap-Diamant (112,56) -> Pointe-à-Carcy / Bassin Louise (111,43) -> Beauport (122,24) -> Montmorency (148,0)
+          wmmCtx.moveTo(0, 134);
+          wmmCtx.lineTo(28, 129);
+          wmmCtx.lineTo(44, 125); // Culée Nord Ponts QC
+          wmmCtx.lineTo(66, 108); // Pointe-à-Pizeau / Sillery
+          wmmCtx.lineTo(84, 86);  // Anse au Foulon (Quais 101-108)
+          wmmCtx.lineTo(98, 72);  // Cap-Blanc
+          wmmCtx.lineTo(112, 56); // Promontoire du Cap-Diamant (Goulet Québec–Lévis!)
+          wmmCtx.lineTo(114, 48); // Pointe-à-Carcy / Gare Fluviale
+          wmmCtx.lineTo(107, 45); // Entrée Darse Bassin Louise
+          wmmCtx.lineTo(109, 39); // Estuaire Rivière Saint-Charles
+          wmmCtx.lineTo(116, 41); // Môle Bunge / Vieux-Port
+          wmmCtx.lineTo(122, 24); // Terminaux de Beauport (Quais 50-53)
+          wmmCtx.lineTo(134, 10); // Battures de Beauport / Montmorency
+          wmmCtx.lineTo(150, 0);
+          wmmCtx.lineTo(244, 0);
+          // Rive-Sud : Saint-Michel/Beaumont -> Lauzon / Chantier Davie (141,36) -> Pointe-Lévy / Quai Paquet (128,49) -> Hadlow -> Môle Valero (110,101) -> Etchemin (95,104) -> Anse Benson -> Chaudière (58,132) -> Ponts Sud (53,136)
+          wmmCtx.lineTo(244, 14);
+          wmmCtx.lineTo(202, 21); // Beaumont
+          wmmCtx.lineTo(164, 28); // Anse aux Sauvages / Lauzon Est
+          wmmCtx.lineTo(141, 36); // Chantier Davie (Cale sèche Champlain)
+          wmmCtx.lineTo(131, 45); // Pointe-Lévy
+          wmmCtx.lineTo(128, 50); // Quai Paquet Lévis (rive Est du Goulet)
+          wmmCtx.lineTo(124, 68); // Falaises de Lévis / Parcours des Anses
+          wmmCtx.lineTo(118, 86); // Anse Hadlow
+          wmmCtx.lineTo(110, 101); // Enracinement du Môle Valero (Az 150°)
+          wmmCtx.lineTo(98, 103);
+          wmmCtx.lineTo(95, 108); // Embouchure Rivière Etchemin
+          wmmCtx.lineTo(91, 104);
+          wmmCtx.lineTo(76, 117); // Anse Benson
+          wmmCtx.lineTo(61, 130);
+          wmmCtx.lineTo(58, 137); // Embouchure Rivière Chaudière
+          wmmCtx.lineTo(53, 135); // Culée Sud Ponts QC
+          wmmCtx.lineTo(24, 142);
+          wmmCtx.lineTo(0, 142);
           wmmCtx.closePath();
-          const riverGrad = wmmCtx.createLinearGradient(0, 20, 244, 110);
+          const riverGrad = wmmCtx.createLinearGradient(20, 135, 210, 10);
           if (wmmLayerMode === "temp") {
             const wNormT = Math.max(0, Math.min(1, (waterC + 1.5) / 23.5)); // -1.5°C -> +22°C
             const rW = Math.round(14 + wNormT * 26);
@@ -41238,7 +41582,6 @@
           }
           wmmCtx.fillStyle = riverGrad;
           wmmCtx.fill();
-          // Liséré d'estran schisteux (battures découvertes à marée basse < 2.4m)
           if (tideM < 2.4) {
             const batAlpha = Math.min(0.55, (2.4 - tideM) * 0.28);
             wmmCtx.strokeStyle = `rgba(148, 130, 108, ${batAlpha.toFixed(2)})`;
@@ -41249,29 +41592,46 @@
           wmmCtx.lineWidth = 1;
           wmmCtx.stroke();
 
-          // Île d'Orléans (Pointe Sainte-Pétronille en haut à droite)
+          // Ponts de Québec & Pierre-Laporte sur la minimap (Gorge amont Az 237°)
+          wmmCtx.strokeStyle = "rgba(251, 146, 60, 0.85)";
+          wmmCtx.lineWidth = 1.6;
           wmmCtx.beginPath();
-          wmmCtx.moveTo(190, 23);
-          wmmCtx.lineTo(206, 16);
-          wmmCtx.lineTo(244, 9);
-          wmmCtx.lineTo(244, 33);
-          wmmCtx.lineTo(202, 34);
+          wmmCtx.moveTo(44, 125);
+          wmmCtx.lineTo(53, 135);
+          wmmCtx.stroke();
+
+          // Île d'Orléans calibrée (Pointe Sainte-Pétronille à Az 26.5° divisant le Chenal du Nord et le Chenal du Sud)
+          wmmCtx.beginPath();
+          wmmCtx.moveTo(143, 19); // Bout de l'Île (Sainte-Pétronille)
+          wmmCtx.lineTo(162, 6);
+          wmmCtx.lineTo(192, 0);
+          wmmCtx.lineTo(244, 0);
+          wmmCtx.lineTo(244, 6);
+          wmmCtx.lineTo(198, 14); // Saint-Jean / Saint-Laurent
+          wmmCtx.lineTo(164, 20);
           wmmCtx.closePath();
           wmmCtx.fillStyle = "#112236";
           wmmCtx.fill();
-          wmmCtx.strokeStyle = "rgba(148, 163, 184, 0.42)";
+          wmmCtx.strokeStyle = "rgba(148, 163, 184, 0.48)";
+          wmmCtx.lineWidth = 1;
           wmmCtx.stroke();
 
-          // Jetée en T réelle Valero (Môle d'enrochement + Postes 87 Ouest & 86 Est + Navires temps réel)
-          wmmCtx.strokeStyle = "rgba(203, 213, 225, 0.9)";
+          // Pont de l'Île d'Orléans (Beauport <-> Sainte-Pétronille)
+          wmmCtx.strokeStyle = "rgba(34, 197, 94, 0.75)";
+          wmmCtx.lineWidth = 1.1;
+          wmmCtx.beginPath();
+          wmmCtx.moveTo(133, 11);
+          wmmCtx.lineTo(144, 18);
+          wmmCtx.stroke();
+
+          // Jetée en T réelle Valero (Môle d'enrochement Az 150° + Postes 87 Ouest & 86 Est + Navires temps réel)
+          wmmCtx.strokeStyle = "rgba(203, 213, 225, 0.92)";
           wmmCtx.lineWidth = 1.6;
           wmmCtx.beginPath();
-          // Môle vers la rive de Saint-Romuald
-          wmmCtx.moveTo(97, 95.5);
-          wmmCtx.lineTo(93.5, 90.5);
-          // Front d'accostage en T (Poste 87 Ouest <-> Poste 86 Est)
-          wmmCtx.moveTo(88.5, 92.5);
-          wmmCtx.lineTo(101.5, 87.2);
+          wmmCtx.moveTo(110, 101);
+          wmmCtx.lineTo(106.5, 94.5);
+          wmmCtx.moveTo(102.0, 96.8);
+          wmmCtx.lineTo(111.8, 91.2);
           wmmCtx.stroke();
 
           const livePV = window.livePortVessels;
@@ -41279,16 +41639,16 @@
           const b86OccMini = Boolean(livePV && livePV.berth86 && livePV.berth86.occupied);
           if (b87OccMini) {
             wmmCtx.save();
-            wmmCtx.translate(90.5, 90.2);
-            wmmCtx.rotate(-0.39);
+            wmmCtx.translate(103.6, 94.6);
+            wmmCtx.rotate(-0.50);
             wmmCtx.fillStyle = "#ef4444";
             wmmCtx.fillRect(-3.6, -1.1, 7.2, 2.2);
             wmmCtx.restore();
           }
           if (b86OccMini) {
             wmmCtx.save();
-            wmmCtx.translate(98.8, 86.8);
-            wmmCtx.rotate(-0.39);
+            wmmCtx.translate(109.8, 91.1);
+            wmmCtx.rotate(-0.50);
             wmmCtx.fillStyle = "#38bdf8";
             wmmCtx.fillRect(-2.8, -0.95, 5.6, 1.9);
             wmmCtx.restore();
@@ -41368,7 +41728,7 @@
 
             // Bande frontale Doppler synchronisée sur le vecteur du vent en altitude (cloudMoveToRad)
             if (rPhase !== "dry") {
-              const frontDistPx = rProg * 68; // -68px (en amont du vent ciel) -> 0px (Sec.87) -> +68px (en aval)
+              const frontDistPx = rProg * 68;
               const fcx = qx + cvx * frontDistPx;
               const fcy = qy + cvy * frontDistPx;
               const bandRx = 46;
@@ -41397,7 +41757,6 @@
               wmmCtx.ellipse(fcx, fcy, bandRx, bandRy, cloudMoveToRad + Math.PI / 2, 0, Math.PI * 2);
               wmmCtx.fill();
 
-              // Vecteur de déplacement du front en altitude sur la minimap
               wmmCtx.strokeStyle = "rgba(192, 132, 252, 0.9)";
               wmmCtx.lineWidth = 1.2;
               wmmCtx.setLineDash([2, 2]);
@@ -41424,14 +41783,13 @@
           const streamStep = windStreamPxPerSec * dtWmm + (Math.abs(deltaSimMinsWmm) > 0.001 ? Math.sign(deltaSimMinsWmm) * Math.min(18, windKnots * 0.45) : 0);
           const dynamicTrailScale = Math.max(0.25, Math.min(2.6, 0.3 + windKnots * 0.068));
 
-          // Couleur dynamique du flux selon l'echelle de vitesse du vent (Brise -> Frais -> Alerte 25 nds -> Critique 30+ nds)
-          let streamRgb = "186, 230, 253"; // < 12 nds : bleu tres clair
+          let streamRgb = "186, 230, 253";
           if (windKnots >= 30 || gustKnots >= 35) {
-            streamRgb = "248, 113, 113"; // >= 30 nds : rouge alerte
+            streamRgb = "248, 113, 113";
           } else if (windKnots >= 20 || gustKnots >= 25) {
-            streamRgb = "251, 191, 36"; // 20-29 nds : ambre / or
+            streamRgb = "251, 191, 36";
           } else if (windKnots >= 12) {
-            streamRgb = "56, 189, 248"; // 12-19 nds : cyan soutenu
+            streamRgb = "56, 189, 248";
           }
 
           wmmCtx.save();
@@ -41451,7 +41809,6 @@
             wmmCtx.lineTo(wp.x, wp.y);
             wmmCtx.stroke();
 
-            // Pointe lumineuse en tete de rafale lorsque le vent depasse 12 noeuds
             if (windKnots >= 12 && i % 3 === 0) {
               wmmCtx.fillStyle = `rgba(255, 255, 255, ${(alphaVal * 0.85).toFixed(2)})`;
               wmmCtx.fillRect(wp.x - 0.8, wp.y - 0.8, 1.6, 1.6);
@@ -41459,7 +41816,7 @@
           }
           wmmCtx.restore();
 
-          // 5. Cone de vision (FOV) de la camera 3D depuis le Quai Sec. 87
+          // 5. Cône de vision (FOV) de la caméra 3D depuis les Postes 86/87 Valero
           const camAzRad = (viewAzimuth * Math.PI) / 180;
           const halfFovRad = (Math.min(110, viewFOV) * 0.5 * Math.PI) / 180;
           const coneR = 54;
@@ -41481,24 +41838,26 @@
           wmmCtx.stroke();
           wmmCtx.restore();
 
-          // 6. Reperes geographiques calibres sur la minimap
+          // 6. Repères géographiques calibrés WGS84 sur la minimap (azimuts exacts depuis 106,94!)
           const mapPois = [
-            { x: 38, y: 98, col: "#38bdf8", lbl: "Ponts QC" },
-            { x: 84, y: 112, col: "#f97316", lbl: "Valero" },
-            { x: qx, y: qy, col: "#10b981", lbl: "86/87", main: true },
-            { x: 129, y: 45, col: "#fbbf24", lbl: "Qu\u00e9bec" },
-            { x: 141, y: 36, col: "#a855f7", lbl: "B.Louise" },
-            { x: 152, y: 67, col: "#cbd5e1", lbl: "L\u00e9vis" },
-            { x: 204, y: 27, col: "#34d399", lbl: "\u00CE.Orl\u00e9ans" },
+            { x: 49, y: 131, col: "#38bdf8", lbl: "Ponts QC" },
+            { x: 122, y: 116, col: "#f97316", lbl: "Valero", dx: 4, dy: 4 },
+            { x: qx, y: qy, col: "#10b981", lbl: "86/87", main: true, dx: 5, dy: 2 },
+            { x: 87, y: 83, col: "#60a5fa", lbl: "Foulon", dx: -31, dy: -2 },
+            { x: 110, y: 54, col: "#fbbf24", lbl: "Qu\u00e9bec", dx: -33, dy: 3 },
+            { x: 113, y: 42, col: "#a855f7", lbl: "B.Louise", dx: -38, dy: -1 },
+            { x: 131, y: 48, col: "#cbd5e1", lbl: "L\u00e9vis", dx: 4, dy: 3 },
+            { x: 141, y: 36, col: "#f87171", lbl: "Davie", dx: 4, dy: 3 },
+            { x: 152, y: 16, col: "#34d399", lbl: "\u00CE.Orl\u00e9ans", dx: 4, dy: 3 },
           ];
-          wmmCtx.font = "700 8px 'Inter', sans-serif";
+          wmmCtx.font = "700 7.5px 'Inter', sans-serif";
           mapPois.forEach((mp) => {
             wmmCtx.fillStyle = mp.col;
             wmmCtx.beginPath();
-            wmmCtx.arc(mp.x, mp.y, mp.main ? 3.5 : 2.3, 0, Math.PI * 2);
+            wmmCtx.arc(mp.x, mp.y, mp.main ? 3.4 : 2.2, 0, Math.PI * 2);
             wmmCtx.fill();
-            wmmCtx.fillStyle = "rgba(248, 250, 252, 0.88)";
-            wmmCtx.fillText(mp.lbl, mp.x + 4, mp.y + 3);
+            wmmCtx.fillStyle = "rgba(248, 250, 252, 0.90)";
+            wmmCtx.fillText(mp.lbl, mp.x + (mp.dx !== undefined ? mp.dx : 4), mp.y + (mp.dy !== undefined ? mp.dy : 3));
           });
 
           // 7. Double vecteur anémométrique visuel en haut à gauche (Sol 10m en cyan + Ciel 850hPa en violet)
@@ -41510,19 +41869,17 @@
           wmmCtx.lineWidth = 1;
           wmmCtx.beginPath();
           if (wmmCtx.roundRect) {
-            wmmCtx.roundRect(4, 4, 108, 24, 5);
+            wmmCtx.roundRect(4, 4, 102, 24, 5);
           } else {
-            wmmCtx.rect(4, 4, 108, 24);
+            wmmCtx.rect(4, 4, 102, 24);
           }
           wmmCtx.fill();
           wmmCtx.stroke();
 
-          // Cercle et double fleche de vecteur vitesse (Sol = trait plein cyan/ambre, Ciel = pointillé violet)
           const ax = 15, ay = 16;
           const arrowLen = Math.max(3, Math.min(9, 2.5 + windKnots * 0.22));
           const cloudArrowLen = Math.max(3.5, Math.min(9.5, 2.5 + cloudWindKnots * 0.20));
 
-          // Flèche du vent en altitude (Ciel 850 hPa)
           wmmCtx.strokeStyle = "#c084fc";
           wmmCtx.lineWidth = 1.3;
           wmmCtx.beginPath();
@@ -41534,7 +41891,6 @@
           wmmCtx.arc(ax + cvx * cloudArrowLen, ay + cvy * cloudArrowLen, 1.5, 0, Math.PI * 2);
           wmmCtx.fill();
 
-          // Flèche du vent de surface (Sol 10m)
           wmmCtx.strokeStyle = `rgb(${streamRgb})`;
           wmmCtx.lineWidth = 1.6;
           wmmCtx.beginPath();
@@ -41548,10 +41904,10 @@
 
           wmmCtx.font = "800 7.5px 'JetBrains Mono', monospace";
           wmmCtx.fillStyle = "#f8fafc";
-          wmmCtx.fillText(`Sol:${Math.round(windKnots)}kt ${dirCard}`, 27, 13);
+          wmmCtx.fillText(`Sol:${Math.round(windKnots)}kt ${dirCard}`, 26, 13);
           wmmCtx.font = "700 7px 'JetBrains Mono', monospace";
           wmmCtx.fillStyle = "#d8b4fe";
-          wmmCtx.fillText(`Ciel:${Math.round(cloudWindKnots)}kt ${cloudDirCard}`, 27, 23);
+          wmmCtx.fillText(`Ciel:${Math.round(cloudWindKnots)}kt ${cloudDirCard}`, 26, 23);
           wmmCtx.restore();
 
           // 8. Mise a jour de la bande telemetrique au bas de la minimap (precision 0.1°C)
@@ -41604,12 +41960,34 @@
           }
         }
 
-        const FERRY_PT_LEVIS = azDistToVec3(80, 1140, 0);
-        const FERRY_PT_QUEBEC = azDistToVec3(347, 1090, 0);
+        // Évaluateur de Bézier quadratique XZ sans allocation GC pour le transit fluvial des remorqueurs dans le Goulet Québec–Lévis
+        function evalQuadBezierXZ(p0, p1, p2, t, outVec, outTan) {
+          const om = 1 - t;
+          outVec.set(
+            om * om * p0.x + 2 * om * t * p1.x + t * t * p2.x,
+            0,
+            om * om * p0.z + 2 * om * t * p1.z + t * t * p2.z
+          );
+          if (outTan) {
+            outTan.set(
+              2 * om * (p1.x - p0.x) + 2 * t * (p2.x - p1.x),
+              0,
+              2 * om * (p1.z - p0.z) + 2 * t * (p2.z - p1.z)
+            );
+          }
+        }
+
+        function shortestAngleLerp(a0, a1, u) {
+          let d = a1 - a0;
+          while (d > Math.PI) d -= Math.PI * 2;
+          while (d < -Math.PI) d += Math.PI * 2;
+          return a0 + d * u;
+        }
+
+        TUG_NARROWS_WP.copy(azDistToVec3(19.5, 640, 0));
+        const FERRY_PT_LEVIS = azDistToVec3(27.5, 1185, 0);
+        const FERRY_PT_QUEBEC = azDistToVec3(9.0, 1015, 0);
         const FERRY_AXIS_ROT_Y = Math.atan2(-(FERRY_PT_QUEBEC.z - FERRY_PT_LEVIS.z), FERRY_PT_QUEBEC.x - FERRY_PT_LEVIS.x);
-        const CARGO_PT_START = azDistToVec3(58, 1250, 0);
-        const CARGO_PT_END = azDistToVec3(248, 820, 0);
-        const CARGO_AXIS_ROT_Y = Math.atan2(-(CARGO_PT_END.z - CARGO_PT_START.z), CARGO_PT_END.x - CARGO_PT_START.x);
         const UP_VEC_3D = new THREE.Vector3(0, 1, 0);
 
         const scratchShipPos = new THREE.Vector3();
@@ -41626,6 +42004,8 @@
         const scratchThermalColor = new THREE.Color();
         const scratchFerryPos = new THREE.Vector3();
         const scratchCargoPos = new THREE.Vector3();
+        const scratchCargoTan = new THREE.Vector3();
+        const scratchRiverFrame = { x: 0, z: 0, tx: 0, tz: 1, nx: -1, nz: 0, widthScale: 1 };
         const scratchMoorDock = new THREE.Vector3();
         const scratchMoorShip = new THREE.Vector3();
         const scratchBatTarget = new THREE.Vector3();
@@ -42061,9 +42441,9 @@
             waterGeo.computeVertexNormals();
           }
 
-          // 3. Tra\u00een\u00e9es d'\u00e9cume et courant de surface 3D
-          const dirX = Math.sin((70 * Math.PI) / 180);
-          const dirZ = -Math.cos((70 * Math.PI) / 180);
+          // 3. Tra\u00een\u00e9es d'\u00e9cume et courant de surface 3D (axe Coude de Qu\u00e9bec ~44\u00b0 / 224\u00b0)
+          const dirX = Math.sin((44 * Math.PI) / 180);
+          const dirZ = -Math.cos((44 * Math.PI) / 180);
           for (let i = 0; i < currentStreaks.length; i++) {
             const st = currentStreaks[i];
             st.mesh.position.x += dirX * st.speed * flowSign * 0.45 * dt60;
@@ -42186,18 +42566,17 @@
             if (tm) tm.speedKnots = 8.5;
           } else if (tmState === "departing") {
             if (tmP < 0.25) {
-              // Phase 1/5 : Les remorqueurs quittent le Bassin Louise (Port de Quebec, Az 356) et traversent le fleuve jusqu'au Poste 87
+              // Phase 1/5 : Les remorqueurs quittent le Bassin Louise (Az ~10°) et contournent Cap-Diamant via le Goulet jusqu'au Poste 87
               const u = tmP / 0.25;
               const s = u * u * (3 - 2 * u);
               sP.copy(TANKER_DOCKED_POS);
               sRot = TANKER_DOCKED_ROT;
               const bowStation = getShipRelativeVec3(sP, sRot, 46, 26);
               const sternStation = getShipRelativeVec3(sP, sRot, -38, 26);
-              bowTugTarget.lerpVectors(TUG_STANDBY_BOW, bowStation, s);
-              sternTugTarget.lerpVectors(TUG_STANDBY_STERN, sternStation, s);
-              scratchDeltaVec.subVectors(bowStation, TUG_STANDBY_BOW);
+              evalQuadBezierXZ(TUG_STANDBY_BOW, TUG_NARROWS_WP, bowStation, s, bowTugTarget, scratchDeltaVec);
+              evalQuadBezierXZ(TUG_STANDBY_STERN, TUG_NARROWS_WP, sternStation, s, sternTugTarget, null);
               const transitRot = Math.atan2(-scratchDeltaVec.z, scratchDeltaVec.x);
-              bowTugRot = u < 0.85 ? transitRot : transitRot + (sRot - transitRot) * ((u - 0.85) / 0.15);
+              bowTugRot = u < 0.85 ? transitRot : shortestAngleLerp(transitRot, sRot, (u - 0.85) / 0.15);
               sternTugRot = bowTugRot;
               thrustIntensity = 0.85;
               linesActive = u >= 0.90;
@@ -42277,7 +42656,7 @@
             }
           } else if (tmState === "arriving") {
             if (tmP < 0.24) {
-              // Phase 1/5 : Approche du navire depuis l'Ile d'Orleans & Sortie des remorqueurs du Bassin Louise a sa rencontre
+              // Phase 1/5 : Approche du navire depuis l'Ile d'Orleans & Sortie courbe des remorqueurs du Bassin Louise a sa rencontre
               const u = tmP / 0.24;
               const s = u * u * (3 - 2 * u);
               sP.lerpVectors(TANKER_CHANNEL_POS, TANKER_TURN_POS, s);
@@ -42286,10 +42665,9 @@
               const sternMeet = getShipRelativeVec3(sP, sRot, -44, -16);
               const tugU = Math.min(1, u / 0.65);
               const tugS = tugU * tugU * (3 - 2 * tugU);
-              bowTugTarget.lerpVectors(TUG_STANDBY_BOW, bowMeet, tugS);
-              sternTugTarget.lerpVectors(TUG_STANDBY_STERN, sternMeet, tugS);
+              evalQuadBezierXZ(TUG_STANDBY_BOW, TUG_NARROWS_WP, bowMeet, tugS, bowTugTarget, scratchDeltaVec);
+              evalQuadBezierXZ(TUG_STANDBY_STERN, TUG_NARROWS_WP, sternMeet, tugS, sternTugTarget, null);
               if (tugU < 1.0) {
-                scratchDeltaVec.subVectors(bowMeet, TUG_STANDBY_BOW);
                 bowTugRot = Math.atan2(-scratchDeltaVec.z, scratchDeltaVec.x);
                 sternTugRot = bowTugRot;
               } else {
@@ -42335,18 +42713,17 @@
                 setTugNarrativeText(`Phase 3/5 : Pouss\u00e9e lat\u00e9rale des remorqueurs \u2022 Accostage en douceur de ${ship87DisplayName} au Poste 87`);
               }
             } else {
-              // Phase 4 & 5 : Navire amarre a la Section 87 • Les remorqueurs retournent au Bassin Louise (Port de Quebec)!
+              // Phase 4 & 5 : Navire amarre a la Section 87 • Les remorqueurs contournent Cap-Diamant vers le Bassin Louise!
               const u = (tmP - 0.78) / 0.22;
               const s = u * u * (3 - 2 * u);
               sP.copy(TANKER_DOCKED_POS);
               sRot = TANKER_DOCKED_ROT;
               const bowRelease = getShipRelativeVec3(sP, sRot, 32, 22);
               const sternRelease = getShipRelativeVec3(sP, sRot, -32, 22);
-              bowTugTarget.lerpVectors(bowRelease, TUG_STANDBY_BOW, s);
-              sternTugTarget.lerpVectors(sternRelease, TUG_STANDBY_STERN, s);
-              scratchDeltaVec.subVectors(TUG_STANDBY_BOW, bowRelease);
+              evalQuadBezierXZ(bowRelease, TUG_NARROWS_WP, TUG_STANDBY_BOW, s, bowTugTarget, scratchDeltaVec);
+              evalQuadBezierXZ(sternRelease, TUG_NARROWS_WP, TUG_STANDBY_STERN, s, sternTugTarget, null);
               const returnRot = Math.atan2(-scratchDeltaVec.z, scratchDeltaVec.x);
-              bowTugRot = u < 0.92 ? returnRot : TUG_BASSIN_ROT;
+              bowTugRot = u < 0.92 ? returnRot : shortestAngleLerp(returnRot, TUG_BASSIN_ROT, (u - 0.92) / 0.08);
               sternTugRot = bowTugRot;
               thrustIntensity = u < 0.95 ? 0.82 : 0.2;
               linesActive = false;
@@ -42646,16 +43023,17 @@
             fl.topMesh.visible = !isSummerLog;
             fl.logMesh.visible = isSummerLog;
 
-            // Déplacement continu le long du couloir maritime
+            // Déplacement continu le long de la courbe réelle du Coude de Québec (étranglement Québec–Lévis)
             fl.s += driftSign * currentSpeedMps * fl.speedMult * dt3D * 7.5;
             if (fl.s < -920) fl.s += 1840;
             if (fl.s > 920) fl.s -= 1840;
 
+            sampleCoudeRiverFrame(fl.s, scratchRiverFrame);
             const crossDrift = Math.sin(t * fl.vortFreq + fl.phase) * fl.vortAmp;
-            const currentN = fl.baseN + crossDrift;
+            const currentN = (fl.baseN + crossDrift) * scratchRiverFrame.widthScale;
 
-            const posX = riverP0.x + fl.s * riverTangent.x + currentN * riverNormal.x;
-            const posZ = riverP0.z + fl.s * riverTangent.z + currentN * riverNormal.z;
+            const posX = scratchRiverFrame.x + currentN * scratchRiverFrame.nx;
+            const posZ = scratchRiverFrame.z + currentN * scratchRiverFrame.nz;
 
             const wy = sampleWaveHeight(posX, posZ, t, windKnots, flowSign);
             fl.group.position.set(posX, waterLevelY + wy + fl.yOffset, posZ);
@@ -42775,12 +43153,15 @@
               const baseLiftY = hasArcticSeaSmoke ? (1.25 + smokeIntensity * 0.85) : 0.78;
 
               seaSmokeParticles.forEach((sp, sIdx) => {
-                sp.s += driftSign * (currentSpeedMps * 0.45) * dt3D * 5.0 + (smokeVx * riverTangent.x + smokeVz * riverTangent.z) * dt3D * 3.2;
+                sampleCoudeRiverFrame(sp.s, scratchRiverFrame);
+                sp.s += driftSign * (currentSpeedMps * 0.45) * dt3D * 5.0 + (smokeVx * scratchRiverFrame.tx + smokeVz * scratchRiverFrame.tz) * dt3D * 3.2;
                 if (sp.s < -780) sp.s += 1560;
                 if (sp.s > 780) sp.s -= 1560;
 
-                const sPosX = riverP0.x + sp.s * riverTangent.x + sp.baseN * riverNormal.x;
-                const sPosZ = riverP0.z + sp.s * riverTangent.z + sp.baseN * riverNormal.z;
+                sampleCoudeRiverFrame(sp.s, scratchRiverFrame);
+                const smokeN = sp.baseN * scratchRiverFrame.widthScale;
+                const sPosX = scratchRiverFrame.x + smokeN * scratchRiverFrame.nx;
+                const sPosZ = scratchRiverFrame.z + smokeN * scratchRiverFrame.nz;
                 const wy = sampleWaveHeight(sPosX, sPosZ, t, windKnots, flowSign);
 
                 const sY = waterLevelY + wy + baseLiftY + Math.sin(t * (hasArcticSeaSmoke ? 0.95 : 0.45) + sIdx) * (hasArcticSeaSmoke ? 0.75 : 0.28);
@@ -43116,12 +43497,13 @@
             shipSearchlightGroup.rotation.y = Math.sin(t * 0.65) * 0.55;
           }
 
-          // I. Transit continu du Vracquier "CSL Saint-Laurent" dans le chenal maritime (Az 58 <-> 248)
-          const cargoCycle = ((t * 0.018) % 1.0);
-          scratchCargoPos.lerpVectors(CARGO_PT_START, CARGO_PT_END, cargoCycle);
-          const cargoWave = sampleWaveHeight(scratchCargoPos.x, scratchCargoPos.z, t, windKnots, flowSign);
-          seawayCargoGroup.position.set(scratchCargoPos.x, waterLevelY + cargoWave * 0.35, scratchCargoPos.z);
-          seawayCargoGroup.rotation.y = CARGO_AXIS_ROT_Y;
+          // I. Transit continu du Vracquier "CSL Saint-Laurent" le long de la courbe réelle du Coude de Québec
+          const cargoCycle = ((t * 0.014) % 1.0);
+          const cPt = seawayCargoCurve.getPointAt(cargoCycle, scratchCargoPos);
+          const cTan = seawayCargoCurve.getTangentAt(cargoCycle, scratchCargoTan);
+          const cargoWave = sampleWaveHeight(cPt.x, cPt.z, t, windKnots, flowSign);
+          seawayCargoGroup.position.set(cPt.x, waterLevelY + cargoWave * 0.35, cPt.z);
+          seawayCargoGroup.rotation.y = Math.atan2(-cTan.z, cTan.x);
           seawayCargoGroup.rotation.z = Math.sin(t * 1.3) * 0.018;
 
           // J. Auto-Orbite cinématique 360° indépendante du framerate si activée
