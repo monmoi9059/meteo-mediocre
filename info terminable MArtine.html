@@ -15,7 +15,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Cinzel:wght@600;700;800;900&family=Crimson+Pro:ital,wght@0,400;0,600;0,700;1,600&family=Exo+2:ital,wght@0,600;0,700;0,800;1,700;1,800&family=IBM+Plex+Mono:wght@400;600;700&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&family=Orbitron:wght@500;700;800;900&family=Share+Tech+Mono&family=Space+Grotesk:wght@500;600;700&family=Space+Mono:wght@400;700&family=VT323&display=swap"
       rel="stylesheet"
     />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -3248,6 +3248,1244 @@
           min-height: 26px !important;
         }
       }
+
+      /* ==========================================================================
+         SYSTÈME MULTI-UNIVERS (6 EXPÉRIENCES & ARCHITECTURES SPATIALES UNIQUES)
+         classic | batman | starwars | pipboy | admiralty | pitwall
+         ========================================================================== */
+
+      /* 1. Sélecteur rapide d'univers dans l'en-tête + bouton mobile S24 */
+      .universe-switcher-group {
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+        background: rgba(6, 15, 28, 0.88);
+        border: 1px solid var(--border-strong);
+        border-radius: 5px;
+        padding: 2px 3px;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        flex-shrink: 0;
+      }
+      .univ-qbtn {
+        background: transparent;
+        border: 1px solid transparent;
+        color: var(--text-light);
+        font-size: 0.72rem;
+        line-height: 1;
+        padding: 0.16rem 0.28rem;
+        border-radius: 3px;
+        cursor: pointer;
+        transition: all 0.16s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 23px;
+        height: 22px;
+      }
+      .univ-qbtn:hover {
+        background: var(--surface-hover);
+        color: var(--text);
+        border-color: var(--border-strong);
+        transform: translateY(-1px);
+      }
+      .univ-qbtn.active {
+        background: var(--accent);
+        color: #050911;
+        border-color: var(--valero-gold);
+        font-weight: 900;
+        box-shadow: 0 0 10px var(--accent-glow);
+      }
+      body:not(.dark-mode)[data-universe="admiralty"] .univ-qbtn.active,
+      body:not(.dark-mode)[data-universe="classic"] .univ-qbtn.active {
+        color: #ffffff;
+      }
+      .univ-gallery-btn {
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid var(--border);
+        color: var(--text);
+        font-size: 0.62rem;
+        font-weight: 800;
+        letter-spacing: 0.02em;
+        padding: 0.15rem 0.42rem;
+        border-radius: 3px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.22rem;
+        margin-left: 2px;
+        white-space: nowrap;
+        transition: all 0.16s ease;
+        font-family: inherit;
+      }
+      .univ-gallery-btn:hover {
+        background: var(--accent);
+        color: #ffffff;
+        border-color: var(--accent);
+      }
+
+      .s24-universe-btn {
+        display: none;
+      }
+      @media (max-width: 900px) {
+        .s24-header-actions {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.28rem;
+          flex-shrink: 0;
+        }
+        .s24-universe-btn {
+          display: inline-flex !important;
+          align-items: center;
+          justify-content: center;
+          gap: 0.2rem;
+          background: rgba(15, 23, 42, 0.85);
+          color: var(--accent);
+          border: 1px solid var(--border-strong);
+          border-radius: 18px;
+          padding: 0.24rem 0.52rem;
+          font-size: 0.68rem;
+          font-weight: 800;
+          cursor: pointer;
+          white-space: nowrap;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+        }
+      }
+
+      /* Emblème SVG spécifique à l'univers dans l'en-tête */
+      .universe-brand-slot {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      body[data-universe]:not([data-universe="classic"]) .brand-logos {
+        display: none !important;
+      }
+      body[data-universe]:not([data-universe="classic"]) .universe-brand-slot {
+        display: inline-flex !important;
+      }
+      /* Masquer le bouton Jour/Nuit classique et le bouton Ratio 2-cartes quand un univers dédié est actif */
+      body[data-universe]:not([data-universe="classic"]) #theme-mode-btn,
+      body[data-universe]:not([data-universe="classic"]) #left-split-ratio-btn {
+        display: none !important;
+      }
+
+      /* Cadre HUD décoratif dans l'aperçu 3D (#animation-window) & overlay CRT global */
+      .universe-hud-frame {
+        position: absolute;
+        inset: 0;
+        pointer-events: none !important;
+        z-index: 6;
+        display: none;
+      }
+      body[data-universe]:not([data-universe="classic"]) .universe-hud-frame {
+        display: block;
+      }
+      .universe-crt-overlay {
+        position: fixed;
+        inset: 0;
+        pointer-events: none !important;
+        z-index: 9985;
+        display: none;
+      }
+
+      /* Sécurité universelle : plein écran carte & mode Panorama (hide-ui) jamais rognés */
+      body.hide-ui .card,
+      .card.fullscreen-card {
+        clip-path: none !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        grid-area: auto !important;
+      }
+
+      /* Règles communes aux 5 univers personnalisés sur Desktop (>= 901px) */
+      @media (min-width: 901px) {
+        body:not(.hide-ui)[data-universe]:not([data-universe="classic"]) .col-left,
+        body:not(.hide-ui)[data-universe]:not([data-universe="classic"]) .col-mid,
+        body:not(.hide-ui)[data-universe]:not([data-universe="classic"]) .col-right {
+          display: contents !important;
+        }
+        body:not(.hide-ui)[data-universe]:not([data-universe="classic"]) #anim-card {
+          grid-area: anim;
+          height: 100%;
+          min-height: 0;
+        }
+        body:not(.hide-ui)[data-universe]:not([data-universe="classic"]) #map-card {
+          grid-area: map;
+          height: 100%;
+          min-height: 0;
+        }
+        body:not(.hide-ui)[data-universe]:not([data-universe="classic"]) #weather-card {
+          grid-area: weather;
+          height: 100%;
+          min-height: 0;
+        }
+        body:not(.hide-ui)[data-universe]:not([data-universe="classic"]) #ops-card {
+          grid-area: ops;
+          height: 100%;
+          min-height: 0;
+        }
+        body:not(.hide-ui)[data-universe]:not([data-universe="classic"]) #tides-card {
+          grid-area: tides;
+          height: 100%;
+          min-height: 0;
+        }
+        body:not(.hide-ui)[data-universe]:not([data-universe="classic"]) #ops-card > .card-body {
+          overflow-y: auto;
+          flex: 1;
+          min-height: 0;
+        }
+        body:not(.hide-ui)[data-universe]:not([data-universe="classic"]):not([data-universe="starwars"]) #ops-card .ops-sections-grid {
+          grid-template-columns: 1fr;
+          gap: 0.28rem;
+        }
+        body[data-universe] #weather-card-title {
+          min-width: 0;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          font-size: 0.72rem;
+        }
+        body[data-universe] #weather-card .card-header > div:first-child > div:last-child {
+          flex-shrink: 0;
+        }
+        body:not(.hide-ui)[data-universe]:not([data-universe="classic"]) #tides-card .chart-container {
+          height: 76px !important;
+          min-height: 68px !important;
+          flex-shrink: 0;
+        }
+      }
+
+      /* ==========================================================================
+         UNIVERS 1 : 🦇 BATCOMPUTER // WAYNETECH GOTHAM HARBOR TACTICAL (batman)
+         Placement : Barre latérale blindée GAUCHE pleine hauteur + Scrubber BAS
+                     Mur 3D 2 colonnes Haut-Gauche/Centre + Ops Haut-Droite
+                     Sonar AIS + Météo + Marées alignés sur la rangée inférieure
+         ========================================================================== */
+      body[data-universe="batman"],
+      body.dark-mode[data-universe="batman"] {
+        --bg: #07080b;
+        --card-bg: rgba(14, 17, 23, 0.95);
+        --card-bg-solid: #10131a;
+        --card-header-bg: linear-gradient(90deg, #171b24 0%, #0d1016 100%);
+        --text: #f3f5f8;
+        --text-light: #a3aebf;
+        --text-muted: #677285;
+        --border: rgba(234, 179, 8, 0.28);
+        --border-strong: rgba(250, 204, 21, 0.62);
+        --surface-hover: rgba(234, 179, 8, 0.16);
+        --surface-subtle: rgba(20, 24, 33, 0.9);
+        --input-bg: #090b0f;
+        --valero-navy: #141821;
+        --valero-teal: #eab308;
+        --valero-gold: #facc15;
+        --cando-red: #ef4444;
+        --accent: #facc15;
+        --accent-hover: #fde047;
+        --accent-glow: rgba(250, 204, 21, 0.35);
+        --tribord-green: #38bdf8;
+        --babord-red: #ef4444;
+        --beacon-amber: #facc15;
+        --success: #38bdf8;
+        --success-bg: rgba(56, 189, 248, 0.14);
+        --warning: #facc15;
+        --warning-bg: rgba(250, 204, 21, 0.16);
+        --danger: #ef4444;
+        --danger-bg: rgba(239, 68, 68, 0.18);
+        font-family: "Chakra Petch", sans-serif;
+        background-color: #07080b;
+        background-image:
+          radial-gradient(circle at 72% 14%, rgba(250, 204, 21, 0.08), transparent 48%),
+          repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.018) 0px, rgba(255, 255, 255, 0.018) 2px, transparent 2px, transparent 8px),
+          repeating-linear-gradient(-45deg, rgba(234, 179, 8, 0.02) 0px, rgba(234, 179, 8, 0.02) 2px, transparent 2px, transparent 8px);
+        background-size: auto;
+      }
+      body[data-universe="batman"] .mono,
+      body[data-universe="batman"] table td,
+      body[data-universe="batman"] .cw-val {
+        font-family: "Share Tech Mono", monospace;
+      }
+      body[data-universe="batman"] .card {
+        border-radius: 0;
+        border: 1px solid rgba(250, 204, 21, 0.34);
+        clip-path: polygon(11px 0, calc(100% - 11px) 0, 100% 11px, 100% calc(100% - 11px), calc(100% - 11px) 100%, 11px 100%, 0 calc(100% - 11px), 0 11px);
+        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.82), inset 0 0 22px rgba(250, 204, 21, 0.04);
+      }
+      body[data-universe="batman"] .card::before {
+        height: 2px;
+        background: linear-gradient(90deg, transparent, #facc15 20%, #eab308 80%, transparent);
+      }
+      body[data-universe="batman"] .card-header h2,
+      body[data-universe="batman"] .header-title-block h1 {
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #facc15;
+      }
+      body[data-universe="batman"] .theme-toggle,
+      body[data-universe="batman"] .scrubber-qbtn {
+        border-radius: 0;
+        clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
+        background: rgba(20, 24, 34, 0.95);
+        border-color: rgba(250, 204, 21, 0.35);
+        color: #e5e7eb;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+      body[data-universe="batman"] .theme-toggle:hover,
+      body[data-universe="batman"] .theme-toggle.active,
+      body[data-universe="batman"] .scrubber-qbtn.active {
+        background: #facc15 !important;
+        color: #07080b !important;
+        border-color: #fef08a !important;
+        box-shadow: 0 0 14px rgba(250, 204, 21, 0.45);
+      }
+      body[data-universe="batman"] .cw-item {
+        border-radius: 0;
+        border-left: 3px solid #facc15;
+        background: #0b0e14;
+      }
+      body[data-universe="batman"] .telemetry-badge {
+        background: rgba(250, 204, 21, 0.14);
+        border-color: rgba(250, 204, 21, 0.55);
+        color: #facc15;
+      }
+      body[data-universe="batman"] .telemetry-dot {
+        background: #facc15;
+        box-shadow: 0 0 8px #facc15;
+      }
+      /* Inversion tactique des panneaux HUD dans l'aperçu 3D Batman */
+      @media (min-width: 901px) {
+        body[data-universe="batman"] #animation-window .weather-minimap-hud {
+          left: auto !important;
+          right: 10px !important;
+        }
+        body[data-universe="batman"] #animation-window .temp-simulation-hud {
+          right: auto !important;
+          left: 10px !important;
+        }
+        body:not(.hide-ui)[data-universe="batman"] {
+          display: grid;
+          grid-template-columns: 244px minmax(0, 1fr);
+          grid-template-rows: auto minmax(0, 1fr) auto;
+          grid-template-areas:
+            "hdr proj"
+            "hdr main"
+            "hdr scrub";
+        }
+        body:not(.hide-ui)[data-universe="batman"] .header {
+          grid-area: hdr;
+          flex-direction: column;
+          justify-content: flex-start;
+          align-items: stretch;
+          height: 100vh;
+          padding: 0.55rem 0.5rem;
+          gap: 0.48rem;
+          background: linear-gradient(180deg, #0d1017 0%, #06070a 100%);
+          border-bottom: none;
+          border-right: 2px solid #eab308;
+          overflow-y: auto;
+          overflow-x: hidden;
+          flex-wrap: nowrap;
+        }
+        body:not(.hide-ui)[data-universe="batman"] .header::after {
+          display: none;
+        }
+        body:not(.hide-ui)[data-universe="batman"] .header-brand {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 0.42rem;
+          width: 100%;
+          min-width: 0;
+          padding-bottom: 0.45rem;
+          border-bottom: 1px solid rgba(250, 204, 21, 0.25);
+        }
+        body:not(.hide-ui)[data-universe="batman"] .header-title-block h1,
+        body:not(.hide-ui)[data-universe="batman"] .header-subtitle {
+          white-space: normal;
+          line-height: 1.2;
+        }
+        body:not(.hide-ui)[data-universe="batman"] .header-subtitle {
+          flex-wrap: wrap;
+          row-gap: 0.12rem;
+        }
+        body:not(.hide-ui)[data-universe="batman"] .controls {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 0.26rem;
+          width: 100%;
+          min-width: 0;
+          flex: 0 0 auto;
+          align-content: start;
+        }
+        body:not(.hide-ui)[data-universe="batman"] .controls > * {
+          min-width: 0;
+        }
+        body:not(.hide-ui)[data-universe="batman"] .live-clock-pill,
+        body:not(.hide-ui)[data-universe="batman"] .universe-switcher-group,
+        body:not(.hide-ui)[data-universe="batman"] #loading-arms-toggle,
+        body:not(.hide-ui)[data-universe="batman"] #pwa-install-btn {
+          grid-column: 1 / -1;
+          width: 100%;
+          justify-content: space-between;
+        }
+        body:not(.hide-ui)[data-universe="batman"] .live-clock-pill {
+          flex-wrap: wrap;
+          white-space: normal;
+          row-gap: 0.2rem;
+          font-size: 0.64rem;
+        }
+        body:not(.hide-ui)[data-universe="batman"] .universe-switcher-group {
+          flex-wrap: wrap;
+          justify-content: center;
+          padding: 4px;
+          gap: 3px;
+        }
+        body:not(.hide-ui)[data-universe="batman"] .univ-gallery-btn {
+          width: 100%;
+          justify-content: center;
+          margin-left: 0;
+          margin-top: 2px;
+        }
+        body:not(.hide-ui)[data-universe="batman"] .controls .theme-toggle {
+          width: 100%;
+          justify-content: flex-start;
+          font-size: 0.56rem;
+          letter-spacing: 0.01em;
+          padding: 0.24rem 0.3rem;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        body:not(.hide-ui)[data-universe="batman"] #projection-banner {
+          grid-area: proj;
+        }
+        body:not(.hide-ui)[data-universe="batman"] .scrubber-ribbon {
+          grid-area: scrub;
+          border-bottom: none;
+          border-top: 1px solid rgba(250, 204, 21, 0.45);
+          background: #0a0d13;
+        }
+        body:not(.hide-ui)[data-universe="batman"] .main-dashboard {
+          grid-area: main;
+          grid-template-columns: minmax(0, 1.04fr) minmax(0, 1.16fr) minmax(0, 1.1fr);
+          grid-template-rows: minmax(0, 1.15fr) minmax(0, 0.85fr);
+          grid-template-areas:
+            "anim anim ops"
+            "map weather tides";
+          gap: 0.48rem;
+          padding: 0.48rem;
+        }
+        body:not(.hide-ui)[data-universe="batman"] #weather-card > .card-body {
+          overflow-y: auto;
+        }
+        body:not(.hide-ui)[data-universe="batman"] #weather-card .current-weather {
+          grid-template-columns: repeat(6, minmax(0, 1fr));
+          padding: 0.18rem;
+          gap: 0.18rem;
+        }
+        body:not(.hide-ui)[data-universe="batman"] #weather-card .cw-item {
+          padding: 0.12rem 0.24rem;
+        }
+        body:not(.hide-ui)[data-universe="batman"] #weather-card .chart-container {
+          height: 62px !important;
+          min-height: 58px !important;
+          flex-shrink: 0;
+        }
+        body:not(.hide-ui)[data-universe="batman"] #weather-card .table-scroll {
+          min-height: 105px;
+        }
+      }
+
+      /* ==========================================================================
+         UNIVERS 2 : ⚔️ STAR WARS // HOLONET IMPERIAL & REBEL BRIDGE (starwars)
+         Placement : Chrono Hyperespace TOUT EN HAUT + Console Passerelle TOUT EN BAS
+                     Aile Gauche (Météo pleine hauteur) | Centre (Holotable 3D + Baie 86/87) | Aile Droite (Marées + Carte AIS)
+         ========================================================================== */
+      body[data-universe="starwars"],
+      body.dark-mode[data-universe="starwars"] {
+        --bg: #03060e;
+        --card-bg: rgba(7, 15, 29, 0.9);
+        --card-bg-solid: #071120;
+        --card-header-bg: linear-gradient(90deg, rgba(0, 229, 255, 0.16) 0%, rgba(9, 18, 36, 0.95) 60%, rgba(255, 107, 26, 0.14) 100%);
+        --text: #e4f8ff;
+        --text-light: #7cc6de;
+        --text-muted: #497d94;
+        --border: rgba(0, 229, 255, 0.28);
+        --border-strong: rgba(0, 229, 255, 0.65);
+        --surface-hover: rgba(0, 229, 255, 0.16);
+        --surface-subtle: rgba(8, 22, 42, 0.86);
+        --input-bg: #040a14;
+        --valero-navy: #07182c;
+        --valero-teal: #00e5ff;
+        --valero-gold: #ff6b1a;
+        --cando-red: #ff2a4b;
+        --accent: #00e5ff;
+        --accent-hover: #ff6b1a;
+        --accent-glow: rgba(0, 229, 255, 0.42);
+        --tribord-green: #00e5ff;
+        --babord-red: #ff2a4b;
+        --beacon-amber: #ff6b1a;
+        --success: #00e5ff;
+        --success-bg: rgba(0, 229, 255, 0.14);
+        --warning: #ff6b1a;
+        --warning-bg: rgba(255, 107, 26, 0.16);
+        --danger: #ff2a4b;
+        --danger-bg: rgba(255, 42, 75, 0.18);
+        font-family: "Space Mono", monospace;
+        background-color: #03060e;
+        background-image:
+          radial-gradient(1.5px 1.5px at 14% 22%, rgba(255, 255, 255, 0.75), transparent),
+          radial-gradient(1px 1px at 38% 68%, rgba(0, 229, 255, 0.7), transparent),
+          radial-gradient(1.5px 1.5px at 66% 18%, rgba(255, 255, 255, 0.65), transparent),
+          radial-gradient(1px 1px at 84% 74%, rgba(255, 107, 26, 0.65), transparent),
+          radial-gradient(ellipse at 50% 45%, rgba(0, 229, 255, 0.1) 0%, transparent 65%),
+          repeating-linear-gradient(0deg, rgba(0, 229, 255, 0.03) 0px, rgba(0, 229, 255, 0.03) 1px, transparent 1px, transparent 4px);
+        background-size: 320px 320px, 260px 260px, 380px 380px, 290px 290px, 100% 100%, 100% 4px;
+      }
+      body[data-universe="starwars"] .card-header h2,
+      body[data-universe="starwars"] .header-title-block h1,
+      body[data-universe="starwars"] .scrubber-ribbon-title,
+      body[data-universe="starwars"] .status-block h3 {
+        font-family: "Orbitron", sans-serif;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+        text-shadow: 0 0 10px rgba(0, 229, 255, 0.38);
+      }
+      body[data-universe="starwars"] .mono {
+        font-family: "Space Mono", monospace;
+      }
+      body[data-universe="starwars"] .card {
+        border-radius: 2px;
+        border: 1px solid rgba(0, 229, 255, 0.42);
+        clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
+        box-shadow: 0 0 24px rgba(0, 229, 255, 0.12), inset 0 0 18px rgba(0, 229, 255, 0.06);
+      }
+      body[data-universe="starwars"] .card::before {
+        height: 2px;
+        background: linear-gradient(90deg, #00e5ff 0%, transparent 50%, #ff6b1a 100%);
+      }
+      body[data-universe="starwars"] .cw-item {
+        border-left: 2.5px solid #ff6b1a;
+        background: rgba(5, 14, 28, 0.92);
+      }
+      body[data-universe="starwars"] .theme-toggle {
+        border-color: rgba(0, 229, 255, 0.4);
+        background: rgba(6, 18, 34, 0.9);
+        color: #d8f6ff;
+        font-family: "Orbitron", sans-serif;
+        font-size: 0.58rem;
+        letter-spacing: 0.05em;
+      }
+      body[data-universe="starwars"] .theme-toggle.active,
+      body[data-universe="starwars"] .theme-toggle:hover {
+        background: rgba(255, 107, 26, 0.24) !important;
+        color: #ff9e64 !important;
+        border-color: #ff6b1a !important;
+        box-shadow: 0 0 12px rgba(255, 107, 26, 0.45);
+      }
+      @media (min-width: 901px) {
+        body:not(.hide-ui)[data-universe="starwars"] {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr);
+          grid-template-rows: auto auto minmax(0, 1fr) auto;
+          grid-template-areas:
+            "scrub"
+            "proj"
+            "main"
+            "hdr";
+        }
+        body:not(.hide-ui)[data-universe="starwars"] .scrubber-ribbon {
+          grid-area: scrub;
+          background: linear-gradient(90deg, #050d1c, #0a1b34, #050d1c);
+          border-bottom: 1.5px solid #ff6b1a;
+        }
+        body:not(.hide-ui)[data-universe="starwars"] #projection-banner {
+          grid-area: proj;
+        }
+        body:not(.hide-ui)[data-universe="starwars"] .header {
+          grid-area: hdr;
+          border-bottom: none;
+          border-top: 2px solid #00e5ff;
+          background: linear-gradient(180deg, #071428 0%, #030812 100%);
+          box-shadow: 0 -6px 24px rgba(0, 229, 255, 0.18);
+        }
+        body:not(.hide-ui)[data-universe="starwars"] .header::after {
+          top: -3px;
+          bottom: auto;
+          background: linear-gradient(90deg, #00e5ff, #ff6b1a 50%, #ff2a4b);
+        }
+        body:not(.hide-ui)[data-universe="starwars"] .main-dashboard {
+          grid-area: main;
+          grid-template-columns: minmax(0, 1.02fr) minmax(0, 1.46fr) minmax(0, 1.02fr);
+          grid-template-rows: minmax(0, 1.22fr) minmax(0, 0.78fr);
+          grid-template-areas:
+            "weather anim tides"
+            "weather ops map";
+          gap: 0.5rem;
+          padding: 0.48rem 0.58rem;
+        }
+        body:not(.hide-ui)[data-universe="starwars"] #weather-card .current-weather {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+      }
+
+      /* ==========================================================================
+         UNIVERS 3 : ☢️ PIP-BOY CRT // ROBCO 1982 PHOSPHOR SCADA (pipboy)
+         Placement : Lunette matérielle À DROITE pleine hauteur + Scrubber Haut-Gauche
+                     Ops + Oscilloscope Marées 2 colonnes en HAUT
+                     Radar Phosphore AIS + Météo + Périscope 3D en BAS-DROITE
+         ========================================================================== */
+      body[data-universe="pipboy"],
+      body.dark-mode[data-universe="pipboy"] {
+        --bg: #030b05;
+        --card-bg: rgba(5, 19, 9, 0.94);
+        --card-bg-solid: #06180b;
+        --card-header-bg: linear-gradient(180deg, rgba(34, 255, 102, 0.16) 0%, rgba(5, 20, 9, 0.96) 100%);
+        --text: #35ff74;
+        --text-light: #1ecb56;
+        --text-muted: #148638;
+        --border: rgba(53, 255, 116, 0.34);
+        --border-strong: rgba(53, 255, 116, 0.78);
+        --surface-hover: rgba(53, 255, 116, 0.18);
+        --surface-subtle: rgba(7, 28, 12, 0.9);
+        --input-bg: #031006;
+        --valero-navy: #07230f;
+        --valero-teal: #22ff66;
+        --valero-gold: #ffb000;
+        --cando-red: #ff5232;
+        --accent: #22ff66;
+        --accent-hover: #ffb000;
+        --accent-glow: rgba(34, 255, 102, 0.45);
+        --tribord-green: #22ff66;
+        --babord-red: #ff5232;
+        --beacon-amber: #ffb000;
+        --success: #22ff66;
+        --success-bg: rgba(34, 255, 102, 0.14);
+        --warning: #ffb000;
+        --warning-bg: rgba(255, 176, 0, 0.16);
+        --danger: #ff5232;
+        --danger-bg: rgba(255, 82, 50, 0.18);
+        font-family: "IBM Plex Mono", monospace;
+        background-color: #030b05;
+        background-image:
+          radial-gradient(ellipse at 45% 50%, rgba(34, 255, 102, 0.09) 0%, rgba(1, 6, 2, 0.95) 85%),
+          linear-gradient(rgba(34, 255, 102, 0.06) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(34, 255, 102, 0.06) 1px, transparent 1px);
+        background-size: 100% 100%, 28px 28px, 28px 28px;
+      }
+      body[data-universe="pipboy"] .universe-crt-overlay {
+        display: block;
+        background:
+          repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.2) 0px, rgba(0, 0, 0, 0.2) 1px, transparent 1px, transparent 3px),
+          radial-gradient(ellipse at center, transparent 62%, rgba(0, 8, 2, 0.48) 100%);
+      }
+      body[data-universe="pipboy"] .card-header h2,
+      body[data-universe="pipboy"] .header-title-block h1,
+      body[data-universe="pipboy"] .scrubber-ribbon-title,
+      body[data-universe="pipboy"] .cw-val {
+        font-family: "VT323", monospace;
+        font-size: 1.02rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        text-shadow: 0 0 8px rgba(34, 255, 102, 0.55);
+      }
+      body[data-universe="pipboy"] .mono {
+        font-family: "IBM Plex Mono", monospace;
+      }
+      body[data-universe="pipboy"] .card {
+        border-radius: 10px;
+        border: 2px solid rgba(53, 255, 116, 0.55);
+        box-shadow: inset 0 0 22px rgba(34, 255, 102, 0.1), 0 6px 20px rgba(0, 0, 0, 0.85);
+      }
+      body[data-universe="pipboy"] .card::before {
+        background: repeating-linear-gradient(90deg, #22ff66 0px, #22ff66 10px, transparent 10px, transparent 14px);
+        height: 2px;
+      }
+      body[data-universe="pipboy"] .theme-toggle,
+      body[data-universe="pipboy"] .scrubber-qbtn {
+        background: #05180a;
+        border: 1px solid rgba(53, 255, 116, 0.55);
+        color: #35ff74;
+        border-radius: 3px;
+        font-family: "IBM Plex Mono", monospace;
+      }
+      body[data-universe="pipboy"] .theme-toggle:hover,
+      body[data-universe="pipboy"] .theme-toggle.active,
+      body[data-universe="pipboy"] .scrubber-qbtn.active {
+        background: #22ff66 !important;
+        color: #020a04 !important;
+        border-color: #b8ffd0 !important;
+        box-shadow: 0 0 12px rgba(34, 255, 102, 0.65);
+      }
+      body[data-universe="pipboy"] #map-card iframe {
+        filter: sepia(100%) hue-rotate(78deg) saturate(260%) brightness(0.88) contrast(1.15);
+      }
+      @media (min-width: 901px) {
+        body:not(.hide-ui)[data-universe="pipboy"] {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) 246px;
+          grid-template-rows: auto auto minmax(0, 1fr);
+          grid-template-areas:
+            "scrub hdr"
+            "proj hdr"
+            "main hdr";
+        }
+        body:not(.hide-ui)[data-universe="pipboy"] .header {
+          grid-area: hdr;
+          flex-direction: column;
+          justify-content: flex-start;
+          align-items: stretch;
+          height: 100vh;
+          padding: 0.55rem 0.48rem;
+          gap: 0.5rem;
+          background: linear-gradient(180deg, #0b190e 0%, #050d07 100%);
+          border-bottom: none;
+          border-left: 3px double #22ff66;
+          overflow-y: auto;
+          overflow-x: hidden;
+          flex-wrap: nowrap;
+        }
+        body:not(.hide-ui)[data-universe="pipboy"] .header::after {
+          display: none;
+        }
+        body:not(.hide-ui)[data-universe="pipboy"] .header-brand {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 0.4rem;
+          width: 100%;
+          min-width: 0;
+          padding-bottom: 0.45rem;
+          border-bottom: 1px dashed rgba(53, 255, 116, 0.45);
+        }
+        body:not(.hide-ui)[data-universe="pipboy"] .header-title-block h1,
+        body:not(.hide-ui)[data-universe="pipboy"] .header-subtitle {
+          white-space: normal;
+          color: #35ff74;
+        }
+        body:not(.hide-ui)[data-universe="pipboy"] .header-subtitle {
+          flex-wrap: wrap;
+          color: #ffb000;
+        }
+        body:not(.hide-ui)[data-universe="pipboy"] .controls {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 0.26rem;
+          width: 100%;
+          min-width: 0;
+          flex: 0 0 auto;
+          align-content: start;
+        }
+        body:not(.hide-ui)[data-universe="pipboy"] .controls > * {
+          min-width: 0;
+        }
+        body:not(.hide-ui)[data-universe="pipboy"] .live-clock-pill,
+        body:not(.hide-ui)[data-universe="pipboy"] .universe-switcher-group,
+        body:not(.hide-ui)[data-universe="pipboy"] #loading-arms-toggle,
+        body:not(.hide-ui)[data-universe="pipboy"] #pwa-install-btn {
+          grid-column: 1 / -1;
+          width: 100%;
+          justify-content: space-between;
+        }
+        body:not(.hide-ui)[data-universe="pipboy"] .live-clock-pill {
+          flex-wrap: wrap;
+          white-space: normal;
+          row-gap: 0.2rem;
+          font-size: 0.63rem;
+        }
+        body:not(.hide-ui)[data-universe="pipboy"] .universe-switcher-group {
+          flex-wrap: wrap;
+          justify-content: center;
+          background: #031006;
+          padding: 4px;
+          gap: 3px;
+        }
+        body:not(.hide-ui)[data-universe="pipboy"] .univ-gallery-btn {
+          width: 100%;
+          justify-content: center;
+          margin-left: 0;
+          margin-top: 2px;
+        }
+        body:not(.hide-ui)[data-universe="pipboy"] .controls .theme-toggle {
+          width: 100%;
+          justify-content: flex-start;
+          font-size: 0.55rem;
+          letter-spacing: 0.01em;
+          padding: 0.24rem 0.3rem;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        body:not(.hide-ui)[data-universe="pipboy"] .scrubber-ribbon {
+          grid-area: scrub;
+          background: #041207;
+          border-bottom: 1.5px dashed rgba(53, 255, 116, 0.55);
+        }
+        body:not(.hide-ui)[data-universe="pipboy"] #projection-banner {
+          grid-area: proj;
+        }
+        body:not(.hide-ui)[data-universe="pipboy"] .main-dashboard {
+          grid-area: main;
+          grid-template-columns: minmax(0, 0.96fr) minmax(0, 1.06fr) minmax(0, 1.26fr);
+          grid-template-rows: minmax(0, 0.88fr) minmax(0, 1.12fr);
+          grid-template-areas:
+            "ops tides tides"
+            "map weather anim";
+          gap: 0.48rem;
+          padding: 0.48rem;
+        }
+        body:not(.hide-ui)[data-universe="pipboy"] #weather-card > .card-body {
+          overflow-y: auto;
+        }
+        body:not(.hide-ui)[data-universe="pipboy"] #weather-card .current-weather {
+          grid-template-columns: repeat(6, minmax(0, 1fr));
+          padding: 0.16rem;
+          gap: 0.16rem;
+        }
+        body:not(.hide-ui)[data-universe="pipboy"] #weather-card .cw-item {
+          padding: 0.12rem 0.22rem;
+        }
+        body:not(.hide-ui)[data-universe="pipboy"] #weather-card .chart-container {
+          height: 60px !important;
+          min-height: 56px !important;
+          flex-shrink: 0;
+        }
+        body:not(.hide-ui)[data-universe="pipboy"] #weather-card .table-scroll {
+          min-height: 100px;
+        }
+      }
+
+      /* ==========================================================================
+         UNIVERS 4 : 📜 AMIRAUTÉ 1885 // TABLE À CARTES ACAJOU, LAITON & VÉLIN (admiralty)
+         Thème Clair Patrimonial — Placement Folio 6 Colonnes :
+         Haut : Carte Marine 50% (Gauche) + Longue-Vue 3D 50% (Droite)
+         Bas : Journal de Quart 3 Colonnes Égales (Capitainerie | Almanach Marées | Baromètre) + Règle Laiton en Bas
+         ========================================================================== */
+      body[data-universe="admiralty"],
+      body:not(.dark-mode)[data-universe="admiralty"] {
+        --bg: #efe5ce;
+        --card-bg: rgba(251, 246, 234, 0.96);
+        --card-bg-solid: #fdf9ef;
+        --card-header-bg: linear-gradient(180deg, #f3e8cf 0%, #e6d6b5 100%);
+        --text: #1c1610;
+        --text-light: #4f3d28;
+        --text-muted: #7a6347;
+        --border: rgba(138, 96, 32, 0.34);
+        --border-strong: rgba(138, 96, 32, 0.68);
+        --surface-hover: rgba(184, 125, 30, 0.16);
+        --surface-subtle: rgba(236, 224, 198, 0.82);
+        --input-bg: #fffdf7;
+        --valero-navy: #132d48;
+        --valero-teal: #17496d;
+        --valero-gold: #b87d1e;
+        --cando-red: #9e2424;
+        --accent: #17496d;
+        --accent-hover: #26140c;
+        --accent-glow: rgba(184, 125, 30, 0.28);
+        --tribord-green: #1d6b47;
+        --babord-red: #9e2424;
+        --beacon-amber: #b87d1e;
+        --success: #1d6b47;
+        --success-bg: rgba(29, 107, 71, 0.14);
+        --warning: #b87d1e;
+        --warning-bg: rgba(184, 125, 30, 0.16);
+        --danger: #9e2424;
+        --danger-bg: rgba(158, 36, 36, 0.14);
+        --shadow-md: 0 5px 18px rgba(42, 26, 10, 0.14), inset 0 1px 0 rgba(255, 253, 245, 0.9);
+        font-family: "Crimson Pro", Georgia, serif;
+        font-size: 16.5px;
+        background-color: #efe5ce;
+        background-image:
+          radial-gradient(ellipse at 50% 0%, rgba(184, 125, 30, 0.12) 0%, transparent 70%),
+          linear-gradient(rgba(138, 96, 32, 0.08) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(138, 96, 32, 0.08) 1px, transparent 1px);
+        background-size: 100% 100%, 44px 44px, 44px 44px;
+      }
+      body[data-universe="admiralty"] .card-header h2,
+      body[data-universe="admiralty"] .header-title-block h1,
+      body[data-universe="admiralty"] .scrubber-ribbon-title,
+      body[data-universe="admiralty"] .status-block h3 {
+        font-family: "Cinzel", Georgia, serif;
+        font-weight: 800;
+        letter-spacing: 0.05em;
+      }
+      body[data-universe="admiralty"] .header {
+        background: linear-gradient(180deg, #2d180e 0%, #1c0e08 100%);
+        border-bottom: 3px double #d49b35;
+        color: #f8eed8;
+      }
+      body[data-universe="admiralty"] .header::after {
+        background: linear-gradient(90deg, #b87d1e, #f3cf7a 50%, #b87d1e);
+      }
+      body[data-universe="admiralty"] .header-title-block h1 {
+        color: #f5deb0;
+      }
+      body[data-universe="admiralty"] .header-subtitle {
+        color: #d8ba84;
+      }
+      body[data-universe="admiralty"] .header .theme-toggle,
+      body[data-universe="admiralty"] .header .live-clock-pill,
+      body[data-universe="admiralty"] .header .universe-switcher-group {
+        background: rgba(52, 30, 16, 0.92);
+        border-color: rgba(212, 155, 53, 0.55);
+        color: #f7ebd2;
+      }
+      body[data-universe="admiralty"] .header .univ-gallery-btn {
+        background: rgba(212, 155, 53, 0.22);
+        border-color: rgba(243, 207, 122, 0.68);
+        color: #fdf5e2;
+      }
+      body[data-universe="admiralty"] .card {
+        border-radius: 3px;
+        border: 3px double rgba(150, 104, 34, 0.62);
+      }
+      body[data-universe="admiralty"] .card::before {
+        height: 2px;
+        background: linear-gradient(90deg, #9e2424, #b87d1e 50%, #17496d);
+      }
+      body[data-universe="admiralty"] .card .theme-toggle {
+        background: #f4ead4;
+        color: #1c1610;
+        border: 1px solid rgba(138, 96, 32, 0.5);
+        box-shadow: 0 1px 2px rgba(42, 26, 10, 0.1);
+      }
+      body[data-universe="admiralty"] .card .theme-toggle.active,
+      body[data-universe="admiralty"] .card .theme-toggle:hover {
+        background: #17496d !important;
+        color: #fdf9ef !important;
+        border-color: #b87d1e !important;
+      }
+      body[data-universe="admiralty"] .scrubber-ribbon {
+        background: linear-gradient(180deg, #e7d8b9 0%, #dac59c 100%);
+        border-top: 2px solid #b87d1e;
+        border-bottom: 1px solid #b87d1e;
+      }
+      body[data-universe="admiralty"] .scrubber-qbtn {
+        background: #faf3e3;
+        color: #26140c;
+        border-color: rgba(138, 96, 32, 0.5);
+      }
+      body[data-universe="admiralty"] .scrubber-qbtn.active {
+        background: #9e2424;
+        color: #fffdf7;
+        border-color: #26140c;
+      }
+      body[data-universe="admiralty"] .cw-item {
+        border-left: 3px solid #b87d1e;
+        background: #fffcf5;
+      }
+      @media (min-width: 901px) {
+        body:not(.hide-ui)[data-universe="admiralty"] {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr);
+          grid-template-rows: auto auto minmax(0, 1fr) auto;
+          grid-template-areas:
+            "hdr"
+            "proj"
+            "main"
+            "scrub";
+        }
+        body:not(.hide-ui)[data-universe="admiralty"] .header {
+          grid-area: hdr;
+        }
+        body:not(.hide-ui)[data-universe="admiralty"] #projection-banner {
+          grid-area: proj;
+        }
+        body:not(.hide-ui)[data-universe="admiralty"] .scrubber-ribbon {
+          grid-area: scrub;
+        }
+        body:not(.hide-ui)[data-universe="admiralty"] .main-dashboard {
+          grid-area: main;
+          grid-template-columns: repeat(6, minmax(0, 1fr));
+          grid-template-rows: minmax(0, 1.06fr) minmax(0, 0.94fr);
+          grid-template-areas:
+            "map map map anim anim anim"
+            "ops ops tides tides weather weather";
+          gap: 0.55rem;
+          padding: 0.52rem 0.65rem;
+        }
+        body:not(.hide-ui)[data-universe="admiralty"] #weather-card > .card-body {
+          overflow-y: auto;
+        }
+        body:not(.hide-ui)[data-universe="admiralty"] #weather-card .current-weather {
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          padding: 0.16rem;
+          gap: 0.16rem;
+        }
+        body:not(.hide-ui)[data-universe="admiralty"] #weather-card .cw-item {
+          padding: 0.1rem 0.22rem;
+        }
+        body:not(.hide-ui)[data-universe="admiralty"] #weather-card .chart-container {
+          height: 60px !important;
+          min-height: 56px !important;
+          flex-shrink: 0;
+        }
+        body:not(.hide-ui)[data-universe="admiralty"] #weather-card .table-scroll {
+          min-height: 100px;
+        }
+      }
+
+      /* ==========================================================================
+         UNIVERS 5 : 🏎️ F1 PIT WALL // AERO TELEMETRY & SWISS BENTO STUDIO (pitwall)
+         Placement : Capsules flottantes Carbone/Papaya (border-radius 16px)
+                     #ops-card en #1 HAUT-GAUCHE (Pit Strategy) sur #map-card
+                     #anim-card HAUT-CENTRE sur #tides-card
+                     #weather-card Tour Aéro PLEINE HAUTEUR À DROITE (capteurs 2 colonnes)
+         ========================================================================== */
+      body[data-universe="pitwall"],
+      body.dark-mode[data-universe="pitwall"] {
+        --bg: #0b0d12;
+        --card-bg: rgba(20, 24, 33, 0.96);
+        --card-bg-solid: #171c26;
+        --card-header-bg: linear-gradient(90deg, #1d2330 0%, #141821 100%);
+        --text: #f8fafc;
+        --text-light: #94a3b8;
+        --text-muted: #64748b;
+        --border: rgba(255, 255, 255, 0.1);
+        --border-strong: rgba(255, 85, 0, 0.55);
+        --surface-hover: rgba(255, 85, 0, 0.16);
+        --surface-subtle: rgba(28, 34, 46, 0.88);
+        --input-bg: #0f131a;
+        --valero-navy: #181e29;
+        --valero-teal: #ff5500;
+        --valero-gold: #84cc16;
+        --cando-red: #ef4444;
+        --accent: #ff5500;
+        --accent-hover: #ff7733;
+        --accent-glow: rgba(255, 85, 0, 0.38);
+        --tribord-green: #84cc16;
+        --babord-red: #ef4444;
+        --beacon-amber: #ff5500;
+        --success: #84cc16;
+        --success-bg: rgba(132, 204, 22, 0.14);
+        --warning: #ff5500;
+        --warning-bg: rgba(255, 85, 0, 0.16);
+        --danger: #ef4444;
+        --danger-bg: rgba(239, 68, 68, 0.16);
+        font-family: "Space Grotesk", sans-serif;
+        background-color: #0b0d12;
+        background-image:
+          radial-gradient(circle at 12% 0%, rgba(255, 85, 0, 0.12), transparent 42%),
+          radial-gradient(circle at 88% 100%, rgba(6, 182, 212, 0.1), transparent 42%),
+          radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+        background-size: 100% 100%, 100% 100%, 18px 18px;
+      }
+      body[data-universe="pitwall"] .card-header h2,
+      body[data-universe="pitwall"] .header-title-block h1,
+      body[data-universe="pitwall"] .scrubber-ribbon-title {
+        font-family: "Exo 2", sans-serif;
+        font-style: italic;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+      body[data-universe="pitwall"] .card {
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.11);
+        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      }
+      body[data-universe="pitwall"] .card::before {
+        height: 3px;
+        background: linear-gradient(90deg, #ff5500 0%, #ff5500 28%, #84cc16 28%, #84cc16 38%, transparent 38%);
+      }
+      body[data-universe="pitwall"] .theme-toggle,
+      body[data-universe="pitwall"] .scrubber-qbtn,
+      body[data-universe="pitwall"] .univ-gallery-btn {
+        border-radius: 999px;
+        background: #1d2330;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        color: #f1f5f9;
+      }
+      body[data-universe="pitwall"] .theme-toggle:hover,
+      body[data-universe="pitwall"] .theme-toggle.active,
+      body[data-universe="pitwall"] .scrubber-qbtn.active {
+        background: #ff5500 !important;
+        color: #ffffff !important;
+        border-color: #ff884d !important;
+        box-shadow: 0 0 14px rgba(255, 85, 0, 0.45);
+      }
+      body[data-universe="pitwall"] .cw-item {
+        border-radius: 10px;
+        border-left: 3px solid #ff5500;
+        background: #11151d;
+      }
+      @media (min-width: 901px) {
+        body:not(.hide-ui)[data-universe="pitwall"] {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr);
+          grid-template-rows: auto auto minmax(0, 1fr) auto;
+          grid-template-areas:
+            "hdr"
+            "proj"
+            "main"
+            "scrub";
+          padding: 7px 9px;
+          gap: 7px;
+        }
+        body:not(.hide-ui)[data-universe="pitwall"] .header {
+          grid-area: hdr;
+          border-radius: 14px;
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          border-left: 4px solid #ff5500;
+          background: rgba(20, 24, 33, 0.96);
+        }
+        body:not(.hide-ui)[data-universe="pitwall"] .header::after {
+          display: none;
+        }
+        body:not(.hide-ui)[data-universe="pitwall"] #projection-banner {
+          grid-area: proj;
+          border-radius: 10px;
+        }
+        body:not(.hide-ui)[data-universe="pitwall"] .scrubber-ribbon {
+          grid-area: scrub;
+          border-radius: 14px;
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          border-left: 4px solid #84cc16;
+          background: rgba(20, 24, 33, 0.96);
+        }
+        body:not(.hide-ui)[data-universe="pitwall"] .main-dashboard {
+          grid-area: main;
+          grid-template-columns: minmax(0, 0.98fr) minmax(0, 1.38fr) minmax(0, 0.98fr);
+          grid-template-rows: minmax(0, 1.16fr) minmax(0, 0.84fr);
+          grid-template-areas:
+            "ops anim weather"
+            "map tides weather";
+          gap: 8px;
+          padding: 0;
+        }
+        body:not(.hide-ui)[data-universe="pitwall"] #weather-card .current-weather {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          border-radius: 12px;
+        }
+      }
+
+      /* Adaptation mobile S24 harmonisée pour chaque univers (<= 900px) */
+      @media (max-width: 900px) {
+        body[data-universe="admiralty"] .header {
+          background: linear-gradient(180deg, #2d180e 0%, #1c0e08 100%) !important;
+          border-bottom: 2px solid #d49b35 !important;
+        }
+        body[data-universe="admiralty"] .mobile-tab-nav {
+          background: rgba(42, 24, 14, 0.97) !important;
+          border-top: 2px solid #d49b35 !important;
+        }
+        body[data-universe="batman"] .mobile-tab-nav {
+          background: rgba(9, 11, 16, 0.98) !important;
+          border-top: 2px solid #facc15 !important;
+        }
+        body[data-universe="pipboy"] .mobile-tab-nav {
+          background: rgba(4, 16, 7, 0.98) !important;
+          border-top: 2px solid #22ff66 !important;
+        }
+        body[data-universe="starwars"] .mobile-tab-nav {
+          background: rgba(4, 10, 22, 0.98) !important;
+          border-top: 2px solid #00e5ff !important;
+        }
+        body[data-universe="pitwall"] .mobile-tab-nav {
+          background: rgba(15, 18, 26, 0.98) !important;
+          border-top: 2px solid #ff5500 !important;
+        }
+      }
+
+      /* ==========================================================================
+         GALERIE INTERACTIVE DES 6 UNIVERS (#universe-modal)
+         ========================================================================== */
+      .universe-gallery-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.7rem;
+        margin-top: 0.55rem;
+      }
+      @media (max-width: 780px) {
+        .universe-gallery-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+      @media (max-width: 520px) {
+        .universe-gallery-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      .universe-card-option {
+        background: var(--surface-subtle);
+        border: 1.5px solid var(--border);
+        border-radius: 10px;
+        padding: 0.65rem;
+        cursor: pointer;
+        text-align: left;
+        display: flex;
+        flex-direction: column;
+        gap: 0.45rem;
+        transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+        color: var(--text);
+        position: relative;
+      }
+      .universe-card-option:hover {
+        transform: translateY(-2px);
+        border-color: var(--accent);
+        box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
+      }
+      .universe-card-option.active {
+        border-color: var(--valero-gold);
+        box-shadow: 0 0 0 2px var(--accent-glow), 0 10px 24px rgba(0, 0, 0, 0.45);
+      }
+      .univ-opt-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.4rem;
+      }
+      .univ-opt-title {
+        font-size: 0.8rem;
+        font-weight: 900;
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+      }
+      .univ-opt-swatches {
+        display: inline-flex;
+        gap: 4px;
+      }
+      .univ-opt-swatches span {
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+        border: 1px solid rgba(255, 255, 255, 0.35);
+      }
+      .univ-opt-desc {
+        font-size: 0.66rem;
+        color: var(--text-light);
+        line-height: 1.35;
+      }
+      .univ-opt-layout-tag {
+        font-size: 0.59rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        padding: 0.16rem 0.42rem;
+        border-radius: 4px;
+        background: rgba(0, 0, 0, 0.22);
+        border: 1px solid var(--border);
+        color: var(--accent);
+        align-self: flex-start;
+      }
+      /* Mini-schéma visuel du placement spatial propre à chaque thème */
+      .univ-mini-blueprint {
+        height: 54px;
+        border-radius: 5px;
+        padding: 4px;
+        display: grid;
+        gap: 3px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        font-size: 0.48rem;
+        font-weight: 800;
+        letter-spacing: 0.03em;
+      }
+      .univ-mini-blueprint > i {
+        font-style: normal;
+        border-radius: 2px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+      }
     </style>
   </head>
   <body>
@@ -3275,20 +4513,26 @@
             <path d="M 10 26 L 114 26" stroke="#FDB913" stroke-width="1.3" opacity="0.8" />
           </svg>
         </div>
+        <div id="universe-brand-slot" class="universe-brand-slot"></div>
 
         <div class="header-title-block">
           <h1>
-            <span>&#x2693; Terminal St-Romuald (L&eacute;vis)</span>
+            <span id="header-main-title-span">&#x2693; Terminal St-Romuald (L&eacute;vis)</span>
           </h1>
           <div class="header-subtitle">
-            <span>&#x1F4CD; Section 86 &amp; 87 &bull; Port de Qu&eacute;bec</span>
+            <span id="header-sub-sector-lbl">&#x1F4CD; Section 86 &amp; 87 &bull; Port de Qu&eacute;bec</span>
             <span>&bull;</span>
             <span id="header-coords-lbl" class="mono">46.76&deg;N, -71.26&deg;W</span>
           </div>
         </div>
-        <button type="button" id="s24-tools-drawer-btn" class="s24-tools-drawer-btn" title="Afficher/Masquer les outils et calculateurs">
-          &#x26A1; Outils
-        </button>
+        <div class="s24-header-actions">
+          <button type="button" id="s24-universe-btn" class="s24-universe-btn" title="Changer d'univers visuel et d'agencement">
+            &#x1F3A8; Univers
+          </button>
+          <button type="button" id="s24-tools-drawer-btn" class="s24-tools-drawer-btn" title="Afficher/Masquer les outils et calculateurs">
+            &#x26A1; Outils
+          </button>
+        </div>
       </div>
 
       <!-- HORLOGE TEMPS REEL & TELEMETRIE -->
@@ -3300,6 +4544,19 @@
             <span id="telemetry-dot" class="telemetry-dot"></span>
             <span id="telemetry-text">SYSTEM NOMINAL</span>
           </div>
+        </div>
+
+        <!-- SÉLECTEUR D'UNIVERS MULTI-LAYOUTS (CLASSIQUE + 5 THÈMES COMPLETS) -->
+        <div id="universe-switcher-group" class="universe-switcher-group" role="group" aria-label="Sélecteur d'univers et d'architecture">
+          <button type="button" class="univ-qbtn active" data-universe-btn="classic" title="⚓ Classique Valero — Console Maritime St-Romuald">&#x2693;</button>
+          <button type="button" class="univ-qbtn" data-universe-btn="batman" title="🦇 Batcomputer — WayneTech Gotham Tactical (Barre gauche + Mur 3D)">&#x1F987;</button>
+          <button type="button" class="univ-qbtn" data-universe-btn="starwars" title="⚔️ Star Wars — HoloNet Cockpit (Chrono haut + Passerelle centrale + Console bas)">&#x2694;&#xFE0F;</button>
+          <button type="button" class="univ-qbtn" data-universe-btn="pipboy" title="☢️ Pip-Boy CRT — RobCo 1982 Phosphore (Lunette droite + Oscilloscope)">&#x2622;&#xFE0F;</button>
+          <button type="button" class="univ-qbtn" data-universe-btn="admiralty" title="📜 Amirauté 1885 — Table à Cartes Acajou, Laiton &amp; Vélin (Atlas 6 colonnes)">&#x1F4DC;</button>
+          <button type="button" class="univ-qbtn" data-universe-btn="pitwall" title="🏎️ F1 Pit Wall — Télémétrie Carbone &amp; Papaya (Ops #1 Haut-Gauche + Tour Aéro)">&#x1F3CE;&#xFE0F;</button>
+          <button type="button" id="universe-gallery-open-btn" class="univ-gallery-btn" title="Ouvrir la galerie interactive des 6 univers et placements">
+            &#x1F3A8; Univers
+          </button>
         </div>
 
         <!-- SÉLECTEUR DE THÈME (AUTO / JOUR / NUIT) -->
@@ -3433,7 +4690,7 @@
         <!-- Carte 1 : Aperçu Animé 360° du Terminal -->
         <div id="anim-card" class="card" style="flex: 1.62; min-height: 0">
           <div class="card-header">
-            <h2 title="Aperçu 360° Temps Réel — Terminal Valero St-Romuald &amp; Fleuve Saint-Laurent">🎥 Aperçu 3D 360°</h2>
+            <h2 id="anim-card-title" title="Aperçu 360° Temps Réel — Terminal Valero St-Romuald &amp; Fleuve Saint-Laurent">🎥 Aperçu 3D 360°</h2>
             <div style="display: flex; gap: 0.2rem; align-items: center; flex-wrap: wrap">
               <button id="stars-mode-toggle" class="theme-toggle" title="Afficher les étoiles et constellations même de jour">
                 ✨ Ciel
@@ -3454,6 +4711,7 @@
             id="animation-window"
             style="position: relative; overflow: hidden; flex: 1; height: 100%; min-height: 0; padding: 0; cursor: grab"
           >
+            <div id="universe-hud-frame" class="universe-hud-frame" aria-hidden="true"></div>
             <!-- HUD SUPÉRIEUR 360° (AVEC CAMÉRAS 3D & NIVEAU D'EAU) -->
             <div class="viewport-hud-top">
               <div class="viewport-telemetry mono" id="viewport-telemetry-readout">
@@ -15354,6 +16612,157 @@
         </div>
       </div>
     </div>
+
+    <!-- OVERLAY PASSIF CRT / TEXTURE D'UNIVERS (SANS BLOCAGE DE SOURIS) -->
+    <div id="universe-crt-overlay" class="universe-crt-overlay" aria-hidden="true"></div>
+
+    <!-- MODAL GALERIE DES 6 UNIVERS & ARCHITECTURES SPATIALES -->
+    <div id="universe-modal" class="modal-overlay">
+      <div class="modal-content" style="max-width: 880px; width: 95vw;">
+        <div class="modal-header">
+          <h3 style="display: flex; align-items: center; gap: 0.45rem; font-size: 0.96rem;">
+            <span>🎨</span>
+            <span>Sélecteur d'Univers &amp; d'Architecture du Poste de Contrôle</span>
+          </h3>
+          <button type="button" id="universe-modal-close" class="modal-close" aria-label="Fermer">&times;</button>
+        </div>
+        <div style="font-size: 0.72rem; color: var(--text-light); margin-bottom: 0.35rem;">
+          Chaque univers transforme intégralement la typographie, les matériaux, les cadrans HUD, les graphiques et <strong>le placement spatial complet</strong> des barres et modules sur l'écran (zéro rechargement 3D / AIS).
+        </div>
+
+        <div class="universe-gallery-grid" id="universe-gallery-grid">
+          <!-- 0. Classique Valero -->
+          <button type="button" class="universe-card-option active" data-universe-pick="classic">
+            <div class="univ-opt-top">
+              <span class="univ-opt-title">⚓ Classique Valero</span>
+              <span class="univ-opt-swatches">
+                <span style="background:#041224"></span>
+                <span style="background:#00809d"></span>
+                <span style="background:#fdb913"></span>
+              </span>
+            </div>
+            <div class="univ-mini-blueprint" style="background:#04101f; grid-template-columns: 1.2fr 1fr 1fr; grid-template-rows: 10px 1fr 1fr;">
+              <i style="grid-column:1/-1; background:#0c2744; color:#fdb913">BARRE HAUTE + SCRUBBER</i>
+              <i style="background:#0369a1; color:#fff">3D 360°</i>
+              <i style="grid-column:2; grid-row:2/4; background:#0f2942; color:#7dd3fc">MÉTÉO</i>
+              <i style="background:#153654; color:#fde047">86 / 87</i>
+              <i style="background:#0c2238; color:#93c5fd">AIS</i>
+              <i style="background:#0c2238; color:#38bdf8">MARÉES</i>
+            </div>
+            <div class="univ-opt-desc">Console portuaire ECDIS originale (Auto Solaire / Jour / Nuit) en 3 colonnes équilibrées.</div>
+            <span class="univ-opt-layout-tag">3 Colonnes Standard • Auto Jour/Nuit</span>
+          </button>
+
+          <!-- 1. Batman WayneTech -->
+          <button type="button" class="universe-card-option" data-universe-pick="batman">
+            <div class="univ-opt-top">
+              <span class="univ-opt-title">🦇 Batcomputer</span>
+              <span class="univ-opt-swatches">
+                <span style="background:#07080b"></span>
+                <span style="background:#facc15"></span>
+                <span style="background:#38bdf8"></span>
+              </span>
+            </div>
+            <div class="univ-mini-blueprint" style="background:#07080b; grid-template-columns: 28px 1fr 1fr 1fr; grid-template-rows: 1.15fr 0.85fr;">
+              <i style="grid-row:1/3; background:#151922; border-right:1px solid #facc15; color:#facc15">BAT</i>
+              <i style="grid-column:2/4; background:#1c2029; border:1px solid rgba(250,204,21,0.45); color:#facc15">MUR TACTIQUE 3D</i>
+              <i style="background:#141821; color:#fde047">86/87</i>
+              <i style="background:#10131a; color:#38bdf8">SONAR</i>
+              <i style="background:#10131a; color:#e5e7eb">MÉTÉO</i>
+              <i style="background:#10131a; color:#facc15">MARÉES</i>
+            </div>
+            <div class="univ-opt-desc">Fibre de carbone kevlar, ambre WayneTech, cadres octogonaux biseautés et HUD inversé.</div>
+            <span class="univ-opt-layout-tag">Barre Blindée Gauche + Mur 3D 2-Col</span>
+          </button>
+
+          <!-- 2. Star Wars HoloNet -->
+          <button type="button" class="universe-card-option" data-universe-pick="starwars">
+            <div class="univ-opt-top">
+              <span class="univ-opt-title">⚔️ Star Wars HoloNet</span>
+              <span class="univ-opt-swatches">
+                <span style="background:#03060e"></span>
+                <span style="background:#00e5ff"></span>
+                <span style="background:#ff6b1a"></span>
+              </span>
+            </div>
+            <div class="univ-mini-blueprint" style="background:#03060e; grid-template-columns: 1fr 1.4fr 1fr; grid-template-rows: 1fr 0.8fr 10px;">
+              <i style="grid-row:1/3; background:#07182c; color:#00e5ff">SCAN MÉTÉO</i>
+              <i style="background:#0a223d; border:1px solid #00e5ff; color:#00e5ff">HOLOTABLE 3D</i>
+              <i style="background:#07182c; color:#7cc6de">MARÉES</i>
+              <i style="background:#1a1520; border:1px solid #ff6b1a; color:#ff9e64">BAIES 86/87</i>
+              <i style="background:#07182c; color:#ff6b1a">ASTRO AIS</i>
+              <i style="grid-column:1/-1; background:#091d36; color:#00e5ff">CONSOLE DE VOL EN BAS</i>
+            </div>
+            <div class="univ-opt-desc">Projecteur holographique Kyber cyan &amp; viseur X-Wing orange rebelle sur fond stellaire.</div>
+            <span class="univ-opt-layout-tag">Chrono Haut • Pont Central • Console Bas</span>
+          </button>
+
+          <!-- 3. Pip-Boy CRT -->
+          <button type="button" class="universe-card-option" data-universe-pick="pipboy">
+            <div class="univ-opt-top">
+              <span class="univ-opt-title">☢️ Pip-Boy CRT 1982</span>
+              <span class="univ-opt-swatches">
+                <span style="background:#030b05"></span>
+                <span style="background:#22ff66"></span>
+                <span style="background:#ffb000"></span>
+              </span>
+            </div>
+            <div class="univ-mini-blueprint" style="background:#030b05; grid-template-columns: 1fr 1fr 1.2fr 28px; grid-template-rows: 0.9fr 1.1fr;">
+              <i style="background:#07230f; color:#22ff66">86/87</i>
+              <i style="grid-column:2/4; background:#092c13; border:1px solid #22ff66; color:#22ff66">OSCILLOSCOPE MARÉES</i>
+              <i style="grid-row:1/3; grid-column:4; background:#0d2612; border-left:2px solid #22ff66; color:#ffb000">CRT</i>
+              <i style="background:#061c0c; color:#22ff66">RADAR</i>
+              <i style="background:#061c0c; color:#22ff66">ATMOS</i>
+              <i style="background:#0a3316; border:1px solid #22ff66; color:#b8ffd0">3D BAS-DROITE</i>
+            </div>
+            <div class="univ-opt-desc">Moniteur cathodique phosphore vert P1 RobCo, trame scanline, carte radar verte et ambre Nixie.</div>
+            <span class="univ-opt-layout-tag">Lunette Droite + Oscilloscope + 3D Bas-Droite</span>
+          </button>
+
+          <!-- 4. Amirauté 1885 -->
+          <button type="button" class="universe-card-option" data-universe-pick="admiralty">
+            <div class="univ-opt-top">
+              <span class="univ-opt-title">📜 Amirauté 1885</span>
+              <span class="univ-opt-swatches">
+                <span style="background:#efe5ce"></span>
+                <span style="background:#26140c"></span>
+                <span style="background:#b87d1e"></span>
+              </span>
+            </div>
+            <div class="univ-mini-blueprint" style="background:#efe5ce; border-color:#b87d1e; grid-template-columns: repeat(6, 1fr); grid-template-rows: 1.05fr 0.95fr;">
+              <i style="grid-column:1/4; background:#dfd0b0; border:1px solid #8a6020; color:#132d48">CARTE MARINE 50%</i>
+              <i style="grid-column:4/7; background:#d5c39e; border:1px solid #8a6020; color:#26140c">LONGUE-VUE 3D 50%</i>
+              <i style="grid-column:1/3; background:#faf3e3; color:#26140c">QUAIS</i>
+              <i style="grid-column:3/5; background:#faf3e3; color:#17496d">ALMANACH</i>
+              <i style="grid-column:5/7; background:#faf3e3; color:#9e2424">BAROMÈTRE</i>
+            </div>
+            <div class="univ-opt-desc">Table à cartes patrimoniale en acajou verni, sextant en laiton gravé, papier vélin et encre de Prusse.</div>
+            <span class="univ-opt-layout-tag">Thème Clair Vélin • Folio 50/50 + 3 Colonnes</span>
+          </button>
+
+          <!-- 5. F1 Pit Wall -->
+          <button type="button" class="universe-card-option" data-universe-pick="pitwall">
+            <div class="univ-opt-top">
+              <span class="univ-opt-title">🏎️ F1 Pit Wall</span>
+              <span class="univ-opt-swatches">
+                <span style="background:#0b0d12"></span>
+                <span style="background:#ff5500"></span>
+                <span style="background:#84cc16"></span>
+              </span>
+            </div>
+            <div class="univ-mini-blueprint" style="background:#0b0d12; grid-template-columns: 1fr 1.35fr 1fr; grid-template-rows: 1.15fr 0.85fr;">
+              <i style="background:#241816; border:1px solid #ff5500; color:#ff5500; border-radius:4px">PIT 86/87 #1</i>
+              <i style="background:#181e29; color:#f8fafc; border-radius:4px">ONBOARD 3D</i>
+              <i style="grid-column:3; grid-row:1/3; background:#161c24; border:1px solid #84cc16; color:#84cc16; border-radius:4px">TOUR AÉRO</i>
+              <i style="background:#151922; color:#06b6d4; border-radius:4px">GPS AIS</i>
+              <i style="background:#151922; color:#cbd5e1; border-radius:4px">TÉLÉMÉTRIE</i>
+            </div>
+            <div class="univ-opt-desc">Muret des stands carbone mat, capsules Bento arrondies, orange Papaya et vert DRS lime.</div>
+            <span class="univ-opt-layout-tag">Ops en #1 Haut-Gauche + Tour Aéro Droite</span>
+          </button>
+        </div>
+      </div>
+    </div>
     <script>
       const KNOWN_FULL_MOON = new Date("2024-01-25T17:54:00Z").getTime();
 
@@ -23902,13 +25311,249 @@
       let starsModeActive = false;
       window.mode3DActive = true;
 
-      // --- GESTION DU THÈME (AUTO / NUIT / JOUR) ---
+      // --- GESTION DU THÈME (AUTO / NUIT / JOUR) & MULTI-UNIVERS (6 ARCHITECTURES) ---
       let themeMode = localStorage.getItem("terminal_theme_mode") || "auto";
+      let currentUniverse = localStorage.getItem("terminal_app_universe") || "classic";
+
+      const UNIVERSE_CONFIGS = {
+        classic: {
+          label: "⚓ Classique Valero",
+          themeColor: "#00809d",
+          forceDark: null,
+          brandSvg: "",
+          hudSvg: "",
+          titles: {
+            headerMain: "⚓ Terminal St-Romuald (Lévis)",
+            headerSub: "📍 Section 86 & 87 • Port de Québec",
+            scrubber: "⏱️ Météo & Temps (-6h à +24h)",
+            anim: "🎥 Aperçu 3D 360°",
+            ops: "🚥 Opérations & Accostage (Sec. 86 & 87)",
+            tides: "🌊 Marées & Fenêtres (Lauzon 3250)",
+            mapAis: "🚢 Trafic Maritime (AIS)",
+            weatherPrefix: "☁️ Météo",
+          },
+          chart: null,
+        },
+        batman: {
+          label: "🦇 Batcomputer",
+          themeColor: "#07080b",
+          forceDark: true,
+          brandSvg: `<svg width="198" height="34" viewBox="0 0 210 36" xmlns="http://www.w3.org/2000/svg">
+            <polygon points="6,4 204,4 208,10 208,26 204,32 6,32 2,26 2,10" fill="#0d1017" stroke="#facc15" stroke-width="1.4"/>
+            <path d="M14,18 L20,10 L24,15 L29,13 L31,9 L33,13 L38,15 L42,10 L48,18 L41,19 L37,25 L31,20 L25,25 L21,19 Z" fill="#facc15"/>
+            <text x="56" y="16" fill="#facc15" font-family="Chakra Petch, sans-serif" font-weight="700" font-size="10" letter-spacing="1.6">WAYNETECH</text>
+            <text x="56" y="27" fill="#cbd5e1" font-family="Share Tech Mono, monospace" font-size="9.5" letter-spacing="1.2">BATCOMPUTER v9.4</text>
+          </svg>`,
+          hudSvg: `<svg width="100%" height="100%" viewBox="0 0 1000 600" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M14,52 L14,14 L64,14 M936,14 L986,14 L986,52 M14,548 L14,586 L64,586 M936,586 L986,586 L986,548" fill="none" stroke="rgba(250,204,21,0.65)" stroke-width="2.5"/>
+            <line x1="460" y1="14" x2="540" y2="14" stroke="rgba(250,204,21,0.45)" stroke-width="2"/>
+          </svg>`,
+          titles: {
+            headerMain: "🦇 Batcomputer — Rive-Sud",
+            headerSub: "🛡️ WayneTech Harbor Ops • Quais 86/87",
+            scrubber: "⏱️ Chronologie Tactique (-6h à +24h)",
+            anim: "🦇 Mur Tactique 3D • Quais & Bat-Signal",
+            ops: "🛡️ Protocole d'Accostage 86 / 87",
+            tides: "🌊 Télémétrie Hydro-Sonar (Lauzon)",
+            mapAis: "📡 Radar Sonar Maritime (AIS)",
+            weatherPrefix: "🌩️ Scan Atmosphérique",
+          },
+          chart: {
+            grid: "rgba(250, 204, 21, 0.13)",
+            tick: "#a3aebf",
+            temp: "#facc15",
+            precip: "#38bdf8",
+            tideLine: "#facc15",
+            tideFill: "rgba(250, 204, 21, 0.16)",
+            pm: "#facc15",
+            bm: "#38bdf8",
+            now: "#ef4444",
+            proj: "#38bdf8",
+          },
+        },
+        starwars: {
+          label: "⚔️ Star Wars HoloNet",
+          themeColor: "#03060e",
+          forceDark: true,
+          brandSvg: `<svg width="206" height="30" viewBox="0 0 216 32" xmlns="http://www.w3.org/2000/svg">
+            <polygon points="0,6 10,0 206,0 216,6 216,26 206,32 10,32 0,26" fill="rgba(6,18,34,0.92)" stroke="#00e5ff" stroke-width="1.3"/>
+            <circle cx="20" cy="16" r="9" fill="none" stroke="#ff6b1a" stroke-width="1.6" stroke-dasharray="4 2"/>
+            <path d="M20,8 L23,15 L20,23 L17,15 Z" fill="#00e5ff"/>
+            <text x="36" y="14" fill="#00e5ff" font-family="Orbitron, sans-serif" font-weight="800" font-size="9.5" letter-spacing="1.5">HOLONET BRIDGE</text>
+            <text x="36" y="25" fill="#ff9e64" font-family="Space Mono, monospace" font-size="8.5" letter-spacing="1">SECTOR 86-87 // ST-ROMUALD</text>
+          </svg>`,
+          hudSvg: `<svg width="100%" height="100%" viewBox="0 0 1000 600" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M18,62 L18,18 L76,18 M924,18 L982,18 L982,62 M18,538 L18,582 L76,582 M924,582 L982,582 L982,538" fill="none" stroke="rgba(0,229,255,0.6)" stroke-width="2"/>
+            <path d="M470,582 L500,568 L530,582" fill="none" stroke="rgba(255,107,26,0.65)" stroke-width="2"/>
+          </svg>`,
+          titles: {
+            headerMain: "⚔️ Pont Stellaire St-Romuald",
+            headerSub: "🪐 Baies d'Amarrage 86 & 87 • Secteur Québec",
+            scrubber: "🚀 Chrono Hyperespace (-6h à +24h)",
+            anim: "🌐 Holoprojecteur 3D • Vue Orbitale",
+            ops: "🎯 Contrôle Baies 86 & 87 (Rayon Tracteur)",
+            tides: "🌊 Gravité & Cycles Hydriques (Lauzon)",
+            mapAis: "🛸 Astrogation & Trafic Secteur (AIS)",
+            weatherPrefix: "🪐 Sonde Planétaire",
+          },
+          chart: {
+            grid: "rgba(0, 229, 255, 0.14)",
+            tick: "#7cc6de",
+            temp: "#ff6b1a",
+            precip: "#00e5ff",
+            tideLine: "#00e5ff",
+            tideFill: "rgba(0, 229, 255, 0.18)",
+            pm: "#00e5ff",
+            bm: "#ff6b1a",
+            now: "#ff2a4b",
+            proj: "#ff6b1a",
+          },
+        },
+        pipboy: {
+          label: "☢️ Pip-Boy CRT 1982",
+          themeColor: "#030b05",
+          forceDark: true,
+          brandSvg: `<svg width="196" height="34" viewBox="0 0 206 36" xmlns="http://www.w3.org/2000/svg">
+            <rect x="2" y="2" width="202" height="32" rx="5" fill="#041307" stroke="#22ff66" stroke-width="1.6"/>
+            <circle cx="20" cy="18" r="8" fill="none" stroke="#ffb000" stroke-width="1.8" stroke-dasharray="5 3"/>
+            <circle cx="20" cy="18" r="2.5" fill="#22ff66"/>
+            <text x="36" y="15" fill="#22ff66" font-family="VT323, monospace" font-size="15" letter-spacing="1.4">ROBCO PIP-OS v4.2</text>
+            <text x="36" y="27" fill="#ffb000" font-family="IBM Plex Mono, monospace" font-size="8.2" letter-spacing="0.8">PHOSPHOR SCADA 86/87</text>
+          </svg>`,
+          hudSvg: `<svg width="100%" height="100%" viewBox="0 0 1000 600" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="10" y="10" width="980" height="580" rx="14" fill="none" stroke="rgba(34,255,102,0.42)" stroke-width="2"/>
+            <path d="M500,14 L500,26 M500,574 L500,586 M14,300 L26,300 M974,300 L986,300" stroke="rgba(34,255,102,0.55)" stroke-width="2"/>
+          </svg>`,
+          titles: {
+            headerMain: "☢️ ROBCO PIP-OS // QUAI 86-87",
+            headerSub: "📟 TERMINAL MARITIME ST-ROMUALD • CRT P1",
+            scrubber: "📼 BANDE CHRONO-MÉTÉO (-6H / +24H)",
+            anim: "📺 PÉRISCOPE CATHODIQUE 3D (360°)",
+            ops: "🚦 INTERLOCKS QUAI 86 & 87",
+            tides: "📈 OSCILLOSCOPE MARÉES LAUZON #03250",
+            mapAis: "📡 RADAR PHOSPHORE AIS",
+            weatherPrefix: "☢️ DOSIMÉTRIE MÉTÉO",
+          },
+          chart: {
+            grid: "rgba(53, 255, 116, 0.18)",
+            tick: "#22ff66",
+            temp: "#ffb000",
+            precip: "#22ff66",
+            tideLine: "#22ff66",
+            tideFill: "rgba(34, 255, 102, 0.2)",
+            pm: "#22ff66",
+            bm: "#ffb000",
+            now: "#ff5232",
+            proj: "#ffb000",
+          },
+        },
+        admiralty: {
+          label: "📜 Amirauté 1885",
+          themeColor: "#26140c",
+          forceDark: false,
+          brandSvg: `<svg width="206" height="30" viewBox="0 0 216 32" xmlns="http://www.w3.org/2000/svg">
+            <rect x="2" y="2" width="212" height="28" rx="2" fill="#3a2012" stroke="#d49b35" stroke-width="1.5"/>
+            <polygon points="18,5 21,13 29,16 21,19 18,27 15,19 7,16 15,13" fill="#f3cf7a"/>
+            <text x="36" y="15" fill="#f5deb0" font-family="Cinzel, Georgia, serif" font-weight="800" font-size="9.5" letter-spacing="1.2">AMIRAUTÉ DE QUÉBEC</text>
+            <text x="36" y="25" fill="#d8ba84" font-family="Crimson Pro, Georgia, serif" font-style="italic" font-size="10">Table Hydrographique • 1885</text>
+          </svg>`,
+          hudSvg: `<svg width="100%" height="100%" viewBox="0 0 1000 600" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="8" y="8" width="984" height="584" fill="none" stroke="rgba(212,155,53,0.65)" stroke-width="3"/>
+            <rect x="14" y="14" width="972" height="572" fill="none" stroke="rgba(212,155,53,0.35)" stroke-width="1"/>
+          </svg>`,
+          titles: {
+            headerMain: "📜 Capitainerie de St-Romuald",
+            headerSub: "🧭 Postes d'Amarrage 86 & 87 • Fleuve St-Laurent",
+            scrubber: "⏳ Chronomètre de Marine (-6h à +24h)",
+            anim: "🔭 Longue-Vue d'Observation (360°)",
+            ops: "⚓ Journal de Manœuvre — Quais 86 & 87",
+            tides: "📜 Almanach des Marées de Lauzon",
+            mapAis: "🗺️ Carte Hydrographique & Navires (AIS)",
+            weatherPrefix: "🌡️ Baromètre & Vents",
+          },
+          chart: {
+            grid: "rgba(138, 96, 32, 0.16)",
+            tick: "#4f3d28",
+            temp: "#9e2424",
+            precip: "#17496d",
+            tideLine: "#17496d",
+            tideFill: "rgba(23, 73, 109, 0.16)",
+            pm: "#17496d",
+            bm: "#b87d1e",
+            now: "#9e2424",
+            proj: "#b87d1e",
+          },
+        },
+        pitwall: {
+          label: "🏎️ F1 Pit Wall",
+          themeColor: "#0b0d12",
+          forceDark: true,
+          brandSvg: `<svg width="202" height="30" viewBox="0 0 212 32" xmlns="http://www.w3.org/2000/svg">
+            <rect x="1" y="2" width="210" height="28" rx="14" fill="#141821" stroke="#ff5500" stroke-width="1.5"/>
+            <path d="M14,22 L22,10 L34,10 L26,22 Z" fill="#ff5500"/>
+            <path d="M30,22 L38,10 L44,10 L36,22 Z" fill="#84cc16"/>
+            <text x="50" y="15" fill="#f8fafc" font-family="Exo 2, sans-serif" font-style="italic" font-weight="800" font-size="10.5" letter-spacing="1">PIT WALL PRO</text>
+            <text x="50" y="25" fill="#94a3b8" font-family="Space Grotesk, sans-serif" font-weight="700" font-size="8.2" letter-spacing="0.9">AERO &amp; BERTH TELEMETRY</text>
+          </svg>`,
+          hudSvg: `<svg width="100%" height="100%" viewBox="0 0 1000 600" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M20,44 L20,16 L68,16 M932,16 L980,16 L980,44" fill="none" stroke="rgba(255,85,0,0.7)" stroke-width="3" stroke-linecap="round"/>
+            <path d="M20,556 L20,584 L68,584 M932,584 L980,584 L980,556" fill="none" stroke="rgba(132,204,22,0.65)" stroke-width="3" stroke-linecap="round"/>
+          </svg>`,
+          titles: {
+            headerMain: "🏎️ Pit Wall Telemetry — St-Romuald",
+            headerSub: "🏁 Pit-Box 86 & 87 • Live Marine Strategy",
+            scrubber: "⏱️ Stint Replay & Forecast (-6h / +24h)",
+            anim: "📹 Live Onboard 360° • Track & Berth",
+            ops: "🚦 Pit-Lane Strategy • Box 86 & 87",
+            tides: "📊 Ride-Height & Water Telemetry (#03250)",
+            mapAis: "🛰️ GPS Track Position (AIS)",
+            weatherPrefix: "🌬️ Aero & Track Weather",
+          },
+          chart: {
+            grid: "rgba(255, 255, 255, 0.09)",
+            tick: "#94a3b8",
+            temp: "#ff5500",
+            precip: "#06b6d4",
+            tideLine: "#84cc16",
+            tideFill: "rgba(132, 204, 22, 0.18)",
+            pm: "#84cc16",
+            bm: "#ff5500",
+            now: "#ef4444",
+            proj: "#06b6d4",
+          },
+        },
+      };
+
+      function getUniverseChartPalette() {
+        const cfg = UNIVERSE_CONFIGS[currentUniverse];
+        if (cfg && cfg.chart) return cfg.chart;
+        const isDark = document.body.classList.contains("dark-mode");
+        return {
+          grid: isDark ? "rgba(148, 163, 184, 0.14)" : "rgba(15, 23, 42, 0.08)",
+          tick: isDark ? "#94a3b8" : "#475569",
+          temp: "#ef4444",
+          precip: "#38bdf8",
+          tideLine: "#00809d",
+          tideFill: "rgba(0, 128, 157, 0.18)",
+          pm: "#38bdf8",
+          bm: "#f59e0b",
+          now: "#ef4444",
+          proj: "#f59e0b",
+        };
+      }
 
       function applyThemeMode() {
-        const isDark =
-          themeMode === "dark" ||
-          (themeMode === "auto" && currentConditions.isNight);
+        const cfg = UNIVERSE_CONFIGS[currentUniverse] || UNIVERSE_CONFIGS.classic;
+        let isDark;
+        if (cfg.forceDark === true) {
+          isDark = true;
+        } else if (cfg.forceDark === false) {
+          isDark = false;
+        } else {
+          isDark =
+            themeMode === "dark" ||
+            (themeMode === "auto" && currentConditions.isNight);
+        }
         if (isDark) {
           document.body.classList.add("dark-mode");
         } else {
@@ -23921,6 +25566,95 @@
           else btn.innerHTML = "☀️ Thème: Jour";
         }
       }
+
+      function applyAppUniverse(univId, skipPersist) {
+        if (!UNIVERSE_CONFIGS[univId]) univId = "classic";
+        currentUniverse = univId;
+        document.body.dataset.universe = univId;
+        if (!skipPersist) {
+          try {
+            localStorage.setItem("terminal_app_universe", univId);
+          } catch (e) {}
+        }
+
+        const cfg = UNIVERSE_CONFIGS[univId];
+        applyThemeMode();
+
+        const metaTheme = document.querySelector('meta[name="theme-color"]');
+        if (metaTheme && cfg.themeColor) {
+          metaTheme.setAttribute("content", cfg.themeColor);
+        }
+
+        const brandSlot = document.getElementById("universe-brand-slot");
+        if (brandSlot) {
+          brandSlot.innerHTML = cfg.brandSvg || "";
+        }
+
+        const hudFrame = document.getElementById("universe-hud-frame");
+        if (hudFrame) {
+          hudFrame.innerHTML = cfg.hudSvg || "";
+        }
+
+        // Mettre à jour les titres des modules selon l'univers actif
+        const hdrMain = document.getElementById("header-main-title-span");
+        if (hdrMain) hdrMain.textContent = cfg.titles.headerMain;
+        const hdrSub = document.getElementById("header-sub-sector-lbl");
+        if (hdrSub) hdrSub.textContent = cfg.titles.headerSub;
+        const scrubTitle = document.querySelector(".scrubber-ribbon-title");
+        if (scrubTitle) scrubTitle.textContent = cfg.titles.scrubber;
+        const animTitle = document.getElementById("anim-card-title");
+        if (animTitle) animTitle.textContent = cfg.titles.anim;
+        const opsTitle = document.querySelector("#ops-card > .card-header h2");
+        if (opsTitle) opsTitle.textContent = cfg.titles.ops;
+        const tidesTitle = document.querySelector("#tides-card > .card-header h2");
+        if (tidesTitle) tidesTitle.textContent = cfg.titles.tides;
+
+        const mapTitleEl = document.getElementById("map-title");
+        if (mapTitleEl) {
+          const btnMeteo = document.getElementById("btn-map-meteo");
+          const btnFoudre = document.getElementById("btn-map-foudre");
+          if (btnMeteo && btnMeteo.classList.contains("active")) {
+            mapTitleEl.textContent = "🌬️ Radar Météo & Vents (Windy)";
+          } else if (btnFoudre && btnFoudre.classList.contains("active")) {
+            mapTitleEl.textContent = "⚡ Carte de Foudre en Direct (Blitzortung)";
+          } else {
+            mapTitleEl.textContent = cfg.titles.mapAis;
+          }
+        }
+
+        const wTitleEl = document.getElementById("weather-card-title");
+        if (wTitleEl) {
+          const locLabel = typeof locationName === "string" && locationName ? locationName : "Lévis";
+          wTitleEl.innerHTML = `${cfg.titles.weatherPrefix} (${locLabel})`;
+        }
+
+        // Synchroniser l'état actif des boutons rapides et des cartes de la galerie
+        document.querySelectorAll("[data-universe-btn]").forEach((btn) => {
+          btn.classList.toggle("active", btn.getAttribute("data-universe-btn") === univId);
+        });
+        document.querySelectorAll("[data-universe-pick]").forEach((card) => {
+          card.classList.toggle("active", card.getAttribute("data-universe-pick") === univId);
+        });
+
+        // Recolorier les graphiques Chart.js selon la palette de l'univers
+        if (typeof weatherDataCache !== "undefined" && weatherDataCache && typeof updateWeatherUI === "function") {
+          updateWeatherUI(weatherDataCache);
+        }
+        if (window.lastProcessedTides && typeof renderTidesChart === "function") {
+          renderTidesChart(window.lastProcessedTides);
+        }
+
+        // Recalculer immédiatement et après transition CSS les dimensions 3D WebGL / Canvas / HUD
+        const syncLayoutDims = () => {
+          if (typeof refreshAnimWinDims === "function") refreshAnimWinDims();
+          if (typeof handleResize3D === "function") handleResize3D();
+          window.dispatchEvent(new Event("resize"));
+        };
+        syncLayoutDims();
+        setTimeout(syncLayoutDims, 80);
+        setTimeout(syncLayoutDims, 260);
+      }
+      window.applyAppUniverse = applyAppUniverse;
 
       // --- CONDITIONS MÉTÉO & MARÉES ACTUELLES ---
       let currentConditions = {
@@ -25951,6 +27685,50 @@
         });
       }
 
+      // Initialisation du Sélecteur Multi-Univers & Galerie Interactive
+      (function initUniverseSwitcherUI() {
+        const univModal = document.getElementById("universe-modal");
+        const openBtn = document.getElementById("universe-gallery-open-btn");
+        const s24OpenBtn = document.getElementById("s24-universe-btn");
+        const closeBtn = document.getElementById("universe-modal-close");
+
+        const openUniverseModal = () => {
+          if (univModal) univModal.classList.add("active");
+        };
+        const closeUniverseModal = () => {
+          if (univModal) univModal.classList.remove("active");
+        };
+
+        if (openBtn) openBtn.addEventListener("click", openUniverseModal);
+        if (s24OpenBtn) s24OpenBtn.addEventListener("click", openUniverseModal);
+        if (closeBtn) closeBtn.addEventListener("click", closeUniverseModal);
+        if (univModal) {
+          univModal.addEventListener("click", (ev) => {
+            if (ev.target === univModal) closeUniverseModal();
+          });
+        }
+
+        document.querySelectorAll("[data-universe-btn]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const targetUniv = btn.getAttribute("data-universe-btn");
+            if (targetUniv) applyAppUniverse(targetUniv);
+          });
+        });
+
+        document.querySelectorAll("[data-universe-pick]").forEach((card) => {
+          card.addEventListener("click", () => {
+            const targetUniv = card.getAttribute("data-universe-pick");
+            if (targetUniv) {
+              applyAppUniverse(targetUniv);
+              closeUniverseModal();
+            }
+          });
+        });
+
+        // Restaurer l'univers sauvegardé dès l'initialisation
+        applyAppUniverse(currentUniverse, true);
+      })();
+
       // Variables d'inertie partagées (Souris Desktop & Écran tactile 120Hz)
       let initialPinchDistance = null;
       let initialFOV = 100;
@@ -27069,7 +28847,8 @@
 
           const titleEl = document.getElementById("weather-card-title");
           if (titleEl) {
-            titleEl.innerHTML = `☁️ Météo (${locationName}) <span style="font-size:0.7rem; opacity:0.75; font-weight:600">[${sourceUsed}]</span>`;
+            const wPref = (UNIVERSE_CONFIGS[currentUniverse] || UNIVERSE_CONFIGS.classic).titles.weatherPrefix;
+            titleEl.innerHTML = `${wPref} (${locationName}) <span style="font-size:0.7rem; opacity:0.75; font-weight:600">[${sourceUsed}]</span>`;
           }
           const coordsEl = document.getElementById("header-coords-lbl");
           if (coordsEl) {
@@ -27499,11 +29278,9 @@
         const labels = [],
           temps = [],
           precips = [];
-        const isDark = document.body.classList.contains("dark-mode");
-        const gridColor = isDark
-          ? "rgba(148, 163, 184, 0.14)"
-          : "rgba(15, 23, 42, 0.08)";
-        const tickColor = isDark ? "#94a3b8" : "#475569";
+        const uPal = getUniverseChartPalette();
+        const gridColor = uPal.grid;
+        const tickColor = uPal.tick;
 
         if (currentWeatherView === "24h") {
           thead.innerHTML = `<th>Heure</th><th>Temp. (Rosée)</th><th>Précip. (% prob.)</th><th>Vent &amp; Beaufort</th><th>Dir.</th><th>Visibilité</th>`;
@@ -27611,8 +29388,8 @@
                 type: "line",
                 label: currentWeatherView === "24h" ? "Temp (°C)" : "Max (°C)",
                 data: temps,
-                borderColor: "#ef4444",
-                backgroundColor: "#ef4444",
+                borderColor: uPal.temp,
+                backgroundColor: uPal.temp,
                 tension: 0.4,
                 yAxisID: "y",
                 pointRadius: 2,
@@ -27621,7 +29398,7 @@
                 type: "bar",
                 label: "Précip (mm)",
                 data: precips,
-                backgroundColor: "#38bdf8",
+                backgroundColor: uPal.precip,
                 borderRadius: 4,
                 yAxisID: "y1",
               },
@@ -27641,7 +29418,7 @@
                 type: "linear",
                 position: "left",
                 grid: { color: gridColor },
-                ticks: { color: "#ef4444", font: { size: 10 } },
+                ticks: { color: uPal.temp, font: { size: 10 } },
               },
               y1: {
                 type: "linear",
@@ -27649,7 +29426,7 @@
                 min: 0,
                 suggestedMax: 5,
                 grid: { drawOnChartArea: false },
-                ticks: { color: "#38bdf8", font: { size: 10 } },
+                ticks: { color: uPal.precip, font: { size: 10 } },
               },
             },
           },
@@ -29102,11 +30879,9 @@
       // Rendu du graphique des marées avec interpolation cosinus lisse aux 20 min + lignes Maintenant & Projection
       function renderTidesChart(processed) {
         if (!processed || processed.length < 2) return;
-        const isDark = document.body.classList.contains("dark-mode");
-        const gridColor = isDark
-          ? "rgba(148, 163, 184, 0.14)"
-          : "rgba(15, 23, 42, 0.08)";
-        const tickColor = isDark ? "#94a3b8" : "#475569";
+        const uPal = getUniverseChartPalette();
+        const gridColor = uPal.grid;
+        const tickColor = uPal.tick;
 
         // Générer une série dense par interpolation cosinus entre chaque extremum
         const chartPoints = [];
@@ -29142,7 +30917,7 @@
         const heights = chartPoints.map((p) => p.val);
         const pointRadii = chartPoints.map((p) => (p.isExtremum ? 5 : 0));
         const pointColors = chartPoints.map((p) =>
-          p.extType === "Haute" ? "#38bdf8" : "#f59e0b"
+          p.extType === "Haute" ? uPal.pm : uPal.bm
         );
 
         const nowTimePlugin = {
@@ -29188,11 +30963,11 @@
               ctx.restore();
             }
 
-            drawTimeMarker(Date.now(), "#ef4444", "Maintenant", true);
+            drawTimeMarker(Date.now(), uPal.now, "Maintenant", true);
             if (window.scrubberOffsetMins) {
               drawTimeMarker(
                 getEffectiveTimeMs(),
-                "#f59e0b",
+                uPal.proj,
                 "Projection",
                 false
               );
@@ -29209,8 +30984,8 @@
               {
                 label: "Hauteur (m)",
                 data: heights,
-                borderColor: "#00809d",
-                backgroundColor: "rgba(0, 128, 157, 0.18)",
+                borderColor: uPal.tideLine,
+                backgroundColor: uPal.tideFill,
                 fill: true,
                 tension: 0.35,
                 pointRadius: pointRadii,
@@ -31578,7 +33353,7 @@
       btnMapAis.addEventListener("click", () => {
         resetMaps();
         aisMap.style.display = "block";
-        mapTitle.textContent = "🚢 Trafic Maritime (AIS)";
+        mapTitle.textContent = (UNIVERSE_CONFIGS[currentUniverse] || UNIVERSE_CONFIGS.classic).titles.mapAis;
         btnMapAis.classList.add("active");
       });
 
@@ -44213,7 +45988,7 @@
               pill = document.createElement("div");
               pill.id = pillId;
               pill.style.cssText =
-                "display:flex;flex-direction:column;gap:0.12rem;padding:0.24rem 0.36rem;margin-bottom:0.26rem;border-radius:4px;background:rgba(15,23,42,0.55);border:1px solid var(--border);cursor:pointer;transition:border-color 0.2s ease;";
+                "display:flex;flex-direction:column;gap:0.12rem;padding:0.24rem 0.36rem;margin-bottom:0.26rem;border-radius:4px;background:var(--surface-subtle);border:1px solid var(--border);cursor:pointer;transition:border-color 0.2s ease;";
               pill.title = `Cliquer pour centrer l'aper\u00e7u 3D sur le Poste ${berthNum}`;
               pill.addEventListener("click", (ev) => {
                 if (ev.target && ev.target.closest("button")) return;
