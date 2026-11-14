@@ -34118,12 +34118,12 @@
               };
         }
 
-        // --- 2A. NAVIRE TEMPS RÉEL — POSTE 87 (GRAND QUAI SUEZMAX / BRUT & VRAC LIQUIDE) ---
+        // --- 2A. NAVIRE TEMPS RÉEL — POSTE 87 (FACE EXTERNE VERS QUÉBEC DU QUAI DOUBLE VALERO) ---
         const tankerGroup = new THREE.Group();
-        const tankerBasePos = new THREE.Vector3(76.44, 0, 60.52); // Section 87 Valero (côté fleuve, az ~128.4°, dist 97.5m)
+        const tankerBasePos = new THREE.Vector3(74.58, 0, 67.02); // Poste 87 côté fleuve / Québec (lx = +4.0m, lz = -17.40m)
         tankerGroup.position.copy(tankerBasePos);
-        // Aligner le navire parallèlement au chenal et au quai en T (proue vers les Ponts de Québec, poupe vers l'Île d'Orléans)
-        tankerGroup.rotation.y = (202 * Math.PI) / 180;
+        // Aligné sur le quai (36°/216°) : proue vers l'amont SO (ducs-d'Albe en T / Ponts), château blanc vers l'aval NE (Lévis / Orléans)
+        tankerGroup.rotation.y = (234 * Math.PI) / 180;
         scene.add(tankerGroup);
         window.tankerGroup = tankerGroup;
 
@@ -34430,13 +34430,13 @@
         shipSearchlightGroup.add(shipSearchlightBeam);
         window.forceSearchlight3D = false;
 
-        // --- 2B. NAVIRE TEMPS RÉEL — POSTE 86 (CHIMIQUIER / PÉTROLIER DE PRODUITS RAFFINÉS, AILE EST DU QUAI EN T) ---
-        // En géométrie réelle du terminal Valero St-Romuald, le Poste 86 occupe l'aile Est (aval, vers Lévis) du quai en T
-        // Coordonnées locales dockGroup : x = +108.0m, z = -10.8m -> Monde : (176.54, 0, 24.55)
+        // --- 2B. NAVIRE TEMPS RÉEL — POSTE 86 (MÊME QUAI QUE 87, FACE INTERNE VERS LÉVIS / SAINT-ROMUALD) ---
+        // En géométrie réelle du Quai Ultramar/Valero, les Postes 86 et 87 occupent les deux faces opposées du MÊME quai :
+        // • Poste 87 côté fleuve / Québec (-Z local) • Poste 86 côté intérieur / Lévis (+Z local : lx = +8.0m, lz = +15.65m)
         const vessel86Group = new THREE.Group();
-        const vessel86BasePos = new THREE.Vector3(176.54, 0, 24.55);
+        const vessel86BasePos = new THREE.Vector3(103.66, 0, 83.21);
         vessel86Group.position.copy(vessel86BasePos);
-        vessel86Group.rotation.y = (202 * Math.PI) / 180;
+        vessel86Group.rotation.y = (234 * Math.PI) / 180;
         scene.add(vessel86Group);
         window.vessel86Group = vessel86Group;
 
@@ -34701,21 +34701,39 @@
           vessel86SmokePuffs.push({ mesh: puff86, age: i / 10 });
         }
 
-        // --- 3. QUAI EN "T" VALERO ST-ROMUALD — VRAIE FORME MARITIME (POSTES 86 & 87 + ESTACADE & MÔLE D'ENROCHEMENT) ---
-        // Architecture réelle de la Raffinerie Jean-Gaulin (Port de Québec, Saint-Romuald) :
-        // 1) Long môle d'enrochement côtier (riprap causeway) enraciné dans la pointe de Saint-Romuald + poste de garde
-        // 2) Estacade sur pieux d'acier à râtelier de tuyauteries multi-étagé et boucles de dilatation
-        // 3) Jonction triangulaire évasée en "T" distribuant deux postes à quai distincts alignés sur le chenal (~68°/248°) :
-        //    • POSTE 87 (Ouest / Grand Quai en eau profonde ≥15.5m ZC, pétroliers Suezmax jusqu'à ~280-300m)
-        //    • POSTE 86 (Est / Aile aval ~12m ZC reliée par l'épine tubulaire Est, chimiquiers & caboteurs 120-185m)
+        // --- 3. QUAI ULTRAMAR / VALERO ST-ROMUALD — VRAIE FORME AÉRIENNE (QUAI DOUBLE-FACE 86/87 + DUCS-D'ALBE CIRCULAIRES EN "T" & MÔLE) ---
+        // Architecture réelle conforme à la vue satellite (Station SHC 03253, Saint-Romuald / Lévis) :
+        // 1) UN SEUL QUAI DOUBLE-FACE orienté SO–NE (36° / 216°) parallèle au chenal :
+        //    • POSTE 87 (Face Nord-Ouest externe -Z, tournée vers Québec / Cap-Diamant — eau profonde ≥15.5m ZC, pétroliers Suezmax)
+        //    • POSTE 86 (Face Sud-Est interne +Z du MÊME quai, tournée vers Lévis / Parc de la Jetée-d'Ultramar — produits raffinés & chimiquiers)
+        // 2) 6 grands ducs-d'Albe circulaires blancs en caissons de béton formant un "T" au Sud-Ouest (x = -56m) :
+        //    • Sur l'axe du quai (z = 0) : Caisson Nord-Est #1 (+78m), Caisson Central #2 (+30m), Plateforme double 86/87 (0m), Îlot Sud (-24m), Caisson Coude #3 (-39m)
+        //    • Barre transversale du "T" (x = -56m) : Caisson Jonction #4 (z = +18m) -> vers le fleuve Ouest : Caissons #5 (z = -6m) & #6 (z = -31m)
+        //    • Vers la Rive-Sud Est (Valero Levishipping, Az ~138°) : estacade sur pieux (z = +24..+74m) + long môle d'enrochement (z = +74..+232m) avec belvédère NE
+        const DOCK_ROT_DEG = 54;
+        const DOCK_ROT_Y = (DOCK_ROT_DEG * Math.PI) / 180;
+        const DOCK_COS_R = Math.cos(DOCK_ROT_Y);
+        const DOCK_SIN_R = Math.sin(DOCK_ROT_Y);
+
         const dockGroup = new THREE.Group();
-        const dockPos = azDistToVec3(133, 110, 0);
+        const dockPos = azDistToVec3(133, 118, 0);
         dockGroup.position.copy(dockPos);
-        dockGroup.rotation.y = (22 * Math.PI) / 180;
+        dockGroup.rotation.y = DOCK_ROT_Y;
         scene.add(dockGroup);
+
+        function dockLocalToWorldXZ(lx, lz, outVec) {
+          return outVec.set(
+            dockPos.x + lx * DOCK_COS_R + lz * DOCK_SIN_R,
+            0,
+            dockPos.z - lx * DOCK_SIN_R + lz * DOCK_COS_R
+          );
+        }
 
         const concreteMat = new THREE.MeshLambertMaterial({ color: 0x64748b });
         const concreteDarkMat = new THREE.MeshLambertMaterial({ color: 0x475569 });
+        const caissonWhiteMat = new THREE.MeshLambertMaterial({ color: 0xcbd5e1 });
+        const caissonCapMat = new THREE.MeshLambertMaterial({ color: 0xe2e8f0 });
+        const caissonTidalMat = new THREE.MeshLambertMaterial({ color: 0x334155 });
         const pilingMat = new THREE.MeshLambertMaterial({ color: 0x1e293b });
         const safetyYellowMat = new THREE.MeshBasicMaterial({
           color: 0xfacc15,
@@ -34732,8 +34750,20 @@
         const rockCausewayMat = new THREE.MeshLambertMaterial({ color: 0x334155 });
         const riprapBoulderMat = new THREE.MeshLambertMaterial({ color: 0x475569 });
 
-        // Fonction utilitaire pour relier deux points 3D du quai par une passerelle métallique à claire-voie (Catwalk) avec garde-corps jaunes
-        function addCatwalkSpan(x1, z1, x2, z2, yLevel = 7.1) {
+        // Manteau neigeux hivernal sur l'ensemble du quai double-face, des 6 caissons circulaires en T et du môle
+        const dockSnowMat = new THREE.MeshLambertMaterial({
+          color: 0xf8fafc,
+          transparent: true,
+          opacity: 0.0,
+          depthWrite: true
+        });
+        const dockSnowMesh = new THREE.Group();
+        dockSnowMesh.visible = false;
+        dockGroup.add(dockSnowMesh);
+        window.dockSnowMesh = dockSnowMesh;
+
+        // Fonction utilitaire : passerelle métallique à claire-voie (Catwalk) avec garde-corps jaunes (dessus de plancher à y = 7.35m)
+        function addCatwalkSpan(x1, z1, x2, z2, yLevel = 7.21) {
           const dx = x2 - x1;
           const dz = z2 - z1;
           const len = Math.hypot(dx, dz);
@@ -34747,77 +34777,174 @@
           spanGroup.rotation.y = angY;
 
           const walkway = new THREE.Mesh(
-            new THREE.BoxGeometry(len, 0.28, 1.45),
+            new THREE.BoxGeometry(len, 0.28, 1.55),
             steelGalvMat
           );
           spanGroup.add(walkway);
 
           const railFront = new THREE.Mesh(
-            new THREE.BoxGeometry(len, 0.85, 0.1),
+            new THREE.BoxGeometry(len, 0.88, 0.1),
             safetyYellowMat
           );
-          railFront.position.set(0, 0.52, -0.68);
+          railFront.position.set(0, 0.54, -0.72);
           spanGroup.add(railFront);
 
           const railBack = new THREE.Mesh(
-            new THREE.BoxGeometry(len, 0.85, 0.1),
+            new THREE.BoxGeometry(len, 0.88, 0.1),
             safetyYellowMat
           );
-          railBack.position.set(0, 0.52, 0.68);
+          railBack.position.set(0, 0.54, 0.72);
           spanGroup.add(railBack);
 
           dockGroup.add(spanGroup);
         }
 
-        // A. PLATEFORME PRINCIPALE DU POSTE 87 (Suezmax Crude & Product Berth — 28m x 14.5m à la tête Ouest du T)
+        // Fonction utilitaire : défense d'accostage en caoutchouc noir (face -Z Poste 87 à z = -9.4m ou face +Z Poste 86 à z = +9.4m)
+        function addBerthFenderUnit(fx, sideSign, widthX = 4.6) {
+          const cylZ = sideSign * 8.55;
+          const shieldZ = sideSign * 9.35;
+          const fenderCyl = new THREE.Mesh(
+            new THREE.CylinderGeometry(1.15, 1.15, 3.2, 12),
+            fenderBlackMat
+          );
+          fenderCyl.rotation.x = Math.PI / 2;
+          fenderCyl.position.set(fx, 5.25, cylZ);
+          dockGroup.add(fenderCyl);
+
+          const fenderShield = new THREE.Mesh(
+            new THREE.BoxGeometry(widthX, 3.7, 0.62),
+            fenderBlackMat
+          );
+          fenderShield.position.set(fx, 5.25, shieldZ);
+          dockGroup.add(fenderShield);
+        }
+
+        // Fonction utilitaire : grand duc-d'Albe circulaire blanc en caisson de béton (conforme à la photo aérienne)
+        function addCircularCaissonDolphin(cx, cz, radius, opts = {}) {
+          const tidalSkirt = new THREE.Mesh(
+            new THREE.CylinderGeometry(radius * 1.01, radius * 1.03, 10.6, 24),
+            caissonTidalMat
+          );
+          tidalSkirt.position.set(cx, -3.1, cz);
+          dockGroup.add(tidalSkirt);
+
+          const upperWall = new THREE.Mesh(
+            new THREE.CylinderGeometry(radius, radius, 4.95, 24),
+            caissonWhiteMat
+          );
+          upperWall.position.set(cx, 4.68, cz);
+          dockGroup.add(upperWall);
+
+          const capSlab = new THREE.Mesh(
+            new THREE.CylinderGeometry(radius + 0.18, radius + 0.18, 0.36, 24),
+            caissonCapMat
+          );
+          capSlab.position.set(cx, 7.17, cz);
+          dockGroup.add(capSlab);
+
+          const rimCurb = new THREE.Mesh(
+            new THREE.TorusGeometry(radius - 0.18, 0.14, 8, 28),
+            safetyYellowMat
+          );
+          rimCurb.rotation.x = Math.PI / 2;
+          rimCurb.position.set(cx, 7.42, cz);
+          dockGroup.add(rimCurb);
+
+          const bollardPed = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.95, 1.15, 0.45, 12),
+            concreteDarkMat
+          );
+          bollardPed.position.set(cx, 7.55, cz);
+          dockGroup.add(bollardPed);
+
+          const qrBollard = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.55, 0.72, 1.35, 10),
+            safetyYellowMat
+          );
+          qrBollard.position.set(cx, 8.15, cz);
+          dockGroup.add(qrBollard);
+
+          const snowDisc = new THREE.Mesh(
+            new THREE.CylinderGeometry(radius - 0.12, radius - 0.12, 0.14, 24),
+            dockSnowMat
+          );
+          snowDisc.position.set(cx, 7.42, cz);
+          dockSnowMesh.add(snowDisc);
+
+          if (opts.fender87) {
+            const corbel87 = new THREE.Mesh(
+              new THREE.BoxGeometry(5.6, 2.5, Math.max(2.0, 8.2 - (radius - 1.5))),
+              caissonWhiteMat
+            );
+            corbel87.position.set(cx, 6.05, -6.1);
+            dockGroup.add(corbel87);
+            addBerthFenderUnit(cx, -1, 4.8);
+          }
+          if (opts.fender86) {
+            const corbel86 = new THREE.Mesh(
+              new THREE.BoxGeometry(5.4, 2.5, Math.max(2.0, 8.2 - (radius - 1.5))),
+              caissonWhiteMat
+            );
+            corbel86.position.set(cx, 6.05, 6.1);
+            dockGroup.add(corbel86);
+            addBerthFenderUnit(cx, +1, 4.5);
+          }
+        }
+
+        // A. PLATEFORME CENTRALE DOUBLE-FACE COMMUNE AUX POSTES 87 (QUÉBEC, -Z) & 86 (LÉVIS, +Z) — 26m x 16.4m (x = 0, z = 0)
         const centralPlatform = new THREE.Mesh(
-          new THREE.BoxGeometry(28, 2.3, 14.5),
+          new THREE.BoxGeometry(26.0, 2.3, 16.4),
           concreteMat
         );
-        centralPlatform.position.set(0, 6.2, 2.4);
+        centralPlatform.position.set(0, 6.2, 0);
         dockGroup.add(centralPlatform);
 
-        // Manteau neigeux hivernal sur l'ensemble du quai en T (Poste 87 + Épine Est + Poste 86 + Estacade)
-        const dockSnowMat = new THREE.MeshLambertMaterial({
-          color: 0xf8fafc,
-          transparent: true,
-          opacity: 0.0,
-          depthWrite: true
-        });
-        const dockSnowMesh = new THREE.Group();
-        const snow87Pad = new THREE.Mesh(new THREE.BoxGeometry(28.05, 0.14, 14.55), dockSnowMat);
-        snow87Pad.position.set(0, 7.39, 2.4);
-        dockSnowMesh.add(snow87Pad);
-        const snow86Pad = new THREE.Mesh(new THREE.BoxGeometry(22.05, 0.14, 12.25), dockSnowMat);
-        snow86Pad.position.set(108, 7.39, 4.4);
-        dockSnowMesh.add(snow86Pad);
-        const snowEastSpine = new THREE.Mesh(new THREE.BoxGeometry(84.0, 0.12, 5.2), dockSnowMat);
-        snowEastSpine.position.set(55, 6.82, 7.4);
-        dockSnowMesh.add(snowEastSpine);
-        const snowTrestleRoad = new THREE.Mesh(new THREE.BoxGeometry(7.2, 0.12, 234), dockSnowMat);
-        snowTrestleRoad.position.set(-2, 6.62, 128);
-        dockSnowMesh.add(snowTrestleRoad);
-        dockSnowMesh.visible = false;
-        dockGroup.add(dockSnowMesh);
-        window.dockSnowMesh = dockSnowMesh;
+        const snowCentralPad = new THREE.Mesh(new THREE.BoxGeometry(26.05, 0.14, 16.45), dockSnowMat);
+        snowCentralPad.position.set(0, 7.39, 0);
+        dockSnowMesh.add(snowCentralPad);
 
-        const centralEdge = new THREE.Mesh(
-          new THREE.BoxGeometry(28.3, 0.35, 0.45),
+        // Bordures jaunes de sécurité sur les DEUX faces d'accostage du même quai (-Z = Poste 87 Québec, +Z = Poste 86 Lévis)
+        const edge87 = new THREE.Mesh(
+          new THREE.BoxGeometry(26.2, 0.35, 0.44),
           safetyYellowMat
         );
-        centralEdge.position.set(0, 7.4, -4.68);
-        dockGroup.add(centralEdge);
+        edge87.position.set(0, 7.42, -8.0);
+        dockGroup.add(edge87);
 
-        // Panneau d'identification maritime 3D "87" sur la plateforme Ouest
-        const sign87Mesh = createBerthSignMesh("87", "POSTE SUEZMAX • BRUT", 8.6, 2.4, "#facc15");
-        sign87Mesh.position.set(-8.8, 12.6, 0.4);
+        const edge86 = new THREE.Mesh(
+          new THREE.BoxGeometry(26.2, 0.35, 0.44),
+          safetyYellowMat
+        );
+        edge86.position.set(0, 7.42, 8.0);
+        dockGroup.add(edge86);
+
+        // Défenses d'accostage sur les deux faces de la plateforme centrale (fender line à z = -9.4m pour 87 et z = +9.4m pour 86)
+        addBerthFenderUnit(-9.2, -1, 4.8);
+        addBerthFenderUnit(9.2, -1, 4.8);
+        addBerthFenderUnit(-8.2, +1, 4.5);
+        addBerthFenderUnit(9.2, +1, 4.5);
+
+        // Panneaux d'identification maritime 3D "87" (côté Québec -Z) et "86" (côté Lévis +Z, double-face pour lisibilité 360°)
+        const sign87Mesh = createBerthSignMesh("87", "POSTE SUEZMAX • CÔTÉ QUÉBEC", 8.8, 2.35, "#facc15");
+        sign87Mesh.position.set(-7.8, 12.6, -4.4);
         dockGroup.add(sign87Mesh);
 
-        // Pieux tubulaires d'acier sous la plateforme Poste 87
-        for (let px of [-11, -3.8, 3.8, 11]) {
-          for (let pz of [-3.5, 2.4, 8.2]) {
+        const sign86Group = new THREE.Group();
+        sign86Group.position.set(-7.2, 12.4, 4.4);
+        const sign86Front = createBerthSignMesh("86", "PRODUITS RAFFINÉS • CÔTÉ LÉVIS", 8.8, 2.35, "#38bdf8");
+        sign86Front.rotation.y = Math.PI;
+        sign86Front.position.z = 0.14;
+        sign86Group.add(sign86Front);
+        const sign86Back = createBerthSignMesh("86", "POSTE 86 • FACE LÉVIS", 8.8, 2.35, "#38bdf8");
+        sign86Back.position.z = -0.14;
+        sign86Group.add(sign86Back);
+        dockGroup.add(sign86Group);
+
+        // Pieux tubulaires d'acier sous la plateforme centrale double-face
+        for (let px of [-10.5, -3.5, 3.5, 10.5]) {
+          for (let pz of [-6.4, 0.0, 6.4]) {
             const cPile = new THREE.Mesh(
-              new THREE.CylinderGeometry(0.68, 0.68, 18, 10),
+              new THREE.CylinderGeometry(0.66, 0.66, 18, 10),
               pilingMat
             );
             cPile.position.set(px, -1.5, pz);
@@ -34825,307 +34952,123 @@
           }
         }
 
-        // B. 4 GRANDS DUCS-D'ALBE D'ACCOSTAGE DU POSTE 87 (Breasting Dolphins : -34m, -17.5m, +17.5m, +34m)
-        const breastingXList = [-34, -17.5, 17.5, 34];
-        breastingXList.forEach((bx) => {
-          const bdCap = new THREE.Mesh(
-            new THREE.BoxGeometry(6.4, 2.5, 5.8),
-            concreteMat
-          );
-          bdCap.position.set(bx, 6.25, -3.2);
-          dockGroup.add(bdCap);
-
-          const bdEdge = new THREE.Mesh(
-            new THREE.BoxGeometry(6.6, 0.35, 6.0),
-            safetyYellowMat
-          );
-          bdEdge.position.set(bx, 7.55, -3.2);
-          dockGroup.add(bdEdge);
-
-          const fenderCyl = new THREE.Mesh(
-            new THREE.CylinderGeometry(1.45, 1.45, 3.2, 12),
-            fenderBlackMat
-          );
-          fenderCyl.rotation.x = Math.PI / 2;
-          fenderCyl.position.set(bx, 5.4, -6.2);
-          dockGroup.add(fenderCyl);
-
-          const fenderShield = new THREE.Mesh(
-            new THREE.BoxGeometry(4.8, 3.8, 0.65),
-            fenderBlackMat
-          );
-          fenderShield.position.set(bx, 5.4, -7.1);
-          dockGroup.add(fenderShield);
-
-          for (let px of [-2.1, 2.1]) {
-            for (let pz of [-5.0, -1.4]) {
-              const bPile = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.65, 0.65, 18, 9),
-                pilingMat
-              );
-              bPile.position.set(bx + px, -1.5, pz);
-              if (pz > -2.0) bPile.rotation.x = -0.16;
-              dockGroup.add(bPile);
-            }
-          }
-
-          const qrHook = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.55, 0.7, 1.3, 8),
-            safetyYellowMat
-          );
-          qrHook.position.set(bx, 8.1, -2.5);
-          dockGroup.add(qrHook);
-        });
-
-        // B2. AILE EST DU QUAI EN "T" — ÉPINE TUBULAIRE SUR PIEUX & PLATEFORME DU POSTE 86 (x = +14m -> +166m)
-        // Pont-râtelier longitudinal reliant la jonction en T (Poste 87) à la plateforme du Poste 86 (x = +108m)
-        const eastTSpineDeck = new THREE.Mesh(
-          new THREE.BoxGeometry(84, 1.35, 5.2),
-          concreteDarkMat
-        );
-        eastTSpineDeck.position.set(55, 6.05, 7.4);
-        dockGroup.add(eastTSpineDeck);
-
-        // Garde-corps de sécurité le long de l'épine Est (praticable en continu par les opérateurs et Batman!)
-        const eastSpineRailFront = new THREE.Mesh(
-          new THREE.BoxGeometry(83, 0.88, 0.12),
-          safetyYellowMat
-        );
-        eastSpineRailFront.position.set(55, 7.18, 5.0);
-        dockGroup.add(eastSpineRailFront);
-
-        for (let sx = 20; sx <= 92; sx += 14.4) {
-          for (let sz of [5.4, 9.4]) {
-            const sPile = new THREE.Mesh(
-              new THREE.CylinderGeometry(0.56, 0.56, 18, 8),
-              pilingMat
-            );
-            sPile.position.set(sx, -1.5, sz);
-            dockGroup.add(sPile);
-          }
-          // Portiques en H du râtelier à tuyaux vers le Poste 86
-          const pCol1 = new THREE.Mesh(new THREE.BoxGeometry(0.34, 3.6, 0.34), steelGalvMat);
-          pCol1.position.set(sx, 8.4, 6.5);
-          dockGroup.add(pCol1);
-          const pCol2 = new THREE.Mesh(new THREE.BoxGeometry(0.34, 3.6, 0.34), steelGalvMat);
-          pCol2.position.set(sx, 8.4, 9.6);
-          dockGroup.add(pCol2);
-          const pCross = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.38, 3.5), steelGalvMat);
-          pCross.position.set(sx, 10.1, 8.05);
-          dockGroup.add(pCross);
-        }
-
-        // 4 Conduites calorifugées de produits raffinés alimentant le Poste 86 le long de l'épine Est
-        [0xe2e8f0, 0x38bdf8, 0xfacc15, 0xdc2626].forEach((col86, idx) => {
-          const eastPipe = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.26, 0.26, 98, 8),
-            new THREE.MeshLambertMaterial({ color: col86 })
-          );
-          eastPipe.rotation.z = Math.PI / 2;
-          eastPipe.position.set(56, 7.45 + (idx % 2) * 0.52, 7.1 + idx * 0.62);
-          dockGroup.add(eastPipe);
-        });
-
-        // Bretelles diagonales triangulées de la jonction en "T" (Goussets d'estacade réels Est & Ouest)
-        function addDiagonalTrestleBrace(x1, z1, x2, z2) {
-          const dx = x2 - x1;
-          const dz = z2 - z1;
-          const len = Math.hypot(dx, dz);
-          const braceGrp = new THREE.Group();
-          braceGrp.position.set((x1 + x2) * 0.5, 5.95, (z1 + z2) * 0.5);
-          braceGrp.rotation.y = Math.atan2(-dz, dx);
-          const beam = new THREE.Mesh(new THREE.BoxGeometry(len, 1.15, 3.6), concreteDarkMat);
-          braceGrp.add(beam);
-          const pipeB = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.28, 0.28, len, 8),
-            new THREE.MeshLambertMaterial({ color: 0xe2e8f0 })
-          );
-          pipeB.rotation.z = Math.PI / 2;
-          pipeB.position.set(0, 1.15, 0.5);
-          braceGrp.add(pipeB);
-          const pipeB2 = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.26, 0.26, len, 8),
-            new THREE.MeshLambertMaterial({ color: 0xdc2626 })
-          );
-          pipeB2.rotation.z = Math.PI / 2;
-          pipeB2.position.set(0, 1.15, -0.5);
-          braceGrp.add(pipeB2);
-          dockGroup.add(braceGrp);
-
-          for (let f of [0.28, 0.68]) {
-            const bx = x1 + dx * f;
-            const bz = z1 + dz * f;
-            const bPile = new THREE.Mesh(new THREE.CylinderGeometry(0.52, 0.52, 18, 8), pilingMat);
-            bPile.position.set(bx, -1.5, bz);
-            dockGroup.add(bPile);
-          }
-        }
-        // Gousset Est (relie l'estacade principale z = 42m à l'épine Est du Poste 86 x = 52m)
-        addDiagonalTrestleBrace(2.0, 42.0, 52.0, 8.2);
-        // Gousset Ouest (relie l'estacade principale z = 28m au côté Ouest de la plateforme 87 x = -14m)
-        addDiagonalTrestleBrace(-4.5, 28.0, -14.0, 7.6);
-
-        // Plateforme d'opérations du POSTE 86 (x = +108m, z = +4.4m — 22m x 12.2m)
-        const platform86 = new THREE.Mesh(
-          new THREE.BoxGeometry(22, 2.2, 12.2),
+        // B. ÎLOT D'ACCOSTAGE SUD DOUBLE-FACE (x = -24m, z = 0m — 9.2m x 16.4m) & PONTS INTER-CAISSONS SUR L'AXE DU QUAI
+        const southIsland = new THREE.Mesh(
+          new THREE.BoxGeometry(9.2, 2.25, 16.4),
           concreteMat
         );
-        platform86.position.set(108, 6.2, 4.4);
-        dockGroup.add(platform86);
+        southIsland.position.set(-24.0, 6.22, 0);
+        dockGroup.add(southIsland);
 
-        const edge86 = new THREE.Mesh(
-          new THREE.BoxGeometry(22.3, 0.34, 0.42),
-          safetyYellowMat
-        );
-        edge86.position.set(108, 7.38, -1.55);
-        dockGroup.add(edge86);
+        const snowSouthIsland = new THREE.Mesh(new THREE.BoxGeometry(9.25, 0.14, 16.45), dockSnowMat);
+        snowSouthIsland.position.set(-24.0, 7.39, 0);
+        dockSnowMesh.add(snowSouthIsland);
 
-        // Panneau d'identification maritime 3D "86" sur la plateforme Est
-        const sign86Mesh = createBerthSignMesh("86", "CHIMIQUIER • VRAC LIQUIDE", 8.2, 2.3, "#38bdf8");
-        sign86Mesh.position.set(101.2, 12.1, 2.6);
-        dockGroup.add(sign86Mesh);
+        [-8.0, 8.0].forEach((sz) => {
+          const sEdge = new THREE.Mesh(new THREE.BoxGeometry(9.4, 0.34, 0.42), safetyYellowMat);
+          sEdge.position.set(-24.0, 7.42, sz);
+          dockGroup.add(sEdge);
+        });
+        addBerthFenderUnit(-24.0, -1, 4.8);
+        addBerthFenderUnit(-24.0, +1, 4.5);
 
-        for (let px of [99.5, 105, 111, 116.5]) {
-          for (let pz of [-0.6, 4.4, 9.2]) {
-            const p86Pile = new THREE.Mesh(
-              new THREE.CylinderGeometry(0.62, 0.62, 18, 9),
-              pilingMat
-            );
-            p86Pile.position.set(px, -1.5, pz);
-            dockGroup.add(p86Pile);
+        for (let px of [-26.8, -21.2]) {
+          for (let pz of [-6.0, 0.0, 6.0]) {
+            const iPile = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 18, 9), pilingMat);
+            iPile.position.set(px, -1.5, pz);
+            dockGroup.add(iPile);
           }
         }
 
-        // 4 Ducs-d'Albe d'accostage du POSTE 86 (x = +84, +95.5, +120.5, +132, z = -0.8 -> fenders à z = -4.5)
-        const breasting86XList = [84, 95.5, 120.5, 132];
-        breasting86XList.forEach((bx) => {
-          const bdCap = new THREE.Mesh(
-            new THREE.BoxGeometry(5.4, 2.35, 5.0),
-            concreteMat
-          );
-          bdCap.position.set(bx, 6.22, -0.8);
-          dockGroup.add(bdCap);
+        // Ponts-tabliers longitudinaux reliant la plateforme centrale à l'Îlot Sud (-13..-19.4m) et au Caisson #2 (+13..+23.8m)
+        const bridgeDeckSouth = new THREE.Mesh(new THREE.BoxGeometry(6.8, 1.4, 9.6), concreteDarkMat);
+        bridgeDeckSouth.position.set(-16.2, 6.65, 0);
+        dockGroup.add(bridgeDeckSouth);
+        const snowDeckSouth = new THREE.Mesh(new THREE.BoxGeometry(6.8, 0.12, 9.6), dockSnowMat);
+        snowDeckSouth.position.set(-16.2, 7.39, 0);
+        dockSnowMesh.add(snowDeckSouth);
 
-          const bdEdge = new THREE.Mesh(
-            new THREE.BoxGeometry(5.6, 0.32, 5.2),
-            safetyYellowMat
-          );
-          bdEdge.position.set(bx, 7.48, -0.8);
-          dockGroup.add(bdEdge);
+        const bridgeDeckNorth = new THREE.Mesh(new THREE.BoxGeometry(11.0, 1.4, 8.4), concreteDarkMat);
+        bridgeDeckNorth.position.set(18.4, 6.65, 0);
+        dockGroup.add(bridgeDeckNorth);
+        const snowDeckNorth = new THREE.Mesh(new THREE.BoxGeometry(11.0, 0.12, 8.4), dockSnowMat);
+        snowDeckNorth.position.set(18.4, 7.39, 0);
+        dockSnowMesh.add(snowDeckNorth);
 
-          const fenderCyl = new THREE.Mesh(
-            new THREE.CylinderGeometry(1.2, 1.2, 2.8, 12),
-            fenderBlackMat
-          );
-          fenderCyl.rotation.x = Math.PI / 2;
-          fenderCyl.position.set(bx, 5.1, -3.5);
-          dockGroup.add(fenderCyl);
+        const bridgeDeckSW = new THREE.Mesh(new THREE.BoxGeometry(6.2, 1.35, 5.4), concreteDarkMat);
+        bridgeDeckSW.position.set(-31.5, 6.67, 0.5);
+        dockGroup.add(bridgeDeckSW);
 
-          const fenderShield = new THREE.Mesh(
-            new THREE.BoxGeometry(4.1, 3.3, 0.58),
-            fenderBlackMat
+        // Conduites longitudinales sur le quai double-face (de x = -39m jusqu'au Caisson #2 x = +28m)
+        [0xe2e8f0, 0x38bdf8, 0xfacc15, 0xdc2626].forEach((colP, idx) => {
+          const pierPipe = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.26, 0.26, 64, 8),
+            new THREE.MeshLambertMaterial({ color: colP })
           );
-          fenderShield.position.set(bx, 5.1, -4.35);
-          dockGroup.add(fenderShield);
-
-          for (let px of [-1.8, 1.8]) {
-            for (let pz of [-2.3, 0.8]) {
-              const bPile = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.58, 0.58, 18, 8),
-                pilingMat
-              );
-              bPile.position.set(bx + px, -1.5, pz);
-              if (pz > 0) bPile.rotation.x = -0.14;
-              dockGroup.add(bPile);
-            }
-          }
-
-          const qrHook = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.48, 0.62, 1.2, 8),
-            safetyYellowMat
-          );
-          qrHook.position.set(bx, 7.98, -0.3);
-          dockGroup.add(qrHook);
+          pierPipe.rotation.z = Math.PI / 2;
+          pierPipe.position.set(-5.0, 7.62 + (idx % 2) * 0.44, -1.05 + idx * 0.7);
+          dockGroup.add(pierPipe);
         });
 
-        // C. DUCS-D'ALBE D'AMARRAGE SUR L'ENSEMBLE DU TERMINAL EN "T" (Ouest 87 + Intermédiaires 87/86 + Est 86)
-        const mooringDolphinCoords = [
-          { x: -92, z: 12.5 },
-          { x: -68, z: 6.5 },
-          { x: -48, z: 1.5 },
-          { x: 50, z: 2.2 },  // Duc-d'Albe intermédiaire partagé (poupe 87 / proue 86)
-          { x: 66, z: 3.4 },  // Duc-d'Albe intermédiaire proue 86 / garde longue 87
-          { x: 148, z: 3.2 }, // Duc-d'Albe d'amarrage Est Poste 86
-          { x: 166, z: 8.5 }, // Duc-d'Albe d'amarrage extrême Est Poste 86
-        ];
-        mooringDolphinCoords.forEach((md) => {
-          const mdCap = new THREE.Mesh(
-            new THREE.BoxGeometry(5.6, 2.3, 5.6),
-            concreteMat
-          );
-          mdCap.position.set(md.x, 6.3, md.z);
-          dockGroup.add(mdCap);
+        // C. LES 6 GRANDS DUCS-D'ALBE CIRCULAIRES BLANCS EN CAISSONS DE BÉTON ( FORME EN "T" FIDÈLE À LA PHOTO SATELLITE )
+        // 1) Axe du quai (z = 0) :
+        addCircularCaissonDolphin(78.0, 0.0, 6.8, {});                              // Caisson #1 : Extrême Nord-Est (aval, amarres de poupe 87 & 86)
+        addCircularCaissonDolphin(30.0, 0.0, 6.6, { fender87: true, fender86: true }); // Caisson #2 : Central-Nord entre les deux navires (accostage 87 & 86)
+        addCircularCaissonDolphin(-39.0, 1.0, 4.8, { fender87: true });             // Caisson #3 : Coude Sud-Ouest du quai
+        // 2) Barre transversale du "T" (x = -56.0m, perpendiculaire au quai : fleuve Ouest <-> rive Sud-Est) :
+        addCircularCaissonDolphin(-56.0, 18.0, 5.8, {});                            // Caisson #4 : Jonction centrale du "T"
+        addCircularCaissonDolphin(-56.0, -6.0, 6.2, {});                            // Caisson #5 : Branche fleuve intermédiaire du "T"
+        addCircularCaissonDolphin(-56.0, -31.0, 6.8, {});                           // Caisson #6 : Branche fleuve extrême Ouest du "T"
 
-          const mdEdge = new THREE.Mesh(
-            new THREE.BoxGeometry(5.8, 0.32, 5.8),
-            safetyYellowMat
-          );
-          mdEdge.position.set(md.x, 7.5, md.z);
-          dockGroup.add(mdEdge);
+        // Pont coudé oblique (tuyauteries + tablier) reliant le Caisson Coude #3 (-39, +1) au Caisson Jonction du T #4 (-56, +18)
+        {
+          const dxDog = -56.0 - (-39.0);
+          const dzDog = 18.0 - 1.0;
+          const lenDog = Math.hypot(dxDog, dzDog);
+          const dogGrp = new THREE.Group();
+          dogGrp.position.set(-47.5, 6.55, 9.5);
+          dogGrp.rotation.y = Math.atan2(-dzDog, dxDog);
 
-          for (let px of [-1.8, 1.8]) {
-            for (let pz of [-1.8, 1.8]) {
-              const mPile = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.58, 0.58, 18, 8),
-                pilingMat
-              );
-              mPile.position.set(md.x + px, -1.5, md.z + pz);
-              dockGroup.add(mPile);
-            }
+          const dogBeam = new THREE.Mesh(new THREE.BoxGeometry(lenDog, 1.25, 4.2), concreteDarkMat);
+          dogGrp.add(dogBeam);
+
+          const dogSnow = new THREE.Mesh(new THREE.BoxGeometry(lenDog, 0.12, 4.2), dockSnowMat);
+          dogSnow.position.set(0, 0.69, 0);
+          dogGrp.add(dogSnow);
+
+          [0xe2e8f0, 0xdc2626, 0xfacc15, 0x38bdf8].forEach((cDog, dIdx) => {
+            const dPipe = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.26, 0.26, lenDog, 8),
+              new THREE.MeshLambertMaterial({ color: cDog })
+            );
+            dPipe.rotation.z = Math.PI / 2;
+            dPipe.position.set(0, 0.95 + (dIdx % 2) * 0.42, -1.1 + dIdx * 0.55);
+            dogGrp.add(dPipe);
+          });
+          dockGroup.add(dogGrp);
+
+          for (let f of [0.32, 0.68]) {
+            const dPile = new THREE.Mesh(new THREE.CylinderGeometry(0.56, 0.56, 18, 8), pilingMat);
+            dPile.position.set(-39.0 + dxDog * f, -1.5, 1.0 + dzDog * f);
+            dockGroup.add(dPile);
           }
+        }
 
-          const mBollard = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.62, 0.78, 1.45, 10),
-            safetyYellowMat
-          );
-          mBollard.position.set(md.x, 8.05, md.z - 0.8);
-          dockGroup.add(mBollard);
-        });
+        // D. RÉSEAU CONTINU DE PASSERELLES MÉTALLIQUES À CLAIRE-VOIE (Catwalks en "T" de x = +78m aux Caissons #4, #5 et #6)
+        addCatwalkSpan(36.4, 0.0, 71.4, 0.0, 7.21);    // Longue passerelle Nord-Est : Caisson #2 -> Caisson #1 (+78m)
+        addCatwalkSpan(-39.0, 1.0, -56.0, 18.0, 7.21); // Passerelle oblique Sud-Ouest : Caisson #3 -> Caisson Jonction #4
+        addCatwalkSpan(-56.0, 12.2, -56.0, -0.2, 7.21);// Barre du T (fleuve) : Caisson #4 -> Caisson #5
+        addCatwalkSpan(-56.0, -12.0, -56.0, -24.4, 7.21); // Barre du T (fleuve) : Caisson #5 -> Caisson extrême #6
 
-        // D. RÉSEAU COMPLET DE PASSERELLES MÉTALLIQUES À CLAIRE-VOIE (Catwalks continus de x = -92m à x = +166m)
-        // Poste 87 — Front et éventail Ouest
-        addCatwalkSpan(-14.0, -2.5, -17.5, -2.8);
-        addCatwalkSpan(-17.5, -2.8, -34.0, -2.8);
-        addCatwalkSpan(14.0, -2.5, 17.5, -2.8);
-        addCatwalkSpan(17.5, -2.8, 34.0, -2.8);
-        addCatwalkSpan(-34.0, -2.8, -48.0, 1.5);
-        addCatwalkSpan(-17.5, -1.5, -48.0, 1.5);
-        addCatwalkSpan(-48.0, 1.5, -68.0, 6.5);
-        addCatwalkSpan(-68.0, 6.5, -92.0, 12.5);
-        // Jonction continue entre Poste 87, Ducs-d'Albe intermédiaires et Poste 86
-        addCatwalkSpan(34.0, -2.8, 50.0, 2.2);
-        addCatwalkSpan(50.0, 2.2, 66.0, 3.4);
-        addCatwalkSpan(50.0, 2.2, 50.0, 5.4);
-        addCatwalkSpan(66.0, 3.4, 84.0, -0.8);
-        addCatwalkSpan(66.0, 3.4, 66.0, 5.4);
-        // Poste 86 — Front et éventail Est
-        addCatwalkSpan(84.0, -0.8, 95.5, -0.8);
-        addCatwalkSpan(95.5, -0.8, 97.2, 0.2);
-        addCatwalkSpan(118.8, 0.2, 120.5, -0.8);
-        addCatwalkSpan(120.5, -0.8, 132.0, -0.8);
-        addCatwalkSpan(132.0, -0.8, 148.0, 3.2);
-        addCatwalkSpan(119.0, 3.2, 148.0, 3.2);
-        addCatwalkSpan(148.0, 3.2, 166.0, 8.5);
-
-        // Échelles limnimétriques de marée 3D (Tide Staff Gauges) aux Postes 87 et 86
+        // Échelles limnimétriques de marée 3D (Tide Staff Gauges) sur les deux faces du quai (87 côté Québec, 86 côté Lévis)
         const tideStaffMatYellow = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
         const tideStaffMatWhite = new THREE.MeshBasicMaterial({ color: 0xf8fafc });
         const tideStaffMatBlack = new THREE.MeshBasicMaterial({ color: 0x0f172a });
         const tideStaffMatRed = new THREE.MeshBasicMaterial({ color: 0xef4444 });
 
         [
-          { x: 14.8, z: -6.15 },
-          { x: 95.5, z: -3.45 }
+          { x: 12.4, z: -8.32, side: -1 },
+          { x: -12.2, z: 8.32, side: 1 }
         ].forEach((ts) => {
           const tideStaffBack = new THREE.Mesh(
             new THREE.BoxGeometry(1.2, 13.0, 0.22),
@@ -35145,19 +35088,19 @@
               new THREE.BoxGeometry(1.05, 0.48, 0.26),
               bandMat
             );
-            band.position.set(ts.x, mIdx * 1.05 + 1.0, ts.z + 0.03);
+            band.position.set(ts.x, mIdx * 1.05 + 1.0, ts.z + ts.side * 0.03);
             dockGroup.add(band);
 
             const subTick = new THREE.Mesh(
               new THREE.BoxGeometry(0.72, 0.1, 0.28),
               tideStaffMatBlack
             );
-            subTick.position.set(ts.x, (mIdx + 0.5) * 1.05 + 1.0, ts.z + 0.04);
+            subTick.position.set(ts.x, (mIdx + 0.5) * 1.05 + 1.0, ts.z + ts.side * 0.04);
             dockGroup.add(subTick);
           }
         });
 
-        // E1. 4 BRAS DE CHARGEMENT ARTICULÉS CHIKSAN 3D — POSTE 87 (Brut / Grands volumes)
+        // E1. 4 BRAS DE CHARGEMENT ARTICULÉS CHIKSAN 3D — POSTE 87 (Face Nord-Ouest -Z vers Québec, Brut & Grands volumes)
         const chiksanBooms3D = [];
         for (let armIdx = -1.5; armIdx <= 1.5; armIdx += 1) {
           const armX = armIdx * 3.8;
@@ -35165,11 +35108,11 @@
             new THREE.CylinderGeometry(0.45, 0.58, 11.5, 10),
             loadingArmMat
           );
-          riser.position.set(armX, 12.0, -1.8);
+          riser.position.set(armX, 12.0, -5.0);
           dockGroup.add(riser);
 
           const pivotGroup = new THREE.Group();
-          pivotGroup.position.set(armX, 17.5, -1.8);
+          pivotGroup.position.set(armX, 17.5, -5.0);
           dockGroup.add(pivotGroup);
 
           const boom = new THREE.Mesh(
@@ -35197,20 +35140,25 @@
           chiksanBooms3D.push({ pivot: pivotGroup, idx: armIdx });
         }
 
-        // E2. 3 BRAS DE CHARGEMENT ARTICULÉS CHIKSAN 3D — POSTE 86 (Produits raffinés & Vrac liquide)
+        // E2. 3 BRAS DE CHARGEMENT ARTICULÉS CHIKSAN 3D — POSTE 86 (Face Sud-Est +Z vers Lévis sur le MÊME quai!)
         const chiksan86Booms3D = [];
         for (let armIdx = -1; armIdx <= 1; armIdx += 1) {
-          const armX = 108 + armIdx * 3.6;
+          const armX = 5.8 + armIdx * 3.5;
           const riser86 = new THREE.Mesh(
             new THREE.CylinderGeometry(0.38, 0.5, 9.8, 10),
             armIdx === 0 ? valeroTealMat : loadingArm86Mat
           );
-          riser86.position.set(armX, 11.2, 0.6);
+          riser86.position.set(armX, 11.2, 5.0);
           dockGroup.add(riser86);
 
+          // Groupe orienté à 180° autour de Y afin que les bras du Poste 86 se déploient vers +Z (côté Lévis!)
+          const mount86 = new THREE.Group();
+          mount86.position.set(armX, 15.9, 5.0);
+          mount86.rotation.y = Math.PI;
+          dockGroup.add(mount86);
+
           const pivot86 = new THREE.Group();
-          pivot86.position.set(armX, 15.9, 0.6);
-          dockGroup.add(pivot86);
+          mount86.add(pivot86);
 
           const boom86 = new THREE.Mesh(
             new THREE.CylinderGeometry(0.28, 0.32, 11.6, 8),
@@ -35237,36 +35185,37 @@
           chiksan86Booms3D.push({ pivot: pivot86, idx: armIdx });
         }
 
-        // Cabines d'opérations maritimes reculées côté terre (dégageant à 100% le tablier avant pour la ronde de Batman!)
+        // Cabine centrale d'opérations 86/87 positionnée sur l'axe médian (z = 0), dégageant à 100% les deux tabliers (-6.8m et +6.8m) pour Batman!
         const dockCabin = new THREE.Mesh(
-          new THREE.BoxGeometry(9.2, 3.8, 4.0),
+          new THREE.BoxGeometry(7.2, 3.5, 3.2),
           new THREE.MeshLambertMaterial({ color: 0x334155 })
         );
-        dockCabin.position.set(-6.5, 9.2, 6.2);
+        dockCabin.position.set(-6.8, 9.1, 0.0);
         dockGroup.add(dockCabin);
 
         const dockCabinWin = new THREE.Mesh(
-          new THREE.BoxGeometry(8.0, 1.4, 4.15),
+          new THREE.BoxGeometry(6.2, 1.3, 3.36),
           new THREE.MeshBasicMaterial({ color: 0x38bdf8 })
         );
-        dockCabinWin.position.set(-6.5, 9.6, 6.2);
+        dockCabinWin.position.set(-6.8, 9.45, 0.0);
         dockGroup.add(dockCabinWin);
 
+        // Abri technique secondaire sur l'îlot Sud (axe médian z = 0)
         const dockCabin86 = new THREE.Mesh(
-          new THREE.BoxGeometry(7.4, 3.4, 3.6),
+          new THREE.BoxGeometry(4.4, 2.9, 2.8),
           new THREE.MeshLambertMaterial({ color: 0x334155 })
         );
-        dockCabin86.position.set(108, 9.0, 8.1);
+        dockCabin86.position.set(-24.0, 8.8, 0.0);
         dockGroup.add(dockCabin86);
 
         const dockCabin86Win = new THREE.Mesh(
-          new THREE.BoxGeometry(6.2, 1.25, 3.75),
+          new THREE.BoxGeometry(3.6, 1.05, 2.95),
           new THREE.MeshBasicMaterial({ color: 0x38bdf8 })
         );
-        dockCabin86Win.position.set(108, 9.35, 8.1);
+        dockCabin86Win.position.set(-24.0, 9.1, 0.0);
         dockGroup.add(dockCabin86Win);
 
-        // Aussières d'amarrage 3D — POSTE 87 (8 lignes) & POSTE 86 (6 lignes)
+        // Aussières d'amarrage 3D — POSTE 87 (8 lignes vers bâbord z = -7.6) & POSTE 86 (6 lignes vers tribord z = +5.8 sur le même quai!)
         const mooringLinesGroup = new THREE.Group();
         scene.add(mooringLinesGroup);
         const mooringLines3D = [];
@@ -35277,14 +35226,14 @@
           opacity: 0.85,
         });
         const mooringSpecs = [
-          { dockLocal: new THREE.Vector3(-92, 8.1, 11.7), shipLocal: new THREE.Vector3(53, 8.6, -4.8) },
-          { dockLocal: new THREE.Vector3(-68, 8.1, 5.7), shipLocal: new THREE.Vector3(48, 8.5, -6.8) },
-          { dockLocal: new THREE.Vector3(-48, 8.1, 0.7), shipLocal: new THREE.Vector3(38, 8.5, -7.6) },
-          { dockLocal: new THREE.Vector3(-17.5, 8.1, -2.5), shipLocal: new THREE.Vector3(14, 8.5, -7.6) },
-          { dockLocal: new THREE.Vector3(17.5, 8.1, -2.5), shipLocal: new THREE.Vector3(-12, 8.5, -7.6) },
-          { dockLocal: new THREE.Vector3(50, 8.1, 1.4), shipLocal: new THREE.Vector3(-30, 8.5, -7.6) },
-          { dockLocal: new THREE.Vector3(66, 8.1, 2.6), shipLocal: new THREE.Vector3(-38, 8.5, -6.8) },
-          { dockLocal: new THREE.Vector3(50, 8.1, 1.4), shipLocal: new THREE.Vector3(-41, 8.6, -4.8) },
+          { dockLocal: new THREE.Vector3(-56.0, 8.15, -31.0), shipLocal: new THREE.Vector3(53, 8.6, -4.8) }, // Ligne de pointe avant -> Caisson T #6
+          { dockLocal: new THREE.Vector3(-56.0, 8.15, -6.0), shipLocal: new THREE.Vector3(48, 8.5, -6.8) },  // Traversier avant -> Caisson T #5
+          { dockLocal: new THREE.Vector3(-39.0, 8.15, 0.4), shipLocal: new THREE.Vector3(38, 8.5, -7.6) },   // Garde avant -> Caisson Coude #3
+          { dockLocal: new THREE.Vector3(-24.0, 7.85, -7.4), shipLocal: new THREE.Vector3(16, 8.5, -7.6) },  // Garde centrale S -> Îlot Sud (-Z)
+          { dockLocal: new THREE.Vector3(11.5, 7.85, -7.4), shipLocal: new THREE.Vector3(-12, 8.5, -7.6) },  // Garde centrale N -> Plateforme (-Z)
+          { dockLocal: new THREE.Vector3(30.0, 8.15, -1.2), shipLocal: new THREE.Vector3(-28, 8.5, -7.6) },  // Traversier arrière -> Caisson #2
+          { dockLocal: new THREE.Vector3(78.0, 8.15, -1.2), shipLocal: new THREE.Vector3(-38, 8.5, -6.8) },  // Ligne de poupe 1 -> Caisson NE #1
+          { dockLocal: new THREE.Vector3(78.0, 8.15, 0.0), shipLocal: new THREE.Vector3(-41, 8.6, -4.8) },   // Ligne de poupe 2 -> Caisson NE #1
         ];
         mooringSpecs.forEach((ms) => {
           const lGeo = new THREE.BufferGeometry().setFromPoints([
@@ -35297,12 +35246,12 @@
         });
 
         const mooringSpecs86 = [
-          { dockLocal: new THREE.Vector3(66, 8.1, 2.6), shipLocal: new THREE.Vector3(32, 7.4, -4.2) },
-          { dockLocal: new THREE.Vector3(84, 8.0, -0.3), shipLocal: new THREE.Vector3(24, 7.3, -5.8) },
-          { dockLocal: new THREE.Vector3(95.5, 8.0, -0.3), shipLocal: new THREE.Vector3(10, 7.3, -6.0) },
-          { dockLocal: new THREE.Vector3(120.5, 8.0, -0.3), shipLocal: new THREE.Vector3(-8, 7.3, -6.0) },
-          { dockLocal: new THREE.Vector3(148, 8.1, 2.4), shipLocal: new THREE.Vector3(-21, 7.3, -5.6) },
-          { dockLocal: new THREE.Vector3(166, 8.1, 7.7), shipLocal: new THREE.Vector3(-25, 7.4, -4.0) },
+          { dockLocal: new THREE.Vector3(-39.0, 8.15, 1.8), shipLocal: new THREE.Vector3(32, 7.4, 4.2) },    // Ligne de pointe avant 86 -> Caisson Coude #3
+          { dockLocal: new THREE.Vector3(-24.0, 7.85, 7.4), shipLocal: new THREE.Vector3(24, 7.3, 5.8) },    // Traversier avant 86 -> Îlot Sud (+Z)
+          { dockLocal: new THREE.Vector3(-9.5, 7.85, 7.4), shipLocal: new THREE.Vector3(10, 7.3, 6.0) },     // Garde avant 86 -> Plateforme (+Z)
+          { dockLocal: new THREE.Vector3(11.5, 7.85, 7.4), shipLocal: new THREE.Vector3(-8, 7.3, 6.0) },     // Garde arrière 86 -> Plateforme (+Z)
+          { dockLocal: new THREE.Vector3(30.0, 8.15, 1.5), shipLocal: new THREE.Vector3(-21, 7.3, 5.6) },    // Traversier arrière 86 -> Caisson #2
+          { dockLocal: new THREE.Vector3(78.0, 8.15, 1.5), shipLocal: new THREE.Vector3(-25, 7.4, 4.0) },    // Ligne de poupe 86 -> Caisson NE #1
         ];
         mooringSpecs86.forEach((ms) => {
           const lGeo = new THREE.BufferGeometry().setFromPoints([
@@ -35314,24 +35263,37 @@
           mooringLines86_3D.push({ line: lMesh, geo: lGeo, dockLocal: ms.dockLocal, shipLocal: ms.shipLocal });
         });
 
-        // F. ESTACADE SUR PIEUX D'ACIER (z = +9m à +98m) & VRAI MÔLE D'ENROCHEMENT ENRACINÉ À SAINT-ROMUALD (z = +98m à +252m)
+        // F. BARRE TERRESTRE DU "T" (x = -56m) : ESTACADE SUR PIEUX (z = +23.8m à +74m) & MÔLE D'ENROCHEMENT (z = +74m à +232m)
         const approachBridge = new THREE.Mesh(
-          new THREE.BoxGeometry(7.6, 1.4, 90),
+          new THREE.BoxGeometry(7.4, 1.4, 51),
           concreteMat
         );
-        approachBridge.position.set(-2, 5.9, 53);
+        approachBridge.position.set(-56.0, 6.5, 49.0);
         dockGroup.add(approachBridge);
 
-        // Trottoir à garde-corps jaunes le long de l'estacade d'approche
+        // Petite plateforme auxiliaire Nord-Est sur l'estacade (z = +56m, visible sur la photo satellite)
+        const trestleSpurPad = new THREE.Mesh(
+          new THREE.BoxGeometry(6.2, 1.2, 5.8),
+          concreteCapMatSafe()
+        );
+        function concreteCapMatSafe() { return caissonCapMat; }
+        trestleSpurPad.position.set(-49.5, 6.55, 56.0);
+        dockGroup.add(trestleSpurPad);
+
+        const snowTrestleRoad = new THREE.Mesh(new THREE.BoxGeometry(7.2, 0.12, 202), dockSnowMat);
+        snowTrestleRoad.position.set(-56.0, 7.26, 125.0);
+        dockSnowMesh.add(snowTrestleRoad);
+
+        // Garde-corps jaune continu le long de l'estacade et du môle (côté Poste 86 / Parc de la Jetée-d'Ultramar)
         const trestleRailEast = new THREE.Mesh(
-          new THREE.BoxGeometry(0.12, 0.88, 226),
+          new THREE.BoxGeometry(0.12, 0.88, 198),
           safetyYellowMat
         );
-        trestleRailEast.position.set(1.65, 7.02, 124);
+        trestleRailEast.position.set(-52.4, 7.62, 124.0);
         dockGroup.add(trestleRailEast);
 
-        for (let tz = 16; tz <= 92; tz += 13) {
-          for (let tx of [-5.0, 1.0]) {
+        for (let tz = 28; tz <= 72; tz += 11) {
+          for (let tx of [-59.0, -53.0]) {
             const tPile = new THREE.Mesh(
               new THREE.CylinderGeometry(0.56, 0.56, 18, 8),
               pilingMat
@@ -35341,103 +35303,115 @@
           }
         }
 
-        // Môle d'enrochement trapézoïdal (Rockfill Mole) s'enracinant directement dans la rive de Saint-Romuald sans coupure d'eau
+        // Môle d'enrochement trapézoïdal (Rockfill Mole, x = -56m, z = +74m à +232m) enraciné à Valero Levishipping sans coupure d'eau
         const rockCauseway = new THREE.Mesh(
-          new THREE.CylinderGeometry(7.2, 19.5, 160, 8),
+          new THREE.CylinderGeometry(7.4, 20.0, 160, 8),
           rockCausewayMat
         );
         rockCauseway.rotation.x = Math.PI / 2;
-        rockCauseway.scale.set(1.08, 1.0, 0.46);
-        rockCauseway.position.set(-2, 2.0, 174);
+        rockCauseway.scale.set(1.1, 1.0, 0.48);
+        rockCauseway.position.set(-56.0, 2.1, 153.0);
         dockGroup.add(rockCauseway);
 
-        // Blocs d'enrochement brise-lames réalistes sur les talus du môle (riprap armor stones émergeant à marée basse)
-        for (let bz = 98; bz <= 236; bz += 11) {
+        // Blocs d'enrochement brise-lames sur les deux talus du môle (entre Anse Fréchette SO et Parc de la Jetée-d'Ultramar NE)
+        for (let bz = 78; bz <= 224; bz += 10.5) {
           [-1, 1].forEach((side) => {
             const boulder = new THREE.Mesh(
               new THREE.DodecahedronGeometry(2.1 + ((bz * 7) % 10) * 0.12, 0),
               riprapBoulderMat
             );
             boulder.scale.set(1.35, 0.72, 1.15);
-            boulder.position.set(-2 + side * (9.2 + ((bz * 3) % 5) * 0.45), 1.05, bz);
+            boulder.position.set(-56.0 + side * (9.4 + ((bz * 3) % 5) * 0.45), 1.08, bz);
             boulder.rotation.y = bz * 0.37;
             dockGroup.add(boulder);
           });
         }
 
         const causewayRoad = new THREE.Mesh(
-          new THREE.BoxGeometry(7.4, 0.85, 158),
+          new THREE.BoxGeometry(7.4, 0.9, 158),
           concreteMat
         );
-        causewayRoad.position.set(-2, 6.12, 174);
+        causewayRoad.position.set(-56.0, 6.72, 153.0);
         dockGroup.add(causewayRoad);
 
-        // Mur chasse-mer / parapet coupe-vent côté Ouest du môle d'enrochement
+        // Plateforme carrée en saillie Nord-Est à mi-môle (belvédère / poste intermédiaire à z = +148m visible sur la photo aérienne!)
+        const midMoleBelvedere = new THREE.Mesh(
+          new THREE.BoxGeometry(9.6, 1.35, 9.8),
+          caissonWhiteMat
+        );
+        midMoleBelvedere.position.set(-47.8, 6.55, 148.0);
+        dockGroup.add(midMoleBelvedere);
+
+        const snowBelvedere = new THREE.Mesh(new THREE.BoxGeometry(9.6, 0.12, 9.8), dockSnowMat);
+        snowBelvedere.position.set(-47.8, 7.28, 148.0);
+        dockSnowMesh.add(snowBelvedere);
+
+        // Mur chasse-mer / parapet coupe-vent côté Anse Fréchette (SO du môle)
         const waveParapet = new THREE.Mesh(
           new THREE.BoxGeometry(0.65, 1.35, 152),
           concreteDarkMat
         );
-        waveParapet.position.set(-5.8, 6.95, 174);
+        waveParapet.position.set(-59.8, 7.52, 153.0);
         dockGroup.add(waveParapet);
 
-        // Aire de retournement et guérite de sécurité portuaire à l'enracinement côtier du môle (z = 228m)
+        // Aire d'enracinement côtier et guérite de sécurité portuaire à Valero Levishipping (z = +218m)
         const gatePad = new THREE.Mesh(
-          new THREE.BoxGeometry(16.5, 1.1, 18.0),
+          new THREE.BoxGeometry(17.0, 1.15, 18.0),
           concreteDarkMat
         );
-        gatePad.position.set(-1.5, 6.05, 228);
+        gatePad.position.set(-55.5, 6.62, 218.0);
         dockGroup.add(gatePad);
 
         const gateHouse = new THREE.Mesh(
           new THREE.BoxGeometry(4.6, 3.2, 3.8),
           valeroTealMat
         );
-        gateHouse.position.set(3.4, 8.1, 226);
+        gateHouse.position.set(-50.4, 8.7, 216.0);
         dockGroup.add(gateHouse);
 
-        // 5 Conduites pétrolières principales sur toute la longueur de l'estacade et du môle (z = 9m à 250m)
+        // 5 Conduites pétrolières principales le long de l'estacade et du môle (x = -56m, z = +18m à +228m)
         const pipeColors = [0xe2e8f0, 0x94a3b8, 0xdc2626, 0xfacc15, 0x0284c7];
         pipeColors.forEach((pCol, idx) => {
           const pLine = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.3, 0.3, 240, 8),
+            new THREE.CylinderGeometry(0.3, 0.3, 212, 8),
             new THREE.MeshLambertMaterial({ color: pCol })
           );
           pLine.rotation.x = Math.PI / 2;
-          pLine.position.set(-4.8 + idx * 0.68, 7.5 + (idx % 2) * 0.55, 128);
+          pLine.position.set(-58.6 + idx * 0.68, 7.95 + (idx % 2) * 0.52, 124.0);
           dockGroup.add(pLine);
         });
 
-        // 2 Boucles de dilatation horizontales en U sur le râtelier principal (z = 62m et z = 152m)
-        [62, 152].forEach((lz) => {
+        // 2 Boucles de dilatation horizontales en U sur le râtelier du môle (z = +64m et z = +158m)
+        [64, 158].forEach((lz) => {
           const expLoop = new THREE.Mesh(
-            new THREE.BoxGeometry(8.5, 1.2, 7.5),
+            new THREE.BoxGeometry(8.2, 1.15, 7.2),
             steelGalvMat
           );
-          expLoop.position.set(-8.2, 7.4, lz);
+          expLoop.position.set(-62.0, 7.85, lz);
           dockGroup.add(expLoop);
         });
 
         // Portiques métalliques en H (Pipe Racks) le long de l'estacade et du môle
-        for (let rz = 14; rz <= 232; rz += 18) {
-          const portalLeft = new THREE.Mesh(new THREE.BoxGeometry(0.38, 4.0, 0.38), steelGalvMat);
-          portalLeft.position.set(-5.4, 8.6, rz);
+        for (let rz = 26; rz <= 216; rz += 18) {
+          const portalLeft = new THREE.Mesh(new THREE.BoxGeometry(0.38, 3.9, 0.38), steelGalvMat);
+          portalLeft.position.set(-59.2, 9.0, rz);
           dockGroup.add(portalLeft);
 
-          const portalRight = new THREE.Mesh(new THREE.BoxGeometry(0.38, 4.0, 0.38), steelGalvMat);
-          portalRight.position.set(-1.6, 8.6, rz);
+          const portalRight = new THREE.Mesh(new THREE.BoxGeometry(0.38, 3.9, 0.38), steelGalvMat);
+          portalRight.position.set(-55.4, 9.0, rz);
           dockGroup.add(portalRight);
 
           const portalBeam = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.42, 0.42), steelGalvMat);
-          portalBeam.position.set(-3.5, 10.4, rz);
+          portalBeam.position.set(-57.3, 10.8, rz);
           dockGroup.add(portalBeam);
         }
 
-        // Tours rouges de canons à mousse incendie (Fire Monitor Towers) sur les Postes 87 (-17.5, +17.5) et 86 (+95.5, +120.5)
+        // Tours rouges de canons à mousse incendie (Fire Monitor Towers) sur les faces 87 (-Z) et 86 (+Z) du quai
         [
-          { x: -17.5, z: -1.2, h: 14.5 },
-          { x: 17.5, z: -1.2, h: 14.5 },
-          { x: 95.5, z: 0.8, h: 13.2 },
-          { x: 120.5, z: 0.8, h: 13.2 }
+          { x: -12.0, z: -5.8, h: 14.5, side: -1 },
+          { x: 12.0, z: -5.8, h: 14.5, side: -1 },  // Cible Grappin #1 Batman (Poste 87 • y = 21.75)
+          { x: -12.0, z: 5.8, h: 13.2, side: 1 },
+          { x: 12.0, z: 5.8, h: 13.2, side: 1 }     // Cible Grappin #2 Batman (Poste 86 • y = 20.45)
         ].forEach((ft) => {
           const fireTower = new THREE.Mesh(
             new THREE.CylinderGeometry(0.42, 0.58, ft.h, 8),
@@ -35457,45 +35431,50 @@
             new THREE.CylinderGeometry(0.22, 0.32, 2.4, 8),
             loadingArmMat
           );
-          fireCannon.rotation.x = Math.PI / 3;
-          fireCannon.position.set(ft.x, 8.05 + ft.h, ft.z - 0.8);
+          fireCannon.rotation.x = ft.side < 0 ? (Math.PI / 3) : (-Math.PI / 3);
+          fireCannon.position.set(ft.x, 8.05 + ft.h, ft.z + ft.side * 0.8);
           dockGroup.add(fireCannon);
         });
 
-        // Tours d'embarquement & Coupées (Gangways) sur le Poste 87 (x = 9.5m) et le Poste 86 (x = 115.5m)
+        // Tours d'embarquement & Coupées (Gangways) sur la face Québec Poste 87 (-Z) et la face Lévis Poste 86 (+Z)
         const gangwayTower = new THREE.Mesh(
-          new THREE.BoxGeometry(3.0, 6.2, 3.0),
+          new THREE.BoxGeometry(2.9, 6.2, 2.9),
           steelGalvMat
         );
-        gangwayTower.position.set(9.5, 10.3, -2.6);
+        gangwayTower.position.set(9.2, 10.3, -5.6);
         dockGroup.add(gangwayTower);
 
         const gangwayBridge = new THREE.Mesh(
           new THREE.BoxGeometry(1.3, 0.55, 11.2),
           steelGalvMat
         );
-        gangwayBridge.position.set(9.5, 12.0, -8.0);
+        gangwayBridge.position.set(9.2, 12.0, -11.0);
         gangwayBridge.rotation.x = -0.15;
         dockGroup.add(gangwayBridge);
+
+        const gangway86Mount = new THREE.Group();
+        gangway86Mount.position.set(-2.6, 0, 5.6);
+        gangway86Mount.rotation.y = Math.PI;
+        dockGroup.add(gangway86Mount);
 
         const gangway86Tower = new THREE.Mesh(
           new THREE.BoxGeometry(2.7, 5.6, 2.7),
           steelGalvMat
         );
-        gangway86Tower.position.set(115.5, 9.9, -0.2);
-        dockGroup.add(gangway86Tower);
+        gangway86Tower.position.set(0, 9.9, 0);
+        gangway86Mount.add(gangway86Tower);
 
         const gangway86Bridge = new THREE.Mesh(
           new THREE.BoxGeometry(1.2, 0.5, 9.8),
           steelGalvMat
         );
-        gangway86Bridge.position.set(115.5, 11.1, -4.9);
+        gangway86Bridge.position.set(0, 11.1, -4.9);
         gangway86Bridge.rotation.x = -0.16;
-        dockGroup.add(gangway86Bridge);
+        gangway86Mount.add(gangway86Bridge);
 
-        // Camionnette d'intervention / sécurité stationnée côté terre de la plateforme 87
+        // Camionnette d'intervention stationnée sur l'axe médian (z = 0) pour dégager les deux fronts 87 et 86
         const serviceTruck = new THREE.Group();
-        serviceTruck.position.set(6.5, 7.4, 6.4);
+        serviceTruck.position.set(5.4, 7.4, 0.0);
         dockGroup.add(serviceTruck);
 
         const truckBody = new THREE.Mesh(
@@ -35519,20 +35498,20 @@
         truckBeacon.position.set(1.1, 2.9, 0);
         serviceTruck.add(truckBeacon);
 
-        // Lampadaires industriels au sodium sur les Postes 87, 86, l'épine Est et l'estacade
+        // Lampadaires industriels au sodium sur le quai double-face, les caissons en T et le môle
         const dockLights = [];
         [
-          { x: -34, z: -2.0 },
-          { x: -11, z: 5.2 },
-          { x: 11, z: 5.2 },
-          { x: 34, z: -2.0 },
-          { x: 58, z: 8.6 },
-          { x: 84, z: 0.4 },
-          { x: 108, z: 7.4 },
-          { x: 132, z: 0.4 },
-          { x: 1.2, z: 45 },
-          { x: 1.2, z: 98 },
-          { x: 1.2, z: 162 },
+          { x: 78.0, z: 2.2 },
+          { x: 30.0, z: 0.0 },
+          { x: 10.5, z: 0.0 },
+          { x: -10.5, z: 0.0 },
+          { x: -24.0, z: 0.0 },
+          { x: -56.0, z: -31.0 },
+          { x: -56.0, z: -6.0 },
+          { x: -56.0, z: 18.0 },
+          { x: -53.2, z: 62.0 },
+          { x: -53.2, z: 122.0 },
+          { x: -53.2, z: 182.0 },
         ].forEach((lp) => {
           const pole = new THREE.Mesh(
             new THREE.CylinderGeometry(0.2, 0.28, 13, 6),
@@ -35550,21 +35529,20 @@
           dockLights.push(bulb);
         });
         const dockPointLight = new THREE.PointLight(0xfbbf24, 0.85, 165);
-        dockPointLight.position.set(0, 22, -6);
+        dockPointLight.position.set(0, 22, -12);
         dockGroup.add(dockPointLight);
 
-        const dock86PointLight = new THREE.PointLight(0xfbbf24, 0.72, 135);
-        dock86PointLight.position.set(108, 20, -2);
+        const dock86PointLight = new THREE.PointLight(0xfbbf24, 0.78, 145);
+        dock86PointLight.position.set(6, 21, 12);
         dockGroup.add(dock86PointLight);
 
-        // Synchronisation visuelle 3D des navires aux Postes 86 & 87 selon les données temps réel du Port de Québec
-        const dockNormalOutVec = new THREE.Vector3(-Math.sin((22 * Math.PI) / 180), 0, -Math.cos((22 * Math.PI) / 180));
+        // Synchronisation visuelle 3D des navires sur les DEUX FACES OPPOSÉES du même quai (87 côté Québec -Z, 86 côté Lévis +Z)
         function applyLiveVesselsTo3D() {
           const state = window.livePortVessels || DEFAULT_PORTQC_SNAPSHOT;
           const b87 = state.berth87 || DEFAULT_PORTQC_SNAPSHOT.berth87;
           const b86 = state.berth86 || DEFAULT_PORTQC_SNAPSHOT.berth86;
 
-          // --- Mise à jour Navire Poste 87 ---
+          // --- Mise à jour Navire Poste 87 (Face Nord-Ouest -Z vers Québec) ---
           if (b87 && (b87.occupied || b87.name)) {
             const dispName87 = b87.occupied ? b87.name : (b87.expected && b87.expected.name ? b87.expected.name : "LIBRE");
             const dispFlag87 = b87.occupied ? (b87.flag || "CA") : (b87.expected && b87.expected.flag ? b87.expected.flag : "CA");
@@ -35574,13 +35552,8 @@
             const sY87 = Math.max(0.84, Math.min(1.05, 0.84 + 0.16 * (loa87 / 274)));
             tankerGroup.scale.set(sX87, sY87, sZ87);
 
-            // Ajuster le contact coque/fenders selon la largeur réelle (beam) du navire
-            const beamDelta87 = (sZ87 - 1.0) * 8.0;
-            tankerBasePos.set(
-              76.44 + dockNormalOutVec.x * beamDelta87,
-              0,
-              60.52 + dockNormalOutVec.z * beamDelta87
-            );
+            // Contact bâbord exact contre la ligne de défenses -Z (z_local = -9.4m) côté Québec
+            dockLocalToWorldXZ(4.0, -(9.4 + 8.0 * sZ87), tankerBasePos);
             if (window.tugManeuver && window.tugManeuver.state === "docked") {
               tankerGroup.position.x = tankerBasePos.x;
               tankerGroup.position.z = tankerBasePos.z;
@@ -35601,7 +35574,7 @@
             paintMaritimeFlag(ship87Flag, dispFlag87);
           }
 
-          // --- Mise à jour Navire Poste 86 ---
+          // --- Mise à jour Navire Poste 86 (MÊME QUAI, Face Sud-Est +Z vers Lévis) ---
           if (b86) {
             const dispName86 = b86.occupied ? b86.name : (b86.expected && b86.expected.name ? b86.expected.name : "POSTE 86");
             const dispFlag86 = b86.occupied ? (b86.flag || "CA") : (b86.expected && b86.expected.flag ? b86.expected.flag : "CA");
@@ -35611,12 +35584,8 @@
             const sY86 = Math.max(0.88, Math.min(1.08, 0.88 + 0.12 * (loa86 / 140)));
             vessel86Group.scale.set(sX86, sY86, sZ86);
 
-            const beamDelta86 = (sZ86 - 1.0) * 6.25;
-            vessel86BasePos.set(
-              176.54 + dockNormalOutVec.x * beamDelta86,
-              0,
-              24.55 + dockNormalOutVec.z * beamDelta86
-            );
+            // Contact tribord exact contre la ligne de défenses +Z (z_local = +9.4m) côté Lévis du même quai
+            dockLocalToWorldXZ(8.0, 9.4 + 6.25 * sZ86, vessel86BasePos);
             vessel86Group.position.x = vessel86BasePos.x;
             vessel86Group.position.z = vessel86BasePos.z;
 
@@ -35950,8 +35919,8 @@
         // Vecteurs pré-alloués pour le câble du pistolet-grappin (zéro allocation GC par frame)
         const batMuzzleWorldVec = new THREE.Vector3();
         const batMuzzleDockLocalVec = new THREE.Vector3();
-        const batTowerAnchorLocal = new THREE.Vector3(17.5, 21.75, -1.2);
-        const batTower86AnchorLocal = new THREE.Vector3(120.5, 20.45, 0.8);
+        const batTowerAnchorLocal = new THREE.Vector3(12.0, 21.75, -5.8);
+        const batTower86AnchorLocal = new THREE.Vector3(12.0, 20.45, 5.8);
         let activeBatTowerAnchor = batTowerAnchorLocal;
         const batHookCurLocalVec = new THREE.Vector3();
         let batRigInitialized = false;
@@ -35966,7 +35935,7 @@
           return cur + diff * (1 - Math.exp(-lambda * dt));
         }
 
-        // Interpolation le long d'une polyligne 2D (x, z, y) sur le réseau réel de passerelles du quai en T
+        // Interpolation le long d'une polyligne 2D (x, z, y) sur le réseau réel de caissons circulaires et passerelles en T
         function sampleDockWaypoints(pts, u) {
           const clamped = Math.max(0, Math.min(1, u));
           let totalLen = 0;
@@ -35992,28 +35961,49 @@
           return { x: pts[0].x, z: pts[0].z, y: pts[0].y || 7.35, rotY: Math.PI / 2 };
         }
 
-        const BAT_ROUTE_87_TO_86 = [
-          { x: 2.2, z: -3.8, y: 7.35 },
-          { x: 17.5, z: -2.8, y: 7.35 },
-          { x: 34.0, z: -2.8, y: 7.35 },
-          { x: 50.0, z: 2.2, y: 7.35 },
-          { x: 66.0, z: 3.4, y: 7.35 },
-          { x: 84.0, z: -0.8, y: 7.35 },
-          { x: 95.5, z: -0.8, y: 7.35 },
-          { x: 103.5, z: -1.0, y: 7.35 }
+        // 1) Traversée de la barre du T (Caissons #6 -> #5 -> #4 -> #3) vers la face Québec (Poste 87, z = -6.8m)
+        const BAT_ROUTE_TBAR_TO_87 = [
+          { x: -56.0, z: -31.0, y: 7.35 },
+          { x: -56.0, z: -6.0, y: 7.35 },
+          { x: -56.0, z: 18.0, y: 7.35 },
+          { x: -39.0, z: 1.0, y: 7.35 },
+          { x: -26.5, z: 0.5, y: 7.35 },
+          { x: -24.0, z: -3.8, y: 7.35 },
+          { x: -12.5, z: -3.8, y: 7.35 },
+          { x: -2.0, z: -6.8, y: 7.35 }
         ];
+        // 2) Excursion jusqu'au Caisson Nord-Est #1 (+78m) puis bascule sur la face Lévis du même quai (Poste 86, z = +6.8m)
+        const BAT_ROUTE_87_TO_86 = [
+          { x: 2.2, z: -6.8, y: 7.35 },
+          { x: 11.8, z: -6.8, y: 7.35 },
+          { x: 14.2, z: -2.4, y: 7.35 },
+          { x: 30.0, z: 0.0, y: 7.35 },
+          { x: 78.0, z: 0.0, y: 7.35 },
+          { x: 30.0, z: 0.0, y: 7.35 },
+          { x: 14.2, z: 2.4, y: 7.35 },
+          { x: 11.8, z: 6.8, y: 7.35 },
+          { x: 4.5, z: 6.8, y: 7.35 }
+        ];
+        // 3) Retour par la face Lévis (Poste 86) jusqu'au Caisson Jonction du T #4 (-56, +18)
+        const BAT_ROUTE_86_TO_TJUNCTION = [
+          { x: 4.5, z: 6.8, y: 7.35 },
+          { x: -11.8, z: 6.8, y: 7.35 },
+          { x: -14.2, z: 3.8, y: 7.35 },
+          { x: -24.0, z: 3.8, y: 7.35 },
+          { x: -27.5, z: 0.8, y: 7.35 },
+          { x: -39.0, z: 1.0, y: 7.35 },
+          { x: -56.0, z: 18.0, y: 7.35 }
+        ];
+        // 4) Ronde sur l'estacade et la barre fluviale du T (Caisson #4 -> Estacade -> #4 -> #5 -> #6)
         const BAT_ROUTE_86_TO_WEST = [
-          { x: 132.0, z: -0.8, y: 7.35 },
-          { x: 118.8, z: 0.2, y: 7.35 },
-          { x: 96.5, z: 5.5, y: 6.95 },
-          { x: 55.0, z: 5.5, y: 6.95 },
-          { x: 15.0, z: 5.4, y: 7.35 },
-          { x: 12.5, z: -2.8, y: 7.35 },
-          { x: -17.5, z: -2.8, y: 7.35 },
-          { x: -34.0, z: -2.8, y: 7.35 }
+          { x: -56.0, z: 18.0, y: 7.35 },
+          { x: -56.0, z: 56.0, y: 7.25 },
+          { x: -56.0, z: 18.0, y: 7.35 },
+          { x: -56.0, z: -6.0, y: 7.35 },
+          { x: -56.0, z: -31.0, y: 7.35 }
         ];
 
-        // Fonction d'animation de Batman : Grande patrouille intégrale sur les DEUX postes du Quai en T Valero (Poste 87 <-> Poste 86, 166m!)
+        // Fonction d'animation de Batman : Patrouille intégrale sur les DEUX FACES du quai (87 Québec & 86 Lévis) et sur tout le T de caissons circulaires !
         // Toutes les actions clés (vigie, saut parkour, accroupi héroïque, Bat-Signal, double tir grappin 87 & 86) sont 100% dégagées des cabanes !
         function updateBatman3D(timeSec, nightFlag, dtArg) {
           const isSignal = (typeof isBatSignalActive === "function" && isBatSignalActive());
@@ -36092,13 +36082,13 @@
           }
 
           // -------------------------------------------------------------------------
-          // PHASE 1 : DUC-D'ALBE OUEST POSTE 87 (-34m) — VIGIE & SUPERHERO LANDING (0.0s à 8.5s)
+          // PHASE 1 : CAISSON CIRCULAIRE EXTRÊME DU "T" (-56m, -31m) — VIGIE & SUPERHERO LANDING (0.0s à 8.5s)
           // -------------------------------------------------------------------------
           if (tau < 8.5) {
-            window.batmanActionStatus = "Vigie & Accroupi héroïque (Poste 87 Ouest • -34m)";
-            targetPosX = -34.0;
-            targetPosZ = -2.8;
-            targetRotY = -Math.PI / 2;
+            window.batmanActionStatus = "Vigie & Accroupi héroïque (Caisson Fleuve du T • #6)";
+            targetPosX = -56.0;
+            targetPosZ = -31.0;
+            targetRotY = Math.PI;
 
             if (tau < 4.8) {
               const u = tau / 4.8;
@@ -36143,27 +36133,28 @@
               if (u > 0.72) {
                 const turnProg = (u - 0.72) / 0.28;
                 const sTurn = turnProg * turnProg * (3 - 2 * turnProg);
-                targetRotY = -Math.PI / 2 + sTurn * Math.PI;
+                targetRotY = Math.PI - sTurn * Math.PI;
               }
             }
           }
           // -------------------------------------------------------------------------
-          // PHASE 2 : SPRINT PASSERELLE OUEST POSTE 87 (-34m -> -2m) (8.5s à 17.5s)
+          // PHASE 2 : SPRINT SUR LA BARRE DU "T" VERS LE POSTE 87 CÔTÉ QUÉBEC (8.5s à 17.5s)
           // -------------------------------------------------------------------------
           else if (tau < 17.5) {
-            window.batmanActionStatus = "Sprint sur passerelle suspendue Ouest (Poste 87)";
+            window.batmanActionStatus = "Sprint sur les ducs-d'Albe en T vers le Poste 87 (Québec)";
             const u = (tau - 8.5) / 9.0;
-            targetPosX = -34.0 + u * 32.0;
-            targetPosZ = -2.8 - u * 1.0;
-            targetRotY = Math.PI / 2;
-            targetPosY = 7.35 + computeRunPose(14.8, 1.0);
+            const wp = sampleDockWaypoints(BAT_ROUTE_TBAR_TO_87, u);
+            targetPosX = wp.x;
+            targetPosZ = wp.z;
+            targetRotY = wp.rotY;
+            targetPosY = wp.y + computeRunPose(14.8, 1.0);
           }
           // -------------------------------------------------------------------------
-          // PHASE 3 : BORD FRONTAL POSTE 87 & GRAND SAUT ACROBATIQUE / PARKOUR (17.5s à 23.5s)
+          // PHASE 3 : BORD FRONTAL POSTE 87 (CÔTÉ QUÉBEC) & SAUT PARKOUR (17.5s à 23.5s)
           // -------------------------------------------------------------------------
           else if (tau < 23.5) {
-            window.batmanActionStatus = "Saut acrobatique / Parkour (Front Poste 87)";
-            targetPosZ = -3.8;
+            window.batmanActionStatus = "Saut acrobatique / Parkour (Poste 87 • Face Québec)";
+            targetPosZ = -6.8;
             targetRotY = Math.PI / 2;
 
             if (tau >= 19.0 && tau <= 21.7) {
@@ -36193,15 +36184,15 @@
             }
           }
           // -------------------------------------------------------------------------
-          // PHASE 4 : VIGIE POSTE 87, OBSERVATION BAT-SIGNAL & TIR GRAPPIN TOUR 87 (23.5s à 35.0s)
-          // Emplacement : x = 2.2m, z = -3.8m (100% dégagé devant la cabine Poste 87)
+          // PHASE 4 : VIGIE POSTE 87 (QUÉBEC), BAT-SIGNAL & TIR GRAPPIN TOUR 87 (23.5s à 35.0s)
+          // Emplacement : x = 2.2m, z = -6.8m (100% dégagé devant la cabine centrale)
           // -------------------------------------------------------------------------
           else if (tau < 35.0) {
             targetPosX = 2.2;
-            targetPosZ = -3.8;
+            targetPosZ = -6.8;
 
             if (tau < 28.4) {
-              window.batmanActionStatus = "Vigie au Poste 87 (Inspection du navire à quai)";
+              window.batmanActionStatus = "Vigie au Poste 87 (Face Québec • Navire Suezmax)";
               targetRotY = Math.PI;
               tTorsoX = 0.05;
               tArmLX = 0.14; tArmLZ = -0.24; tElbowLX = -0.48;
@@ -36216,7 +36207,7 @@
               tCape3X = 0.18 + Math.sin(tau * 4.2 - 2.0) * 0.17;
             } else if (tau < 31.0) {
               window.batmanActionStatus = "Observation du Bat-Signal dans les nuages (Rive-Sud)";
-              targetRotY = -0.18;
+              targetRotY = -0.86;
               tTorsoX = -0.10;
               tHeadX = -0.52 + Math.sin(tau * 2.0) * 0.04;
               tHeadY = 0.08;
@@ -36227,9 +36218,9 @@
               tCape2X = 0.22 + Math.sin(tau * 5.0 - 1.0) * 0.14;
               tCape3X = 0.18 + Math.sin(tau * 5.0 - 2.0) * 0.18;
             } else {
-              window.batmanActionStatus = "Tir au pistolet-grappin (Tour Incendie Poste 87)";
+              window.batmanActionStatus = "Tir au pistolet-grappin (Tour Incendie Poste 87 • Québec)";
               const gu = (tau - 31.0) / 4.0;
-              targetRotY = 1.40;
+              targetRotY = 1.47;
               drawGrapnel = true;
               activeBatTowerAnchor = batTowerAnchorLocal;
 
@@ -36259,10 +36250,10 @@
             }
           }
           // -------------------------------------------------------------------------
-          // PHASE 5 : TRAVERSÉE SUR LES PASSERELLES INTER-POSTES VERS LE POSTE 86 (35.0s à 49.0s)
+          // PHASE 5 : SPRINT AU CAISSON NORD-EST #1 (+78m) PUIS PASSAGE AU POSTE 86 (LÉVIS) (35.0s à 49.0s)
           // -------------------------------------------------------------------------
           else if (tau < 49.0) {
-            window.batmanActionStatus = "Sprint inter-quais sur passerelles (Poste 87 -> Poste 86)";
+            window.batmanActionStatus = "Patrouille Caisson Nord-Est (+78m) -> Poste 86 (Face Lévis)";
             const u = (tau - 35.0) / 14.0;
             const wp = sampleDockWaypoints(BAT_ROUTE_87_TO_86, u);
             targetPosX = wp.x;
@@ -36271,16 +36262,16 @@
             targetPosY = wp.y + computeRunPose(15.2, 1.0);
           }
           // -------------------------------------------------------------------------
-          // PHASE 6 : VIGIE AU FRONT DU POSTE 86 & TIR GRAPPIN TOUR 86 (49.0s à 59.5s)
-          // Emplacement : x = 103.5m, z = -1.0m (100% dégagé devant la cabine Poste 86)
+          // PHASE 6 : VIGIE AU POSTE 86 (FACE LÉVIS DU MÊME QUAI) & TIR GRAPPIN TOUR 86 (49.0s à 59.5s)
+          // Emplacement : x = 4.5m, z = +6.8m (100% dégagé côté Lévis!)
           // -------------------------------------------------------------------------
           else if (tau < 59.5) {
-            targetPosX = 103.5;
-            targetPosZ = -1.0;
+            targetPosX = 4.5;
+            targetPosZ = 6.8;
 
             if (tau < 55.2) {
-              window.batmanActionStatus = "Vigie au Poste 86 (Inspection vrac liquide & chenal)";
-              targetRotY = Math.PI; // Face au navire du Poste 86 et au fleuve
+              window.batmanActionStatus = "Vigie au Poste 86 (Face Lévis du même quai • Chimiquier)";
+              targetRotY = 0.0; // Face au navire du Poste 86 (+Z) et vers Lévis!
               tTorsoX = 0.05;
               tArmLX = 0.15; tArmLZ = -0.25; tElbowLX = -0.48;
               tArmRX = 0.15; tArmRZ = 0.25; tElbowRX = -0.48;
@@ -36293,9 +36284,9 @@
               tCape2X = 0.24 + windFactor * 0.15 + Math.sin(tau * 4.5 - 1.0) * 0.14;
               tCape3X = 0.20 + Math.sin(tau * 4.5 - 2.0) * 0.18;
             } else {
-              window.batmanActionStatus = "Tir au pistolet-grappin (Tour Incendie Poste 86)";
+              window.batmanActionStatus = "Tir au pistolet-grappin (Tour Incendie Poste 86 • Lévis)";
               const gu = (tau - 55.2) / 4.3;
-              targetRotY = 1.46; // Face à la Tour Incendie Est du Poste 86 (120.5, 20.45, 0.8)
+              targetRotY = 1.70; // Face à la Tour Incendie du Poste 86 (12.0, 20.45, +5.8)
               drawGrapnel = true;
               activeBatTowerAnchor = batTower86AnchorLocal;
 
@@ -36325,42 +36316,37 @@
             }
           }
           // -------------------------------------------------------------------------
-          // PHASE 7 : SPRINT ET VIGIE DUC-D'ALBE EST DU POSTE 86 (+132m) (59.5s à 68.5s)
+          // PHASE 7 : SPRINT LE LONG DU POSTE 86 VERS LA JONCTION DU "T" (-56m, +18m) (59.5s à 68.5s)
           // -------------------------------------------------------------------------
           else if (tau < 68.5) {
-            if (tau < 63.5) {
-              window.batmanActionStatus = "Sprint vers le Duc-d'Albe Est (Poste 86 • +132m)";
-              const u = (tau - 59.5) / 4.0;
-              targetPosX = 103.5 + u * 28.5;
-              targetPosZ = -1.0 + u * 0.2;
-              targetRotY = Math.PI / 2;
-              targetPosY = 7.35 + computeRunPose(14.8, 1.0);
+            if (tau < 64.5) {
+              window.batmanActionStatus = "Sprint côté Lévis vers la Jonction du T (Caisson #4)";
+              const u = (tau - 59.5) / 5.0;
+              const wp = sampleDockWaypoints(BAT_ROUTE_86_TO_TJUNCTION, u);
+              targetPosX = wp.x;
+              targetPosZ = wp.z;
+              targetRotY = wp.rotY;
+              targetPosY = wp.y + computeRunPose(14.8, 1.0);
             } else {
-              window.batmanActionStatus = "Vigie aval vers Lévis & Île d'Orléans (Poste 86 • +132m)";
-              const u = (tau - 63.5) / 5.0;
-              targetPosX = 132.0;
-              targetPosZ = -0.8;
-              targetRotY = Math.PI * 0.72;
+              window.batmanActionStatus = "Vigie à la Jonction du T (Môle Valero & Anse Fréchette)";
+              targetPosX = -56.0;
+              targetPosZ = 18.0;
+              targetRotY = 0.15;
               tTorsoX = 0.05;
               tArmLX = 0.15; tArmLZ = -0.26; tElbowLX = -0.46;
               tArmRX = 0.15; tArmRZ = 0.26; tElbowRX = -0.46;
-              tHeadY = Math.sin((tau - 63.5) * 1.5) * 0.42;
+              tHeadY = Math.sin((tau - 64.5) * 1.5) * 0.42;
               tHeadX = -0.08 + Math.sin(tau * 1.3) * 0.05;
               tCape1X = 0.34 + windFactor * 0.22 + Math.sin(tau * 4.8) * 0.10;
               tCape2X = 0.26 + windFactor * 0.16 + Math.sin(tau * 4.8 - 1.0) * 0.15;
               tCape3X = 0.22 + Math.sin(tau * 4.8 - 2.0) * 0.20;
-              if (u > 0.72) {
-                const turnProg = (u - 0.72) / 0.28;
-                const sTurn = turnProg * turnProg * (3 - 2 * turnProg);
-                targetRotY = Math.PI * 0.72 + sTurn * (Math.PI * 0.78);
-              }
             }
           }
           // -------------------------------------------------------------------------
-          // PHASE 8 : GRANDE RONDE RETOUR SUR L'ÉPINE EN "T" (+132m -> -34m) (68.5s à 88.0s)
+          // PHASE 8 : RONDE SUR LA BARRE TRANSVERSALE DU "T" (ESTACADE -> CAISSON #6) (68.5s à 88.0s)
           // -------------------------------------------------------------------------
           else {
-            window.batmanActionStatus = "Ronde générale sur l'épine du quai en T (86 -> 87 • 166m)";
+            window.batmanActionStatus = "Ronde sur la barre du T (Estacade -> Caissons #4, #5 & #6)";
             const u = (tau - 68.5) / 19.5;
             const wp = sampleDockWaypoints(BAT_ROUTE_86_TO_WEST, u);
             targetPosX = wp.x;
@@ -36639,11 +36625,11 @@
           [60.0, 760],  // Parcours des Anses Centre
           [74.0, 610],  // Anse Patton
           [90.0, 485],  // Grève-Gilmour Est
-          [106.0, 398], // Hadlow Cove
-          [122.0, 352], // Falaise de Hadlow (arrière-plan Poste 86)
-          [136.0, 332],
-          [150.0, 316], // Racine exacte du môle d'enrochement Valero
-          [160.0, 338],
+          [106.0, 398], // Hadlow Cove / Parc de la Jetée-d'Ultramar Est
+          [122.0, 356], // Parc de la Jetée-d'Ultramar (arrière-plan Poste 86 vers Lévis)
+          [137.8, 326], // Racine exacte du môle d'enrochement Valero Levishipping
+          [150.0, 344], // Anse Fréchette / Saint-Romuald Est
+          [160.0, 352],
           [175.0, 368], // Vieux-Saint-Romuald
           [192.0, 435],
           [208.0, 545], // Approche Pointe Atkinson
@@ -36696,17 +36682,17 @@
         for (let az = 27.2; az <= 232.65; az += 1.25) {
           const dCoast = getSouthShoreDist(az);
           const isBridgeRamp = az >= 227.0;
-          const isMoleRoot = az >= 147.0 && az <= 153.2;
+          const isMoleRoot = az >= 135.2 && az <= 140.8;
           const etchDip = Math.exp(-Math.pow((az - 224.3) / 1.6, 2));
           const chaudDip = Math.exp(-Math.pow((az - 230.1) / 1.2, 2));
           const baseRoadY = isBridgeRamp
             ? (5.4 + Math.max(0, (az - 227.0) / (232.6 - 227.0)) * 41.8)
-            : (az <= 148 ? 4.8 : (isMoleRoot ? 5.9 : 5.3));
+            : (az <= 135.5 ? 4.8 : (isMoleRoot ? 5.9 : 5.3));
           const hillH = getSouthCliffHeight(az);
           const bankCrestY = baseRoadY - etchDip * 2.2 - chaudDip * 12.0;
 
-          // 0. Battures rocheuses intertidales du Saint-Laurent (Grève-Gilmour, Hadlow & Saint-Romuald — découvrent à marée basse!)
-          const battureWidth = (az >= 147.5 && az <= 153.0) ? 22 : (az >= 85 && az <= 218 ? 64 : 44);
+          // 0. Battures rocheuses intertidales du Saint-Laurent (Grève-Gilmour, Parc de la Jetée-d'Ultramar & Saint-Romuald — découvrent à marée basse!)
+          const battureWidth = (az >= 135.5 && az <= 140.5) ? 20 : (az >= 85 && az <= 218 ? 64 : 44);
           southForeshoreSlices.push([
             azDistToVec3(az, dCoast - 26 - battureWidth, -2.5),
             azDistToVec3(az, dCoast - 26 - battureWidth * 0.55, -0.92),
@@ -36714,7 +36700,7 @@
             azDistToVec3(az, dCoast - 20, 1.38)
           ]);
 
-          // 1. Berge d'enrochement et terrasse côtière continue (Parcours des Anses à l'Est, môle Valero à 150°, Chemin du Fleuve à l'Ouest)
+          // 1. Berge d'enrochement et terrasse côtière continue (Parc de la Jetée-d'Ultramar à l'Est, môle Valero à 137.8°, Rue Saint-Laurent / Chemin du Fleuve à l'Ouest)
           southTerraceSlices.push([
             azDistToVec3(az, dCoast - 22, 1.15),
             azDistToVec3(az, dCoast - 14, Math.max(1.8, bankCrestY * 0.62)),
@@ -36775,7 +36761,7 @@
         // Blocs erratiques glaciaires sur les battures de Grève-Gilmour, Hadlow et Saint-Romuald (émergent à marée basse!)
         for (let bIdx = 0; bIdx < 44; bIdx++) {
           const bAz = 72 + (bIdx * 3.4) % 148;
-          if (bAz > 146 && bAz < 155) continue;
+          if (bAz > 135 && bAz < 142) continue;
           const bDist = getSouthShoreDist(bAz) - 34 - (bIdx % 4) * 9.5;
           const bElev = -1.15 + (bIdx % 5) * 0.34;
           const bPos = azDistToVec3(bAz, bDist, bElev);
@@ -36902,14 +36888,14 @@
           southShoreGroup.add(hRoof);
         }
 
-        // Poste côtier de vannes & collecteur terrestre Valero à la racine exacte du môle d'enrochement (Az 150.0°, Dist 326m)
-        const shoreStationPos = azDistToVec3(150.0, 326, 6.8);
+        // Poste côtier de vannes & collecteur terrestre Valero Levishipping à la racine exacte du môle d'enrochement (Az 137.8°, Dist 336m)
+        const shoreStationPos = azDistToVec3(137.8, 336, 6.8);
         const shorePumpHouse = new THREE.Mesh(
           new THREE.BoxGeometry(16, 6.2, 10.5),
           new THREE.MeshLambertMaterial({ color: 0x475569 })
         );
         shorePumpHouse.position.copy(shoreStationPos);
-        shorePumpHouse.rotation.y = (22 * Math.PI) / 180;
+        shorePumpHouse.rotation.y = (54 * Math.PI) / 180;
         southShoreGroup.add(shorePumpHouse);
 
         // --- RAFFINERIE JEAN-GAULIN VALERO À SON VRAI EMPLACEMENT WGS84 (PLATEAU SUD-EST DE SAINT-ROMUALD, AZ 136°–157°, 3,4 KM RÉEL DERRIÈRE LE QUAI!) ---
@@ -36917,6 +36903,26 @@
         const tankRoofMat = new THREE.MeshLambertMaterial({ color: 0x94a3b8 });
         const tankBermMat = new THREE.MeshLambertMaterial({ color: 0x334155 });
         const unitSteelMat = new THREE.MeshPhongMaterial({ color: 0x94a3b8, shininess: 65 });
+
+        // Les 2 réservoirs côtiers cylindriques blancs de Valero Levishipping visibles au pied de la falaise à la racine du môle (photo satellite)
+        [
+          { az: 140.4, dist: 346, r: 7.4, h: 10.6, groundY: 9.2 },
+          { az: 141.8, dist: 362, r: 7.4, h: 10.6, groundY: 14.2 }
+        ].forEach((ct) => {
+          const ctPos = azDistToVec3(ct.az, ct.dist, ct.groundY + ct.h / 2);
+          const ctBody = new THREE.Mesh(new THREE.CylinderGeometry(ct.r, ct.r, ct.h, 20), tankWhiteMat);
+          ctBody.position.copy(ctPos);
+          southShoreGroup.add(ctBody);
+
+          const ctRoof = new THREE.Mesh(new THREE.ConeGeometry(ct.r + 0.3, 2.2, 20), tankRoofMat);
+          ctRoof.position.set(ctPos.x, ctPos.y + ct.h / 2 + 1.1, ctPos.z);
+          southShoreGroup.add(ctRoof);
+
+          const ctBerm = new THREE.Mesh(new THREE.TorusGeometry(ct.r + 3.2, 0.9, 6, 18), tankBermMat);
+          ctBerm.rotation.x = Math.PI / 2;
+          ctBerm.position.set(ctPos.x, ct.groundY + 0.6, ctPos.z);
+          southShoreGroup.add(ctBerm);
+        });
 
         // Grand parc de 26 réservoirs cylindriques blancs à toit flottant/conique avec merlons de rétention sur le plateau SE (Az 136°–157°, Dist 485m–675m)
         for (let i = 0; i < 26; i++) {
@@ -37027,9 +37033,9 @@
           cityLightsList.push(lMesh);
         }
 
-        // --- PARCOURS DES ANSES (PISTE CYCLABLE & PROMENADE RIVERAINES LÉVIS/HADLOW, AZ 29°–148°) ---
+        // --- PARCOURS DES ANSES & PARC DE LA JETÉE-D'ULTRAMAR (PISTE CYCLABLE & PROMENADE RIVERAINES LÉVIS, AZ 29°–135.5°) ---
         const ansesWaypoints = [];
-        for (let az = 29; az <= 148; az += 3.5) {
+        for (let az = 29; az <= 135.5; az += 3.5) {
           ansesWaypoints.push(azDistToVec3(az, getSouthShoreDist(az) - 8.0, 4.95));
         }
         const ansesCurve = new THREE.CatmullRomCurve3(ansesWaypoints);
@@ -37068,9 +37074,9 @@
           }
         }
 
-        // --- CHEMIN DU FLEUVE / ROUTE 132 & RAMPE DES PONTS (SAINT-ROMUALD -> ETCHEMIN -> CHAUDIÈRE -> PONTS, AZ 153°–232.6°) ---
+        // --- RUE SAINT-LAURENT / CHEMIN DU FLEUVE / ROUTE 132 & RAMPE DES PONTS (VALERO -> SAINT-ROMUALD -> ETCHEMIN -> CHAUDIÈRE -> PONTS, AZ 140.8°–232.6°) ---
         const r132Waypoints = [];
-        for (let az = 153; az <= 232.5; az += 2.2) {
+        for (let az = 140.8; az <= 232.5; az += 2.2) {
           const dCoast = getSouthShoreDist(az);
           const isBridge = az >= 227.0;
           const roadY = isBridge ? (5.4 + ((az - 227.0) / (232.6 - 227.0)) * 41.8) : 5.4;
@@ -37204,16 +37210,16 @@
 
         // --- DÉTAILS GÉOGRAPHIQUES RIVE-SUD CALIBRÉS ---
 
-        // 1. Canalisations industrielles aériennes (Pipe-Racks) grimpant directement la falaise de Hadlow depuis le môle Valero (150.0°) jusqu'à la Raffinerie Jean-Gaulin (146.5°)
+        // 1. Canalisations industrielles aériennes (Pipe-Racks) grimpant la falaise depuis la racine du môle Valero Levishipping (137.8°) jusqu'à la Raffinerie Jean-Gaulin (145.2°)
         const pipeRackGroup = new THREE.Group();
         southShoreGroup.add(pipeRackGroup);
         const rackSteelMat = new THREE.MeshLambertMaterial({ color: 0x64748b });
         const crudePipeMat = new THREE.MeshLambertMaterial({ color: 0x334155 });
         const silverPipeMat = new THREE.MeshPhongMaterial({ color: 0x94a3b8, shininess: 70 });
 
-        const rackStart = azDistToVec3(150.0, 326, 6.8);
-        const rackCrest = azDistToVec3(148.5, 378, 39.5);
-        const rackEnd = azDistToVec3(146.2, 492, 41.5);
+        const rackStart = azDistToVec3(138.0, 336, 6.8);
+        const rackCrest = azDistToVec3(141.4, 384, 39.5);
+        const rackEnd = azDistToVec3(145.2, 492, 41.5);
         const rackMainCurve = new THREE.CatmullRomCurve3([rackStart, rackCrest, rackEnd]);
         const rackBents = 10;
         for (let b = 0; b <= rackBents; b++) {
@@ -39111,8 +39117,9 @@
         const batSignal3DGroup = new THREE.Group();
         scene.add(batSignal3DGroup);
 
-        // Position physique du projecteur sur la superstructure du quai Valero (Rive-Sud, Section 87)
-        const batProjectorOrigin = azDistToVec3(133, 110, 13.5);
+        // Position physique du projecteur sur le toit de la cabine centrale du quai partagé Postes 86/87 Valero
+        dockGroup.updateMatrixWorld(true);
+        const batProjectorOrigin = dockGroup.localToWorld(new THREE.Vector3(-6.8, 12.6, 0.0));
 
         // Emplacement de la projection dans la couverture nuageuse au-dessus de la Rive-Sud (Az 175° au-dessus de Saint-Romuald / Lévis, Alt ~21°, Dist 620m)
         const batTargetBase = azDistToVec3(175, 620, 260);
@@ -39683,16 +39690,16 @@
         scene.add(towLineStern);
 
         // Positions de repère maritime (Waypoints calibrés du Chenal des Grands Navires et du Goulet Québec–Lévis)
-        const TANKER_DOCKED_POS = tankerBasePos.clone(); // Section 87 Valero côté fleuve (76.44, 0, 60.52)
-        const TANKER_DOCKED_ROT = (202 * Math.PI) / 180; // Nez vers les Ponts de Québec (237° Az), Timonerie vers l'Île d'Orléans
-        const TANKER_CLEAR_POS = new THREE.Vector3(72.44, 0, 21.02); // Dégagement au large dans le fleuve (az ~106°, dist ~75m)
-        const TANKER_CLEAR_ROT = (200 * Math.PI) / 180;
+        const TANKER_DOCKED_POS = tankerBasePos.clone(); // Poste 87 Valero face Québec (-Z du quai partagé)
+        const TANKER_DOCKED_ROT = (234 * Math.PI) / 180; // Parallèle au quai 36°/216° (étrave vers les Ponts SO, château arrière vers Québec/Lévis NE)
+        const TANKER_CLEAR_POS = new THREE.Vector3(64.07, 0, 12.41); // Dégagement latéral NO dans le fleuve au large des ducs-d'Albe en T
+        const TANKER_CLEAR_ROT = (222 * Math.PI) / 180;
         const TANKER_TURN_POS = new THREE.Vector3(105.0, 0, -115.0); // Bassin d'évitage en eau profonde dans le Coude de Québec (az ~42°, dist ~156m)
-        const TANKER_TURN_ROT = (118 * Math.PI) / 180; // Pivotement vers le goulet aval
+        const TANKER_TURN_ROT = (128 * Math.PI) / 180; // Pivotement vers le goulet aval
         const TANKER_CHANNEL_POS = azDistToVec3(18.5, 920, 0); // Chenal maritime dans le Goulet Québec–Lévis vers l'Île d'Orléans
         const TANKER_CHANNEL_ROT = (71.5 * Math.PI) / 180; // Trajectoire aval (NNE ~18.5°) vers l'Île d'Orléans
         const TANKER_ARRIVE_CHAN_ROT = (251.5 * Math.PI) / 180; // Trajectoire amont depuis l'Île d'Orléans (nez vers le Coude / Ponts)
-        const TANKER_ARRIVE_TURN_ROT = (215 * Math.PI) / 180;
+        const TANKER_ARRIVE_TURN_ROT = (238 * Math.PI) / 180;
 
         // Base des remorqueurs Groupe Océan au Bassin Louise / Vieux-Port de Québec (Azimut réel WGS84 9.8°, dist 1090m — 4,3 km réel!)
         const bassinLouisePos = azDistToVec3(9.8, 1090, 0);
@@ -40742,13 +40749,15 @@
           return realKm.toFixed(1).replace(".", ",") + " km";
         }
 
-        const dock86WorldAnchor = dockGroup.localToWorld(new THREE.Vector3(108, 20, 2));
+        dockGroup.updateMatrixWorld(true);
+        const dock87WorldAnchor = dockGroup.localToWorld(new THREE.Vector3(4, 21, -8));
+        const dock86WorldAnchor = dockGroup.localToWorld(new THREE.Vector3(6, 20, 9));
         const arPoiList = [
           {
             id: "tanker",
             icon: "\uD83D\uDEA2",
             label: "Poste 87",
-            sub: "P\u00e9trolier Suezmax \u2022 Poste 87 (Valero)",
+            sub: "P\u00e9trolier Suezmax \u2022 Poste 87 (Face Qu\u00e9bec)",
             draft: "Profondeur ZC 15.5m",
             isVisible: () => Boolean(tankerGroup && tankerGroup.visible),
             getDynamicLabel: () => {
@@ -40758,18 +40767,18 @@
             },
             getDynamicSub: () => {
               const b87 = window.livePortVessels && window.livePortVessels.berth87;
-              if (!b87) return "P\u00e9trolier \u2022 Poste 87 (Valero)";
+              if (!b87) return "P\u00e9trolier \u2022 Poste 87 (Face Qu\u00e9bec)";
               const loa = b87.loa || 274;
               const typ = b87.typeLabel || "P\u00e9trolier";
               const flg = b87.flagName || b87.flag || "CA";
-              return `${typ} (${loa}m \u2022 ${flg}) \u2022 Poste 87`;
+              return `${typ} (${loa}m \u2022 ${flg}) \u2022 Poste 87 (Vers Qu\u00e9bec)`;
             },
             getDynamicDraft: () => {
               const b87 = window.livePortVessels && window.livePortVessels.berth87;
               if (b87 && b87.arrival) {
                 return `Arr.: ${b87.arrival}${b87.etd ? " \u2022 ETD: " + b87.etd : ""}`;
               }
-              return "Tirant ZC ~14.2m / Franc-bord 8.5m";
+              return "Tirant ZC ~14.2m \u2022 Face Qu\u00e9bec du quai";
             },
             getPos: () => new THREE.Vector3(tankerGroup.position.x, tankerGroup.position.y + 26, tankerGroup.position.z),
             getRealDist: () => computeDynamicRealDistStr(tankerGroup.position),
@@ -40787,7 +40796,7 @@
             id: "vessel86",
             icon: "\uD83D\uDEE2\uFE0F",
             label: "Poste 86",
-            sub: "P\u00e9trolier / Chimiquier \u2022 Poste 86 (Valero)",
+            sub: "P\u00e9trolier / Chimiquier \u2022 Poste 86 (Face L\u00e9vis du m\u00eame quai)",
             draft: "Profondeur ZC 12.2m",
             isVisible: () => Boolean(vessel86Group && vessel86Group.visible),
             getDynamicLabel: () => {
@@ -40797,18 +40806,18 @@
             },
             getDynamicSub: () => {
               const b86 = window.livePortVessels && window.livePortVessels.berth86;
-              if (!b86) return "P\u00e9trolier / Chimiquier \u2022 Poste 86";
+              if (!b86) return "P\u00e9trolier / Chimiquier \u2022 Poste 86 (Face L\u00e9vis)";
               const loa = b86.loa || 183;
               const typ = b86.typeLabel || "P\u00e9trolier-Chimiquier";
               const flg = b86.flagName || b86.flag || "CA";
-              return `${typ} (${loa}m \u2022 ${flg}) \u2022 Poste 86`;
+              return `${typ} (${loa}m \u2022 ${flg}) \u2022 Poste 86 (Vers L\u00e9vis)`;
             },
             getDynamicDraft: () => {
               const b86 = window.livePortVessels && window.livePortVessels.berth86;
               if (b86 && b86.arrival) {
                 return `Arr.: ${b86.arrival}${b86.etd ? " \u2022 ETD: " + b86.etd : ""}`;
               }
-              return "Tirant ZC ~11.8m \u2022 Aile Est du quai en T";
+              return "Tirant ZC ~11.8m \u2022 Face L\u00e9vis du m\u00eame quai";
             },
             getPos: () => new THREE.Vector3(vessel86Group.position.x, vessel86Group.position.y + 22, vessel86Group.position.z),
             getRealDist: () => computeDynamicRealDistStr(vessel86Group.position),
@@ -40857,10 +40866,10 @@
             id: "dock87",
             icon: "\u2693",
             label: "Poste 87 (Valero)",
-            sub: "T\u00eate Ouest du Quai en T \u2022 Grand Quai Suezmax & Brut",
+            sub: "Face Nord-Ouest vers Qu\u00e9bec \u2022 Grand Quai Suezmax & Brut",
             draft: "Profondeur ZC 15.5m \u2022 4 Bras Chiksan 16\"",
-            getPos: () => new THREE.Vector3(dockGroup.position.x, 22, dockGroup.position.z),
-            getRealDist: () => "110 m",
+            getPos: () => dock87WorldAnchor.clone(),
+            getRealDist: () => computeDynamicRealDistStr(dock87WorldAnchor),
             getStatus: () => {
               const b87 = window.livePortVessels && window.livePortVessels.berth87;
               const occ = Boolean((b87 && b87.occupied) || window.forceShowBerth87Ship);
@@ -40874,13 +40883,14 @@
             id: "dock86",
             icon: "\u2693",
             label: "Poste 86 (Valero)",
-            sub: "Aile Est du Quai en T \u2022 Produits Raffin\u00e9s & Chimiquiers",
+            sub: "Face Sud-Est vers L\u00e9vis du m\u00eame quai \u2022 Produits Raffin\u00e9s",
             draft: "Profondeur ZC 12.2m \u2022 3 Bras Chiksan Inox",
             getPos: () => dock86WorldAnchor.clone(),
             getRealDist: () => computeDynamicRealDistStr(dock86WorldAnchor),
             getStatus: () => {
               const b86 = window.livePortVessels && window.livePortVessels.berth86;
-              if (b86 && b86.occupied) return `\u00C0 quai : ${b86.name} \u2022 Bras connect\u00e9s`;
+              const occ86 = Boolean((b86 && b86.occupied) || window.forceShowBerth86Ship);
+              if (occ86) return `\u00C0 quai : ${(b86 && b86.name) || "Navire actif"} \u2022 Bras connect\u00e9s`;
               if (b86 && b86.expected && b86.expected.name) return `Poste libre \u2022 Attendu : ${b86.expected.name}`;
               return "Poste 86 libre \u2022 Bras Chiksan relev\u00e9s";
             },
@@ -40889,7 +40899,7 @@
             id: "batman_valero",
             icon: "🦇",
             label: "Batman (Quai Valero)",
-            sub: "Chevalier Noir en patrouille sur les Postes 86 & 87 et passerelles du quai en T",
+            sub: "Chevalier Noir en patrouille sur les Postes 86/87 (m\u00eame quai) & ducs-d'Albe en T",
             draft: "1.88m / Wayne Enterprises",
             getPos: () => {
               if (window.batmanGroup) {
@@ -40900,7 +40910,7 @@
               }
               return new THREE.Vector3(dockGroup.position.x, 9.5, dockGroup.position.z);
             },
-            getRealDist: () => "110 m",
+            getRealDist: () => "118 m",
             getStatus: () => (window.batmanGroup && window.batmanGroup.visible ? (window.batmanActionStatus || "Patrouille nocturne active") : "En veille"),
             isVisible: () => !!(window.batmanGroup && window.batmanGroup.visible),
           },
@@ -41085,7 +41095,7 @@
           if (poi) {
             focusCameraOnPoi(poi);
           } else {
-            window.focusCameraOnAzimuth(is86 ? 98 : 130, -6);
+            window.focusCameraOnAzimuth(is86 ? 131 : 136, -6);
           }
         };
 
@@ -41556,8 +41566,8 @@
           wmmCtx.lineTo(131, 45); // Pointe-Lévy
           wmmCtx.lineTo(128, 50); // Quai Paquet Lévis (rive Est du Goulet)
           wmmCtx.lineTo(124, 68); // Falaises de Lévis / Parcours des Anses
-          wmmCtx.lineTo(118, 86); // Anse Hadlow
-          wmmCtx.lineTo(110, 101); // Enracinement du Môle Valero (Az 150°)
+          wmmCtx.lineTo(118, 86); // Parc de la Jetée-d'Ultramar / Hadlow
+          wmmCtx.lineTo(111.5, 100.5); // Enracinement du Môle Valero Levishipping (Az 137.8°)
           wmmCtx.lineTo(98, 103);
           wmmCtx.lineTo(95, 108); // Embouchure Rivière Etchemin
           wmmCtx.lineTo(91, 104);
@@ -41624,33 +41634,52 @@
           wmmCtx.lineTo(144, 18);
           wmmCtx.stroke();
 
-          // Jetée en T réelle Valero (Môle d'enrochement Az 150° + Postes 87 Ouest & 86 Est + Navires temps réel)
-          wmmCtx.strokeStyle = "rgba(203, 213, 225, 0.92)";
-          wmmCtx.lineWidth = 1.6;
+          // Quai Ultramar/Valero réel : Môle + Ducs-d'Albe en T (ONO) + Quai unique NE à double face (87 vers Québec NO / 86 vers Lévis SE)
+          wmmCtx.strokeStyle = "rgba(203, 213, 225, 0.94)";
+          wmmCtx.lineWidth = 1.5;
           wmmCtx.beginPath();
-          wmmCtx.moveTo(110, 101);
-          wmmCtx.lineTo(106.5, 94.5);
-          wmmCtx.moveTo(102.0, 96.8);
-          wmmCtx.lineTo(111.8, 91.2);
+          // Môle terrestre + barre transversale en T jusqu'au caisson fluvial #6
+          wmmCtx.moveTo(111.5, 100.5);
+          wmmCtx.lineTo(101.8, 95.0);
+          // Quai principal unique partagé (Postes 87 & 86) remontant vers le Nord-Est (36°)
+          wmmCtx.moveTo(104.2, 96.3);
+          wmmCtx.lineTo(109.6, 89.2);
           wmmCtx.stroke();
+
+          // Les 6 caissons cylindriques blancs (ducs-d'Albe circulaires) du T et du quai
+          wmmCtx.fillStyle = "#f8fafc";
+          [
+            [101.8, 95.0],
+            [103.0, 95.6],
+            [104.2, 96.3],
+            [105.5, 94.6],
+            [107.9, 91.4],
+            [109.6, 89.2]
+          ].forEach(([cx, cy]) => {
+            wmmCtx.beginPath();
+            wmmCtx.arc(cx, cy, 0.9, 0, Math.PI * 2);
+            wmmCtx.fill();
+          });
 
           const livePV = window.livePortVessels;
           const b87OccMini = Boolean((livePV && livePV.berth87 && livePV.berth87.occupied) || window.forceShowBerth87Ship);
-          const b86OccMini = Boolean(livePV && livePV.berth86 && livePV.berth86.occupied);
+          const b86OccMini = Boolean((livePV && livePV.berth86 && livePV.berth86.occupied) || window.forceShowBerth86Ship);
           if (b87OccMini) {
+            // Poste 87 : Face Nord-Ouest (vers Québec) du quai partagé
             wmmCtx.save();
-            wmmCtx.translate(103.6, 94.6);
-            wmmCtx.rotate(-0.50);
+            wmmCtx.translate(105.6, 91.8);
+            wmmCtx.rotate(-0.92);
             wmmCtx.fillStyle = "#ef4444";
-            wmmCtx.fillRect(-3.6, -1.1, 7.2, 2.2);
+            wmmCtx.fillRect(-3.8, -1.05, 7.6, 2.1);
             wmmCtx.restore();
           }
           if (b86OccMini) {
+            // Poste 86 : Face Sud-Est opposée (vers Lévis) du MÊME quai!
             wmmCtx.save();
-            wmmCtx.translate(109.8, 91.1);
-            wmmCtx.rotate(-0.50);
+            wmmCtx.translate(108.1, 93.7);
+            wmmCtx.rotate(-0.92);
             wmmCtx.fillStyle = "#38bdf8";
-            wmmCtx.fillRect(-2.8, -0.95, 5.6, 1.9);
+            wmmCtx.fillRect(-3.0, -0.95, 6.0, 1.9);
             wmmCtx.restore();
           }
           wmmCtx.restore();
