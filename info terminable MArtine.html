@@ -842,7 +842,7 @@
       .viewport-QuickActions {
         pointer-events: auto;
         display: grid;
-        grid-template-columns: repeat(6, minmax(0, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
         gap: 3px;
         width: 100%;
       }
@@ -1721,10 +1721,11 @@
       }
       .inspect-3d-popup {
         position: absolute;
-        top: 2.85rem;
-        right: 0.65rem;
-        width: 252px;
-        background: rgba(7, 18, 36, 0.90);
+        top: calc(var(--hud-dock-h, 58px) + 10px);
+        left: 8px;
+        right: auto;
+        width: 248px;
+        background: rgba(7, 18, 36, 0.92);
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
         border: 1px solid rgba(56, 189, 248, 0.55);
@@ -1735,6 +1736,14 @@
         box-shadow: 0 10px 28px rgba(0, 0, 0, 0.6);
         display: none;
         pointer-events: auto;
+      }
+      #weather-minimap-hud.wmm-dock-left:not(.collapsed-minimap):not(.hidden-minimap) ~ .inspect-3d-popup {
+        left: auto;
+        right: 8px;
+      }
+      #weather-minimap-hud.wmm-xl:not(.collapsed-minimap):not(.hidden-minimap) ~ .inspect-3d-popup {
+        top: auto;
+        bottom: 68px;
       }
       .inspect-3d-popup.visible {
         display: block;
@@ -2527,62 +2536,87 @@
         }
       }
 
-      /* --- MINIMAP METEO & RADAR DOPPLER 3D (SUIT LE TEMPS SIMULE) --- */
+      /* --- MINIMAP TACTIQUE ECDIS, TRAFIC 3D TEMPS REEL & RADAR DOPPLER --- */
       .weather-minimap-hud {
         position: absolute;
         top: 58px;
-        left: 6px;
-        width: 212px;
+        right: 8px;
+        left: auto;
+        width: min(268px, calc(100% - 16px));
         z-index: 26;
-        background: rgba(7, 14, 26, 0.88);
+        background: rgba(6, 14, 26, 0.90);
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(56, 189, 248, 0.38);
-        border-radius: 7px;
-        box-shadow: 0 8px 26px rgba(0, 0, 0, 0.65);
+        border: 1px solid rgba(56, 189, 248, 0.44);
+        border-radius: 8px;
+        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.68), inset 0 1px 0 rgba(255, 255, 255, 0.07);
         color: #f8fafc;
         overflow: hidden;
-        transition: opacity 0.2s ease, transform 0.2s ease;
+        transition: width 0.22s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
         user-select: none;
+      }
+      #animation-window .weather-minimap-hud.wmm-dock-right {
+        left: auto !important;
+        right: 8px !important;
+      }
+      #animation-window .weather-minimap-hud.wmm-dock-left {
+        right: auto !important;
+        left: 8px !important;
+      }
+      .weather-minimap-hud.wmm-xl:not(.collapsed-minimap) {
+        width: min(346px, calc(100% - 16px));
       }
       .weather-minimap-hud.hidden-minimap {
         display: none !important;
       }
       .weather-minimap-hud.collapsed-minimap {
         width: auto;
-        max-width: 212px;
+        max-width: none !important;
+        cursor: pointer;
       }
-      .weather-minimap-hud.collapsed-minimap .wmm-body {
+      .weather-minimap-hud.collapsed-minimap .wmm-body,
+      .weather-minimap-hud.collapsed-minimap .wmm-hdr-tool {
         display: none !important;
+      }
+      .weather-minimap-hud.collapsed-minimap .wmm-header {
+        border-bottom: none;
       }
       .wmm-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 0.22rem;
-        padding: 0.22rem 0.38rem;
-        background: linear-gradient(90deg, rgba(15, 23, 42, 0.95), rgba(12, 74, 110, 0.65));
-        border-bottom: 1px solid rgba(56, 189, 248, 0.25);
+        gap: 0.18rem;
+        padding: 0.22rem 0.32rem;
+        background: linear-gradient(90deg, rgba(15, 23, 42, 0.96), rgba(12, 74, 110, 0.72));
+        border-bottom: 1px solid rgba(56, 189, 248, 0.28);
       }
       .wmm-title {
-        font-size: 0.59rem;
+        font-size: 0.55rem;
         font-weight: 800;
-        letter-spacing: 0.02em;
+        letter-spacing: 0.01em;
         color: #e0f2fe;
         display: flex;
         align-items: center;
-        gap: 0.22rem;
+        gap: 0.18rem;
         white-space: nowrap;
+        min-width: 0;
+        flex: 1 1 auto;
+        overflow: hidden;
+      }
+      .wmm-title > span:first-child {
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
       .wmm-time-pill {
         font-family: "JetBrains Mono", monospace;
-        font-size: 0.54rem;
+        font-size: 0.49rem;
         font-weight: 800;
-        padding: 0.05rem 0.26rem;
+        padding: 0.03rem 0.2rem;
         border-radius: 3px;
         background: rgba(16, 185, 129, 0.2);
         color: #34d399;
         border: 1px solid rgba(16, 185, 129, 0.45);
+        flex-shrink: 0;
       }
       .wmm-time-pill.projected {
         background: rgba(245, 158, 11, 0.25);
@@ -2592,14 +2626,42 @@
       .wmm-canvas-wrap {
         position: relative;
         width: 100%;
-        height: 118px;
+        height: 124px;
         background: #040d1a;
         cursor: crosshair;
+        touch-action: none;
+        transition: height 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+      }
+      .weather-minimap-hud.wmm-xl:not(.collapsed-minimap) .wmm-canvas-wrap {
+        height: 186px;
       }
       #weather-minimap-canvas {
         display: block;
         width: 100%;
         height: 100%;
+      }
+      .wmm-hover-pill {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        max-width: 62%;
+        padding: 0.08rem 0.3rem;
+        border-radius: 4px;
+        background: rgba(3, 10, 22, 0.90);
+        border: 1px solid rgba(56, 189, 248, 0.65);
+        color: #f8fafc;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.51rem;
+        font-weight: 800;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        pointer-events: none;
+        display: none;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.65);
+      }
+      .wmm-hover-pill.visible {
+        display: block;
       }
       .wmm-radar-legend {
         position: absolute;
@@ -2609,18 +2671,20 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        font-size: 0.52rem;
-        color: #cbd5e1;
+        gap: 4px;
+        font-size: 0.5rem;
+        color: #e2e8f0;
         pointer-events: none;
-        text-shadow: 0 1px 2px #000;
+        text-shadow: 0 1px 3px #000, 0 0 4px rgba(0, 0, 0, 0.9);
       }
       .wmm-dbz-bar {
         display: inline-flex;
         align-items: center;
         gap: 2px;
+        flex-shrink: 0;
       }
       .wmm-dbz-swatch {
-        width: 28px;
+        width: 26px;
         height: 4px;
         border-radius: 2px;
         background: linear-gradient(90deg, #22c55e, #eab308, #f97316, #ef4444, #38bdf8);
@@ -2629,33 +2693,37 @@
         display: grid;
         grid-template-columns: repeat(4, 1fr);
         gap: 2px;
-        padding: 0.22rem 0.35rem;
-        background: rgba(15, 23, 42, 0.92);
+        padding: 0.2rem 0.32rem;
+        background: rgba(15, 23, 42, 0.94);
         border-top: 1px solid rgba(148, 163, 184, 0.16);
         font-family: "JetBrains Mono", monospace;
-        font-size: 0.56rem;
+        font-size: 0.54rem;
         text-align: center;
       }
       .wmm-tel-cell {
         display: flex;
         flex-direction: column;
         line-height: 1.15;
+        min-width: 0;
       }
       .wmm-tel-k {
-        font-size: 0.48rem;
+        font-size: 0.46rem;
         color: #64748b;
         text-transform: uppercase;
       }
       .wmm-tel-v {
         font-weight: 800;
         color: #f1f5f9;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
       .wmm-controls-bar {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 0.2rem;
-        padding: 0.24rem 0.38rem;
+        gap: 0.18rem;
+        padding: 0.2rem 0.34rem;
         background: rgba(2, 6, 23, 0.95);
         border-top: 1px solid rgba(56, 189, 248, 0.2);
       }
@@ -2670,6 +2738,95 @@
         width: 20%;
         background: linear-gradient(90deg, #38bdf8, #f59e0b);
         transition: width 0.08s linear;
+      }
+      /* Info-bulle flottante instantanée au survol 3D des navires, quais et repères */
+      .hover-3d-chip {
+        position: absolute;
+        left: 0;
+        top: 0;
+        z-index: 24;
+        pointer-events: none;
+        opacity: 0;
+        transform: translate3d(-9999px, -9999px, 0);
+        transition: opacity 0.12s ease;
+        background: rgba(4, 13, 26, 0.90);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid rgba(56, 189, 248, 0.62);
+        border-radius: 6px;
+        padding: 0.18rem 0.42rem;
+        color: #f8fafc;
+        font-size: 0.58rem;
+        font-weight: 800;
+        white-space: nowrap;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.62);
+      }
+      .hover-3d-chip.visible {
+        opacity: 1;
+      }
+      /* Adaptation thématique du cadre de la Minimap selon l'Univers actif */
+      body[data-universe="batman"] .weather-minimap-hud {
+        background: rgba(9, 11, 16, 0.94);
+        border-color: rgba(250, 204, 21, 0.55);
+        border-radius: 3px;
+      }
+      body[data-universe="batman"] .wmm-header {
+        background: linear-gradient(90deg, #12151e, #1f1a0d);
+        border-bottom-color: rgba(250, 204, 21, 0.35);
+      }
+      body[data-universe="batman"] .wmm-title { color: #fde047; }
+      body[data-universe="starwars"] .weather-minimap-hud {
+        background: rgba(4, 12, 24, 0.92);
+        border-color: rgba(0, 229, 255, 0.58);
+      }
+      body[data-universe="starwars"] .wmm-header {
+        background: linear-gradient(90deg, rgba(6, 22, 42, 0.96), rgba(0, 96, 128, 0.55));
+        border-bottom-color: rgba(0, 229, 255, 0.38);
+      }
+      body[data-universe="pipboy"] .weather-minimap-hud {
+        background: rgba(3, 14, 6, 0.95);
+        border: 1.5px solid rgba(34, 255, 102, 0.65);
+        border-radius: 2px;
+      }
+      body[data-universe="pipboy"] .wmm-header,
+      body[data-universe="pipboy"] .wmm-telemetry-strip,
+      body[data-universe="pipboy"] .wmm-controls-bar {
+        background: rgba(4, 18, 8, 0.96);
+        border-color: rgba(34, 255, 102, 0.35);
+      }
+      body[data-universe="pipboy"] .wmm-title,
+      body[data-universe="pipboy"] .wmm-tel-v { color: #35ff74; }
+      body[data-universe="admiralty"] .weather-minimap-hud {
+        background: rgba(250, 243, 227, 0.96);
+        border: 2px double rgba(150, 104, 34, 0.78);
+        border-radius: 3px;
+        color: #1c1610;
+        box-shadow: 0 8px 22px rgba(42, 26, 10, 0.32);
+      }
+      body[data-universe="admiralty"] .wmm-header {
+        background: linear-gradient(90deg, #2d180e, #4a2a16);
+        border-bottom: 1.5px solid #d49b35;
+      }
+      body[data-universe="admiralty"] .wmm-title { color: #f7ebd2; }
+      body[data-universe="admiralty"] .wmm-telemetry-strip,
+      body[data-universe="admiralty"] .wmm-controls-bar {
+        background: #f3e8cf;
+        border-color: rgba(138, 96, 32, 0.32);
+      }
+      body[data-universe="admiralty"] .wmm-tel-k { color: #6b5335; }
+      body[data-universe="admiralty"] .wmm-tel-v { color: #1c1610; }
+      body[data-universe="admiralty"] .wmm-radar-legend {
+        color: #1c1610;
+        text-shadow: 0 1px 2px rgba(255, 252, 242, 0.95);
+      }
+      body[data-universe="pitwall"] .weather-minimap-hud {
+        background: rgba(14, 17, 23, 0.94);
+        border-color: rgba(255, 85, 0, 0.55);
+        border-radius: 10px;
+      }
+      body[data-universe="pitwall"] .wmm-header {
+        background: linear-gradient(90deg, #151922, #291610);
+        border-bottom-color: rgba(255, 85, 0, 0.38);
       }
       /* Bouton tiroir d'outils mobile S24 (masque sur desktop) */
       .s24-tools-drawer-btn {
@@ -3046,7 +3203,8 @@
         max-width: none !important;
         cursor: pointer;
       }
-      .weather-minimap-hud.collapsed-minimap #minimap-layer-btn {
+      .weather-minimap-hud.collapsed-minimap #minimap-layer-btn,
+      .weather-minimap-hud.collapsed-minimap .wmm-hdr-tool {
         display: none !important;
       }
       .weather-minimap-hud.collapsed-minimap .wmm-header {
@@ -3555,7 +3713,7 @@
       }
       /* Inversion tactique des panneaux HUD dans l'aperçu 3D Batman */
       @media (min-width: 901px) {
-        body[data-universe="batman"] #animation-window .weather-minimap-hud {
+        body[data-universe="batman"] #animation-window .weather-minimap-hud:not(.wmm-dock-left) {
           left: auto !important;
           right: 10px !important;
         }
@@ -4727,11 +4885,17 @@
                 <button type="button" class="hud-pill-btn active-cam" id="hud-cam-quai" data-cam-preset="quai" title="Vue depuis le quai vers le fleuve et le p&eacute;trolier">
                   &#x1F30A; Quai
                 </button>
+                <button type="button" class="hud-pill-btn" id="hud-cam-pier" data-cam-preset="pier" title="Vue immersive sur le quai en T Valero (Postes 86 &amp; 87, bras Chiksan et caissons)">
+                  &#x1F3D7;&#xFE0F; Sur Quai
+                </button>
                 <button type="button" class="hud-pill-btn" id="hud-cam-bridge" data-cam-preset="bridge" title="Vue immersive depuis la passerelle de navigation du Cap Qu&eacute;bec">
                   &#x1F9ED; Passerelle
                 </button>
                 <button type="button" class="hud-pill-btn" id="hud-cam-tug" data-cam-preset="tug" title="Vue embarqu&eacute;e depuis la timonerie du remorqueur Oc&eacute;an Taiga">
                   &#x1F6A4; Vue Tug
+                </button>
+                <button type="button" class="hud-pill-btn" id="hud-cam-batman" data-cam-preset="batman" title="Cam&eacute;ra dynamique suivant la patrouille de Batman sur le quai en T">
+                  &#x1F987; Cam Batman
                 </button>
                 <button type="button" class="hud-pill-btn" id="hud-cam-drone" data-cam-preset="drone" title="Vue a&eacute;rienne par drone au-dessus du Saint-Laurent">
                   &#x1F681; Drone
@@ -4745,7 +4909,7 @@
                 <button type="button" class="hud-pill-btn" id="hud-gyro-btn" title="Mode Gyroscope 360&deg; : bougez l'appareil pour explorer le fleuve">
                   &#x1F9ED; Gyro
                 </button>
-                <button type="button" class="hud-pill-btn" id="hud-toggle-labels" title="Afficher/Masquer les rep&egrave;res flottants AR 3D">
+                <button type="button" class="hud-pill-btn" id="hud-toggle-labels" title="Afficher/Masquer les rep&egrave;res flottants AR 3D (Clic direct sur les navires toujours actif)">
                   &#x1F3F7;&#xFE0F; Rep&egrave;res AR
                 </button>
                 <button type="button" class="hud-pill-btn" id="hud-toggle-temp-sim" title="Panneau de simulation de temp&eacute;rature (Air, Eau Saint-Laurent, Glaces, Brut)">
@@ -4757,11 +4921,11 @@
                 <button type="button" class="hud-pill-btn" id="hud-toggle-batsignal" title="Activer / Désactiver le Bat-Signal (Automatique de 17h00 à 05h30 chaque nuit au-dessus du Saint-Laurent)">
                   🦇 Bat-Signal : AUTO
                 </button>
-                <button type="button" class="hud-pill-btn" id="hud-toggle-minimap" title="Afficher/Masquer la Minimap M&eacute;t&eacute;o &amp; Radar qui suit le temps simul&eacute;">
-                  &#x1F326;&#xFE0F; Radar 3D
+                <button type="button" class="hud-pill-btn" id="hud-toggle-minimap" title="Afficher/Masquer la Carte Tactique AIS &amp; Radar Doppler 3D synchronis&eacute;e en direct">
+                  &#x1F4E1; Carte &amp; Radar 3D
                 </button>
-                <button type="button" class="hud-pill-btn" id="hud-toggle-quality" title="Qualité &amp; Résolution 3D — Activer le Mode Éco (0.75x) pour les ordinateurs lents / Normal (1.0x)">
-                  ⚡ &Eacute;co: OFF
+                <button type="button" class="hud-pill-btn" id="hud-toggle-quality" title="Qualit&eacute; &amp; R&eacute;solution 3D — Basculer HD (1.65x) &rarr; Ultra (2.0x + Ombres 2K) &rarr; &Eacute;co (0.75x)">
+                  &#x1F5A5;&#xFE0F; Qualit&eacute;: HD
                 </button>
                 <button type="button" class="hud-pill-btn" id="hud-reset-cam" title="Recentrer sur le p&eacute;trolier au Quai Sec. 87">
                   &#x1F3AF; Centrer
@@ -4926,7 +5090,7 @@
                     <div class="ts-slider-hdr">
                       <span>&#x2601;&#xFE0F;&#x1F9ED; Vent Ciel / Nuages (Alt. 850 hPa) :</span>
                       <div style="display: inline-flex; align-items: center; gap: 0.2rem;">
-                        <span id="temp-sim-cloudwind-lbl" class="ts-val-pill" style="color: #c084fc;">16 nds ONO (&Delta;+30&deg;)</span>
+                        <span id="temp-sim-cloudwind-lbl" class="ts-val-pill" style="color: #fbbf24;">16 nds ONO (&Delta;+30&deg;)</span>
                       </div>
                     </div>
                     <div class="ts-slider-ctrls">
@@ -5007,7 +5171,7 @@
                   </div>
                   <div class="ts-matrix-item">
                     <span class="ts-matrix-k">&#x1F9ED; Cisaillement Sol / Ciel :</span>
-                    <span id="ts-matrix-shear" class="ts-matrix-v" style="color: #c084fc;">Sol OSO 10 nds &bull; Ciel ONO 16 nds</span>
+                    <span id="ts-matrix-shear" class="ts-matrix-v" style="color: #fbbf24;">Sol OSO 10 nds &bull; Ciel ONO 16 nds</span>
                   </div>
                   <div class="ts-matrix-item">
                     <span class="ts-matrix-k">&#x1F9CA; Glaces &amp; Givrage Embruns :</span>
@@ -5047,26 +5211,32 @@
               </div>
             </div>
 
-            <!-- MINIMAP METEO & RADAR DOPPLER 3D (SYNCHRONISEE AVEC LE TEMPS SIMULE) -->
-            <div id="weather-minimap-hud" class="weather-minimap-hud collapsed-minimap">
+            <!-- MINIMAP TACTIQUE AIS, ECDIS & RADAR DOPPLER 3D (SYNCHRONISEE EN DIRECT AVEC LE MONDE 3D) -->
+            <div id="weather-minimap-hud" class="weather-minimap-hud wmm-dock-right">
               <div class="wmm-header">
                 <div class="wmm-title">
-                  <span>&#x1F4E1; Radar M&eacute;t&eacute;o 3D</span>
+                  <span>&#x1F4E1; Radar 3D</span>
                   <span id="minimap-time-lbl" class="wmm-time-pill">LIVE</span>
                 </div>
-                <div style="display: flex; align-items: center; gap: 0.18rem;">
-                  <button type="button" id="minimap-layer-btn" class="tl-ctrl-btn" style="padding: 0.05rem 0.26rem; font-size: 0.55rem;" title="Changer de couche m&eacute;t&eacute;o (Radar Pr&eacute;cip. / Rafales / Temp&eacute;rature)">
-                    &#x1F327;&#xFE0F; Radar+Vent
+                <div style="display: flex; align-items: center; gap: 0.13rem; flex-shrink: 0;">
+                  <button type="button" id="minimap-zoom-btn" class="tl-ctrl-btn wmm-hdr-tool" style="padding: 0.04rem 0.19rem; font-size: 0.5rem;" title="Basculer Zoom Port (Quais 86/87 &amp; Remorqueurs) / Vue R&eacute;gionale 18 km (Molette support&eacute;e)">
+                    &#x2693; Port
                   </button>
-                  <button type="button" id="minimap-collapse-btn" class="tl-ctrl-btn" style="padding: 0.05rem 0.24rem; font-size: 0.56rem;" title="R&eacute;duire / Agrandir la minimap">+</button>
+                  <button type="button" id="minimap-layer-btn" class="tl-ctrl-btn wmm-hdr-tool" style="padding: 0.04rem 0.19rem; font-size: 0.5rem;" title="Changer de couche (Tactique AIS+Radar / Doppler+Vent / Rafales / Thermique)">
+                    &#x2693; Tactique
+                  </button>
+                  <button type="button" id="minimap-size-btn" class="tl-ctrl-btn wmm-hdr-tool" style="padding: 0.04rem 0.18rem; font-size: 0.52rem;" title="Agrandir / R&eacute;duire le format de la carte radar (Compact &harr; XL)">&#x2922;</button>
+                  <button type="button" id="minimap-corner-btn" class="tl-ctrl-btn wmm-hdr-tool" style="padding: 0.04rem 0.18rem; font-size: 0.52rem;" title="Ancrer la carte &agrave; gauche ou &agrave; droite de l'aper&ccedil;u 3D">&#x21C4;</button>
+                  <button type="button" id="minimap-collapse-btn" class="tl-ctrl-btn" style="padding: 0.04rem 0.2rem; font-size: 0.54rem;" title="R&eacute;duire / Agrandir la minimap">&#x2013;</button>
                 </div>
               </div>
               <div class="wmm-body">
-                <div class="wmm-canvas-wrap" title="Cliquer pour orienter la cam&eacute;ra 3D vers ce secteur du fleuve">
-                  <canvas id="weather-minimap-canvas" width="244" height="142"></canvas>
+                <div class="wmm-canvas-wrap" title="Cliquer-glisser pour orienter la cam&eacute;ra 3D &bull; Cliquer un navire pour l'inspecter &bull; Molette pour zoomer">
+                  <canvas id="weather-minimap-canvas" width="244" height="148"></canvas>
+                  <div id="wmm-hover-pill" class="wmm-hover-pill" aria-hidden="true"></div>
                   <div class="wmm-radar-legend">
-                    <span id="wmm-layer-desc">Flux NNE &bull; Doppler dBZ</span>
-                    <span class="wmm-dbz-bar"><span>Pluie/Neige</span><span class="wmm-dbz-swatch"></span></span>
+                    <span id="wmm-layer-desc">AIS 3D + S-Band &bull; 18 km</span>
+                    <span class="wmm-dbz-bar"><span>dBZ</span><span class="wmm-dbz-swatch"></span></span>
                   </div>
                 </div>
                 <div class="wmm-progress-track">
@@ -5106,6 +5276,7 @@
 
             <!-- CALQUE DES REPERES AR 3D FLOTTANTS & CARTE D'INSPECTION TELEMETRIQUE -->
             <div id="ar-labels-layer" class="ar-labels-layer" style="display: none;"></div>
+            <div id="hover-3d-chip" class="hover-3d-chip" aria-hidden="true"></div>
             <div id="inspect-3d-popup" class="inspect-3d-popup">
               <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.4rem;">
                 <div id="inspect-3d-title" style="font-size: 0.74rem; font-weight: 900; color: #f8fafc;">&#x1F6A2; Cap Qu&eacute;bec</div>
@@ -28668,7 +28839,7 @@
           const cloudKts = Math.round(cloudWindKmh / 1.852);
           const surfKts = Math.round(surfWindKmh / 1.852);
           const shearBadge = Math.abs(windShearDeg) >= 10
-            ? ` • <span style="color:#c084fc;">Sol ${surfCard} ${surfKts}kt ≠ Ciel ${upwindCard} ${cloudKts}kt</span>`
+            ? ` • <span style="color:#fbbf24;">Sol ${surfCard} ${surfKts}kt ≠ Ciel ${upwindCard} ${cloudKts}kt</span>`
             : ` • <span style="opacity:0.78;">Vent ${surfCard} ${surfKts}kt</span>`;
 
           const snowGroundInfo = snowCmGround > 0 ? ` | Neige au sol: ${snowCmGround} cm` : "";
@@ -34845,11 +35016,12 @@
           powerPreference: "high-performance",
         });
 
-        let isEcoMode = false;
+        let qualityTier3D = "hd"; // "hd" (1.65x) | "ultra" (2.0x + ombres 2048) | "eco" (0.75x)
         function getTargetPixelRatio() {
           const dpr = window.devicePixelRatio || 1;
-          if (isEcoMode) return Math.min(dpr * 0.75, 0.75);
-          return Math.min(dpr, 1.0); // Plafonne la résolution à 1.0x pour préserver la fluidité sur PC de moindre qualité
+          if (qualityTier3D === "eco") return Math.min(dpr * 0.75, 0.75);
+          if (qualityTier3D === "ultra") return Math.min(dpr, 2.0);
+          return Math.min(dpr, 1.65);
         }
         renderer.setPixelRatio(getTargetPixelRatio());
         renderer.setSize(getAnimW(), getAnimH());
@@ -34903,7 +35075,7 @@
 
         const envCubeMaps = {
           day: createEnvCubeTexture("#1d4ed8", "#bae6fd", "#06283d", "#fef08a"),
-          golden: createEnvCubeTexture("#1e1b4b", "#fb923c", "#0f172a", "#fde047"),
+          golden: createEnvCubeTexture("#1e293b", "#f59e0b", "#071e30", "#fde047"),
           night: createEnvCubeTexture("#020617", "#0f172a", "#020617", "#38bdf8"),
         };
         let activeEnvKey = "day";
@@ -35436,12 +35608,72 @@
           new THREE.BufferAttribute(colorArray, 3)
         );
 
+        // Carte de normales procédurale multi-octaves sans couture (micro-clapotis & reflets solaires sur le Saint-Laurent)
+        function createWaterNormalTexture() {
+          const sz = 256;
+          const cnv = document.createElement("canvas");
+          cnv.width = sz;
+          cnv.height = sz;
+          const ctx = cnv.getContext("2d");
+          const img = ctx.createImageData(sz, sz);
+          const data = img.data;
+          const hField = new Float32Array(sz * sz);
+          const TAU = Math.PI * 2;
+          for (let y = 0; y < sz; y++) {
+            const v = (y / sz) * TAU;
+            for (let x = 0; x < sz; x++) {
+              const u = (x / sz) * TAU;
+              const h =
+                Math.sin(u * 3 + v * 2) * 0.34 +
+                Math.cos(u * 5 - v * 4 + 0.9) * 0.24 +
+                Math.sin(u * 9 + v * 7 + 1.7) * 0.16 +
+                Math.cos(u * 13 - v * 11 + 2.4) * 0.11 +
+                Math.sin(u * 19 + v * 17 + 0.4) * 0.07;
+              hField[y * sz + x] = h;
+            }
+          }
+          const strength = 2.6;
+          for (let y = 0; y < sz; y++) {
+            const ym = ((y - 1 + sz) % sz) * sz;
+            const yp = ((y + 1) % sz) * sz;
+            const yc = y * sz;
+            for (let x = 0; x < sz; x++) {
+              const xm = (x - 1 + sz) % sz;
+              const xp = (x + 1) % sz;
+              const dx = (hField[yc + xp] - hField[yc + xm]) * strength;
+              const dy = (hField[yp + x] - hField[ym + x]) * strength;
+              let nx = -dx;
+              let ny = -dy;
+              let nz = 1.0;
+              const invLen = 1.0 / Math.hypot(nx, ny, nz);
+              nx *= invLen;
+              ny *= invLen;
+              nz *= invLen;
+              const idx = (yc + x) * 4;
+              data[idx] = Math.round((nx * 0.5 + 0.5) * 255);
+              data[idx + 1] = Math.round((ny * 0.5 + 0.5) * 255);
+              data[idx + 2] = Math.round((nz * 0.5 + 0.5) * 255);
+              data[idx + 3] = 255;
+            }
+          }
+          ctx.putImageData(img, 0, 0);
+          const tex = new THREE.CanvasTexture(cnv);
+          tex.wrapS = THREE.RepeatWrapping;
+          tex.wrapT = THREE.RepeatWrapping;
+          tex.repeat.set(44, 44);
+          tex.needsUpdate = true;
+          return tex;
+        }
+        const waterNormalTex = createWaterNormalTexture();
+
         const waterMat = new THREE.MeshPhongMaterial({
           vertexColors: true,
-          shininess: 190,
+          normalMap: waterNormalTex,
+          normalScale: new THREE.Vector2(0.55, 0.55),
+          shininess: 205,
           specular: new THREE.Color(0xe0f2fe),
           envMap: envCubeMaps.day,
-          reflectivity: 0.52,
+          reflectivity: 0.38,
           combine: THREE.MixOperation,
           flatShading: false,
           transparent: false,
@@ -36594,7 +36826,8 @@
           dockGroup.add(fenderShield);
         }
 
-        // Fonction utilitaire : grand duc-d'Albe circulaire blanc en caisson de béton (conforme à la photo aérienne)
+        // Fonction utilitaire : grand duc-d'Albe circulaire blanc en caisson de béton + collerette d'écume hydrodynamique
+        const caissonFoamRings3D = [];
         function addCircularCaissonDolphin(cx, cz, radius, opts = {}) {
           const tidalSkirt = new THREE.Mesh(
             new THREE.CylinderGeometry(radius * 1.01, radius * 1.03, 10.6, 24),
@@ -36602,6 +36835,26 @@
           );
           tidalSkirt.position.set(cx, -3.1, cz);
           dockGroup.add(tidalSkirt);
+
+          const foamMat = new THREE.MeshBasicMaterial({
+            color: 0xe0f2fe,
+            transparent: true,
+            opacity: 0.34,
+            side: THREE.DoubleSide,
+            depthWrite: false,
+          });
+          const foamRing = new THREE.Mesh(
+            new THREE.RingGeometry(radius * 1.01, radius + 1.65, 28),
+            foamMat
+          );
+          foamRing.rotation.x = -Math.PI / 2;
+          foamRing.position.set(cx, 0.18, cz);
+          dockGroup.add(foamRing);
+          caissonFoamRings3D.push({
+            mesh: foamRing,
+            mat: foamMat,
+            phase: caissonFoamRings3D.length * 1.15,
+          });
 
           const upperWall = new THREE.Mesh(
             new THREE.CylinderGeometry(radius, radius, 4.95, 24),
@@ -37273,8 +37526,18 @@
         truckBeacon.position.set(1.1, 2.9, 0);
         serviceTruck.add(truckBeacon);
 
-        // Lampadaires industriels au sodium sur le quai double-face, les caissons en T et le môle
+        // Lampadaires industriels au sodium + cônes volumétriques nocturnes sur le quai double-face, les caissons en T et le môle
         const dockLights = [];
+        const dockLightCones3D = [];
+        const dockLightConeGeo = new THREE.ConeGeometry(5.6, 12.2, 14, 1, true);
+        const dockLightConeMat = new THREE.MeshBasicMaterial({
+          color: 0xfde68a,
+          transparent: true,
+          opacity: 0.13,
+          blending: THREE.AdditiveBlending,
+          side: THREE.DoubleSide,
+          depthWrite: false,
+        });
         [
           { x: 78.0, z: 2.2 },
           { x: 30.0, z: 0.0 },
@@ -37302,6 +37565,12 @@
           bulb.position.set(lp.x, 19.2, lp.z);
           dockGroup.add(bulb);
           dockLights.push(bulb);
+
+          const cone = new THREE.Mesh(dockLightConeGeo, dockLightConeMat);
+          cone.position.set(lp.x, 13.0, lp.z);
+          cone.visible = false;
+          dockGroup.add(cone);
+          dockLightCones3D.push(cone);
         });
         const dockPointLight = new THREE.PointLight(0xfbbf24, 0.85, 165);
         dockPointLight.position.set(0, 22, -12);
@@ -38210,7 +38479,25 @@
         }
         window.updateBatman3D = updateBatman3D;
 
-        // --- 4. BOUÉES DU CHENAL MARITIME DU SAINT-LAURENT (VERTES TRIBORD SUD & ROUGES BÂBORD NORD) ---
+        // --- 4. BOUÉES DU CHENAL MARITIME DU SAINT-LAURENT (VERTES TRIBORD SUD & ROUGES BÂBORD NORD + HALOS LUMINEUX) ---
+        function createBuoyHaloTexture(hexStr) {
+          const cnv = document.createElement("canvas");
+          cnv.width = 64;
+          cnv.height = 64;
+          const ctx = cnv.getContext("2d");
+          const g = ctx.createRadialGradient(32, 32, 2, 32, 32, 30);
+          g.addColorStop(0, "#ffffff");
+          g.addColorStop(0.28, hexStr);
+          g.addColorStop(1, "rgba(0,0,0,0)");
+          ctx.fillStyle = g;
+          ctx.fillRect(0, 0, 64, 64);
+          const tex = new THREE.CanvasTexture(cnv);
+          tex.needsUpdate = true;
+          return tex;
+        }
+        const buoyHaloGreenTex = createBuoyHaloTexture("rgba(16, 185, 129, 0.85)");
+        const buoyHaloRedTex = createBuoyHaloTexture("rgba(239, 68, 68, 0.85)");
+
         const buoys3D = [];
         const buoySpecs = [
           { az: 108, dist: 92, color: 0x10b981, isGreen: true },  // Bouée verte approche Est (Poste 86)
@@ -38245,10 +38532,23 @@
           beacon.position.y = 5.8;
           bGroup.add(beacon);
 
+          const haloMat = new THREE.SpriteMaterial({
+            map: b.isGreen ? buoyHaloGreenTex : buoyHaloRedTex,
+            transparent: true,
+            opacity: 0.65,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+          });
+          const halo = new THREE.Sprite(haloMat);
+          halo.position.y = 5.8;
+          halo.scale.set(6.5, 6.5, 1);
+          bGroup.add(halo);
+
           scene.add(bGroup);
           buoys3D.push({
             group: bGroup,
             beacon,
+            halo,
             x: bPos.x,
             z: bPos.z,
             phase: idx * 1.3,
@@ -42412,8 +42712,10 @@
 
         const camPresets = {
           quai: { height: 22.0, alt: -8, fov: 95 },
+          pier: { height: 14.4, alt: -4, fov: 88 },
           bridge: { height: 20.5, alt: -6, fov: 85 },
           tug: { height: 9.5, alt: 4, fov: 88 },
+          batman: { height: 16.0, alt: -24, fov: 82 },
           drone: { height: 72.0, alt: -16, fov: 98 },
           water: { height: 7.2, alt: -3.5, fov: 90 },
         };
@@ -42434,6 +42736,11 @@
               camTargetAz = 237;
             } else if (key === "tug") {
               camTargetAz = 128;
+            } else if (key === "pier") {
+              camTargetAz = 74;
+            } else if (key === "batman") {
+              window.forceBatman3D = true;
+              camTargetAz = 148;
             }
             document
               .querySelectorAll("[data-cam-preset]")
@@ -42847,6 +43154,36 @@
           },
         ];
 
+        // Anneau holographique 3D de verrouillage / inspection de cible sur le fleuve ou le quai
+        const targetRing3DGroup = new THREE.Group();
+        targetRing3DGroup.visible = false;
+        const targetRingOuterMesh = new THREE.Mesh(
+          new THREE.RingGeometry(4.6, 5.25, 40),
+          new THREE.MeshBasicMaterial({
+            color: 0x38bdf8,
+            transparent: true,
+            opacity: 0.78,
+            side: THREE.DoubleSide,
+            depthWrite: false,
+          })
+        );
+        targetRingOuterMesh.rotation.x = -Math.PI / 2;
+        targetRing3DGroup.add(targetRingOuterMesh);
+
+        const targetRingInnerMesh = new THREE.Mesh(
+          new THREE.RingGeometry(3.35, 3.85, 6),
+          new THREE.MeshBasicMaterial({
+            color: 0xfacc15,
+            transparent: true,
+            opacity: 0.86,
+            side: THREE.DoubleSide,
+            depthWrite: false,
+          })
+        );
+        targetRingInnerMesh.rotation.x = -Math.PI / 2;
+        targetRing3DGroup.add(targetRingInnerMesh);
+        scene.add(targetRing3DGroup);
+
         window.focusCameraOnAzimuth = function (az, alt = 4) {
           if (activeCamPreset3D === "bridge" || activeCamPreset3D === "tug") {
             beginCamFlight3D();
@@ -42861,23 +43198,9 @@
           camTargetAlt = alt;
         };
 
-        window.focusBerthIn3D = function (berthNum) {
-          const is86 = String(berthNum) === "86";
-          const targetId = is86
-            ? (vessel86Group.visible ? "vessel86" : "dock86")
-            : (tankerGroup.visible ? "tanker" : "dock87");
-          const poi = arPoiList.find((p) => p.id === targetId);
-          if (poi) {
-            focusCameraOnPoi(poi);
-          } else {
-            window.focusCameraOnAzimuth(is86 ? 131 : 136, -6);
-          }
-        };
-
         function focusCameraOnPoi(poi) {
           if (!poi) return;
           const pos = poi.getPos();
-          const az = ((Math.atan2(pos.x, -pos.z) * 180) / Math.PI + 360) % 360;
           if (activeCamPreset3D === "bridge" || activeCamPreset3D === "tug") {
             beginCamFlight3D();
             activeCamPreset3D = "quai";
@@ -42885,11 +43208,50 @@
             document.querySelectorAll("[data-cam-preset]").forEach((b) => b.classList.remove("active-cam"));
             document.getElementById("hud-cam-quai")?.classList.add("active-cam");
           }
+          const camRefX = activeCamPreset3D === "pier" || activeCamPreset3D === "batman" ? camera3D.position.x : 0;
+          const camRefZ = activeCamPreset3D === "pier" || activeCamPreset3D === "batman" ? camera3D.position.z : 0;
+          const az = ((Math.atan2(pos.x - camRefX, -(pos.z - camRefZ)) * 180) / Math.PI + 360) % 360;
           touchVelAz = 0;
           touchVelAlt = 0;
           camTargetAz = az;
           camTargetAlt = poi.id === "weather_front" ? 6 : -6;
         }
+
+        function selectAndInspectPoi3D(poi, shouldFocusCam) {
+          if (!poi) return;
+          selectedPoiId = poi.id;
+          document.querySelectorAll(".ar-label-3d").forEach((b) => {
+            b.classList.toggle("active-pin", b.dataset.poiId === poi.id);
+          });
+          if (inspectPopupEl) {
+            const worldPos = poi.getPos();
+            const distMeters = Math.round(camera3D.position.distanceTo(worldPos));
+            const realDistStr = typeof poi.getRealDist === "function" ? poi.getRealDist() : `${distMeters}m`;
+            const azDeg = Math.round(((Math.atan2(worldPos.x - camera3D.position.x, -(worldPos.z - camera3D.position.z)) * 180) / Math.PI + 360) % 360);
+            if (inspectTitleEl) inspectTitleEl.textContent = typeof poi.getDynamicLabel === "function" ? poi.getDynamicLabel() : `${poi.icon} ${poi.label}`;
+            if (inspectSubEl) inspectSubEl.textContent = typeof poi.getDynamicSub === "function" ? poi.getDynamicSub() : poi.sub;
+            if (inspectDraftEl) inspectDraftEl.textContent = typeof poi.getDynamicDraft === "function" ? poi.getDynamicDraft() : poi.draft;
+            if (inspectAzDistEl) inspectAzDistEl.textContent = `${azDeg}\u00B0 \u2022 ${realDistStr}`;
+            if (inspectStatusEl) inspectStatusEl.textContent = poi.getStatus();
+            inspectPopupEl.classList.add("visible");
+          }
+          if (shouldFocusCam) {
+            focusCameraOnPoi(poi);
+          }
+        }
+
+        window.focusBerthIn3D = function (berthNum) {
+          const is86 = String(berthNum) === "86";
+          const targetId = is86
+            ? (vessel86Group.visible ? "vessel86" : "dock86")
+            : (tankerGroup.visible ? "tanker" : "dock87");
+          const poi = arPoiList.find((p) => p.id === targetId);
+          if (poi) {
+            selectAndInspectPoi3D(poi, true);
+          } else {
+            window.focusCameraOnAzimuth(is86 ? 131 : 136, -6);
+          }
+        };
 
         if (arLayerEl) {
           arPoiList.forEach((poi) => {
@@ -42899,11 +43261,7 @@
             el.innerHTML = `<span class="ar-label-title">${poi.icon} ${poi.label}</span><span class="ar-label-dist">--m</span>`;
             el.addEventListener("click", (e) => {
               e.stopPropagation();
-              selectedPoiId = poi.id;
-              document.querySelectorAll(".ar-label-3d").forEach((b) => b.classList.remove("active-pin"));
-              el.classList.add("active-pin");
-              inspectPopupEl?.classList.add("visible");
-              focusCameraOnPoi(poi);
+              selectAndInspectPoi3D(poi, true);
             });
             arLayerEl.appendChild(el);
             poi.domEl = el;
@@ -42917,6 +43275,106 @@
             e.stopPropagation();
             const poi = arPoiList.find((p) => p.id === selectedPoiId);
             if (poi) focusCameraOnPoi(poi);
+          });
+        }
+
+        // Sélection directe et infobulle au survol sur la scène 3D (sans nécessiter d'activer Repères AR!)
+        const hoverChip3DEl = document.getElementById("hover-3d-chip");
+        if (animWinEl) {
+          const pickProjVec = new THREE.Vector3();
+          const pickCamDir = new THREE.Vector3();
+          const pickToPoi = new THREE.Vector3();
+          let canvasDownX = 0;
+          let canvasDownY = 0;
+          let canvasDownValid = false;
+
+          function isDirect3DViewportEvent(e) {
+            if (!window.mode3DActive) return false;
+            const t = e.target;
+            if (!t) return false;
+            if (t === canvas3D || t === animWinEl) return true;
+            if (t.closest && t.closest("button, select, input, a, .weather-minimap-hud, .temp-simulation-hud, .inspect-3d-popup, .tug-maneuver-hud, .viewport-hud-top, .viewport-landmarks-bar, .ar-label-3d")) {
+              return false;
+            }
+            return true;
+          }
+
+          function pickPoiAtClientXY(clientX, clientY) {
+            const rect = animWinEl.getBoundingClientRect();
+            const w = Math.max(1, rect.width);
+            const h = Math.max(1, rect.height);
+            const mx = clientX - rect.left;
+            const my = clientY - rect.top;
+            camera3D.getWorldDirection(pickCamDir);
+            let bestPoi = null;
+            let bestScore = 38;
+
+            for (let i = 0; i < arPoiList.length; i++) {
+              const poi = arPoiList[i];
+              if (typeof poi.isVisible === "function" && !poi.isVisible()) continue;
+              if (activeCamPreset3D === "bridge" && ((tankerGroup.visible && poi.id === "tanker") || (!tankerGroup.visible && vessel86Group.visible && poi.id === "vessel86"))) {
+                continue;
+              }
+              const wp = poi.getPos();
+              pickToPoi.subVectors(wp, camera3D.position);
+              if (pickToPoi.dot(pickCamDir) <= 0.2) continue;
+
+              pickProjVec.copy(wp).project(camera3D);
+              const sx = (pickProjVec.x * 0.5 + 0.5) * w;
+              const sy = (-pickProjVec.y * 0.5 + 0.5) * h;
+              const hitRadius = (poi.id === "tanker" || poi.id === "vessel86") ? 42 : 30;
+              const dPx = Math.hypot(mx - sx, my - sy);
+              if (dPx <= hitRadius && dPx < bestScore) {
+                bestScore = dPx;
+                bestPoi = poi;
+              }
+            }
+            return bestPoi ? { poi: bestPoi, mx, my, w, h } : null;
+          }
+
+          animWinEl.addEventListener("pointerdown", (e) => {
+            canvasDownValid = isDirect3DViewportEvent(e);
+            canvasDownX = e.clientX;
+            canvasDownY = e.clientY;
+            if (hoverChip3DEl) hoverChip3DEl.classList.remove("visible");
+          });
+
+          animWinEl.addEventListener("pointermove", (e) => {
+            if (isDraggingSky || !isDirect3DViewportEvent(e)) {
+              if (hoverChip3DEl) hoverChip3DEl.classList.remove("visible");
+              return;
+            }
+            const hit = pickPoiAtClientXY(e.clientX, e.clientY);
+            if (hit && hoverChip3DEl) {
+              const title = typeof hit.poi.getDynamicLabel === "function" ? hit.poi.getDynamicLabel() : `${hit.poi.icon} ${hit.poi.label}`;
+              const dist = typeof hit.poi.getRealDist === "function" ? hit.poi.getRealDist() : "";
+              hoverChip3DEl.textContent = dist ? `${title} \u2022 ${dist}` : title;
+              const cx = Math.max(68, Math.min(hit.w - 68, hit.mx));
+              const cy = Math.max(44, hit.my);
+              hoverChip3DEl.style.left = `${cx}px`;
+              hoverChip3DEl.style.top = `${cy}px`;
+              hoverChip3DEl.classList.add("visible");
+              animWinEl.style.cursor = "pointer";
+            } else {
+              if (hoverChip3DEl) hoverChip3DEl.classList.remove("visible");
+              if (!isDraggingSky) animWinEl.style.cursor = "grab";
+            }
+          });
+
+          animWinEl.addEventListener("pointerup", (e) => {
+            if (!canvasDownValid) return;
+            canvasDownValid = false;
+            const moved = Math.hypot(e.clientX - canvasDownX, e.clientY - canvasDownY);
+            if (moved <= 5.0 && isDirect3DViewportEvent(e)) {
+              const hit = pickPoiAtClientXY(e.clientX, e.clientY);
+              if (hit) {
+                selectAndInspectPoi3D(hit.poi, false);
+              }
+            }
+          });
+
+          animWinEl.addEventListener("pointerleave", () => {
+            if (hoverChip3DEl) hoverChip3DEl.classList.remove("visible");
           });
         }
 
@@ -43007,17 +43465,38 @@
           });
         }
 
-        // Bouton de bascule de qualité / résolution 3D (Mode Éco 0.75x vs Normal 1.0x)
+        // Bouton de bascule de qualité / résolution 3D à 3 paliers : HD (1.65x) -> Ultra (2.0x + Ombres 2K) -> Éco (0.75x)
         const qualityToggleBtn = document.getElementById("hud-toggle-quality");
         if (qualityToggleBtn) {
+          const qOrder = ["hd", "ultra", "eco"];
           qualityToggleBtn.addEventListener("click", (e) => {
             e.stopPropagation();
-            isEcoMode = !isEcoMode;
-            qualityToggleBtn.classList.toggle("active", isEcoMode);
-            qualityToggleBtn.innerHTML = isEcoMode ? "⚡ &Eacute;co: ON" : "⚡ &Eacute;co: OFF";
-            qualityToggleBtn.title = isEcoMode
-              ? "Mode Éco ACTIF (0.75x) — Rendu allégé pour ordinateurs de moindre puissance. Cliquer pour repasser en Normal (1.0x)"
-              : "Mode Normal (1.0x) — Cliquer pour activer le Mode Éco (0.75x) pour les ordinateurs lents";
+            const nextIdx = (qOrder.indexOf(qualityTier3D) + 1) % qOrder.length;
+            qualityTier3D = qOrder[nextIdx];
+            const shadowSz = qualityTier3D === "ultra" ? 2048 : (qualityTier3D === "eco" ? 512 : 1024);
+            if (dirLight && dirLight.shadow && dirLight.shadow.mapSize.width !== shadowSz) {
+              dirLight.shadow.mapSize.width = shadowSz;
+              dirLight.shadow.mapSize.height = shadowSz;
+              if (dirLight.shadow.map) {
+                dirLight.shadow.map.dispose();
+                dirLight.shadow.map = null;
+              }
+            }
+            if (qualityTier3D === "ultra") {
+              qualityToggleBtn.innerHTML = "&#x1F48E; Qualit&eacute;: Ultra";
+              qualityToggleBtn.classList.add("active-cam");
+              qualityToggleBtn.classList.remove("active");
+              qualityToggleBtn.title = "Mode ULTRA ACTIF (2.0x Retina + Ombres 2048px) — Cliquer pour passer en Mode Éco (0.75x)";
+            } else if (qualityTier3D === "eco") {
+              qualityToggleBtn.innerHTML = "&#x26A1; Qualit&eacute;: &Eacute;co";
+              qualityToggleBtn.classList.add("active");
+              qualityToggleBtn.classList.remove("active-cam");
+              qualityToggleBtn.title = "Mode ÉCO ACTIF (0.75x + Ombres allégées) — Cliquer pour repasser en Qualité HD (1.65x)";
+            } else {
+              qualityToggleBtn.innerHTML = "&#x1F5A5;&#xFE0F; Qualit&eacute;: HD";
+              qualityToggleBtn.classList.remove("active", "active-cam");
+              qualityToggleBtn.title = "Mode HD (1.65x HiDPI + Ombres 1024px) — Cliquer pour passer en Mode Ultra (2.0x + Ombres 2K)";
+            }
             handleResize3D();
           });
         }
@@ -43132,29 +43611,73 @@
           });
         });
 
-        // --- MOTEUR DE LA MINIMAP METEO & RADAR DOPPLER 2D (SYNCHRONISE AU TEMPS SIMULE) ---
+        // --- MOTEUR CARTE TACTIQUE ECDIS, AIS 3D & RADAR DOPPLER 2D (COUPLÉ EN DIRECT AU MONDE 3D) ---
         const wmmHudEl = document.getElementById("weather-minimap-hud");
         const wmmCanvas = document.getElementById("weather-minimap-canvas");
         const wmmCtx = wmmCanvas ? wmmCanvas.getContext("2d") : null;
         const wmmToggleBtn = document.getElementById("hud-toggle-minimap");
         const wmmCollapseBtn = document.getElementById("minimap-collapse-btn");
+        const wmmZoomBtn = document.getElementById("minimap-zoom-btn");
         const wmmLayerBtn = document.getElementById("minimap-layer-btn");
+        const wmmSizeBtn = document.getElementById("minimap-size-btn");
+        const wmmCornerBtn = document.getElementById("minimap-corner-btn");
+        const wmmHoverPill = document.getElementById("wmm-hover-pill");
         const wmmLayerDesc = document.getElementById("wmm-layer-desc");
         const wmmValTemp = document.getElementById("wmm-val-temp");
         const wmmValWind = document.getElementById("wmm-val-wind");
         const wmmValPrecip = document.getElementById("wmm-val-precip");
         const wmmValTide = document.getElementById("wmm-val-tide");
 
-        let wmmLayerMode = "radar"; // "radar" | "wind" | "temp"
+        const WMM_BASE_W = 244;
+        const WMM_BASE_H = 148;
+        const WMM_QX = 106;
+        const WMM_QY = 94;
+
+        let wmmLayerMode = "tactical"; // "tactical" | "radar" | "wind" | "temp"
+        let wmmZoom = 1.0;
+        let wmmTargetZoom = 1.0;
+        let wmmRadarSweepAngle = 0;
+        let wmmLastPixelW = 0;
+        let wmmLastPixelH = 0;
+        let wmmHoveredPoiId = null;
+        const wmmHitTargets = [];
+        const wmmTmpPt = { x: 0, y: 0 };
+        const wmmTmpPtB = { x: 0, y: 0 };
+        const wmmWorldScratch = new THREE.Vector3();
+
         const windParticles = [];
-        for (let wp = 0; wp < 56; wp++) {
+        for (let wp = 0; wp < 58; wp++) {
           windParticles.push({
-            x: Math.random() * 244,
-            y: Math.random() * 142,
+            x: Math.random() * WMM_BASE_W,
+            y: Math.random() * WMM_BASE_H,
             len: 7 + Math.random() * 8,
             speed: 0.65 + Math.random() * 0.65,
             alpha: 0.35 + Math.random() * 0.5,
           });
+        }
+
+        function worldXZToBaseMap(wx, wz, outObj) {
+          const dx = wx - dockPos.x;
+          const dz = wz - dockPos.z;
+          const d = Math.hypot(dx, dz);
+          const rPx = d <= 220 ? d * 0.082 : 18.04 + Math.pow(d - 220, 0.78) * 0.205;
+          outObj.x = d > 0.001 ? WMM_QX + (dx / d) * rPx : WMM_QX;
+          outObj.y = d > 0.001 ? WMM_QY + (dz / d) * rPx : WMM_QY;
+          return outObj;
+        }
+
+        function baseMapToScreenX(mx) {
+          return WMM_QX + (mx - WMM_QX) * wmmZoom;
+        }
+        function baseMapToScreenY(my) {
+          return WMM_QY + (my - WMM_QY) * wmmZoom;
+        }
+
+        function syncWmmZoomBtnLabel() {
+          if (!wmmZoomBtn) return;
+          const isPort = wmmTargetZoom > 1.8;
+          wmmZoomBtn.textContent = isPort ? "\uD83D\uDDFA\uFE0F 18km" : "\u2693 Port";
+          wmmZoomBtn.classList.toggle("wmm-tool-active", isPort);
         }
 
         if (wmmToggleBtn && wmmHudEl) {
@@ -43180,12 +43703,31 @@
             if (wmmToggleBtn) wmmToggleBtn.classList.toggle("active-cam", !isCol);
           });
         }
+        // Cliquer sur l'en-tête quand la minimap est repliée la rouvre immédiatement
+        if (wmmHudEl) {
+          wmmHudEl.querySelector(".wmm-header")?.addEventListener("click", (e) => {
+            if (!wmmHudEl.classList.contains("collapsed-minimap")) return;
+            if (e.target && e.target.closest("button")) return;
+            e.stopPropagation();
+            wmmHudEl.classList.remove("collapsed-minimap", "hidden-minimap");
+            if (wmmCollapseBtn) wmmCollapseBtn.textContent = "\u2013";
+            if (wmmToggleBtn) wmmToggleBtn.classList.add("active-cam");
+          });
+        }
+        if (wmmZoomBtn) {
+          wmmZoomBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            wmmTargetZoom = wmmTargetZoom > 1.8 ? 1.0 : 4.6;
+            syncWmmZoomBtnLabel();
+          });
+        }
         if (wmmLayerBtn) {
-          const modes = ["radar", "wind", "temp"];
+          const modes = ["tactical", "radar", "wind", "temp"];
           const modeLabels = {
-            radar: "\uD83C\uDF27\uFE0F Radar+Vent",
+            tactical: "\u2693 Tactique",
+            radar: "\uD83C\uDF27\uFE0F Doppler",
             wind: "\uD83D\uDCA8 Rafales",
-            temp: "\uD83C\uDF21\uFE0F Temp\u00e9rature",
+            temp: "\uD83C\uDF21\uFE0F Thermique",
           };
           wmmLayerBtn.addEventListener("click", (e) => {
             e.stopPropagation();
@@ -43194,27 +43736,286 @@
             wmmLayerBtn.textContent = modeLabels[wmmLayerMode];
           });
         }
-
-        // Cliquer sur la minimap oriente la caméra 3D vers l'azimut WGS84 correspondant depuis les Postes 86/87 Valero
-        if (wmmCanvas) {
-          wmmCanvas.addEventListener("click", (e) => {
+        if (wmmSizeBtn && wmmHudEl) {
+          wmmSizeBtn.addEventListener("click", (e) => {
             e.stopPropagation();
-            const rect = wmmCanvas.getBoundingClientRect();
-            const mx = ((e.clientX - rect.left) / Math.max(1, rect.width)) * 244;
-            const my = ((e.clientY - rect.top) / Math.max(1, rect.height)) * 142;
-            const qx = 106, qy = 94; // Position géographique calibrée des Postes 86/87 Valero sur la minimap
-            const dx = mx - qx;
-            const dy = my - qy;
-            if (Math.hypot(dx, dy) > 4) {
-              const clickedAz = ((Math.atan2(dx, -dy) * 180) / Math.PI + 360) % 360;
-              camTargetAz = clickedAz;
-              camTargetAlt = -4;
-            }
+            const isXl = wmmHudEl.classList.toggle("wmm-xl");
+            wmmSizeBtn.textContent = isXl ? "\u2921" : "\u2922";
+            wmmSizeBtn.classList.toggle("wmm-tool-active", isXl);
+            wmmLastPixelW = 0;
+          });
+        }
+        if (wmmCornerBtn && wmmHudEl) {
+          wmmCornerBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const goLeft = !wmmHudEl.classList.contains("wmm-dock-left");
+            wmmHudEl.classList.toggle("wmm-dock-left", goLeft);
+            wmmHudEl.classList.toggle("wmm-dock-right", !goLeft);
+            wmmCornerBtn.classList.toggle("wmm-tool-active", goLeft);
           });
         }
 
-        // Accumulateurs cinematiques pour que la vitesse d'animation du Radar Meteo 3D
-        // (cellules Doppler + lignes de flux eolien) soit 100% pilotee par la vitesse reelle du vent!
+        // Interaction complète sur la Carte Radar : survol d'entité, clic d'inspection 3D, glisser-orienter 360° & molette de zoom!
+        if (wmmCanvas) {
+          let wmmDragging = false;
+          let wmmDownX = 0;
+          let wmmDownY = 0;
+          let wmmMovedDist = 0;
+
+          function getWmmLogicalCoords(e) {
+            const rect = wmmCanvas.getBoundingClientRect();
+            return {
+              sx: ((e.clientX - rect.left) / Math.max(1, rect.width)) * WMM_BASE_W,
+              sy: ((e.clientY - rect.top) / Math.max(1, rect.height)) * WMM_BASE_H,
+              px: e.clientX - rect.left,
+              py: e.clientY - rect.top,
+              rw: Math.max(1, rect.width),
+              rh: Math.max(1, rect.height),
+            };
+          }
+
+          function findWmmHitTarget(sx, sy) {
+            let best = null;
+            let bestDist = 9.5;
+            for (let i = 0; i < wmmHitTargets.length; i++) {
+              const t = wmmHitTargets[i];
+              const d = Math.hypot(sx - t.sx, sy - t.sy);
+              const hitR = t.r || 8.0;
+              if (d <= hitR && d < bestDist) {
+                bestDist = d;
+                best = t;
+              }
+            }
+            return best;
+          }
+
+          function panCameraFromWmmScreen(sx, sy) {
+            const mx = WMM_QX + (sx - WMM_QX) / wmmZoom;
+            const my = WMM_QY + (sy - WMM_QY) / wmmZoom;
+            worldXZToBaseMap(camera3D.position.x, camera3D.position.z, wmmTmpPt);
+            const dx = mx - wmmTmpPt.x;
+            const dy = my - wmmTmpPt.y;
+            if (Math.hypot(dx, dy) > 1.2) {
+              const clickedAz = ((Math.atan2(dx, -dy) * 180) / Math.PI + 360) % 360;
+              touchVelAz = 0;
+              touchVelAlt = 0;
+              camTargetAz = clickedAz;
+            }
+          }
+
+          wmmCanvas.addEventListener("pointerdown", (e) => {
+            e.stopPropagation();
+            wmmDragging = true;
+            wmmDownX = e.clientX;
+            wmmDownY = e.clientY;
+            wmmMovedDist = 0;
+            try { wmmCanvas.setPointerCapture(e.pointerId); } catch (_) {}
+          });
+
+          wmmCanvas.addEventListener("pointermove", (e) => {
+            e.stopPropagation();
+            const c = getWmmLogicalCoords(e);
+            if (wmmDragging) {
+              wmmMovedDist = Math.hypot(e.clientX - wmmDownX, e.clientY - wmmDownY);
+              if (wmmMovedDist > 3.5) {
+                panCameraFromWmmScreen(c.sx, c.sy);
+                if (wmmHoverPill) wmmHoverPill.classList.remove("visible");
+                return;
+              }
+            }
+            const hit = findWmmHitTarget(c.sx, c.sy);
+            wmmHoveredPoiId = hit ? hit.poiId : null;
+            wmmCanvas.style.cursor = hit ? "pointer" : "crosshair";
+            if (wmmHoverPill) {
+              if (hit) {
+                wmmHoverPill.textContent = hit.tip;
+                const clampedX = Math.max(44, Math.min(c.rw - 44, c.px));
+                const clampedY = Math.max(20, c.py);
+                wmmHoverPill.style.left = `${clampedX}px`;
+                wmmHoverPill.style.top = `${clampedY}px`;
+                wmmHoverPill.classList.add("visible");
+              } else {
+                wmmHoverPill.classList.remove("visible");
+              }
+            }
+          });
+
+          wmmCanvas.addEventListener("pointerup", (e) => {
+            e.stopPropagation();
+            if (!wmmDragging) return;
+            wmmDragging = false;
+            try { wmmCanvas.releasePointerCapture(e.pointerId); } catch (_) {}
+            const c = getWmmLogicalCoords(e);
+            if (wmmMovedDist <= 4.5) {
+              const hit = findWmmHitTarget(c.sx, c.sy);
+              if (hit && hit.poiId && typeof selectAndInspectPoi3D === "function") {
+                const poi = arPoiList.find((p) => p.id === hit.poiId);
+                if (poi) {
+                  selectAndInspectPoi3D(poi, true);
+                  return;
+                }
+              }
+              panCameraFromWmmScreen(c.sx, c.sy);
+              camTargetAlt = -4;
+            }
+          });
+
+          wmmCanvas.addEventListener("pointerleave", () => {
+            wmmHoveredPoiId = null;
+            if (wmmHoverPill) wmmHoverPill.classList.remove("visible");
+          });
+
+          wmmCanvas.addEventListener("wheel", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const factor = e.deltaY < 0 ? 1.24 : 0.80;
+            wmmTargetZoom = Math.max(1.0, Math.min(5.6, wmmTargetZoom * factor));
+            if (wmmTargetZoom < 1.08) wmmTargetZoom = 1.0;
+            syncWmmZoomBtnLabel();
+          }, { passive: false });
+        }
+
+        function getWmmUniversePalette(isNight) {
+          const u = document.body.getAttribute("data-universe") || "classic";
+          if (u === "admiralty") {
+            return {
+              u,
+              land: "#eadab8",
+              island: "#dfcca3",
+              river0: "#b8d4dc",
+              river1: "#98bcc8",
+              coast: "rgba(92, 64, 34, 0.78)",
+              channelFill: "rgba(56, 122, 148, 0.16)",
+              channelDash: "rgba(92, 64, 34, 0.52)",
+              grid: "rgba(120, 83, 42, 0.22)",
+              sweepRgb: "180, 83, 9",
+              frustumFill: "rgba(180, 83, 9, 0.17)",
+              frustumStroke: "rgba(153, 27, 27, 0.82)",
+              dockStroke: "#451a03",
+              caissonFill: "#fffbeb",
+              lblText: "#291d12",
+              lblHalo: "rgba(244, 234, 210, 0.92)",
+              hudBg: "rgba(244, 234, 210, 0.92)",
+              hudText: "#291d12",
+              upperWind: "#991b1b",
+            };
+          }
+          if (u === "pipboy") {
+            return {
+              u,
+              land: "#030d05",
+              island: "#06180a",
+              river0: "#082910",
+              river1: "#0d3b18",
+              coast: "rgba(74, 222, 128, 0.72)",
+              channelFill: "rgba(74, 222, 128, 0.10)",
+              channelDash: "rgba(74, 222, 128, 0.45)",
+              grid: "rgba(74, 222, 128, 0.18)",
+              sweepRgb: "74, 222, 128",
+              frustumFill: "rgba(74, 222, 128, 0.18)",
+              frustumStroke: "rgba(134, 239, 172, 0.88)",
+              dockStroke: "#86efac",
+              caissonFill: "#bbf7d0",
+              lblText: "#86efac",
+              lblHalo: "rgba(2, 10, 4, 0.9)",
+              hudBg: "rgba(3, 14, 6, 0.9)",
+              hudText: "#4ade80",
+              upperWind: "#bef264",
+            };
+          }
+          if (u === "batman") {
+            return {
+              u,
+              land: "#06080d",
+              island: "#0d111a",
+              river0: "#0c1929",
+              river1: "#12263d",
+              coast: "rgba(250, 204, 21, 0.44)",
+              channelFill: "rgba(250, 204, 21, 0.07)",
+              channelDash: "rgba(250, 204, 21, 0.34)",
+              grid: "rgba(250, 204, 21, 0.13)",
+              sweepRgb: "250, 204, 21",
+              frustumFill: "rgba(250, 204, 21, 0.16)",
+              frustumStroke: "rgba(250, 204, 21, 0.85)",
+              dockStroke: "#fef08a",
+              caissonFill: "#f8fafc",
+              lblText: "#fef9c3",
+              lblHalo: "rgba(5, 7, 11, 0.9)",
+              hudBg: "rgba(7, 9, 14, 0.9)",
+              hudText: "#f8fafc",
+              upperWind: "#facc15",
+            };
+          }
+          if (u === "starwars") {
+            return {
+              u,
+              land: "#020813",
+              island: "#061326",
+              river0: "#072844",
+              river1: "#0b3d63",
+              coast: "rgba(56, 189, 248, 0.62)",
+              channelFill: "rgba(56, 189, 248, 0.11)",
+              channelDash: "rgba(125, 211, 252, 0.42)",
+              grid: "rgba(56, 189, 248, 0.16)",
+              sweepRgb: "56, 189, 248",
+              frustumFill: "rgba(56, 189, 248, 0.19)",
+              frustumStroke: "rgba(125, 211, 252, 0.88)",
+              dockStroke: "#e0f2fe",
+              caissonFill: "#f0f9ff",
+              lblText: "#e0f2fe",
+              lblHalo: "rgba(2, 8, 18, 0.9)",
+              hudBg: "rgba(3, 10, 22, 0.9)",
+              hudText: "#e0f2fe",
+              upperWind: "#f59e0b",
+            };
+          }
+          if (u === "pitwall") {
+            return {
+              u,
+              land: "#090a0d",
+              island: "#13151b",
+              river0: "#0f2136",
+              river1: "#16314f",
+              coast: "rgba(255, 128, 0, 0.48)",
+              channelFill: "rgba(34, 197, 94, 0.08)",
+              channelDash: "rgba(255, 128, 0, 0.38)",
+              grid: "rgba(255, 255, 255, 0.10)",
+              sweepRgb: "34, 197, 94",
+              frustumFill: "rgba(255, 128, 0, 0.17)",
+              frustumStroke: "rgba(255, 128, 0, 0.86)",
+              dockStroke: "#f8fafc",
+              caissonFill: "#ffffff",
+              lblText: "#f8fafc",
+              lblHalo: "rgba(9, 9, 11, 0.9)",
+              hudBg: "rgba(10, 10, 13, 0.9)",
+              hudText: "#f8fafc",
+              upperWind: "#ff8000",
+            };
+          }
+          return {
+            u: "classic",
+            land: isNight ? "#06101e" : "#0a1728",
+            island: isNight ? "#0d1e33" : "#11243b",
+            river0: isNight ? "#08304b" : "#055a8c",
+            river1: isNight ? "#0c4a6e" : "#0284c7",
+            coast: "rgba(125, 211, 252, 0.44)",
+            channelFill: "rgba(56, 189, 248, 0.10)",
+            channelDash: "rgba(125, 211, 252, 0.36)",
+            grid: "rgba(56, 189, 248, 0.12)",
+            sweepRgb: "56, 189, 248",
+            frustumFill: "rgba(56, 189, 248, 0.18)",
+            frustumStroke: "rgba(56, 189, 248, 0.82)",
+            dockStroke: "#e2e8f0",
+            caissonFill: "#f8fafc",
+            lblText: "#f8fafc",
+            lblHalo: "rgba(4, 12, 24, 0.88)",
+            hudBg: "rgba(4, 12, 24, 0.85)",
+            hudText: "#f8fafc",
+            upperWind: "#fbbf24",
+          };
+        }
+
+        // Accumulateurs cinématiques pour que la vitesse du Radar Météo 3D soit 100% pilotée par le vent réel!
         let wmmRadarPhaseX = 0;
         let wmmRadarPhaseY = 0;
         let prevWmmFrameMs = performance.now();
@@ -43231,14 +44032,12 @@
           const deltaSimMinsWmm = curSimMins - prevWmmSimMins;
           prevWmmSimMins = curSimMins;
 
-          // Vent de surface (10m) : pilote les lignes de flux éolien au sol et les vagues du fleuve
           const windDirDeg = typeof c.windDir === "number" ? c.windDir : 220;
           const gustKnots = Math.max(windKnots, Math.round((c.windGust || c.wind || 12) / 1.852));
           const moveToRad = ((windDirDeg + 180) * Math.PI) / 180;
           const vx = Math.sin(moveToRad);
           const vy = -Math.cos(moveToRad);
 
-          // Vent en altitude / Ciel (850 hPa ~1500m) : pilote le déplacement des nuages et des cellules de pluie sur le radar!
           const cloudWindDirDeg = typeof c.cloudWindDir === "number" ? c.cloudWindDir : windDirDeg;
           const cloudWindKnots = typeof c.cloudWindKmh === "number"
             ? Math.max(0, c.cloudWindKmh / 1.852)
@@ -43247,22 +44046,46 @@
           const cvx = Math.sin(cloudMoveToRad);
           const cvy = -Math.cos(cloudMoveToRad);
 
-          // Facteur d'acceleration si le lecteur Time-Lapse est en lecture (15m/s, 1h/s, 3h/s, 6h/s)
           const tlSpeedFactor = (window.timeLapseCtrl && window.timeLapseCtrl.playing)
             ? (1.0 + Math.min(3.5, window.timeLapseCtrl.speedMinsPerSec / 60))
             : 1.0;
 
-          // Vitesse des cellules radar Doppler proportionnelle au vent en altitude (cloudWindKnots) :
           const radarRealPxPerSec = (cloudWindKnots * 0.48 + Math.max(0, gustKnots - windKnots) * 0.14) * tlSpeedFactor;
           const radarSimJumpPx = Math.abs(deltaSimMinsWmm) > 0.0005 ? (deltaSimMinsWmm * cloudWindKnots * 0.12) : 0;
           const radarStepDist = radarRealPxPerSec * dtWmm + radarSimJumpPx;
 
           wmmRadarPhaseX = (wmmRadarPhaseX + cvx * radarStepDist) % 3000;
           wmmRadarPhaseY = (wmmRadarPhaseY + cvy * radarStepDist) % 2000;
+          wmmRadarSweepAngle = (wmmRadarSweepAngle + dtWmm * 1.32) % (Math.PI * 2);
 
-          if (!wmmCtx || !wmmHudEl || wmmHudEl.classList.contains("hidden-minimap") || wmmHudEl.classList.contains("collapsed-minimap")) return;
-          const W = 244, H = 142;
-          const qx = 106, qy = 94; // Postes 86 & 87 Valero (Saint-Romuald / Lévis — 46.7818°N, -71.2100°W)
+          if (!wmmCtx || !wmmCanvas || !wmmHudEl || wmmHudEl.classList.contains("hidden-minimap") || wmmHudEl.classList.contains("collapsed-minimap")) return;
+
+          // Lissage fluide du zoom Port <-> 18km
+          wmmZoom += (wmmTargetZoom - wmmZoom) * Math.min(1, dtWmm * 10.5);
+          if (Math.abs(wmmTargetZoom - wmmZoom) < 0.004) wmmZoom = wmmTargetZoom;
+
+          // Dimensionnement HiDPI net sans réallocation inutile
+          const dprWmm = Math.min(window.devicePixelRatio || 1, 2);
+          const cssW = wmmCanvas.clientWidth || WMM_BASE_W;
+          const cssH = wmmCanvas.clientHeight || WMM_BASE_H;
+          const targetPixW = Math.max(244, Math.round(cssW * dprWmm));
+          const targetPixH = Math.max(148, Math.round(cssH * dprWmm));
+          if (targetPixW !== wmmLastPixelW || targetPixH !== wmmLastPixelH) {
+            wmmLastPixelW = targetPixW;
+            wmmLastPixelH = targetPixH;
+            wmmCanvas.width = targetPixW;
+            wmmCanvas.height = targetPixH;
+          }
+
+          const W = WMM_BASE_W, H = WMM_BASE_H;
+          const qx = WMM_QX, qy = WMM_QY;
+          wmmCtx.setTransform(wmmLastPixelW / W, 0, 0, wmmLastPixelH / H, 0, 0);
+          wmmHitTargets.length = 0;
+
+          const pal = getWmmUniversePalette(!!c.isNight);
+          const isAdmiralty = pal.u === "admiralty";
+          const isHarborZoom = wmmZoom >= 2.15;
+
           const simActiveWmm = Boolean(window.tempSimState && window.tempSimState.active);
           const tempC = simActiveWmm
             ? window.tempSimState.airTemp
@@ -43282,245 +44105,586 @@
             (tempC <= 0.4 && (c.rain || 0) === 0)
           );
 
-          // 1. Fond de carte terrestre (Rive-Nord Québec & Rive-Sud Lévis/St-Romuald)
-          wmmCtx.fillStyle = c.isNight ? "#071120" : "#0c192c";
+          // 1. Fond terrestre (Rive-Nord Québec & Rive-Sud Lévis/St-Romuald)
+          wmmCtx.fillStyle = pal.land;
           wmmCtx.fillRect(0, 0, W, H);
 
-          // Option Iso-Temperature (Air Rives vs Eau Fleuve) ou Rafales en fond
           if (wmmLayerMode === "temp") {
-            const tNorm = Math.max(0, Math.min(1, (tempC + 25) / 57)); // -25°C -> +32°C
+            const tNorm = Math.max(0, Math.min(1, (tempC + 25) / 57));
             let rT, gT, bT;
             if (tNorm < 0.44) {
               const u = tNorm / 0.44;
-              rT = Math.round(56 - u * 20);
-              gT = Math.round(78 + u * 118);
-              bT = Math.round(225 + u * 25);
+              rT = Math.round(32 + u * 12);
+              gT = Math.round(92 + u * 108);
+              bT = Math.round(218 + u * 26);
             } else if (tNorm < 0.72) {
               const u = (tNorm - 0.44) / 0.28;
-              rT = Math.round(36 + u * 184);
-              gT = Math.round(196 + u * 14);
-              bT = Math.round(250 - u * 175);
+              rT = Math.round(44 + u * 178);
+              gT = Math.round(200 + u * 10);
+              bT = Math.round(244 - u * 172);
             } else {
               const u = (tNorm - 0.72) / 0.28;
-              rT = Math.round(220 + u * 28);
+              rT = Math.round(222 + u * 26);
               gT = Math.round(210 - u * 128);
-              bT = Math.round(75 - u * 45);
+              bT = Math.round(72 - u * 42);
             }
-            wmmCtx.fillStyle = `rgba(${rT}, ${gT}, ${bT}, 0.30)`;
+            wmmCtx.fillStyle = `rgba(${rT}, ${gT}, ${bT}, 0.28)`;
             wmmCtx.fillRect(0, 0, W, H);
           } else if (wmmLayerMode === "wind") {
             const wNorm = Math.min(1, gustKnots / 40);
-            wmmCtx.fillStyle = `rgba(${Math.round(56 + wNorm * 190)}, ${Math.round(189 - wNorm * 110)}, 248, 0.18)`;
+            wmmCtx.fillStyle = `rgba(${Math.round(56 + wNorm * 190)}, ${Math.round(189 - wNorm * 110)}, 248, 0.16)`;
             wmmCtx.fillRect(0, 0, W, H);
           }
 
-          // 2. Fleuve Saint-Laurent calibré WGS84 (« Coude de Québec », Goulet Québec–Lévis, Bassin Louise, Chaudière/Etchemin & Estuaire)
+          // --- COUCHE GÉOGRAPHIQUE ZOOMABLE AUTOUR DES QUAIS 86/87 (qx, qy) ---
+          const invZ = 1 / wmmZoom;
+          const strokeScale = 1 / Math.pow(wmmZoom, 0.78);
           wmmCtx.save();
+          wmmCtx.translate(qx, qy);
+          wmmCtx.scale(wmmZoom, wmmZoom);
+          wmmCtx.translate(-qx, -qy);
+
+          // 2. Fleuve Saint-Laurent calibré WGS84 (« Coude de Québec », Goulet Québec–Lévis, Bassin Louise, Chaudière/Etchemin & Estuaire)
           wmmCtx.beginPath();
-          // Rive-Nord : Saint-Augustin -> Cap-Rouge -> Ponts (44,125) -> Sillery -> Anse au Foulon (87,83) -> Cap-Blanc -> Cap-Diamant (112,56) -> Pointe-à-Carcy / Bassin Louise (111,43) -> Beauport (122,24) -> Montmorency (148,0)
-          wmmCtx.moveTo(0, 134);
+          wmmCtx.moveTo(-20, 138);
           wmmCtx.lineTo(28, 129);
-          wmmCtx.lineTo(44, 125); // Culée Nord Ponts QC
-          wmmCtx.lineTo(66, 108); // Pointe-à-Pizeau / Sillery
-          wmmCtx.lineTo(84, 86);  // Anse au Foulon (Quais 101-108)
-          wmmCtx.lineTo(98, 72);  // Cap-Blanc
-          wmmCtx.lineTo(112, 56); // Promontoire du Cap-Diamant (Goulet Québec–Lévis!)
-          wmmCtx.lineTo(114, 48); // Pointe-à-Carcy / Gare Fluviale
-          wmmCtx.lineTo(107, 45); // Entrée Darse Bassin Louise
-          wmmCtx.lineTo(109, 39); // Estuaire Rivière Saint-Charles
-          wmmCtx.lineTo(116, 41); // Môle Bunge / Vieux-Port
-          wmmCtx.lineTo(122, 24); // Terminaux de Beauport (Quais 50-53)
-          wmmCtx.lineTo(134, 10); // Battures de Beauport / Montmorency
-          wmmCtx.lineTo(150, 0);
-          wmmCtx.lineTo(244, 0);
-          // Rive-Sud : Saint-Michel/Beaumont -> Lauzon / Chantier Davie (141,36) -> Pointe-Lévy / Quai Paquet (128,49) -> Hadlow -> Môle Valero (110,101) -> Etchemin (95,104) -> Anse Benson -> Chaudière (58,132) -> Ponts Sud (53,136)
-          wmmCtx.lineTo(244, 14);
-          wmmCtx.lineTo(202, 21); // Beaumont
-          wmmCtx.lineTo(164, 28); // Anse aux Sauvages / Lauzon Est
-          wmmCtx.lineTo(141, 36); // Chantier Davie (Cale sèche Champlain)
-          wmmCtx.lineTo(131, 45); // Pointe-Lévy
-          wmmCtx.lineTo(128, 50); // Quai Paquet Lévis (rive Est du Goulet)
-          wmmCtx.lineTo(124, 68); // Falaises de Lévis / Parcours des Anses
-          wmmCtx.lineTo(118, 86); // Parc de la Jetée-d'Ultramar / Hadlow
-          wmmCtx.lineTo(111.5, 100.5); // Enracinement du Môle Valero Levishipping (Az 137.8°)
+          wmmCtx.lineTo(44, 125);
+          wmmCtx.lineTo(66, 108);
+          wmmCtx.lineTo(84, 86);
+          wmmCtx.lineTo(98, 72);
+          wmmCtx.lineTo(112, 56);
+          wmmCtx.lineTo(114, 48);
+          wmmCtx.lineTo(107, 45);
+          wmmCtx.lineTo(109, 39);
+          wmmCtx.lineTo(116, 41);
+          wmmCtx.lineTo(122, 24);
+          wmmCtx.lineTo(134, 10);
+          wmmCtx.lineTo(150, -4);
+          wmmCtx.lineTo(260, -4);
+          wmmCtx.lineTo(260, 14);
+          wmmCtx.lineTo(202, 21);
+          wmmCtx.lineTo(164, 28);
+          wmmCtx.lineTo(141, 36);
+          wmmCtx.lineTo(131, 45);
+          wmmCtx.lineTo(128, 50);
+          wmmCtx.lineTo(124, 68);
+          wmmCtx.lineTo(118, 86);
+          wmmCtx.lineTo(111.5, 100.5);
           wmmCtx.lineTo(98, 103);
-          wmmCtx.lineTo(95, 108); // Embouchure Rivière Etchemin
+          wmmCtx.lineTo(95, 108);
           wmmCtx.lineTo(91, 104);
-          wmmCtx.lineTo(76, 117); // Anse Benson
+          wmmCtx.lineTo(76, 117);
           wmmCtx.lineTo(61, 130);
-          wmmCtx.lineTo(58, 137); // Embouchure Rivière Chaudière
-          wmmCtx.lineTo(53, 135); // Culée Sud Ponts QC
-          wmmCtx.lineTo(24, 142);
-          wmmCtx.lineTo(0, 142);
+          wmmCtx.lineTo(58, 137);
+          wmmCtx.lineTo(53, 135);
+          wmmCtx.lineTo(24, 148);
+          wmmCtx.lineTo(-20, 148);
           wmmCtx.closePath();
-          const riverGrad = wmmCtx.createLinearGradient(20, 135, 210, 10);
+
+          const riverGrad = wmmCtx.createLinearGradient(20, 138, 210, 10);
           if (wmmLayerMode === "temp") {
-            const wNormT = Math.max(0, Math.min(1, (waterC + 1.5) / 23.5)); // -1.5°C -> +22°C
+            const wNormT = Math.max(0, Math.min(1, (waterC + 1.5) / 23.5));
             const rW = Math.round(14 + wNormT * 26);
             const gW = Math.round(72 + wNormT * 118);
             const bW = Math.round(138 + (1 - Math.abs(wNormT - 0.55)) * 78);
             riverGrad.addColorStop(0, `rgb(${rW}, ${gW}, ${bW})`);
             riverGrad.addColorStop(1, `rgb(${Math.min(255, rW + 14)}, ${Math.min(255, gW + 20)}, ${Math.min(255, bW + 18)})`);
           } else {
-            riverGrad.addColorStop(0, c.isNight ? "#082f49" : "#0369a1");
-            riverGrad.addColorStop(1, c.isNight ? "#0c4a6e" : "#0284c7");
+            riverGrad.addColorStop(0, pal.river0);
+            riverGrad.addColorStop(1, pal.river1);
           }
           wmmCtx.fillStyle = riverGrad;
           wmmCtx.fill();
+
           if (tideM < 2.4) {
             const batAlpha = Math.min(0.55, (2.4 - tideM) * 0.28);
             wmmCtx.strokeStyle = `rgba(148, 130, 108, ${batAlpha.toFixed(2)})`;
-            wmmCtx.lineWidth = 2.1;
+            wmmCtx.lineWidth = 2.0 * strokeScale;
             wmmCtx.stroke();
           }
-          wmmCtx.strokeStyle = wmmLayerMode === "temp" ? "rgba(186, 230, 253, 0.62)" : "rgba(125, 211, 252, 0.35)";
-          wmmCtx.lineWidth = 1;
+          wmmCtx.strokeStyle = wmmLayerMode === "temp" ? "rgba(186, 230, 253, 0.62)" : pal.coast;
+          wmmCtx.lineWidth = 1.0 * strokeScale;
           wmmCtx.stroke();
 
-          // Ponts de Québec & Pierre-Laporte sur la minimap (Gorge amont Az 237°)
-          wmmCtx.strokeStyle = "rgba(251, 146, 60, 0.85)";
-          wmmCtx.lineWidth = 1.6;
+          // 2b. Chenal Maritime dragué des Grands Navires (15.5m ZC) + Chevrons de courant de marée
+          wmmCtx.save();
+          wmmCtx.beginPath();
+          wmmCtx.moveTo(47, 131);
+          wmmCtx.lineTo(74, 111);
+          wmmCtx.lineTo(98, 91);
+          wmmCtx.lineTo(118, 63);
+          wmmCtx.lineTo(123, 47);
+          wmmCtx.lineTo(148, 28);
+          wmmCtx.lineTo(205, 17);
+          wmmCtx.strokeStyle = pal.channelFill;
+          wmmCtx.lineWidth = 8.5 * strokeScale;
+          wmmCtx.lineCap = "round";
+          wmmCtx.lineJoin = "round";
+          wmmCtx.stroke();
+
+          wmmCtx.setLineDash([2.8 * strokeScale, 2.6 * strokeScale]);
+          wmmCtx.strokeStyle = pal.channelDash;
+          wmmCtx.lineWidth = 0.85 * strokeScale;
+          wmmCtx.stroke();
+          wmmCtx.setLineDash([]);
+
+          // Chevrons animés du courant de marée (Flot amont / Jusant aval)
+          if (Math.abs(flowSign) > 0.05) {
+            const cShift = ((nowFrame * 0.008 * (flowSign > 0 ? 1 : -1)) % 1 + 1) % 1;
+            const chanSegs = [
+              [56, 124, 88, 99],
+              [92, 95, 116, 66],
+              [120, 56, 146, 30],
+            ];
+            wmmCtx.strokeStyle = isAdmiralty ? "rgba(92, 64, 34, 0.55)" : "rgba(186, 230, 253, 0.46)";
+            wmmCtx.lineWidth = 0.9 * strokeScale;
+            for (let cs = 0; cs < chanSegs.length; cs++) {
+              const [x0, y0, x1, y1] = chanSegs[cs];
+              const px = x0 + (x1 - x0) * cShift;
+              const py = y0 + (y1 - y0) * cShift;
+              const ang = Math.atan2(y1 - y0, x1 - x0) + (flowSign < 0 ? Math.PI : 0);
+              const chSz = 2.2 * strokeScale;
+              wmmCtx.beginPath();
+              wmmCtx.moveTo(px - Math.cos(ang - 0.65) * chSz, py - Math.sin(ang - 0.65) * chSz);
+              wmmCtx.lineTo(px, py);
+              wmmCtx.lineTo(px - Math.cos(ang + 0.65) * chSz, py - Math.sin(ang + 0.65) * chSz);
+              wmmCtx.stroke();
+            }
+          }
+          wmmCtx.restore();
+
+          // Glaces dérivantes sur le fleuve en hiver ou simulation glaciale
+          const iceNow = Boolean(window.forceWinter3D || waterC <= 0.4 || tempC <= -6);
+          if (iceNow) {
+            wmmCtx.fillStyle = isAdmiralty ? "rgba(255, 255, 255, 0.55)" : "rgba(226, 232, 240, 0.48)";
+            const iceDrift = (nowFrame * 0.0025 * (flowSign || 1)) % 24;
+            for (let ic = 0; ic < 14; ic++) {
+              const uIce = ((ic * 17 + iceDrift + 48) % 120) / 120;
+              const ix = 52 + uIce * 96 + Math.sin(ic * 2.3) * 4.5;
+              const iy = 126 - uIce * 96 + Math.cos(ic * 1.9) * 3.5;
+              wmmCtx.beginPath();
+              wmmCtx.ellipse(ix, iy, 2.1 * strokeScale, 1.1 * strokeScale, ic * 0.6, 0, Math.PI * 2);
+              wmmCtx.fill();
+            }
+          }
+
+          // Trajet pointillé de la Traverse Québec–Lévis
+          wmmCtx.save();
+          wmmCtx.setLineDash([1.6 * strokeScale, 1.8 * strokeScale]);
+          wmmCtx.strokeStyle = isAdmiralty ? "rgba(153, 27, 27, 0.45)" : "rgba(251, 191, 36, 0.42)";
+          wmmCtx.lineWidth = 0.8 * strokeScale;
+          wmmCtx.beginPath();
+          wmmCtx.moveTo(114, 49);
+          wmmCtx.lineTo(128, 50);
+          wmmCtx.stroke();
+          wmmCtx.restore();
+
+          // Ponts de Québec & Pierre-Laporte (Gorge amont Az 237°)
+          wmmCtx.strokeStyle = isAdmiralty ? "#9a3412" : "rgba(251, 146, 60, 0.9)";
+          wmmCtx.lineWidth = 1.7 * strokeScale;
           wmmCtx.beginPath();
           wmmCtx.moveTo(44, 125);
           wmmCtx.lineTo(53, 135);
           wmmCtx.stroke();
 
-          // Île d'Orléans calibrée (Pointe Sainte-Pétronille à Az 26.5° divisant le Chenal du Nord et le Chenal du Sud)
+          // Île d'Orléans calibrée
           wmmCtx.beginPath();
-          wmmCtx.moveTo(143, 19); // Bout de l'Île (Sainte-Pétronille)
+          wmmCtx.moveTo(143, 19);
           wmmCtx.lineTo(162, 6);
-          wmmCtx.lineTo(192, 0);
-          wmmCtx.lineTo(244, 0);
-          wmmCtx.lineTo(244, 6);
-          wmmCtx.lineTo(198, 14); // Saint-Jean / Saint-Laurent
+          wmmCtx.lineTo(192, -4);
+          wmmCtx.lineTo(256, -4);
+          wmmCtx.lineTo(256, 6);
+          wmmCtx.lineTo(198, 14);
           wmmCtx.lineTo(164, 20);
           wmmCtx.closePath();
-          wmmCtx.fillStyle = "#112236";
+          wmmCtx.fillStyle = pal.island;
           wmmCtx.fill();
-          wmmCtx.strokeStyle = "rgba(148, 163, 184, 0.48)";
-          wmmCtx.lineWidth = 1;
+          wmmCtx.strokeStyle = pal.coast;
+          wmmCtx.lineWidth = 0.95 * strokeScale;
           wmmCtx.stroke();
 
-          // Pont de l'Île d'Orléans (Beauport <-> Sainte-Pétronille)
-          wmmCtx.strokeStyle = "rgba(34, 197, 94, 0.75)";
-          wmmCtx.lineWidth = 1.1;
+          // Pont de l'Île d'Orléans
+          wmmCtx.strokeStyle = isAdmiralty ? "#166534" : "rgba(34, 197, 94, 0.82)";
+          wmmCtx.lineWidth = 1.15 * strokeScale;
           wmmCtx.beginPath();
           wmmCtx.moveTo(133, 11);
           wmmCtx.lineTo(144, 18);
           wmmCtx.stroke();
 
-          // Quai Ultramar/Valero réel : Môle + Ducs-d'Albe en T (ONO) + Quai unique NE à double face (87 vers Québec NO / 86 vers Lévis SE)
-          wmmCtx.strokeStyle = "rgba(203, 213, 225, 0.94)";
-          wmmCtx.lineWidth = 1.5;
+          // Voie ferrée côtière CN Rive-Sud + Convoi Citerne CN en temps réel
+          if (coastalTrainGroup) {
+            worldXZToBaseMap(coastalTrainGroup.position.x, coastalTrainGroup.position.z, wmmTmpPt);
+            wmmCtx.fillStyle = "#f97316";
+            wmmCtx.beginPath();
+            wmmCtx.arc(wmmTmpPt.x, wmmTmpPt.y, 1.55 * strokeScale, 0, Math.PI * 2);
+            wmmCtx.fill();
+            wmmHitTargets.push({
+              poiId: "train_cn",
+              sx: baseMapToScreenX(wmmTmpPt.x),
+              sy: baseMapToScreenY(wmmTmpPt.y),
+              r: 7.5,
+              tip: "\uD83D\uDE82 Convoi Citerne CN (35 km/h)",
+            });
+          }
+
+          // 2c. QUAI EN T VALERO (POSTES 87 & 86) PROJETÉ EXACTEMENT DEPUIS LA GÉOMÉTRIE 3D!
+          const projectDockLocal = (lx, lz, out) => {
+            wmmWorldScratch.set(lx, 7.4, lz);
+            dockGroup.localToWorld(wmmWorldScratch);
+            return worldXZToBaseMap(wmmWorldScratch.x, wmmWorldScratch.z, out);
+          };
+
+          // Môle d'accès terrestre + Estacade en T + Passerelles de caissons
+          wmmCtx.strokeStyle = pal.dockStroke;
+          wmmCtx.lineWidth = (isHarborZoom ? 1.8 : 1.45) * strokeScale;
           wmmCtx.beginPath();
-          // Môle terrestre + barre transversale en T jusqu'au caisson fluvial #6
-          wmmCtx.moveTo(111.5, 100.5);
-          wmmCtx.lineTo(101.8, 95.0);
-          // Quai principal unique partagé (Postes 87 & 86) remontant vers le Nord-Est (36°)
-          wmmCtx.moveTo(104.2, 96.3);
-          wmmCtx.lineTo(109.6, 89.2);
+          projectDockLocal(-53.2, 185, wmmTmpPt);
+          wmmCtx.moveTo(wmmTmpPt.x, wmmTmpPt.y);
+          projectDockLocal(-56.0, 18, wmmTmpPt);
+          wmmCtx.lineTo(wmmTmpPt.x, wmmTmpPt.y);
+          projectDockLocal(-56.0, -31, wmmTmpPt);
+          wmmCtx.lineTo(wmmTmpPt.x, wmmTmpPt.y);
+          // Axe longitudinal du quai partagé (Caisson Ouest -> Plateforme 86/87 -> Caissons Est #2 & #1)
+          projectDockLocal(-56.0, 0, wmmTmpPt);
+          wmmCtx.moveTo(wmmTmpPt.x, wmmTmpPt.y);
+          projectDockLocal(78.0, 0, wmmTmpPt);
+          wmmCtx.lineTo(wmmTmpPt.x, wmmTmpPt.y);
           wmmCtx.stroke();
 
-          // Les 6 caissons cylindriques blancs (ducs-d'Albe circulaires) du T et du quai
-          wmmCtx.fillStyle = "#f8fafc";
-          [
-            [101.8, 95.0],
-            [103.0, 95.6],
-            [104.2, 96.3],
-            [105.5, 94.6],
-            [107.9, 91.4],
-            [109.6, 89.2]
-          ].forEach(([cx, cy]) => {
+          // Plateforme centrale double-face (Poste 87 vers Québec -Z / Poste 86 vers Lévis +Z)
+          wmmCtx.fillStyle = pal.caissonFill;
+          wmmCtx.strokeStyle = isAdmiralty ? "#78350f" : "#fbbf24";
+          wmmCtx.lineWidth = 0.7 * strokeScale;
+          wmmCtx.beginPath();
+          projectDockLocal(-13, -8.2, wmmTmpPt);
+          wmmCtx.moveTo(wmmTmpPt.x, wmmTmpPt.y);
+          projectDockLocal(13, -8.2, wmmTmpPt);
+          wmmCtx.lineTo(wmmTmpPt.x, wmmTmpPt.y);
+          projectDockLocal(13, 8.2, wmmTmpPt);
+          wmmCtx.lineTo(wmmTmpPt.x, wmmTmpPt.y);
+          projectDockLocal(-13, 8.2, wmmTmpPt);
+          wmmCtx.closePath();
+          wmmCtx.fill();
+          wmmCtx.stroke();
+
+          // Les 6 caissons circulaires en béton (ducs-d'Albe #1 à #6)
+          const caissonLocals = [
+            [78, 0, 6.8],
+            [30, 0, 6.6],
+            [-39, 1, 4.8],
+            [-56, 18, 5.8],
+            [-56, -6, 6.2],
+            [-56, -31, 6.8],
+          ];
+          wmmCtx.fillStyle = pal.caissonFill;
+          for (let ci = 0; ci < caissonLocals.length; ci++) {
+            const [clx, clz, cRad] = caissonLocals[ci];
+            projectDockLocal(clx, clz, wmmTmpPt);
             wmmCtx.beginPath();
-            wmmCtx.arc(cx, cy, 0.9, 0, Math.PI * 2);
+            wmmCtx.arc(wmmTmpPt.x, wmmTmpPt.y, Math.max(0.62 * strokeScale, cRad * 0.082), 0, Math.PI * 2);
             wmmCtx.fill();
-          });
-
-          const livePV = window.livePortVessels;
-          const b87OccMini = Boolean((livePV && livePV.berth87 && livePV.berth87.occupied) || window.forceShowBerth87Ship);
-          const b86OccMini = Boolean((livePV && livePV.berth86 && livePV.berth86.occupied) || window.forceShowBerth86Ship);
-          if (b87OccMini) {
-            // Poste 87 : Face Nord-Ouest (vers Québec) du quai partagé
-            wmmCtx.save();
-            wmmCtx.translate(105.6, 91.8);
-            wmmCtx.rotate(-0.92);
-            wmmCtx.fillStyle = "#ef4444";
-            wmmCtx.fillRect(-3.8, -1.05, 7.6, 2.1);
-            wmmCtx.restore();
           }
-          if (b86OccMini) {
-            // Poste 86 : Face Sud-Est opposée (vers Lévis) du MÊME quai!
-            wmmCtx.save();
-            wmmCtx.translate(108.1, 93.7);
-            wmmCtx.rotate(-0.92);
-            wmmCtx.fillStyle = "#38bdf8";
-            wmmCtx.fillRect(-3.0, -0.95, 6.0, 1.9);
-            wmmCtx.restore();
-          }
-          wmmCtx.restore();
 
-          // Cartouche thermique Air/Eau/ΔT en bas à droite lorsque le calque Température est actif
-          if (wmmLayerMode === "temp") {
-            const dT = tempC - waterC;
-            const dTSign = dT >= 0 ? "+" : "";
-            const wSign = waterC >= 0 ? "+" : "";
-            wmmCtx.save();
-            wmmCtx.fillStyle = "rgba(4, 12, 24, 0.84)";
-            wmmCtx.strokeStyle = "rgba(125, 211, 252, 0.45)";
-            wmmCtx.lineWidth = 1;
+          // Bouées latérales IALA-B du chenal en temps réel (clignotement synchronisé avec la 3D!)
+          for (let bi = 0; bi < buoys3D.length; bi++) {
+            const b3 = buoys3D[bi];
+            const bSpec = buoySpecs[bi];
+            worldXZToBaseMap(b3.x, b3.z, wmmTmpPt);
+            const flashOn = b3.beacon && b3.beacon.visible;
+            wmmCtx.fillStyle = bSpec && bSpec.isGreen ? "#10b981" : "#ef4444";
             wmmCtx.beginPath();
-            if (wmmCtx.roundRect) wmmCtx.roundRect(128, 114, 112, 24, 5);
-            else wmmCtx.rect(128, 114, 112, 24);
+            wmmCtx.arc(wmmTmpPt.x, wmmTmpPt.y, (flashOn ? 1.25 : 0.8) * strokeScale, 0, Math.PI * 2);
+            wmmCtx.fill();
+          }
+
+          // Faisceau du Bat-Signal 3D vers la Rive-Sud lorsqu'il est actif
+          if (typeof batSignal3DGroup !== "undefined" && batSignal3DGroup && batSignal3DGroup.visible) {
+            projectDockLocal(-6.8, 0, wmmTmpPt);
+            const bsRad = (175 * Math.PI) / 180;
+            wmmCtx.save();
+            wmmCtx.beginPath();
+            wmmCtx.moveTo(wmmTmpPt.x, wmmTmpPt.y);
+            wmmCtx.arc(wmmTmpPt.x, wmmTmpPt.y, 20 * strokeScale, bsRad - Math.PI / 2 - 0.18, bsRad - Math.PI / 2 + 0.18);
+            wmmCtx.closePath();
+            wmmCtx.fillStyle = "rgba(250, 204, 21, 0.28)";
+            wmmCtx.fill();
+            wmmCtx.restore();
+          }
+
+          // --- NAVIRES 3D EN TEMPS RÉEL (SILHOUETTES ORIENTÉES, CÂBLES DE REMORQUAGE & VECTEURS AIS) ---
+          const drawShipMiniHull = (wx, wz, rotY, halfLenPx, halfBeamPx, fillCol, strokeCol) => {
+            worldXZToBaseMap(wx, wz, wmmTmpPt);
+            // En 3D, l'étrave du navire pointe vers +X local -> monde (cos(rotY), -sin(rotY))
+            const canvasRot = -rotY;
+            wmmCtx.save();
+            wmmCtx.translate(wmmTmpPt.x, wmmTmpPt.y);
+            wmmCtx.rotate(canvasRot);
+            wmmCtx.fillStyle = fillCol;
+            wmmCtx.strokeStyle = strokeCol;
+            wmmCtx.lineWidth = 0.65 * strokeScale;
+            wmmCtx.beginPath();
+            wmmCtx.moveTo(halfLenPx, 0);
+            wmmCtx.lineTo(halfLenPx * 0.62, -halfBeamPx);
+            wmmCtx.lineTo(-halfLenPx, -halfBeamPx);
+            wmmCtx.lineTo(-halfLenPx, halfBeamPx);
+            wmmCtx.lineTo(halfLenPx * 0.62, halfBeamPx);
+            wmmCtx.closePath();
             wmmCtx.fill();
             wmmCtx.stroke();
-            wmmCtx.font = "800 7px 'JetBrains Mono', monospace";
-            wmmCtx.fillStyle = "#7dd3fc";
-            wmmCtx.fillText(`Eau: ${wSign}${waterC.toFixed(1)}\u00B0C`, 133, 124);
-            wmmCtx.fillStyle = Math.abs(dT) >= 9.5 ? "#fde047" : "#cbd5e1";
-            wmmCtx.fillText(`\u0394T Air-Eau: ${dTSign}${dT.toFixed(1)}\u00B0`, 133, 134);
+            // Château arrière blanc
+            wmmCtx.fillStyle = "#f8fafc";
+            wmmCtx.fillRect(-halfLenPx * 0.78, -halfBeamPx * 0.72, halfLenPx * 0.34, halfBeamPx * 1.44);
+            wmmCtx.restore();
+            return { mx: wmmTmpPt.x, my: wmmTmpPt.y };
+          };
+
+          // Navire Poste 87 (Face Nord-Ouest vers Québec — suit aussi l'appareillage/accostage en direct!)
+          const livePV = window.livePortVessels;
+          if (tankerGroup && tankerGroup.visible) {
+            const hl87 = Math.max(4.4 * strokeScale, 5.2 * (tankerGroup.scale.x || 1));
+            const hb87 = Math.max(1.15 * strokeScale, 1.25);
+            const p87 = drawShipMiniHull(tankerGroup.position.x, tankerGroup.position.z, tankerGroup.rotation.y, hl87, hb87, "#ef4444", "#fecaca");
+            const nm87 = (livePV && livePV.berth87 && livePV.berth87.name) || "Cap Qu\u00e9bec";
+            wmmHitTargets.push({
+              poiId: "tanker",
+              sx: baseMapToScreenX(p87.mx),
+              sy: baseMapToScreenY(p87.my),
+              r: isHarborZoom ? 14 : 8.5,
+              tip: `\uD83D\uDEA2 Poste 87 : ${nm87}`,
+            });
+          } else {
+            projectDockLocal(2, -8.5, wmmTmpPt);
+            wmmHitTargets.push({
+              poiId: "dock87",
+              sx: baseMapToScreenX(wmmTmpPt.x),
+              sy: baseMapToScreenY(wmmTmpPt.y),
+              r: isHarborZoom ? 11 : 7,
+              tip: "\u2693 Poste 87 (Face Qu\u00e9bec — Libre)",
+            });
+          }
+
+          // Navire Poste 86 (Face Sud-Est opposée vers Lévis du MÊME quai!)
+          if (vessel86Group && vessel86Group.visible) {
+            const hl86 = Math.max(3.5 * strokeScale, 3.8 * (vessel86Group.scale.x || 1));
+            const hb86 = Math.max(1.0 * strokeScale, 1.05);
+            const p86 = drawShipMiniHull(vessel86Group.position.x, vessel86Group.position.z, vessel86Group.rotation.y, hl86, hb86, "#38bdf8", "#bae6fd");
+            const nm86 = (livePV && livePV.berth86 && livePV.berth86.name) || "Navire Poste 86";
+            wmmHitTargets.push({
+              poiId: "vessel86",
+              sx: baseMapToScreenX(p86.mx),
+              sy: baseMapToScreenY(p86.my),
+              r: isHarborZoom ? 13 : 8.0,
+              tip: `\uD83D\uDEE2\uFE0F Poste 86 : ${nm86}`,
+            });
+          } else {
+            projectDockLocal(4, 8.5, wmmTmpPt);
+            wmmHitTargets.push({
+              poiId: "dock86",
+              sx: baseMapToScreenX(wmmTmpPt.x),
+              sy: baseMapToScreenY(wmmTmpPt.y),
+              r: isHarborZoom ? 11 : 7,
+              tip: "\u2693 Poste 86 (Face L\u00e9vis — Libre)",
+            });
+          }
+
+          // Remorqueurs Groupe Océan (Océan Taiga & Océan K. Rusby) + Aussières de remorquage actives
+          const tmNow = window.tugManeuver;
+          const tugsActive = Boolean(tmNow && tmNow.state !== "docked" && tmNow.state !== "departed");
+          if (tugBow && tugBow.group) {
+            if (tugsActive && towLinesGroup && towLinesGroup.visible && tankerGroup.visible) {
+              worldXZToBaseMap(tugBow.group.position.x, tugBow.group.position.z, wmmTmpPt);
+              worldXZToBaseMap(tankerGroup.position.x, tankerGroup.position.z, wmmTmpPtB);
+              wmmCtx.save();
+              wmmCtx.setLineDash([1.4 * strokeScale, 1.2 * strokeScale]);
+              wmmCtx.strokeStyle = "#fde047";
+              wmmCtx.lineWidth = 0.85 * strokeScale;
+              wmmCtx.beginPath();
+              wmmCtx.moveTo(wmmTmpPt.x, wmmTmpPt.y);
+              wmmCtx.lineTo(wmmTmpPtB.x, wmmTmpPtB.y);
+              wmmCtx.stroke();
+              wmmCtx.restore();
+            }
+            const pTaiga = drawShipMiniHull(tugBow.group.position.x, tugBow.group.position.z, tugBow.group.rotation.y, 1.9 * strokeScale, 0.9 * strokeScale, "#f59e0b", "#fef08a");
+            wmmHitTargets.push({
+              poiId: "tug_taiga",
+              sx: baseMapToScreenX(pTaiga.mx),
+              sy: baseMapToScreenY(pTaiga.my),
+              r: 8.0,
+              tip: "\uD83D\uDEA4 Remorqueur Oc\u00e9an Taiga",
+            });
+          }
+          if (tugStern && tugStern.group) {
+            if (tugsActive && towLinesGroup && towLinesGroup.visible && tankerGroup.visible) {
+              worldXZToBaseMap(tugStern.group.position.x, tugStern.group.position.z, wmmTmpPt);
+              worldXZToBaseMap(tankerGroup.position.x, tankerGroup.position.z, wmmTmpPtB);
+              wmmCtx.save();
+              wmmCtx.setLineDash([1.4 * strokeScale, 1.2 * strokeScale]);
+              wmmCtx.strokeStyle = "#fde047";
+              wmmCtx.lineWidth = 0.85 * strokeScale;
+              wmmCtx.beginPath();
+              wmmCtx.moveTo(wmmTmpPt.x, wmmTmpPt.y);
+              wmmCtx.lineTo(wmmTmpPtB.x, wmmTmpPtB.y);
+              wmmCtx.stroke();
+              wmmCtx.restore();
+            }
+            const pRusby = drawShipMiniHull(tugStern.group.position.x, tugStern.group.position.z, tugStern.group.rotation.y, 1.85 * strokeScale, 0.88 * strokeScale, "#fb923c", "#fed7aa");
+            wmmHitTargets.push({
+              poiId: "tug_rusby",
+              sx: baseMapToScreenX(pRusby.mx),
+              sy: baseMapToScreenY(pRusby.my),
+              r: 8.0,
+              tip: "\uD83D\uDEA4 Remorqueur Oc\u00e9an K. Rusby",
+            });
+          }
+
+          // Vracquier Voie Maritime CSL St-Laurent + vecteur COG
+          if (seawayCargoGroup) {
+            const pCargo = drawShipMiniHull(seawayCargoGroup.position.x, seawayCargoGroup.position.z, seawayCargoGroup.rotation.y, 3.6 * strokeScale, 1.05 * strokeScale, "#10b981", "#a7f3d0");
+            const cogAng = -seawayCargoGroup.rotation.y;
+            wmmCtx.strokeStyle = "rgba(52, 211, 153, 0.85)";
+            wmmCtx.lineWidth = 0.85 * strokeScale;
+            wmmCtx.beginPath();
+            wmmCtx.moveTo(pCargo.mx, pCargo.my);
+            wmmCtx.lineTo(pCargo.mx + Math.cos(cogAng) * 7.5 * strokeScale, pCargo.my + Math.sin(cogAng) * 7.5 * strokeScale);
+            wmmCtx.stroke();
+            wmmHitTargets.push({
+              poiId: "cargo",
+              sx: baseMapToScreenX(pCargo.mx),
+              sy: baseMapToScreenY(pCargo.my),
+              r: 8.5,
+              tip: "\uD83D\uDEF3\uFE0F Vracquier CSL St-Laurent (10.2 nds)",
+            });
+          }
+
+          // Traversier Québec–Lévis NM Alphonse-Desjardins
+          if (ferryGroup) {
+            const pFerry = drawShipMiniHull(ferryGroup.position.x, ferryGroup.position.z, ferryGroup.rotation.y, 2.2 * strokeScale, 0.95 * strokeScale, "#fde047", "#ffffff");
+            wmmHitTargets.push({
+              poiId: "ferry",
+              sx: baseMapToScreenX(pFerry.mx),
+              sy: baseMapToScreenY(pFerry.my),
+              r: 8.0,
+              tip: "\u26F4\uFE0F Traversier QC\u2013L\u00e9vis (11.5 nds)",
+            });
+          }
+
+          // Brise-glace NGCC Pierre Radisson
+          if (ccgIcebreaker) {
+            worldXZToBaseMap(ccgIcebreaker.position.x, ccgIcebreaker.position.z, wmmTmpPt);
+            wmmCtx.fillStyle = "#ef4444";
+            wmmCtx.strokeStyle = "#ffffff";
+            wmmCtx.lineWidth = 0.6 * strokeScale;
+            wmmCtx.beginPath();
+            wmmCtx.arc(wmmTmpPt.x, wmmTmpPt.y, 1.7 * strokeScale, 0, Math.PI * 2);
+            wmmCtx.fill();
+            wmmCtx.stroke();
+            wmmHitTargets.push({
+              poiId: "ccg_radisson",
+              sx: baseMapToScreenX(wmmTmpPt.x),
+              sy: baseMapToScreenY(wmmTmpPt.y),
+              r: 7.5,
+              tip: "\uD83D\uDEA2 NGCC Pierre Radisson (Garde C\u00f4ti\u00e8re)",
+            });
+          }
+
+          // Position temps réel de Batman en patrouille sur le quai en T
+          if (batmanGroup && batmanGroup.visible) {
+            batmanGroup.getWorldPosition(wmmWorldScratch);
+            worldXZToBaseMap(wmmWorldScratch.x, wmmWorldScratch.z, wmmTmpPt);
+            const batPulse = (1.5 + Math.sin(nowFrame * 0.008) * 0.45) * strokeScale;
+            wmmCtx.fillStyle = "#facc15";
+            wmmCtx.strokeStyle = "#090d16";
+            wmmCtx.lineWidth = 0.65 * strokeScale;
+            wmmCtx.beginPath();
+            wmmCtx.arc(wmmTmpPt.x, wmmTmpPt.y, batPulse, 0, Math.PI * 2);
+            wmmCtx.fill();
+            wmmCtx.stroke();
+            wmmHitTargets.push({
+              poiId: "batman_valero",
+              sx: baseMapToScreenX(wmmTmpPt.x),
+              sy: baseMapToScreenY(wmmTmpPt.y),
+              r: isHarborZoom ? 10 : 7.5,
+              tip: `\uD83E\uDD87 Batman : ${window.batmanActionStatus || "Patrouille Quai 86/87"}`,
+            });
+          }
+
+          // Fin de la transformation géographique zoomée
+          wmmCtx.restore();
+
+          // 3. Grille radar marine S-Band + Faisceau rotatif 360° (modes Tactique & Doppler)
+          if (wmmLayerMode === "tactical" || wmmLayerMode === "radar") {
+            wmmCtx.save();
+            wmmCtx.strokeStyle = pal.grid;
+            wmmCtx.lineWidth = 0.75;
+            const rings = isHarborZoom ? [22, 46, 72] : [26, 54, 86];
+            for (let ri = 0; ri < rings.length; ri++) {
+              wmmCtx.beginPath();
+              wmmCtx.arc(qx, qy, rings[ri], 0, Math.PI * 2);
+              wmmCtx.stroke();
+            }
+            // Balayage S-Band rotatif doux
+            const sweepR = 88;
+            const sweepGrad = wmmCtx.createRadialGradient(qx, qy, 2, qx, qy, sweepR);
+            sweepGrad.addColorStop(0, `rgba(${pal.sweepRgb}, 0.22)`);
+            sweepGrad.addColorStop(0.75, `rgba(${pal.sweepRgb}, 0.09)`);
+            sweepGrad.addColorStop(1, `rgba(${pal.sweepRgb}, 0)`);
+            wmmCtx.fillStyle = sweepGrad;
+            wmmCtx.beginPath();
+            wmmCtx.moveTo(qx, qy);
+            wmmCtx.arc(qx, qy, sweepR, wmmRadarSweepAngle - 0.36, wmmRadarSweepAngle);
+            wmmCtx.closePath();
+            wmmCtx.fill();
+
+            wmmCtx.strokeStyle = `rgba(${pal.sweepRgb}, 0.52)`;
+            wmmCtx.lineWidth = 0.9;
+            wmmCtx.beginPath();
+            wmmCtx.moveTo(qx, qy);
+            wmmCtx.lineTo(qx + Math.cos(wmmRadarSweepAngle) * sweepR, qy + Math.sin(wmmRadarSweepAngle) * sweepR);
+            wmmCtx.stroke();
             wmmCtx.restore();
           }
 
-          // 3. Cellules Radar Doppler (Précipitations, Couverture Nuageuse & Front Météo poussés par le Vent en Altitude 850 hPa!)
+          // 4. Cellules Radar Doppler (Précipitations, Couverture Nuageuse & Front Météo poussés par le Vent 850 hPa — Zéro violet!)
           const rPhase = c.rainPhase || "dry";
           const rProg = typeof c.rainFrontProgress === "number" ? c.rainFrontProgress : 0;
           const rInt = Math.max(precipMm, c.rainFrontIntensity || 0);
 
-          if (wmmLayerMode === "radar" && (precipMm > 0.02 || cloudPct > 12 || rPhase !== "dry")) {
+          if ((wmmLayerMode === "tactical" || wmmLayerMode === "radar") && (precipMm > 0.02 || cloudPct > 16 || rPhase !== "dry")) {
+            const dopplerAlphaMult = wmmLayerMode === "tactical" ? 0.68 : 1.0;
             wmmCtx.save();
-            const cellCount = (precipMm > 0.05 || rPhase !== "dry") ? 9 : 6;
+            const cellCount = (precipMm > 0.05 || rPhase !== "dry") ? 9 : 5;
             for (let ci = 0; ci < cellCount; ci++) {
               const seedX = (ci * 57 + 23) % 280;
               const seedY = (ci * 43 + 19) % 180;
               const layerMult = 0.82 + (ci % 3) * 0.18;
-              let cx = ((seedX + wmmRadarPhaseX * layerMult) % 300 + 300) % 300 - 28;
-              let cy = ((seedY + wmmRadarPhaseY * layerMult) % 200 + 200) % 200 - 28;
+              const cx = ((seedX + wmmRadarPhaseX * layerMult) % 300 + 300) % 300 - 28;
+              const cy = ((seedY + wmmRadarPhaseY * layerMult) % 200 + 200) % 200 - 26;
               const rx = (24 + (ci % 4) * 11) * (1 + Math.min(0.35, cloudWindKnots / 55));
               const ry = 15 + (ci % 3) * 8;
 
               const radG = wmmCtx.createRadialGradient(cx, cy, 2, cx, cy, rx);
               if (precipMm > 0.05) {
-                const intensity = Math.min(1, precipMm / 4.5 + (ci % 3) * 0.18);
+                const intensity = Math.min(1, precipMm / 4.5 + (ci % 3) * 0.18) * dopplerAlphaMult;
                 if (isFreezingRain) {
-                  radG.addColorStop(0, `rgba(232, 121, 249, ${(0.62 * intensity).toFixed(2)})`);
-                  radG.addColorStop(0.5, `rgba(129, 140, 248, ${(0.46 * intensity).toFixed(2)})`);
-                  radG.addColorStop(1, "rgba(129, 140, 248, 0)");
+                  radG.addColorStop(0, `rgba(251, 113, 133, ${(0.62 * intensity).toFixed(2)})`);
+                  radG.addColorStop(0.5, `rgba(56, 189, 248, ${(0.45 * intensity).toFixed(2)})`);
+                  radG.addColorStop(1, "rgba(56, 189, 248, 0)");
                 } else if (isSnow) {
                   radG.addColorStop(0, `rgba(224, 242, 254, ${(0.55 * intensity).toFixed(2)})`);
                   radG.addColorStop(0.5, `rgba(56, 189, 248, ${(0.42 * intensity).toFixed(2)})`);
                   radG.addColorStop(1, "rgba(56, 189, 248, 0)");
-                } else if (intensity > 0.65) {
-                  radG.addColorStop(0, "rgba(239, 68, 68, 0.58)");
-                  radG.addColorStop(0.45, "rgba(234, 179, 8, 0.45)");
-                  radG.addColorStop(0.8, "rgba(34, 197, 94, 0.28)");
+                } else if (intensity > 0.58) {
+                  radG.addColorStop(0, `rgba(239, 68, 68, ${(0.58 * dopplerAlphaMult).toFixed(2)})`);
+                  radG.addColorStop(0.45, `rgba(234, 179, 8, ${(0.45 * dopplerAlphaMult).toFixed(2)})`);
+                  radG.addColorStop(0.8, `rgba(34, 197, 94, ${(0.28 * dopplerAlphaMult).toFixed(2)})`);
                   radG.addColorStop(1, "rgba(34, 197, 94, 0)");
                 } else {
-                  radG.addColorStop(0, "rgba(234, 179, 8, 0.48)");
-                  radG.addColorStop(0.55, "rgba(34, 197, 94, 0.36)");
+                  radG.addColorStop(0, `rgba(234, 179, 8, ${(0.46 * dopplerAlphaMult).toFixed(2)})`);
+                  radG.addColorStop(0.55, `rgba(34, 197, 94, ${(0.34 * dopplerAlphaMult).toFixed(2)})`);
                   radG.addColorStop(1, "rgba(34, 197, 94, 0)");
                 }
               } else {
-                const cAlpha = Math.min(0.36, (cloudPct / 100) * 0.34);
+                const cAlpha = Math.min(0.28, (cloudPct / 100) * 0.26) * dopplerAlphaMult;
                 radG.addColorStop(0, `rgba(148, 163, 184, ${cAlpha.toFixed(2)})`);
                 radG.addColorStop(1, "rgba(148, 163, 184, 0)");
               }
@@ -43530,7 +44694,6 @@
               wmmCtx.fill();
             }
 
-            // Bande frontale Doppler synchronisée sur le vecteur du vent en altitude (cloudMoveToRad)
             if (rPhase !== "dry") {
               const frontDistPx = rProg * 68;
               const fcx = qx + cvx * frontDistPx;
@@ -43539,21 +44702,21 @@
               const bandRy = 22;
               const fG = wmmCtx.createRadialGradient(fcx, fcy, 3, fcx, fcy, bandRx);
               if (isFreezingRain) {
-                fG.addColorStop(0, "rgba(232, 121, 249, 0.80)");
-                fG.addColorStop(0.55, "rgba(129, 140, 248, 0.52)");
-                fG.addColorStop(1, "rgba(129, 140, 248, 0)");
-              } else if (isSnow) {
-                fG.addColorStop(0, "rgba(224, 242, 254, 0.78)");
+                fG.addColorStop(0, "rgba(251, 113, 133, 0.78)");
                 fG.addColorStop(0.55, "rgba(56, 189, 248, 0.48)");
                 fG.addColorStop(1, "rgba(56, 189, 248, 0)");
+              } else if (isSnow) {
+                fG.addColorStop(0, "rgba(224, 242, 254, 0.75)");
+                fG.addColorStop(0.55, "rgba(56, 189, 248, 0.46)");
+                fG.addColorStop(1, "rgba(56, 189, 248, 0)");
               } else if (rInt >= 4.0) {
-                fG.addColorStop(0, "rgba(239, 68, 68, 0.76)");
-                fG.addColorStop(0.45, "rgba(234, 179, 8, 0.56)");
-                fG.addColorStop(0.8, "rgba(34, 197, 94, 0.34)");
+                fG.addColorStop(0, "rgba(239, 68, 68, 0.72)");
+                fG.addColorStop(0.45, "rgba(234, 179, 8, 0.52)");
+                fG.addColorStop(0.8, "rgba(34, 197, 94, 0.32)");
                 fG.addColorStop(1, "rgba(34, 197, 94, 0)");
               } else {
-                fG.addColorStop(0, "rgba(234, 179, 8, 0.68)");
-                fG.addColorStop(0.55, "rgba(34, 197, 94, 0.44)");
+                fG.addColorStop(0, "rgba(234, 179, 8, 0.64)");
+                fG.addColorStop(0.55, "rgba(34, 197, 94, 0.40)");
                 fG.addColorStop(1, "rgba(34, 197, 94, 0)");
               }
               wmmCtx.fillStyle = fG;
@@ -43561,7 +44724,7 @@
               wmmCtx.ellipse(fcx, fcy, bandRx, bandRy, cloudMoveToRad + Math.PI / 2, 0, Math.PI * 2);
               wmmCtx.fill();
 
-              wmmCtx.strokeStyle = "rgba(192, 132, 252, 0.9)";
+              wmmCtx.strokeStyle = "rgba(251, 191, 36, 0.9)";
               wmmCtx.lineWidth = 1.2;
               wmmCtx.setLineDash([2, 2]);
               wmmCtx.beginPath();
@@ -43571,112 +44734,191 @@
               wmmCtx.setLineDash([]);
 
               wmmCtx.font = "800 7px 'JetBrains Mono', monospace";
-              wmmCtx.fillStyle = isFreezingRain ? "#f5d0fe" : (isSnow ? "#e0f2fe" : "#fef08a");
+              wmmCtx.fillStyle = isFreezingRain ? "#fda4af" : (isSnow ? "#e0f2fe" : "#fef08a");
               const leadIcon = isFreezingRain ? "\uD83E\uDDCA" : (isSnow ? "\u2744\uFE0F" : "\uD83C\uDF27\uFE0F");
               const tailIcon = isFreezingRain ? "\uD83E\uDDCA" : (isSnow ? "\uD83C\uDF28\uFE0F" : "\uD83C\uDF26\uFE0F");
               const tagTxt = rPhase === "incoming"
                 ? `${leadIcon} APPROCHE`
                 : (rPhase === "overhead" ? `${leadIcon} SUR QUAI` : `${tailIcon} S'\u00C9LOIGNE`);
-              wmmCtx.fillText(tagTxt, Math.max(4, Math.min(W - 62, fcx - 24)), Math.max(34, Math.min(H - 6, fcy - 8)));
+              const tagOffY = rPhase === "overhead" ? -22 : -8;
+              wmmCtx.fillText(tagTxt, Math.max(4, Math.min(W - 64, fcx - 26)), Math.max(30, Math.min(H - 16, fcy + tagOffY)));
             }
             wmmCtx.restore();
           }
 
-          // 4. Lignes de flux eolien de surface animees (Vitesse, longueur de trainee et couleur pilotees par le vent au sol!)
+          // 5. Lignes de flux éolien de surface animées
           const windStreamPxPerSec = (windKnots * 3.8 + Math.max(0, gustKnots - windKnots) * 1.45) * tlSpeedFactor;
           const streamStep = windStreamPxPerSec * dtWmm + (Math.abs(deltaSimMinsWmm) > 0.001 ? Math.sign(deltaSimMinsWmm) * Math.min(18, windKnots * 0.45) : 0);
           const dynamicTrailScale = Math.max(0.25, Math.min(2.6, 0.3 + windKnots * 0.068));
 
-          let streamRgb = "186, 230, 253";
+          let streamRgb = isAdmiralty ? "92, 64, 34" : (pal.u === "pipboy" ? "74, 222, 128" : "186, 230, 253");
           if (windKnots >= 30 || gustKnots >= 35) {
             streamRgb = "248, 113, 113";
           } else if (windKnots >= 20 || gustKnots >= 25) {
             streamRgb = "251, 191, 36";
-          } else if (windKnots >= 12) {
+          } else if (!isAdmiralty && pal.u !== "pipboy" && windKnots >= 12) {
             streamRgb = "56, 189, 248";
           }
 
+          const particleStride = wmmLayerMode === "tactical" ? 2 : 1;
           wmmCtx.save();
-          wmmCtx.lineWidth = wmmLayerMode === "wind" ? (1.3 + Math.min(1.0, windKnots / 30)) : (1.0 + Math.min(0.7, windKnots / 35));
+          wmmCtx.lineWidth = wmmLayerMode === "wind" ? (1.35 + Math.min(1.0, windKnots / 30)) : 0.95;
           wmmCtx.lineCap = "round";
-          for (let i = 0; i < windParticles.length; i++) {
+          for (let i = 0; i < windParticles.length; i += particleStride) {
             const wp = windParticles[i];
             wp.x = ((wp.x + vx * streamStep * wp.speed) % W + W) % W;
             wp.y = ((wp.y + vy * streamStep * wp.speed) % H + H) % H;
             const effLen = Math.max(2.0, wp.len * dynamicTrailScale);
             const x2 = wp.x - vx * effLen;
             const y2 = wp.y - vy * effLen;
-            const alphaVal = Math.min(0.95, wp.alpha * (0.55 + Math.min(0.65, windKnots / 25)));
+            const alphaVal = Math.min(0.92, wp.alpha * (wmmLayerMode === "tactical" ? 0.52 : 0.82));
             wmmCtx.strokeStyle = `rgba(${streamRgb}, ${alphaVal.toFixed(2)})`;
             wmmCtx.beginPath();
             wmmCtx.moveTo(x2, y2);
             wmmCtx.lineTo(wp.x, wp.y);
             wmmCtx.stroke();
-
-            if (windKnots >= 12 && i % 3 === 0) {
-              wmmCtx.fillStyle = `rgba(255, 255, 255, ${(alphaVal * 0.85).toFixed(2)})`;
-              wmmCtx.fillRect(wp.x - 0.8, wp.y - 0.8, 1.6, 1.6);
-            }
           }
           wmmCtx.restore();
 
-          // 5. Cône de vision (FOV) de la caméra 3D depuis les Postes 86/87 Valero
+          // 6. Position réelle en direct de la Caméra 3D + Cône de vision (FOV) dynamique!
+          worldXZToBaseMap(camera3D.position.x, camera3D.position.z, wmmTmpPt);
+          const camSx = Math.max(8, Math.min(W - 8, baseMapToScreenX(wmmTmpPt.x)));
+          const camSy = Math.max(8, Math.min(H - 14, baseMapToScreenY(wmmTmpPt.y)));
           const camAzRad = (viewAzimuth * Math.PI) / 180;
           const halfFovRad = (Math.min(110, viewFOV) * 0.5 * Math.PI) / 180;
-          const coneR = 54;
+          const coneR = isHarborZoom ? 64 : 52;
           wmmCtx.save();
           wmmCtx.beginPath();
-          wmmCtx.moveTo(qx, qy);
+          wmmCtx.moveTo(camSx, camSy);
           wmmCtx.arc(
-            qx,
-            qy,
+            camSx,
+            camSy,
             coneR,
             camAzRad - Math.PI / 2 - halfFovRad,
             camAzRad - Math.PI / 2 + halfFovRad
           );
           wmmCtx.closePath();
-          wmmCtx.fillStyle = "rgba(56, 189, 248, 0.20)";
+          wmmCtx.fillStyle = pal.frustumFill;
           wmmCtx.fill();
-          wmmCtx.strokeStyle = "rgba(56, 189, 248, 0.75)";
-          wmmCtx.lineWidth = 1;
+          wmmCtx.strokeStyle = pal.frustumStroke;
+          wmmCtx.lineWidth = 1.05;
+          wmmCtx.stroke();
+
+          // Point d'origine de l'observateur / caméra active
+          wmmCtx.fillStyle = "#ffffff";
+          wmmCtx.strokeStyle = pal.frustumStroke;
+          wmmCtx.lineWidth = 1.2;
+          wmmCtx.beginPath();
+          wmmCtx.arc(camSx, camSy, 2.3, 0, Math.PI * 2);
+          wmmCtx.fill();
           wmmCtx.stroke();
           wmmCtx.restore();
 
-          // 6. Repères géographiques calibrés WGS84 sur la minimap (azimuts exacts depuis 106,94!)
-          const mapPois = [
-            { x: 49, y: 131, col: "#38bdf8", lbl: "Ponts QC" },
-            { x: 122, y: 116, col: "#f97316", lbl: "Valero", dx: 4, dy: 4 },
-            { x: qx, y: qy, col: "#10b981", lbl: "86/87", main: true, dx: 5, dy: 2 },
-            { x: 87, y: 83, col: "#60a5fa", lbl: "Foulon", dx: -31, dy: -2 },
-            { x: 110, y: 54, col: "#fbbf24", lbl: "Qu\u00e9bec", dx: -33, dy: 3 },
-            { x: 113, y: 42, col: "#a855f7", lbl: "B.Louise", dx: -38, dy: -1 },
-            { x: 131, y: 48, col: "#cbd5e1", lbl: "L\u00e9vis", dx: 4, dy: 3 },
-            { x: 141, y: 36, col: "#f87171", lbl: "Davie", dx: 4, dy: 3 },
-            { x: 152, y: 16, col: "#34d399", lbl: "\u00CE.Orl\u00e9ans", dx: 4, dy: 3 },
-          ];
-          wmmCtx.font = "700 7.5px 'Inter', sans-serif";
-          mapPois.forEach((mp) => {
-            wmmCtx.fillStyle = mp.col;
-            wmmCtx.beginPath();
-            wmmCtx.arc(mp.x, mp.y, mp.main ? 3.4 : 2.2, 0, Math.PI * 2);
-            wmmCtx.fill();
-            wmmCtx.fillStyle = "rgba(248, 250, 252, 0.90)";
-            wmmCtx.fillText(mp.lbl, mp.x + (mp.dx !== undefined ? mp.dx : 4), mp.y + (mp.dy !== undefined ? mp.dy : 3));
-          });
+          // 7. Repères géographiques & étiquettes nettes en espace écran (toujours lisibles quel que soit le zoom!)
+          const drawCrispLabel = (txt, lx, ly, col) => {
+            wmmCtx.lineWidth = 2.4;
+            wmmCtx.strokeStyle = pal.lblHalo;
+            wmmCtx.strokeText(txt, lx, ly);
+            wmmCtx.fillStyle = col || pal.lblText;
+            wmmCtx.fillText(txt, lx, ly);
+          };
 
-          // 7. Double vecteur anémométrique visuel en haut à gauche (Sol 10m en cyan + Ciel 850hPa en violet)
+          if (isHarborZoom) {
+            // Étiquettes portuaires haute précision en mode Zoom Port (Quais 87 & 86)
+            wmmCtx.font = "800 7.5px 'JetBrains Mono', monospace";
+            wmmWorldScratch.set(4, 7.4, -15);
+            dockGroup.localToWorld(wmmWorldScratch);
+            worldXZToBaseMap(wmmWorldScratch.x, wmmWorldScratch.z, wmmTmpPt);
+            drawCrispLabel("87 (QC)", baseMapToScreenX(wmmTmpPt.x) - 18, baseMapToScreenY(wmmTmpPt.y) - 4, isAdmiralty ? "#991b1b" : "#fca5a5");
+
+            wmmWorldScratch.set(6, 7.4, 15);
+            dockGroup.localToWorld(wmmWorldScratch);
+            worldXZToBaseMap(wmmWorldScratch.x, wmmWorldScratch.z, wmmTmpPt);
+            drawCrispLabel("86 (L\u00C9VIS)", baseMapToScreenX(wmmTmpPt.x) + 3, baseMapToScreenY(wmmTmpPt.y) + 8, isAdmiralty ? "#075985" : "#7dd3fc");
+
+            wmmWorldScratch.set(-56, 7.4, -31);
+            dockGroup.localToWorld(wmmWorldScratch);
+            worldXZToBaseMap(wmmWorldScratch.x, wmmWorldScratch.z, wmmTmpPt);
+            drawCrispLabel("Duc-d'Albe T", baseMapToScreenX(wmmTmpPt.x) - 42, baseMapToScreenY(wmmTmpPt.y) + 2, pal.lblText);
+          } else {
+            const mapPois = [
+              { x: 49, y: 131, col: "#fb923c", lbl: "Ponts QC", poiId: "bridges", tip: "\uD83C\uDF09 Ponts de Qu\u00e9bec & Pierre-Laporte" },
+              { x: 122, y: 116, col: "#f97316", lbl: "Valero", dx: 4, dy: 4, poiId: "refinery_jg", tip: "\uD83C\uDFED Raffinerie Jean-Gaulin Valero" },
+              { x: qx, y: qy, col: "#10b981", lbl: "86/87", main: true, dx: 5, dy: 2 },
+              { x: 110, y: 54, col: "#fbbf24", lbl: "Qu\u00e9bec", dx: -33, dy: 3, poiId: "frontenac", tip: "\uD83C\uDFF0 Cap-Diamant & Ch\u00e2teau Frontenac" },
+              { x: 113, y: 42, col: "#2dd4bf", lbl: "B.Louise", dx: -39, dy: -1, poiId: "bassin_louise", tip: "\u2693 Bassin Louise (Base Remorqueurs Oc\u00e9an)" },
+              { x: 131, y: 48, col: "#cbd5e1", lbl: "L\u00e9vis", dx: 4, dy: 3 },
+              { x: 141, y: 36, col: "#f87171", lbl: "Davie", dx: 4, dy: 3, poiId: "davie", tip: "\uD83C\uDFD7\uFE0F Chantier Maritime Davie (Lauzon)" },
+              { x: 152, y: 16, col: "#34d399", lbl: "\u00CE.Orl\u00e9ans", dx: 4, dy: 3, poiId: "pont_orleans", tip: "\uD83C\uDF09 \u00CEle d'Orl\u00e9ans & Pont" },
+            ];
+            wmmCtx.font = "700 7.4px 'Inter', sans-serif";
+            for (let mi = 0; mi < mapPois.length; mi++) {
+              const mp = mapPois[mi];
+              const sx = baseMapToScreenX(mp.x);
+              const sy = baseMapToScreenY(mp.y);
+              if (sx < -10 || sx > W + 10 || sy < -10 || sy > H + 10) continue;
+              wmmCtx.fillStyle = mp.col;
+              wmmCtx.beginPath();
+              wmmCtx.arc(sx, sy, mp.main ? 3.1 : 2.1, 0, Math.PI * 2);
+              wmmCtx.fill();
+              drawCrispLabel(mp.lbl, sx + (mp.dx !== undefined ? mp.dx : 4), sy + (mp.dy !== undefined ? mp.dy : 3), pal.lblText);
+              if (mp.poiId) {
+                wmmHitTargets.push({ poiId: mp.poiId, sx, sy, r: 7.5, tip: mp.tip });
+              }
+            }
+          }
+
+          // Réticule pulsant autour de la cible actuellement inspectée ou survolée
+          const highlightId = wmmHoveredPoiId || selectedPoiId;
+          if (highlightId) {
+            for (let hi = 0; hi < wmmHitTargets.length; hi++) {
+              const ht = wmmHitTargets[hi];
+              if (ht.poiId === highlightId) {
+                wmmCtx.save();
+                wmmCtx.strokeStyle = "#fde047";
+                wmmCtx.lineWidth = 1.25;
+                const rr = 6.2 + Math.sin(nowFrame * 0.008) * 1.1;
+                wmmCtx.beginPath();
+                wmmCtx.arc(ht.sx, ht.sy, rr, 0, Math.PI * 2);
+                wmmCtx.stroke();
+                wmmCtx.restore();
+                break;
+              }
+            }
+          }
+
+          // Cartouche thermique Air/Eau/ΔT en bas à droite lorsque le calque Thermique est actif
+          if (wmmLayerMode === "temp") {
+            const dT = tempC - waterC;
+            const dTSign = dT >= 0 ? "+" : "";
+            const wSign = waterC >= 0 ? "+" : "";
+            wmmCtx.save();
+            wmmCtx.fillStyle = pal.hudBg;
+            wmmCtx.strokeStyle = pal.coast;
+            wmmCtx.lineWidth = 1;
+            wmmCtx.beginPath();
+            if (wmmCtx.roundRect) wmmCtx.roundRect(128, 108, 112, 24, 5);
+            else wmmCtx.rect(128, 108, 112, 24);
+            wmmCtx.fill();
+            wmmCtx.stroke();
+            wmmCtx.font = "800 7px 'JetBrains Mono', monospace";
+            wmmCtx.fillStyle = isAdmiralty ? "#075985" : "#7dd3fc";
+            wmmCtx.fillText(`Eau: ${wSign}${waterC.toFixed(1)}\u00B0C`, 133, 118);
+            wmmCtx.fillStyle = Math.abs(dT) >= 9.5 ? "#eab308" : pal.hudText;
+            wmmCtx.fillText(`\u0394T Air-Eau: ${dTSign}${dT.toFixed(1)}\u00B0`, 133, 128);
+            wmmCtx.restore();
+          }
+
+          // 8. Double vecteur anémométrique visuel en haut à gauche (Sol 10m + Ciel 850 hPa en ambre/or) + Rose Nord + Échelle!
           const dirCard = getWindDir(windDirDeg);
           const cloudDirCard = getWindDir(cloudWindDirDeg);
           wmmCtx.save();
-          wmmCtx.fillStyle = "rgba(4, 12, 24, 0.82)";
-          wmmCtx.strokeStyle = `rgba(${streamRgb}, 0.55)`;
+          wmmCtx.fillStyle = pal.hudBg;
+          wmmCtx.strokeStyle = `rgba(${streamRgb}, 0.52)`;
           wmmCtx.lineWidth = 1;
           wmmCtx.beginPath();
-          if (wmmCtx.roundRect) {
-            wmmCtx.roundRect(4, 4, 102, 24, 5);
-          } else {
-            wmmCtx.rect(4, 4, 102, 24);
-          }
+          if (wmmCtx.roundRect) wmmCtx.roundRect(4, 4, 101, 24, 5);
+          else wmmCtx.rect(4, 4, 101, 24);
           wmmCtx.fill();
           wmmCtx.stroke();
 
@@ -43684,13 +44926,13 @@
           const arrowLen = Math.max(3, Math.min(9, 2.5 + windKnots * 0.22));
           const cloudArrowLen = Math.max(3.5, Math.min(9.5, 2.5 + cloudWindKnots * 0.20));
 
-          wmmCtx.strokeStyle = "#c084fc";
+          wmmCtx.strokeStyle = pal.upperWind;
           wmmCtx.lineWidth = 1.3;
           wmmCtx.beginPath();
           wmmCtx.moveTo(ax - cvx * cloudArrowLen * 0.65, ay - cvy * cloudArrowLen * 0.65);
           wmmCtx.lineTo(ax + cvx * cloudArrowLen, ay + cvy * cloudArrowLen);
           wmmCtx.stroke();
-          wmmCtx.fillStyle = "#c084fc";
+          wmmCtx.fillStyle = pal.upperWind;
           wmmCtx.beginPath();
           wmmCtx.arc(ax + cvx * cloudArrowLen, ay + cvy * cloudArrowLen, 1.5, 0, Math.PI * 2);
           wmmCtx.fill();
@@ -43706,15 +44948,50 @@
           wmmCtx.arc(ax + vx * arrowLen, ay + vy * arrowLen, 1.8, 0, Math.PI * 2);
           wmmCtx.fill();
 
-          wmmCtx.font = "800 7.5px 'JetBrains Mono', monospace";
-          wmmCtx.fillStyle = "#f8fafc";
+          wmmCtx.font = "800 7.2px 'JetBrains Mono', monospace";
+          wmmCtx.fillStyle = pal.hudText;
           wmmCtx.fillText(`Sol:${Math.round(windKnots)}kt ${dirCard}`, 26, 13);
-          wmmCtx.font = "700 7px 'JetBrains Mono', monospace";
-          wmmCtx.fillStyle = "#d8b4fe";
+          wmmCtx.font = "700 6.8px 'JetBrains Mono', monospace";
+          wmmCtx.fillStyle = pal.upperWind;
           wmmCtx.fillText(`Ciel:${Math.round(cloudWindKnots)}kt ${cloudDirCard}`, 26, 23);
+
+          // Rose des vents Nord (N) + Barre d'échelle dynamique en haut à droite
+          const roseX = W - 15, roseY = 15;
+          wmmCtx.fillStyle = pal.hudBg;
+          wmmCtx.strokeStyle = pal.coast;
+          wmmCtx.lineWidth = 0.9;
+          wmmCtx.beginPath();
+          wmmCtx.arc(roseX, roseY, 9.5, 0, Math.PI * 2);
+          wmmCtx.fill();
+          wmmCtx.stroke();
+          wmmCtx.fillStyle = "#ef4444";
+          wmmCtx.beginPath();
+          wmmCtx.moveTo(roseX, roseY - 7);
+          wmmCtx.lineTo(roseX - 2.4, roseY);
+          wmmCtx.lineTo(roseX + 2.4, roseY);
+          wmmCtx.closePath();
+          wmmCtx.fill();
+          wmmCtx.font = "800 6px 'JetBrains Mono', monospace";
+          wmmCtx.fillStyle = pal.hudText;
+          wmmCtx.fillText("N", roseX - 2.1, roseY + 6.8);
+
+          // Échelle métrique calibrée
+          const scaleLabel = isHarborZoom ? `${Math.round(250 / (wmmZoom / 4.6))} m` : "3 km";
+          const scalePx = 22;
+          const sbX = W - 54, sbY = 19;
+          wmmCtx.strokeStyle = pal.hudText;
+          wmmCtx.lineWidth = 1.2;
+          wmmCtx.beginPath();
+          wmmCtx.moveTo(sbX, sbY - 2.5);
+          wmmCtx.lineTo(sbX, sbY);
+          wmmCtx.lineTo(sbX + scalePx, sbY);
+          wmmCtx.lineTo(sbX + scalePx, sbY - 2.5);
+          wmmCtx.stroke();
+          wmmCtx.font = "700 6.5px 'JetBrains Mono', monospace";
+          drawCrispLabel(scaleLabel, sbX + 2, sbY - 4, pal.hudText);
           wmmCtx.restore();
 
-          // 8. Mise a jour de la bande telemetrique au bas de la minimap (precision 0.1°C)
+          // 9. Bande télémétrique inférieure
           if (wmmValTemp) {
             const tSign = tempC >= 0 ? "+" : "";
             wmmValTemp.textContent = `${tSign}${tempC.toFixed(1)}\u00B0C`;
@@ -43729,10 +45006,13 @@
           if (wmmValTide) wmmValTide.textContent = `${tideM.toFixed(2)} m`;
           if (wmmLayerDesc) {
             const flowTxt = flowSign < 0 ? "Flot \u2B05\uFE0F" : flowSign > 0 ? "Jusant \u27A1\uFE0F" : "\u00C9tale";
+            const zoomTag = isHarborZoom ? `Port ${wmmZoom.toFixed(1)}\u00D7` : "18 km";
             if (wmmLayerMode === "temp") {
               const fSign = feelsC >= 0 ? "+" : "";
               const wSign = waterC >= 0 ? "+" : "";
               wmmLayerDesc.textContent = `Ress. ${fSign}${feelsC.toFixed(1)}\u00B0C \u2022 Eau ${wSign}${waterC.toFixed(1)}\u00B0C \u2022 ${flowTxt}`;
+            } else if (wmmLayerMode === "tactical") {
+              wmmLayerDesc.textContent = `AIS 3D + S-Band (${zoomTag}) \u2022 ${flowTxt}`;
             } else {
               const skySub = rPhase !== "dry" ? c.rainStatusText : `Ciel ${cloudPct}%`;
               const shearSub = dirCard !== cloudDirCard ? `Sol ${dirCard}\u2260Ciel ${cloudDirCard}` : `Vent ${dirCard}`;
@@ -44201,17 +45481,26 @@
           // Rendu temps reel de la Minimap Meteo & Radar 3D (avec curTimeMs pour dt exact)
           renderWeatherMinimap(getEffectiveTimeMs(), c, windKnots, tideM, flowSign, curTimeMs);
 
-          // 2. Mise à jour des vagues 3D et de la teinte thermique réelle de l'eau du Saint-Laurent
-          // Eau glaciale (~0°C) : ardoise/acier profond; Eau estivale (18-22°C) : céruléen-émeraude lumineux
+          // 2. Mise à jour des vagues 3D, de la normal-map micro-clapotis et de la teinte réelle de l'eau du Saint-Laurent
+          if (waterNormalTex) {
+            const nSpeed = (0.018 + Math.min(0.065, windKnots * 0.0018)) * dt3D;
+            waterNormalTex.offset.x = (waterNormalTex.offset.x - windDirX * nSpeed - flowSign * 0.004 * dt3D) % 1;
+            waterNormalTex.offset.y = (waterNormalTex.offset.y - windDirZ * nSpeed + flowSign * 0.004 * dt3D) % 1;
+            const nScale = 0.42 + Math.min(0.56, windKnots * 0.022);
+            waterMat.normalScale.set(nScale, nScale);
+          }
+          waterMat.specular.setHex(isGolden ? 0xfde047 : isNight ? 0x7dd3fc : 0xe0f2fe);
+          waterMat.shininess = isGolden ? 245 : isNight ? 210 : 195;
+
           const waterWarmth = Math.max(0, Math.min(1, (effectiveWaterTemp + 1.0) / 22.0));
           const coldWaterTint = 1.0 - waterWarmth;
-          const baseDeepR = (isNight ? 0.015 : isGolden ? 0.06 : 0.022) * (1 - coldWaterTint * 0.18);
-          const baseDeepG = (isNight ? 0.085 : isGolden ? 0.24 : (0.21 + waterWarmth * 0.085));
-          const baseDeepB = (isNight ? 0.165 : isGolden ? 0.36 : (0.38 + waterWarmth * 0.095));
+          const baseDeepR = (isNight ? 0.014 : isGolden ? 0.026 : 0.020) * (1 - coldWaterTint * 0.18);
+          const baseDeepG = (isNight ? 0.082 : isGolden ? 0.168 : (0.205 + waterWarmth * 0.082));
+          const baseDeepB = (isNight ? 0.162 : isGolden ? 0.285 : (0.375 + waterWarmth * 0.092));
 
-          const crestR = isNight ? 0.12 : isGolden ? 0.85 : (0.16 + coldWaterTint * 0.04);
-          const crestG = isNight ? 0.32 : isGolden ? 0.58 : (0.54 + waterWarmth * 0.10);
-          const crestB = isNight ? 0.48 : isGolden ? 0.42 : (0.76 + waterWarmth * 0.07);
+          const crestR = isNight ? 0.11 : isGolden ? 0.25 : (0.15 + coldWaterTint * 0.04);
+          const crestG = isNight ? 0.31 : isGolden ? 0.46 : (0.53 + waterWarmth * 0.10);
+          const crestB = isNight ? 0.48 : isGolden ? 0.60 : (0.75 + waterWarmth * 0.07);
 
           const posArr = posAttr.array;
           const colArr = waterGeo.attributes.color.array;
@@ -44630,19 +45919,23 @@
           wakeRingMesh.scale.z = 0.35 + Math.cos(t * 2.6) * 0.03;
           radarScanner.rotation.y = t * 2.8;
 
-          // Fumée & panache de condensation thermique 3D des cheminées (Postes 87 & 86)
-          // Air polaire (< 0°C à -25°C) : panache de vapeur blanche dense et flottabilité thermique accrue;
-          // Air chaud estival (+20°C+) : gaz d'échappement gris très ténus qui se dissipent vite.
+          // Fumée & panache de condensation thermique 3D des cheminées (Postes 87 & 86) orientés selon le vecteur vent 360° réel!
           const exhaustColdCondense = Math.max(0, Math.min(1, (14.0 - effectiveAirTemp) / 28.0));
           const exhaustRhBoost = Math.max(0, (effHumidity - 55) / 45) * 0.22;
           const condenseFactor = Math.min(1, exhaustColdCondense + exhaustRhBoost * exhaustColdCondense);
+          const plumeDriftDist = 3.2 + windKnots * 0.88;
           if (showShip87) {
+            const c87 = Math.cos(tankerGroup.rotation.y);
+            const s87 = Math.sin(tankerGroup.rotation.y);
+            const locWx87 = windDirX * c87 - windDirZ * s87;
+            const locWz87 = windDirX * s87 + windDirZ * c87;
             shipSmokePuffs.forEach((sp) => {
               sp.age += dt3D * ((0.24 - condenseFactor * 0.06) + windKnots * 0.036);
               if (sp.age > 1) sp.age = 0;
               const thermalRise = Math.max(10, (22 + condenseFactor * 11) - windKnots * 0.30);
               sp.mesh.position.y = 24 + sp.age * thermalRise;
-              sp.mesh.position.x = -33.5 - sp.age * (3 + windKnots * 0.85);
+              sp.mesh.position.x = -33.5 + sp.age * locWx87 * plumeDriftDist;
+              sp.mesh.position.z = sp.age * locWz87 * plumeDriftDist;
               const s = (0.78 + condenseFactor * 0.28) + sp.age * ((1.95 + condenseFactor * 1.45) + Math.min(1.6, windKnots * 0.06));
               sp.mesh.scale.set(s, s, s);
               sp.mesh.material.color.setHex(0x94a3b8).lerp(scratchThermalColor.setHex(0xf8fafc), condenseFactor);
@@ -44650,12 +45943,18 @@
             });
           }
           if (vessel86Group.visible) {
+            const c86 = Math.cos(vessel86Group.rotation.y);
+            const s86 = Math.sin(vessel86Group.rotation.y);
+            const locWx86 = windDirX * c86 - windDirZ * s86;
+            const locWz86 = windDirX * s86 + windDirZ * c86;
+            const drift86 = 2.6 + windKnots * 0.78;
             vessel86SmokePuffs.forEach((sp) => {
               sp.age += dt3D * ((0.25 - condenseFactor * 0.06) + windKnots * 0.036);
               if (sp.age > 1) sp.age = 0;
               const thermalRise86 = Math.max(9, (19 + condenseFactor * 9.5) - windKnots * 0.26);
               sp.mesh.position.y = 20.4 + sp.age * thermalRise86;
-              sp.mesh.position.x = -22.0 - sp.age * (2.5 + windKnots * 0.75);
+              sp.mesh.position.x = -22.0 + sp.age * locWx86 * drift86;
+              sp.mesh.position.z = sp.age * locWz86 * drift86;
               const s86 = (0.66 + condenseFactor * 0.24) + sp.age * ((1.65 + condenseFactor * 1.2) + Math.min(1.35, windKnots * 0.05));
               sp.mesh.scale.set(s86, s86, s86);
               sp.mesh.material.color.setHex(0x94a3b8).lerp(scratchThermalColor.setHex(0xf8fafc), condenseFactor);
@@ -44663,13 +45962,37 @@
             });
           }
 
+          // Anneaux d'écume hydrodynamique autour des 6 caissons du quai en T + cônes lumineux des lampadaires
+          if (caissonFoamRings3D && caissonFoamRings3D.length > 0) {
+            const foamBaseOp = 0.24 + Math.min(0.42, windKnots * 0.014);
+            for (let cf = 0; cf < caissonFoamRings3D.length; cf++) {
+              const fRing = caissonFoamRings3D[cf];
+              fRing.mesh.position.y = waterLevelY + 0.18;
+              const fPulse = 1.0 + Math.sin(t * 2.6 + fRing.phase) * 0.08 + Math.min(0.12, windKnots * 0.004);
+              fRing.mesh.scale.set(fPulse, fPulse, 1);
+              fRing.mat.opacity = foamBaseOp + Math.abs(Math.sin(t * 2.6 + fRing.phase)) * 0.14;
+            }
+          }
+          if (dockLightCones3D && dockLightCones3D.length > 0) {
+            const showLightCones = isNight || isGolden || isStormNow;
+            dockLightConeMat.opacity = isNight ? 0.14 : (isGolden ? 0.065 : 0.085);
+            for (let dl = 0; dl < dockLightCones3D.length; dl++) {
+              dockLightCones3D[dl].visible = showLightCones;
+            }
+          }
 
-          // 6. Bouées du chenal, voiliers et glaces/débris dérivants sur l'eau
+          // 6. Bouées du chenal (avec halos lumineux IALA-B), voiliers et glaces/débris dérivants sur l'eau
+          const buoyHaloOp = isNight ? 0.88 : (isGolden ? 0.56 : 0.24);
           buoys3D.forEach((b) => {
             const wy = sampleWaveHeight(b.x, b.z, t, windKnots, flowSign);
             b.group.position.y = waterLevelY + wy;
             b.group.rotation.z = Math.sin(t * 2.1 + b.phase) * 0.14;
-            b.beacon.visible = Math.sin(t * 4.5 + b.phase) > -0.2;
+            const flashOn = Math.sin(t * 4.5 + b.phase) > -0.2;
+            b.beacon.visible = flashOn;
+            if (b.halo) {
+              b.halo.visible = flashOn;
+              b.halo.material.opacity = buoyHaloOp;
+            }
           });
 
           sailboats3D.forEach((sb) => {
@@ -45315,7 +46638,7 @@
             viewAzimuth = (viewAzimuth + 0.14 * dt60) % 360;
           }
 
-          // K. Positionnement dynamique et vol cinématique fluide de la caméra 3D (Quai, Passerelle 87 ou 86, Vue Tug, Drone, Ras d'Eau)
+          // K. Positionnement dynamique et vol cinématique fluide de la caméra 3D (Quai, Sur Quai, Passerelle 87/86, Vue Tug, Cam Batman, Drone, Ras d'Eau)
           if (activeCamPreset3D === "bridge") {
             if (tankerGroup.visible) {
               desiredCamPos3D.set(-23.5, 20.4, 0);
@@ -45330,6 +46653,34 @@
           } else if (activeCamPreset3D === "tug") {
             desiredCamPos3D.set(1.5, 9.8, 0);
             tugBow.group.localToWorld(desiredCamPos3D);
+          } else if (activeCamPreset3D === "pier") {
+            desiredCamPos3D.set(-54.0, 14.4, -27.5);
+            dockGroup.localToWorld(desiredCamPos3D);
+          } else if (activeCamPreset3D === "batman") {
+            if (batmanGroup && batmanGroup.visible) {
+              batmanGroup.updateMatrixWorld(true);
+              batmanGroup.getWorldPosition(desiredCamPos3D);
+              const bCamRad = (viewAzimuth * Math.PI) / 180;
+              desiredCamPos3D.x -= Math.sin(bCamRad) * 12.2;
+              desiredCamPos3D.z += Math.cos(bCamRad) * 12.2;
+              desiredCamPos3D.y += 8.6;
+              // Évitement automatique du projecteur Bat-Signal (batProjectorOrigin) pour garder Batman 100% dégagé à l'image
+              if (typeof batProjectorOrigin !== "undefined" && batProjectorOrigin) {
+                const dxBs = desiredCamPos3D.x - batProjectorOrigin.x;
+                const dzBs = desiredCamPos3D.z - batProjectorOrigin.z;
+                const distBs = Math.hypot(dxBs, dzBs);
+                if (distBs < 6.4) {
+                  const nx = distBs > 0.01 ? dxBs / distBs : -Math.cos(bCamRad);
+                  const nz = distBs > 0.01 ? dzBs / distBs : -Math.sin(bCamRad);
+                  desiredCamPos3D.x = batProjectorOrigin.x + nx * 6.4;
+                  desiredCamPos3D.z = batProjectorOrigin.z + nz * 6.4;
+                  desiredCamPos3D.y += 1.8;
+                }
+              }
+            } else {
+              desiredCamPos3D.set(-34.0, 15.8, -15.5);
+              dockGroup.localToWorld(desiredCamPos3D);
+            }
           } else {
             const isFloatingCam = targetCamHeight3D < 12.0;
             const baseCamH = camFlightBlend3D < 1.0 ? targetCamHeight3D : camHeight3D;
@@ -45356,9 +46707,39 @@
           const lookZ = camera3D.position.z - Math.cos(azRad) * Math.cos(altRad) * lookDist;
           camera3D.lookAt(lookX, lookY, lookZ);
 
+          // Anneau holographique 3D de sélection de cible sur l'eau / le quai
+          let activeSelectedPoi = null;
+          if (selectedPoiId) {
+            for (let si = 0; si < arPoiList.length; si++) {
+              const cand = arPoiList[si];
+              if (cand.id === selectedPoiId && (typeof cand.isVisible !== "function" || cand.isVisible())) {
+                activeSelectedPoi = cand;
+                break;
+              }
+            }
+          }
+          if (activeSelectedPoi && targetRing3DGroup) {
+            const selPos = activeSelectedPoi.getPos();
+            const isDockPoi = activeSelectedPoi.id === "batman_valero" || activeSelectedPoi.id === "dock87" || activeSelectedPoi.id === "dock86";
+            const ringBaseY = isDockPoi ? 7.52 : (waterLevelY + 0.42);
+            const ringScaleBase = activeSelectedPoi.id === "tanker" ? 3.2
+              : activeSelectedPoi.id === "vessel86" ? 2.4
+              : activeSelectedPoi.id === "cargo" ? 2.8
+              : activeSelectedPoi.id === "batman_valero" ? 0.38
+              : (activeSelectedPoi.id === "dock87" || activeSelectedPoi.id === "dock86") ? 1.55
+              : 1.35;
+            const pulseS = ringScaleBase * (1.0 + Math.sin(t * 4.2) * 0.07);
+            targetRing3DGroup.visible = true;
+            targetRing3DGroup.position.set(selPos.x, ringBaseY, selPos.z);
+            targetRing3DGroup.scale.set(pulseS, 1, pulseS);
+            targetRingInnerMesh.rotation.z = t * 1.15;
+          } else if (targetRing3DGroup) {
+            targetRing3DGroup.visible = false;
+          }
+
           renderer.render(scene, camera3D);
 
-          // L. Mise à jour temps réel GPU (translate3d) des Repères AR 3D flottants et de la Carte d'Inspection Télémétrique
+          // L. Mise à jour temps réel GPU (translate3d) des Repères AR 3D flottants
           if (showArLabels3D && arLayerEl) {
             camera3D.getWorldDirection(scratchArCamDir);
             for (let i = 0; i < arPoiList.length; i++) {
@@ -45418,21 +46799,33 @@
                 poi._dist = realDistStr;
                 poi.distEl.textContent = realDistStr;
               }
-
-              if (selectedPoiId === poi.id && inspectPopupEl) {
-                const azDeg = Math.round(((Math.atan2(worldPos.x, -worldPos.z) * 180) / Math.PI + 360) % 360);
-                const inspTitle = typeof poi.getDynamicLabel === "function" ? poi.getDynamicLabel() : `${poi.icon} ${poi.label}`;
-                const inspSub = typeof poi.getDynamicSub === "function" ? poi.getDynamicSub() : poi.sub;
-                const inspDraft = typeof poi.getDynamicDraft === "function" ? poi.getDynamicDraft() : poi.draft;
-                const inspAzDist = `${azDeg}\u00B0 \u2022 ${realDistStr}`;
-                const inspStatus = poi.getStatus();
-                if (inspectTitleEl && inspectTitleEl.textContent !== inspTitle) inspectTitleEl.textContent = inspTitle;
-                if (inspectSubEl && inspectSubEl.textContent !== inspSub) inspectSubEl.textContent = inspSub;
-                if (inspectAzDistEl && inspectAzDistEl.textContent !== inspAzDist) inspectAzDistEl.textContent = inspAzDist;
-                if (inspectStatusEl && inspectStatusEl.textContent !== inspStatus) inspectStatusEl.textContent = inspStatus;
-                if (inspectDraftEl && inspectDraftEl.textContent !== inspDraft) inspectDraftEl.textContent = inspDraft;
-              }
             }
+          }
+
+          // Mise à jour continue de la Carte d'Inspection Télémétrique 3D (même si les étiquettes AR sont masquées!)
+          if (activeSelectedPoi && inspectPopupEl && inspectPopupEl.classList.contains("visible")) {
+            const worldPos = activeSelectedPoi.getPos();
+            const distMeters = Math.round(camera3D.position.distanceTo(worldPos));
+            const realDistStr = typeof activeSelectedPoi.getRealDist === "function"
+              ? activeSelectedPoi.getRealDist()
+              : `${distMeters}m`;
+            const azDeg = Math.round(((Math.atan2(worldPos.x - camera3D.position.x, -(worldPos.z - camera3D.position.z)) * 180) / Math.PI + 360) % 360);
+            const inspTitle = typeof activeSelectedPoi.getDynamicLabel === "function"
+              ? activeSelectedPoi.getDynamicLabel()
+              : `${activeSelectedPoi.icon} ${activeSelectedPoi.label}`;
+            const inspSub = typeof activeSelectedPoi.getDynamicSub === "function"
+              ? activeSelectedPoi.getDynamicSub()
+              : activeSelectedPoi.sub;
+            const inspDraft = typeof activeSelectedPoi.getDynamicDraft === "function"
+              ? activeSelectedPoi.getDynamicDraft()
+              : activeSelectedPoi.draft;
+            const inspAzDist = `${azDeg}\u00B0 \u2022 ${realDistStr}`;
+            const inspStatus = activeSelectedPoi.getStatus();
+            if (inspectTitleEl && inspectTitleEl.textContent !== inspTitle) inspectTitleEl.textContent = inspTitle;
+            if (inspectSubEl && inspectSubEl.textContent !== inspSub) inspectSubEl.textContent = inspSub;
+            if (inspectAzDistEl && inspectAzDistEl.textContent !== inspAzDist) inspectAzDistEl.textContent = inspAzDist;
+            if (inspectStatusEl && inspectStatusEl.textContent !== inspStatus) inspectStatusEl.textContent = inspStatus;
+            if (inspectDraftEl && inspectDraftEl.textContent !== inspDraft) inspectDraftEl.textContent = inspDraft;
           }
         }
         if (typeof window.applyLiveVesselsTo3D === "function") {
@@ -46226,10 +47619,18 @@
           });
         }
 
-        // 2. Replier la minimap meteo au demarrage pour degager 100% du petrolier 3D
+        // 2. Afficher la Carte & Radar 3D par défaut sur grand écran (> 900px), repliée sur mobile (<= 900px)
+        const wmmQuickBtn = document.getElementById("hud-toggle-minimap");
         if (wmmHud) {
-          wmmHud.classList.add("collapsed-minimap");
-          if (wmmCollapseBtn) wmmCollapseBtn.textContent = "+";
+          if (window.innerWidth <= 900) {
+            wmmHud.classList.add("collapsed-minimap");
+            if (wmmCollapseBtn) wmmCollapseBtn.textContent = "+";
+            if (wmmQuickBtn) wmmQuickBtn.classList.remove("active-cam");
+          } else {
+            wmmHud.classList.remove("collapsed-minimap", "hidden-minimap");
+            if (wmmCollapseBtn) wmmCollapseBtn.textContent = "\u2013";
+            if (wmmQuickBtn) wmmQuickBtn.classList.add("active-cam");
+          }
         }
 
         // 3. Synchroniser la position du carrousel Landmarks quand le panneau Tugs est masque/affiche
