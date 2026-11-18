@@ -79,6 +79,9 @@ public class MainActivity extends Activity implements SensorEventListener {
         webView = new WebView(this);
         webView.setBackgroundColor(Color.parseColor("#040B16"));
         webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+        webView.setVerticalScrollBarEnabled(true);
+        webView.setHorizontalScrollBarEnabled(false);
+        webView.setOverScrollMode(View.OVER_SCROLL_IF_CONTENT_SCROLLS);
 
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);

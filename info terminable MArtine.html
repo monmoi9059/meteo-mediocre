@@ -3282,9 +3282,77 @@
 
       /* Android / smartphones (≤ 900px) & Édition APK Native */
       @media (max-width: 900px) {
+        html {
+          height: auto !important;
+          min-height: 100% !important;
+          overflow-y: auto !important;
+          overflow-x: clip !important;
+          -webkit-overflow-scrolling: touch;
+        }
         body {
+          height: auto !important;
+          min-height: 100dvh !important;
+          width: 100% !important;
+          max-width: 100% !important;
+          overflow: visible !important;
+          overflow-x: clip !important;
           padding-top: env(safe-area-inset-top, 0px) !important;
-          padding-bottom: calc(62px + env(safe-area-inset-bottom, 10px)) !important;
+          padding-bottom: calc(68px + env(safe-area-inset-bottom, 12px)) !important;
+          touch-action: pan-y;
+        }
+        .main-dashboard {
+          flex: 0 0 auto !important;
+          height: auto !important;
+          overflow: visible !important;
+        }
+        .col-left,
+        .col-mid,
+        .col-right {
+          flex: 0 0 auto !important;
+          height: auto !important;
+          overflow: visible !important;
+        }
+        .card {
+          flex: 0 0 auto !important;
+          height: auto !important;
+          min-height: 0 !important;
+          overflow: visible !important;
+        }
+        #anim-card,
+        #map-card {
+          overflow: hidden !important;
+        }
+        #ops-card .card-content,
+        #tides-card .card-content,
+        #weather-card .card-content,
+        .ops-scroll-body,
+        .weather-scroll-body,
+        .tides-scroll-body {
+          height: auto !important;
+          max-height: none !important;
+          overflow-y: visible !important;
+        }
+        .table-container,
+        .tide-table-wrap,
+        .weather-table-wrap {
+          overflow-x: auto !important;
+          overflow-y: visible !important;
+          max-height: none !important;
+          -webkit-overflow-scrolling: touch;
+          touch-action: pan-x pan-y;
+        }
+        .viewport-QuickActions,
+        .viewport-landmarks-bar,
+        .viewport-telemetry {
+          touch-action: pan-x !important;
+        }
+        .temp-simulation-hud,
+        .ts-body,
+        .inspect-3d-popup,
+        .modal-content,
+        .header.s24-tools-open .controls {
+          touch-action: pan-y !important;
+          -webkit-overflow-scrolling: touch;
         }
 
         /* En-tête Android 1 ligne ultra-propre + actions rapides (Temps, Univers, Outils) */
@@ -3391,6 +3459,7 @@
           font-size: 0.62rem !important;
         }
         #animation-window {
+          flex: 0 0 auto !important;
           height: calc(100dvh - 134px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) !important;
           min-height: 410px !important;
         }
@@ -28313,7 +28382,16 @@
         animWinEl.addEventListener(
           "touchstart",
           (e) => {
-            if (e.target.closest("button") || e.target.closest("#weather-minimap-hud") || e.target.closest(".tug-maneuver-hud") || e.target.closest("#temp-simulation-hud")) return;
+            if (
+              e.target.closest("button") ||
+              e.target.closest(".viewport-hud-top") ||
+              e.target.closest(".viewport-landmarks-bar") ||
+              e.target.closest("#android-gyro-hud-bar") ||
+              e.target.closest("#inspect-3d-popup") ||
+              e.target.closest("#weather-minimap-hud") ||
+              e.target.closest(".tug-maneuver-hud") ||
+              e.target.closest("#temp-simulation-hud")
+            ) return;
             touchVelAz = 0;
             touchVelAlt = 0;
 
