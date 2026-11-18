@@ -36180,70 +36180,231 @@
 
         // --- 2. REGISTRE TEMPS RÉEL DES NAVIRES (QUAIS 86 & 87 — PORT DE QUÉBEC) & UTILITAIRES 3D ---
         const DEFAULT_PORTQC_SNAPSHOT = {
-          lastSync: "Port de Québec • Horaire des navires",
-          source: "Port de Québec",
-          isLiveFetch: false,
+          version: 3,
+          source: "seed_portqc",
+          syncChannel: "seed",
+          portUpdatedLabel: "Port de Québec • Horaire des navires",
+          updatedAtIso: "2026-11-18T17:45:00.000Z",
+          fetchedAt: 1795023900000,
+          otherValeroTankers: [
+            {
+              berth: "50",
+              name: "PAUL A. DESGAGNES",
+              flag: "CA",
+              loa: 135,
+              etd: "18 nov. 16:00",
+              agent: "PETRO",
+              cargo: "Vrac liquide"
+            }
+          ],
           berth86: {
             berth: "86",
-            occupied: true,
-            name: "PAUL A. DESGAGNES",
+            occupied: false,
+            name: "ALGOSCOTIA-VAAP",
+            resNo: "",
             flag: "CA",
-            loa: 135,
-            gt: 12061,
-            etd: "13 nov. 22:00",
-            agent: "PETRO",
-            origin: "CA RIM",
-            dest: "CA PCA",
+            flagName: "Canada",
+            loa: 149,
+            gt: 13352,
+            beam: 25,
+            dwtApprox: "~18 500 TPL",
+            typeLabel: "Chimiquier / Produits Glace 1A",
+            arrival: "",
+            etd: "",
+            etdIso: null,
+            agent: "MCKE",
+            origin: "CA SYD",
+            dest: "CA SEI",
             opCode: "C",
-            cargo: "Vrac liquide",
-            resNo: "102317",
+            operation: "Déchargement",
+            cargo: "Déchargement",
             expected: {
-              name: "NORD ELEGANCE",
-              flag: "PA",
-              loa: 183,
-              gt: 29782,
-              eta: "14 nov. 17:00",
-              agent: "FDNQC",
-              origin: "US MSY",
-              dest: "CA MTR",
+              berth: "86",
+              name: "ALGOSCOTIA-VAAP",
+              resNo: "102363",
+              flag: "CA",
+              flagName: "Canada",
+              loa: 149,
+              gt: 13352,
+              beam: 25,
+              dwtApprox: "~18 500 TPL",
+              typeLabel: "Chimiquier / Produits Glace 1A",
+              arrival: "19 nov. 20:45",
+              eta: "19 nov. 20:45",
+              timeIso: "2026-11-20T01:45:00.000Z",
+              agent: "MCKE",
+              origin: "CA SYD",
+              dest: "CA SEI",
+              opCode: "C",
+              operation: "Déchargement",
               cargo: "Déchargement"
-            }
+            },
+            upcoming: [
+              {
+                berth: "86",
+                name: "ALGOSCOTIA-VAAP",
+                resNo: "102363",
+                flag: "CA",
+                flagName: "Canada",
+                loa: 149,
+                gt: 13352,
+                eta: "19 nov. 20:45",
+                timeIso: "2026-11-20T01:45:00.000Z",
+                agent: "MCKE",
+                origin: "CA SYD",
+                dest: "CA SEI",
+                cargo: "Déchargement"
+              },
+              {
+                berth: "86",
+                name: "CB PACIFIC",
+                resNo: "102371",
+                flag: "PT",
+                flagName: "Portugal",
+                loa: 183,
+                gt: 27250,
+                eta: "21 nov. 18:45",
+                timeIso: "2026-11-21T23:45:00.000Z",
+                agent: "OT",
+                origin: "US BOS",
+                dest: "US HVN",
+                cargo: "Vrac liquide"
+              },
+              {
+                berth: "86",
+                name: "PAUL A. DESGAGNES",
+                resNo: "102354",
+                flag: "CA",
+                flagName: "Canada",
+                loa: 135,
+                gt: 12061,
+                eta: "23 nov. 09:00",
+                timeIso: "2026-11-23T14:00:00.000Z",
+                agent: "PETRO",
+                origin: "CA CMS",
+                dest: "CA RIM",
+                cargo: "Chargement"
+              }
+            ]
           },
           berth87: {
             berth: "87",
             occupied: true,
-            name: "CAP GRACE",
-            flag: "GR",
-            loa: 274,
-            gt: 84000,
-            etd: "14 nov. 09:00",
-            agent: "OT",
-            origin: "US CRP",
-            dest: "US CRP",
+            name: "ESPADA DESGAGNES",
+            resNo: "102336",
+            flag: "CA",
+            flagName: "Canada",
+            loa: 229,
+            gt: 42810,
+            beam: 40,
+            dwtApprox: "~112 000 TPL",
+            typeLabel: "Pétrolier Aframax / LR2",
+            arrival: "",
+            etd: "18 nov. 18:00",
+            etdIso: "2026-11-18T23:00:00.000Z",
+            agent: "PETRO",
+            origin: "CA MTR",
+            dest: "CA MTR",
             opCode: "C",
+            operation: "Vrac liquide",
             cargo: "Vrac liquide",
-            resNo: "102286",
             expected: {
-              name: "ESPADA DESGAGNES",
-              flag: "CA",
-              loa: 229,
-              gt: 42810,
-              eta: "18 nov. 03:00",
-              agent: "PETRO",
-              origin: "CA MTR",
-              dest: "CA MTR",
+              berth: "87",
+              name: "CAP QUEBEC",
+              resNo: "102328",
+              flag: "GR",
+              flagName: "Grèce",
+              loa: 274,
+              gt: 82099,
+              beam: 48,
+              dwtApprox: "~158 000 TPL",
+              typeLabel: "Pétrolier Suezmax",
+              arrival: "19 nov. 04:15",
+              eta: "19 nov. 04:15",
+              timeIso: "2026-11-19T09:15:00.000Z",
+              agent: "OT",
+              origin: "US CRP",
+              dest: "US CRP",
+              opCode: "C",
+              operation: "Vrac liquide",
               cargo: "Vrac liquide"
-            }
+            },
+            upcoming: [
+              {
+                berth: "87",
+                name: "CAP QUEBEC",
+                resNo: "102328",
+                flag: "GR",
+                flagName: "Grèce",
+                loa: 274,
+                gt: 82099,
+                eta: "19 nov. 04:15",
+                timeIso: "2026-11-19T09:15:00.000Z",
+                agent: "OT",
+                origin: "US CRP",
+                dest: "US CRP",
+                cargo: "Vrac liquide"
+              },
+              {
+                berth: "87",
+                name: "ESPADA DESGAGNES",
+                resNo: "102368",
+                flag: "CA",
+                flagName: "Canada",
+                loa: 229,
+                gt: 42810,
+                eta: "22 nov. 19:15",
+                timeIso: "2026-11-23T00:15:00.000Z",
+                agent: "PETRO",
+                origin: "CA MTR",
+                dest: "CA MTR",
+                cargo: "Vrac liquide"
+              },
+              {
+                berth: "87",
+                name: "DOLPHIN PEARL",
+                resNo: "102366",
+                flag: "PA",
+                flagName: "Panama",
+                loa: 246,
+                gt: 59408,
+                eta: "23 nov. 09:15",
+                timeIso: "2026-11-23T14:15:00.000Z",
+                agent: "LSL",
+                origin: "CA MTR",
+                dest: "OUT",
+                cargo: "Vrac liquide"
+              },
+              {
+                berth: "87",
+                name: "CAP CORPUS CHRISTI",
+                resNo: "102344",
+                flag: "GR",
+                flagName: "Grèce",
+                loa: 277,
+                gt: 82099,
+                eta: "23 nov. 20:00",
+                timeIso: "2026-11-24T01:00:00.000Z",
+                agent: "OT",
+                origin: "US CRP",
+                dest: "US CRP",
+                cargo: "Vrac liquide"
+              }
+            ]
           }
         };
 
         if (!window.livePortVessels) {
           let cachedSnap = null;
           try {
-            const rawCache = localStorage.getItem("valero_live_portqc_v2");
+            // Purger l'ancien cache v2 obsolète et lire uniquement le cache v3 horodaté
+            localStorage.removeItem("valero_live_portqc_v2");
+            const rawCache = localStorage.getItem("valero_live_portqc_v3");
             if (rawCache) {
               const parsed = JSON.parse(rawCache);
-              if (parsed && parsed.berth86 && parsed.berth87) cachedSnap = parsed;
+              if (parsed && parsed.version >= 3 && parsed.berth86 && parsed.berth87) {
+                cachedSnap = parsed;
+              }
             }
           } catch (e) {}
           window.livePortVessels = cachedSnap || JSON.parse(JSON.stringify(DEFAULT_PORTQC_SNAPSHOT));
@@ -36424,6 +36585,43 @@
               ctx.fillRect(w * 0.28, 0, w * 0.14, h);
               ctx.fillRect(0, h * 0.42, w, h * 0.16);
             }
+          } else if (code === "PT") {
+            ctx.fillStyle = "#046a38";
+            ctx.fillRect(0, 0, w * 0.4, h);
+            ctx.fillStyle = "#da291c";
+            ctx.fillRect(w * 0.4, 0, w * 0.6, h);
+            ctx.fillStyle = "#facc15";
+            ctx.beginPath();
+            ctx.arc(w * 0.4, h * 0.5, 22, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(w * 0.35, h * 0.38, w * 0.1, h * 0.24);
+          } else if (code === "NL") {
+            ctx.fillStyle = "#ae1c28";
+            ctx.fillRect(0, 0, w, h / 3);
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, h / 3, w, h / 3);
+            ctx.fillStyle = "#21468b";
+            ctx.fillRect(0, (h * 2) / 3, w, h / 3);
+          } else if (code === "FR" || code === "IT") {
+            ctx.fillStyle = code === "FR" ? "#002395" : "#009246";
+            ctx.fillRect(0, 0, w / 3, h);
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(w / 3, 0, w / 3, h);
+            ctx.fillStyle = "#ce2b37";
+            ctx.fillRect((w * 2) / 3, 0, w / 3, h);
+          } else if (code === "CY") {
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, w, h);
+            ctx.fillStyle = "#d57800";
+            ctx.beginPath();
+            ctx.ellipse(w * 0.5, h * 0.44, 34, 16, -0.18, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = "#4e5b31";
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.arc(w * 0.5, h * 0.58, 26, 0.25 * Math.PI, 0.75 * Math.PI);
+            ctx.stroke();
           } else {
             ctx.fillStyle = "#1e3a8a";
             ctx.fillRect(0, 0, w, h);
@@ -39252,10 +39450,11 @@
           const b86 = state.berth86 || DEFAULT_PORTQC_SNAPSHOT.berth86;
 
           // --- Mise à jour Navire Poste 87 (Face Nord-Ouest -Z vers Québec) ---
-          if (b87 && (b87.occupied || b87.name)) {
-            const dispName87 = b87.occupied ? b87.name : (b87.expected && b87.expected.name ? b87.expected.name : "LIBRE");
-            const dispFlag87 = b87.occupied ? (b87.flag || "CA") : (b87.expected && b87.expected.flag ? b87.expected.flag : "CA");
-            const loa87 = Math.max(110, Math.min(315, Number(b87.loa) || 274));
+          if (b87) {
+            const spec87 = window.previewShip87Override || (b87.occupied ? b87 : (b87.expected || b87));
+            const dispName87 = spec87 && spec87.name ? spec87.name : "POSTE 87";
+            const dispFlag87 = (spec87 && spec87.flag) || "CA";
+            const loa87 = Math.max(110, Math.min(315, Number(spec87 && spec87.loa) || 274));
             const sX87 = Math.max(0.48, Math.min(1.14, loa87 / 274));
             const sZ87 = Math.max(0.74, Math.min(1.06, 0.72 + 0.28 * (loa87 / 274)));
             const sY87 = Math.max(0.84, Math.min(1.05, 0.84 + 0.16 * (loa87 / 274)));
@@ -39268,7 +39467,7 @@
               tankerGroup.position.z = tankerBasePos.z;
             }
 
-            const pal87 = getVesselLiveryPalette(dispName87, b87.agent, false);
+            const pal87 = getVesselLiveryPalette(dispName87, spec87 && spec87.agent, false);
             blackHullMat.color.setHex(pal87.hullTop);
             redHullMat.color.setHex(pal87.bootTop);
             deckMat.color.setHex(pal87.deck);
@@ -39278,16 +39477,17 @@
 
             paintShipNameplate(ship87BowPortBoard, dispName87, "");
             paintShipNameplate(ship87BowStbdBoard, dispName87, "");
-            paintShipNameplate(ship87SternBoard, dispName87, dispFlag87 + " • " + loa87 + "M");
+            paintShipNameplate(ship87SternBoard, dispName87, dispFlag87 + " • " + Math.round(loa87) + "M");
             paintShipNameplate(ship87BridgeBoard, dispName87, "POSTE 87 • " + dispFlag87);
             paintMaritimeFlag(ship87Flag, dispFlag87);
           }
 
           // --- Mise à jour Navire Poste 86 (MÊME QUAI, Face Sud-Est +Z vers Lévis) ---
           if (b86) {
-            const dispName86 = b86.occupied ? b86.name : (b86.expected && b86.expected.name ? b86.expected.name : "POSTE 86");
-            const dispFlag86 = b86.occupied ? (b86.flag || "CA") : (b86.expected && b86.expected.flag ? b86.expected.flag : "CA");
-            const loa86 = Math.max(95, Math.min(210, Number(b86.loa) || 135));
+            const spec86 = window.previewShip86Override || (b86.occupied ? b86 : (b86.expected || b86));
+            const dispName86 = spec86 && spec86.name ? spec86.name : "POSTE 86";
+            const dispFlag86 = (spec86 && spec86.flag) || "CA";
+            const loa86 = Math.max(95, Math.min(210, Number(spec86 && spec86.loa) || 149));
             const sX86 = Math.max(0.70, Math.min(1.32, loa86 / 140));
             const sZ86 = Math.max(0.84, Math.min(1.12, 0.82 + 0.18 * (loa86 / 140)));
             const sY86 = Math.max(0.88, Math.min(1.08, 0.88 + 0.12 * (loa86 / 140)));
@@ -39298,7 +39498,7 @@
             vessel86Group.position.x = vessel86BasePos.x;
             vessel86Group.position.z = vessel86BasePos.z;
 
-            const pal86 = getVesselLiveryPalette(dispName86, b86.agent, true);
+            const pal86 = getVesselLiveryPalette(dispName86, spec86 && spec86.agent, true);
             hull86TopMat.color.setHex(pal86.hullTop);
             hull86BootMat.color.setHex(pal86.bootTop);
             deck86Mat.color.setHex(pal86.deck);
@@ -39307,7 +39507,7 @@
 
             paintShipNameplate(ship86BowPortBoard, dispName86, "");
             paintShipNameplate(ship86BowStbdBoard, dispName86, "");
-            paintShipNameplate(ship86SternBoard, dispName86, dispFlag86 + " • " + loa86 + "M");
+            paintShipNameplate(ship86SternBoard, dispName86, dispFlag86 + " • " + Math.round(loa86) + "M");
             paintShipNameplate(ship86BridgeBoard, dispName86, "POSTE 86 • " + dispFlag86);
             paintMaritimeFlag(ship86Flag, dispFlag86);
 
@@ -50593,97 +50793,268 @@
         return { loa, beam, dwtApprox, typeLabel };
       }
 
-      function extractBerthTargetsFromCell(cellText) {
-        const s = stripDiacriticsSimple(cellText || "")
+      const PORTQC_EN_SCHEDULE_URL = "https://www.portquebec.ca/en/business-and-operations/ship-schedule/";
+      const PORTQC_GITHUB_API_URL = "https://api.github.com/repos/monmoi9059/meteo-mediocre/contents/live-vessels-86-87.json?ref=main";
+      const PORTQC_GITHUB_RAW_URL = "https://raw.githubusercontent.com/monmoi9059/meteo-mediocre/main/live-vessels-86-87.json";
+      const PORTQC_MONTH_INDEX_MAP = {
+        jan: 0, janv: 0, janvier: 0, january: 0,
+        fev: 1, fevr: 1, fevrier: 1, feb: 1, february: 1,
+        mar: 2, mars: 2, march: 2,
+        avr: 3, avril: 3, apr: 3, april: 3,
+        mai: 4, may: 4,
+        jun: 5, juin: 5, june: 5,
+        jul: 6, juil: 6, juillet: 6, july: 6,
+        aou: 7, aout: 7, aug: 7, august: 7,
+        sep: 8, sept: 8, septembre: 8, september: 8,
+        oct: 9, octobre: 9, october: 9,
+        nov: 10, novembre: 10, november: 10,
+        dec: 11, decembre: 11, december: 11
+      };
+
+      function getQuebecTzOffsetMins(utcGuessMs) {
+        try {
+          const parts = new Intl.DateTimeFormat("en-US", {
+            timeZone: "America/Toronto",
+            timeZoneName: "shortOffset"
+          }).formatToParts(new Date(utcGuessMs));
+          const tzPart = parts.find((p) => p.type === "timeZoneName");
+          if (tzPart) {
+            const m = tzPart.value.match(/GMT([+-]\d{1,2})(?::(\d{2}))?/i);
+            if (m) {
+              const hrs = parseInt(m[1], 10);
+              const mins = m[2] ? parseInt(m[2], 10) : 0;
+              return hrs * 60 + (hrs < 0 ? -mins : mins);
+            }
+          }
+        } catch (e) {}
+        return -300;
+      }
+
+      function parsePortQcDateToIso(rawDateStr, refNowMs = Date.now()) {
+        const clean = stripDiacriticsSimple(rawDateStr || "").toLowerCase().replace(/\./g, " ").replace(/\s+/g, " ").trim();
+        if (!clean) return null;
+        let day = NaN;
+        let monthIdx = -1;
+        let hour = 0;
+        let minute = 0;
+        let explicitYear = NaN;
+
+        const isoM = clean.match(/\b(20\d{2})[-/](\d{1,2})[-/](\d{1,2})(?:\s+(\d{1,2}):(\d{2}))?/);
+        if (isoM) {
+          explicitYear = parseInt(isoM[1], 10);
+          monthIdx = parseInt(isoM[2], 10) - 1;
+          day = parseInt(isoM[3], 10);
+          hour = isoM[4] ? parseInt(isoM[4], 10) : 0;
+          minute = isoM[5] ? parseInt(isoM[5], 10) : 0;
+        } else {
+          const frM = clean.match(/\b(\d{1,2})\s+([a-z]{3,9})(?:\s+(20\d{2}))?(?:\s+(?:a\s+)?(\d{1,2})[:h](\d{2}))?/);
+          const enM = clean.match(/\b([a-z]{3,9})\s+(\d{1,2})(?:,?\s+(20\d{2}))?(?:\s+(?:at\s+)?(\d{1,2}):(\d{2}))?/);
+          if (frM && PORTQC_MONTH_INDEX_MAP[frM[2]] !== undefined) {
+            day = parseInt(frM[1], 10);
+            monthIdx = PORTQC_MONTH_INDEX_MAP[frM[2]];
+            if (frM[3]) explicitYear = parseInt(frM[3], 10);
+            if (frM[4]) hour = parseInt(frM[4], 10);
+            if (frM[5]) minute = parseInt(frM[5], 10);
+          } else if (enM && PORTQC_MONTH_INDEX_MAP[enM[1]] !== undefined) {
+            monthIdx = PORTQC_MONTH_INDEX_MAP[enM[1]];
+            day = parseInt(enM[2], 10);
+            if (enM[3]) explicitYear = parseInt(enM[3], 10);
+            if (enM[4]) hour = parseInt(enM[4], 10);
+            if (enM[5]) minute = parseInt(enM[5], 10);
+          }
+        }
+        if (monthIdx < 0 || isNaN(day) || day < 1 || day > 31) return null;
+
+        const refYear = new Date(refNowMs).getUTCFullYear();
+        let year = !isNaN(explicitYear) ? explicitYear : refYear;
+        const buildUtcMs = (yr) => {
+          const roughUtc = Date.UTC(yr, monthIdx, day, hour + 5, minute, 0);
+          const offsetMins = getQuebecTzOffsetMins(roughUtc);
+          return Date.UTC(yr, monthIdx, day, hour, minute, 0) - offsetMins * 60000;
+        };
+        let targetMs = buildUtcMs(year);
+        if (isNaN(explicitYear)) {
+          if (targetMs < refNowMs - 120 * 86400000) {
+            year += 1;
+            targetMs = buildUtcMs(year);
+          } else if (targetMs > refNowMs + 250 * 86400000) {
+            year -= 1;
+            targetMs = buildUtcMs(year);
+          }
+        }
+        return new Date(targetMs).toISOString();
+      }
+
+      function cleanPortQcCellText(rawHtmlOrText) {
+        let s = String(rawHtmlOrText || "");
+        s = s.replace(/<(?:span|div|p)[^>]*class="[^"]*(?:tooltip|th-mobile|sr-only|visually-hidden)[^"]*"[^>]*>[\s\S]*?<\/(?:span|div|p)>/gi, " ");
+        s = s.replace(/<(?:script|style)[^>]*>[\s\S]*?<\/(?:script|style)>/gi, " ");
+        const flagImgMatch = s.match(/<img[^>]+(?:alt|title)="([^"]+)"/i) || s.match(/\/([a-z]{2})\.(?:svg|png|webp|gif)/i);
+        s = s
+          .replace(/<[^>]+>/g, " ")
+          .replace(/&nbsp;/gi, " ")
+          .replace(/&amp;/gi, "&")
+          .replace(/&quot;/gi, '"')
+          .replace(/&#0*39;|&apos;/gi, "'")
+          .replace(/&eacute;/gi, "\u00e9")
+          .replace(/&egrave;/gi, "\u00e8")
+          .replace(/&ecirc;/gi, "\u00ea")
+          .replace(/&agrave;/gi, "\u00e0")
+          .replace(/&ccedil;/gi, "\u00e7")
+          .replace(/\.?\s*Infobulle\s*:.*$/i, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+        if (!s && flagImgMatch) s = flagImgMatch[1].trim();
+        return s;
+      }
+
+      function extractBerthCodeFromCell(cellText) {
+        const s = cleanPortQcCellText(cellText);
+        const norm = stripDiacriticsSimple(s)
           .toUpperCase()
           .replace(/\b(SECTION|SEC\.?|POSTE|QUAI|BERTH|WHARF|PIER|TERMINAL|VALERO|ST-ROMUALD)\b/g, " ")
           .trim();
-        if (!s || s.length > 26) return [];
-        // Rejeter toute date/heure ou mesure décimale (ex: 2026-05-12, 08:46, 186.5m)
-        if (/\d{4}|\d+:\d+|\d+[.,]\d+/.test(s)) return [];
-        const out = [];
-        if (/(?:^|[\s/,&-])0*86(?:$|[\s/,&-])/.test(s)) out.push("86");
-        if (/(?:^|[\s/,&-])0*87(?:$|[\s/,&-])/.test(s)) out.push("87");
-        return out;
+        if (!norm || norm.length > 24) return { code: "", targets: [] };
+        if (/\d{4}|\d+:\d+|\d+[.,]\d+/.test(norm)) return { code: "", targets: [] };
+        const targets = [];
+        if (/(?:^|[\s/,&-])0*86(?:$|[\s/,&-])/.test(norm)) targets.push("86");
+        if (/(?:^|[\s/,&-])0*87(?:$|[\s/,&-])/.test(norm)) targets.push("87");
+        const mCode = norm.match(/^0*(\d{1,3})\b/);
+        return { code: mCode ? mCode[1] : "", targets };
       }
 
-      function parsePortQuebecRowCells(rawCells, colMap) {
-        const cells = rawCells.map((c) => String(c || "").replace(/\s+/g, " ").trim());
+      function buildHeaderColMap(headerCells) {
+        const map = {};
+        headerCells.forEach((rawH, idx) => {
+          const cleaned = cleanPortQcCellText(rawH);
+          const h = stripDiacriticsSimple(cleaned).toUpperCase().replace(/\./g, "").trim();
+          if (!h) return;
+          if (map.berth === undefined && (h === "POSTE" || h === "QUAI" || h === "BERTH" || h === "SECTION" || h.includes("POSTE") || h.includes("BERTH") || h.includes("SECTION"))) {
+            map.berth = idx;
+          } else if (map.name === undefined && (h.includes("NAVIRE") || h.includes("VESSEL") || h.includes("SHIP") || h === "NOM")) {
+            map.name = idx;
+          } else if (map.resNo === undefined && h.includes("RESERV")) {
+            map.resNo = idx;
+          } else if (map.etd === undefined && (h === "HPD" || h === "ETD" || h.includes("HPD") || h.includes("ETD") || h.includes("DEPART") || h.includes("SORTIE"))) {
+            map.etd = idx;
+          } else if (map.eta === undefined && (h === "HPA" || h === "ETA" || h.includes("HPA") || h.includes("ETA") || h.includes("ARRIV"))) {
+            map.eta = idx;
+          } else if (map.flag === undefined && (h === "NAT" || h.startsWith("NAT ") || h.includes("NATIONAL") || h.includes("PAVILLON") || h === "PAV" || h.includes("FLAG") || h.includes("PAYS"))) {
+            map.flag = idx;
+          } else if (map.loa === undefined && (h === "LHT" || h === "LOA" || h.includes("LHT") || h.includes("LOA") || h.includes("LONGUEUR") || h.includes("LENGTH"))) {
+            map.loa = idx;
+          } else if (map.gt === undefined && (h === "JBE" || h === "GRT" || h === "GT" || h.includes("JBE") || h.includes("GRT") || h.includes("JAUGE") || h.includes("GROSS"))) {
+            map.gt = idx;
+          } else if (map.agent === undefined && (h.includes("AGENT") || h.includes("AGENCE"))) {
+            map.agent = idx;
+          } else if (map.origin === undefined && (h.startsWith("ORIG") || h.includes("PROVENANCE"))) {
+            map.origin = idx;
+          } else if (map.dest === undefined && h.startsWith("DEST")) {
+            map.dest = idx;
+          } else if (map.opCode === undefined && (h === "C/D" || h === "CD")) {
+            map.opCode = idx;
+          } else if (map.cargo === undefined && (h.includes("REMARQUE") || h.includes("REMARK") || h.includes("MARCHANDISE") || h.includes("CARGAISON") || h.includes("CARGO") || h.includes("PRODUIT") || h.includes("OPERAT"))) {
+            map.cargo = idx;
+          }
+        });
+        return Object.keys(map).length >= 2 ? map : null;
+      }
+
+      function parsePortQuebecRowCells(rawCells, colMap, isExpectedTable = false, refNowMs = Date.now()) {
+        const cells = rawCells.map((c) => cleanPortQcCellText(c));
         if (cells.length < 3) return null;
-        // Ignorer les lignes d'en-tête
-        const joinedUpper = stripDiacriticsSimple(cells.join(" | ")).toUpperCase();
-        if (
-          (joinedUpper.includes("NAVIRE") || joinedUpper.includes("VESSEL") || joinedUpper.includes("NOM DU")) &&
-          (joinedUpper.includes("SECTION") || joinedUpper.includes("QUAI") || joinedUpper.includes("BERTH") || joinedUpper.includes("PAVILLON"))
-        ) {
-          return { isHeader: true };
+
+        const maybeHeader = buildHeaderColMap(cells);
+        if (maybeHeader && Object.keys(maybeHeader).length >= 3 && maybeHeader.name !== undefined && maybeHeader.berth !== undefined) {
+          const bCell = stripDiacriticsSimple(cells[maybeHeader.berth]).toUpperCase();
+          if (!/^\d{1,3}$/.test(bCell)) {
+            return { isHeader: true, headerMap: maybeHeader };
+          }
         }
 
-        // Détection de la colonne Section/Poste (via colMap ou scan des cellules courtes numériques)
+        // Détection de la colonne Poste/Quai (colonne 0 sur portquebec.ca !)
         let berthIdx = (colMap && typeof colMap.berth === "number" && colMap.berth < cells.length) ? colMap.berth : -1;
-        let berthTargets = berthIdx >= 0 ? extractBerthTargetsFromCell(cells[berthIdx]) : [];
-        let anyPortSectionRow = false;
+        let berthInfo = berthIdx >= 0 ? extractBerthCodeFromCell(cells[berthIdx]) : { code: "", targets: [] };
 
-        if (berthIdx >= 0 && /^(0*\d{1,3}([/-]\d{1,3})?|[A-Z]?\d{2,3})$/i.test(cells[berthIdx].replace(/\b(Sec\.?|Section|Poste|Quai)\b/gi, "").trim())) {
-          anyPortSectionRow = true;
-        }
-        if (berthIdx < 0) {
-          for (let i = 1; i < Math.min(cells.length, 7); i++) {
-            const cleanedSec = cells[i].replace(/\b(Sec\.?|Section|Poste|Quai|Berth)\b/gi, "").trim();
-            if (/^0*(?:[1-9]\d|10\d)(?:[\s/&-]+0*(?:[1-9]\d|10\d))?$/.test(cleanedSec)) {
-              const prevNum = parseFloat(cells[i - 1]?.replace(",", "."));
-              // Si i === 2 et cells[2] > 115 sans décimale, attention à ne pas confondre LOA (ex: 183m) et Section (ex: 86, 87, 52, 27)
-              const secVal = parseInt(cleanedSec, 10);
-              if (secVal >= 10 && secVal <= 109) {
-                anyPortSectionRow = true;
-                const bt = extractBerthTargetsFromCell(cells[i]);
-                if (bt.length) {
-                  berthIdx = i;
-                  berthTargets = bt;
-                  break;
-                }
-                if (berthIdx < 0 && (i >= 2 || ( !isNaN(prevNum) && prevNum >= 70 ))) {
-                  berthIdx = i;
-                }
+        if (berthIdx < 0 || !berthInfo.code) {
+          for (let i = 0; i < Math.min(cells.length, 6); i++) {
+            const info = extractBerthCodeFromCell(cells[i]);
+            if (info.code) {
+              const secNum = parseInt(info.code, 10);
+              if (secNum >= 1 && secNum <= 115) {
+                berthIdx = i;
+                berthInfo = info;
+                break;
               }
             }
           }
         }
+        if (berthIdx < 0 || !berthInfo.code) return null;
 
-        const nameIdx = (colMap && typeof colMap.name === "number") ? colMap.name : 0;
-        const rawName = (cells[nameIdx] || cells[0] || "")
+        // Colonne Nom du navire (colonne 1 lorsque Poste est à la colonne 0 !)
+        let nameIdx = (colMap && typeof colMap.name === "number" && colMap.name < cells.length)
+          ? colMap.name
+          : (berthIdx === 0 ? 1 : 0);
+        if (nameIdx === berthIdx) nameIdx = berthIdx === 0 ? 1 : 0;
+
+        const rawName = String(cells[nameIdx] || "")
           .replace(/^\[([^\]]+)\]\([^)]+\)$/, "$1")
           .replace(/[*_`#]/g, "")
           .trim();
-        if (!rawName || rawName.length < 2 || /^\d+$/.test(rawName)) {
-          return anyPortSectionRow ? { isPortRow: true, targets: [] } : null;
+        if (!rawName) return { isPortRow: true, berthCode: berthInfo.code, targets: [] };
+
+        const resNo = (colMap && typeof colMap.resNo === "number" && cells[colMap.resNo])
+          ? cells[colMap.resNo]
+          : (cells.find((c, idx) => idx !== berthIdx && idx !== nameIdx && /^\d{5,7}$/.test(c)) || "");
+
+        const dateCells = [];
+        for (let j = 0; j < cells.length; j++) {
+          if (j === berthIdx || j === nameIdx) continue;
+          if (/\d{4}[-/]\d{2}[-/]\d{2}|\d{1,2}\s+[A-Za-z\u00C0-\u017F]{3,}\.?|[A-Za-z]{3,4}\.?\s+\d{1,2}\s+\d{1,2}:\d{2}|\d{1,2}:\d{2}/.test(cells[j])) {
+            dateCells.push(cells[j]);
+          }
         }
 
-        if (!berthTargets.length) {
-          return anyPortSectionRow ? { isPortRow: true, targets: [] } : null;
+        let arrivalStr = "";
+        let etdStr = "";
+        if (isExpectedTable) {
+          arrivalStr = (colMap && typeof colMap.eta === "number" && cells[colMap.eta])
+            ? cells[colMap.eta]
+            : ((colMap && typeof colMap.etd === "number" && cells[colMap.etd]) ? cells[colMap.etd] : (dateCells[0] || ""));
+        } else {
+          etdStr = (colMap && typeof colMap.etd === "number" && cells[colMap.etd])
+            ? cells[colMap.etd]
+            : ((colMap && typeof colMap.eta === "number" && cells[colMap.eta]) ? cells[colMap.eta] : (dateCells[0] || ""));
+          if (colMap && typeof colMap.eta === "number" && colMap.eta !== colMap.etd && cells[colMap.eta]) {
+            arrivalStr = cells[colMap.eta];
+          }
         }
 
-        // Pavillon
         let flagRaw = "";
         if (colMap && typeof colMap.flag === "number" && cells[colMap.flag]) {
           flagRaw = cells[colMap.flag];
-        } else if (berthIdx >= 2 && cells[1] && !/^\d+([.,]\d+)?\s*m?$/i.test(cells[1])) {
-          flagRaw = cells[1];
+        } else {
+          for (let j = 2; j < Math.min(cells.length, 7); j++) {
+            if (/^[A-Z]{2}$/.test(cells[j]) && PORTQC_FLAG_MAP[cells[j]]) {
+              flagRaw = cells[j];
+              break;
+            }
+          }
         }
+        const flagObj = normalizePortQcFlag(flagRaw);
 
-        // Longueur (LOA en mètres)
         let loaNum = NaN;
         if (colMap && typeof colMap.loa === "number" && cells[colMap.loa]) {
           const m = cells[colMap.loa].replace(",", ".").match(/(\d{2,3}(?:\.\d+)?)/);
           if (m) loaNum = parseFloat(m[1]);
         }
         if (isNaN(loaNum)) {
-          for (let j = 1; j < cells.length; j++) {
-            if (j === berthIdx || j === nameIdx) continue;
+          for (let j = 2; j < Math.min(cells.length, 8); j++) {
+            if (cells[j] === resNo) continue;
             const cVal = cells[j].replace(",", ".").replace(/\s*m$/i, "").trim();
             if (/^\d{2,3}(?:\.\d+)?$/.test(cVal)) {
               const v = parseFloat(cVal);
-              if (v >= 75 && v <= 355) {
+              if (v >= 20 && v <= 355) {
                 loaNum = v;
                 break;
               }
@@ -50691,73 +51062,208 @@
           }
         }
 
-        // Dates (Arrivée / ETA et Départ prévu / ETD)
-        const dateStrings = [];
-        for (let j = 1; j < cells.length; j++) {
-          if (j === berthIdx || j === nameIdx) continue;
-          if (/\d{4}[-/]\d{2}[-/]\d{2}|\d{1,2}\s+[A-Za-z\u00C0-\u017F]{3,}\.?(?:\s+\d{4})?|\d{2}[-/]\d{2}[-/]\d{4}|\d{1,2}:\d{2}/.test(cells[j])) {
-            dateStrings.push(cells[j]);
-          }
+        let gtNum = 0;
+        if (colMap && typeof colMap.gt === "number" && cells[colMap.gt]) {
+          const g = parseInt(cells[colMap.gt].replace(/\s+/g, ""), 10);
+          if (!isNaN(g)) gtNum = g;
         }
-        const arrivalOrEta = (colMap && typeof colMap.arrival === "number" && cells[colMap.arrival])
-          ? cells[colMap.arrival]
-          : (dateStrings[0] || "");
-        const etdStr = (colMap && typeof colMap.etd === "number" && cells[colMap.etd])
-          ? cells[colMap.etd]
-          : (dateStrings[1] || "En cours");
 
-        const agentStr = (colMap && typeof colMap.agent === "number" && cells[colMap.agent])
-          ? cells[colMap.agent]
-          : (cells[cells.length - 2] && !dateStrings.includes(cells[cells.length - 2]) ? cells[cells.length - 2] : "Agence maritime");
-        const opStr = (colMap && typeof colMap.op === "number" && cells[colMap.op])
-          ? cells[colMap.op]
-          : (cells[cells.length - 1] && !dateStrings.includes(cells[cells.length - 1]) ? cells[cells.length - 1] : "Hydrocarbures / Vrac liquide");
+        const agentStr = (colMap && typeof colMap.agent === "number" && cells[colMap.agent]) ? cells[colMap.agent] : "";
+        const originStr = (colMap && typeof colMap.origin === "number" && cells[colMap.origin]) ? cells[colMap.origin] : "";
+        const destStr = (colMap && typeof colMap.dest === "number" && cells[colMap.dest]) ? cells[colMap.dest] : "";
+        const opCodeStr = (colMap && typeof colMap.opCode === "number" && cells[colMap.opCode]) ? cells[colMap.opCode] : "";
+        const cargoStr = (colMap && typeof colMap.cargo === "number" && cells[colMap.cargo])
+          ? cells[colMap.cargo]
+          : (cells[cells.length - 1] || "Vrac liquide");
 
-        const flagObj = normalizePortQcFlag(flagRaw);
+        const timeIso = parsePortQcDateToIso(isExpectedTable ? arrivalStr : etdStr, refNowMs);
+
         return {
           isPortRow: true,
-          targets: berthTargets,
+          berthCode: berthInfo.code,
+          targets: berthInfo.targets,
           name: rawName.toUpperCase(),
+          resNo,
           flag: flagObj.flag,
           flagName: flagObj.flagName,
           loaNum,
-          arrival: arrivalOrEta,
+          gt: gtNum,
+          arrival: arrivalStr,
+          eta: arrivalStr,
           etd: etdStr,
+          timeIso,
           agent: agentStr,
-          operation: opStr
+          origin: originStr,
+          dest: destStr,
+          opCode: opCodeStr,
+          operation: cargoStr,
+          cargo: cargoStr
         };
       }
 
-      function buildHeaderColMap(headerCells) {
-        const map = {};
-        headerCells.forEach((rawH, idx) => {
-          const h = stripDiacriticsSimple(rawH || "").toUpperCase();
-          if (map.name === undefined && (h.includes("NAVIRE") || h.includes("VESSEL") || h.includes("SHIP") || h === "NOM")) map.name = idx;
-          else if (map.flag === undefined && (h.includes("PAVILLON") || h.includes("FLAG") || h.includes("PAYS"))) map.flag = idx;
-          else if (map.loa === undefined && (h.includes("LONGUEUR") || h.includes("LENGTH") || h.includes("LOA") || h.includes("METRE"))) map.loa = idx;
-          else if (map.berth === undefined && (h.includes("SECTION") || h.includes("POSTE") || h.includes("QUAI") || h.includes("BERTH") || h.includes("PIER"))) map.berth = idx;
-          else if (map.arrival === undefined && (h.includes("ARRIV") || h.includes("ETA"))) map.arrival = idx;
-          else if (map.etd === undefined && (h.includes("DEPART") || h.includes("ETD") || h.includes("SORTIE"))) map.etd = idx;
-          else if (map.agent === undefined && h.includes("AGENT")) map.agent = idx;
-          else if (map.op === undefined && (h.includes("OPERAT") || h.includes("CARGAISON") || h.includes("CARGO") || h.includes("PRODUIT") || h.includes("MARCHANDISE"))) map.op = idx;
-        });
-        return Object.keys(map).length >= 2 ? map : null;
+      function parseFlattenedPortQcTextSection(sectionText, isExpected, refNowMs) {
+        const cleaned = String(sectionText || "")
+          .replace(/[|\t]+/g, " ")
+          .replace(/\s+/g, " ");
+
+        const results = [];
+        const coreRe = /\b(\d{1,3})\s+([A-Z0-9][A-Z0-9 .'-]{0,34}?)\s+(\d{5,7})\s+((?:\d{1,2}\s+[A-Za-z\u00C0-\u017F]{3,5}\.?|[A-Za-z]{3,4}\.?\s+\d{1,2})\s+\d{2}:\d{2})\s+([A-Z]{2})\s+(\d{2,3}(?:[.,]\d+)?)\s+(\d{1,6})\s+([A-Z0-9&.-]{2,10})\b/g;
+
+        const matches = [];
+        let m;
+        while ((m = coreRe.exec(cleaned)) !== null) {
+          matches.push({ index: m.index, endIndex: coreRe.lastIndex, groups: m });
+        }
+
+        for (let i = 0; i < matches.length; i++) {
+          const cur = matches[i];
+          const nextStart = i + 1 < matches.length ? matches[i + 1].index : cleaned.length;
+          let tail = cleaned.slice(cur.endIndex, nextStart).trim();
+          tail = tail.replace(/\s*(?:Derni[eè]re\s+mise\s+[aà]\s+jour|Last\s+update|S'inscrire|Subscribe)[\s\S]*$/i, "").trim();
+          tail = tail.replace(/\.?\s*Infobulle\s*:\s*[A-Za-z\u00C0-\u017F0-9 ()'-]+?(?=\s+(?:[A-Z]{2}\s+[A-Z]{3}|OUT|TBA|[CD]\s)|$)/gi, " ").replace(/\s+/g, " ").trim();
+
+          let origin = "";
+          let dest = "";
+          let opCode = "";
+          let cargoClean = "Vrac liquide";
+
+          const opMatch = tail.match(/^(.*?)\b([CD])\s+([A-Za-z\u00C0-\u017F /'-]{2,32})$/);
+          if (opMatch) {
+            const portsPart = opMatch[1].trim();
+            opCode = opMatch[2];
+            cargoClean = opMatch[3].trim();
+            const portTokens = portsPart.match(/(?:[A-Z]{2}\s+[A-Z]{3}|OUT|TBA)/g);
+            if (portTokens && portTokens.length >= 2) {
+              origin = portTokens[0];
+              dest = portTokens[1];
+            } else if (portTokens && portTokens.length === 1) {
+              origin = portTokens[0];
+            }
+          }
+
+          const g = cur.groups;
+          const berthCode = String(parseInt(g[1], 10));
+          const targets = [];
+          if (berthCode === "86") targets.push("86");
+          if (berthCode === "87") targets.push("87");
+          const flagObj = normalizePortQcFlag(g[5]);
+          const dateVal = g[4].trim();
+
+          results.push({
+            isPortRow: true,
+            berthCode,
+            targets,
+            name: g[2].trim().toUpperCase(),
+            resNo: g[3].trim(),
+            flag: flagObj.flag,
+            flagName: flagObj.flagName,
+            loaNum: parseFloat(g[6].replace(",", ".")),
+            gt: parseInt(g[7], 10) || 0,
+            arrival: isExpected ? dateVal : "",
+            eta: isExpected ? dateVal : "",
+            etd: isExpected ? "" : dateVal,
+            timeIso: parsePortQcDateToIso(dateVal, refNowMs),
+            agent: g[8].trim(),
+            origin,
+            dest,
+            opCode,
+            operation: cargoClean,
+            cargo: cargoClean
+          });
+        }
+        return results;
       }
 
-      function parsePortQuebecSchedule(rawText) {
-        if (!rawText || typeof rawText !== "string" || rawText.length < 80) return null;
-        const inPortFound = {};
-        const expectedFound = {};
+      function parsePortQuebecSchedule(rawText, syncChannel = "direct_portqc") {
+        if (!rawText || typeof rawText !== "string" || rawText.length < 60) return null;
+
+        // Accepter directement un JSON pré-analysé (ex: relai GitHub live-vessels-86-87.json)
+        const trimmed = rawText.trim();
+        if (trimmed.startsWith("{")) {
+          try {
+            const obj = JSON.parse(trimmed);
+            if (obj && obj.berth86 && obj.berth87) {
+              return obj;
+            }
+            if (obj && typeof obj.contents === "string" && obj.contents.length > 80) {
+              rawText = obj.contents;
+            }
+          } catch (e) {}
+        }
+
+        const refNowMs = Date.now();
+        const inPortList = { "86": [], "87": [] };
+        const expectedList = { "86": [], "87": [] };
+        const otherValeroTankers = [];
         let totalPortRows = 0;
 
-        // 1. Analyse DOM HTML si la réponse contient des balises <table> / <tr>
+        let portUpdatedLabel = "";
+        const updMatch = rawText.match(/(?:Derni[eè]re\s+mise\s+[aà]\s+jour\s+le|Last\s+update)\s*:\s*([^\n<]{6,80})/i);
+        if (updMatch) {
+          portUpdatedLabel = cleanPortQcCellText(updMatch[1]);
+        }
+
+        const recordRow = (parsed, isExpected) => {
+          if (!parsed || parsed.isHeader) return;
+          if (parsed.isPortRow) totalPortRows++;
+
+          if (!isExpected && ["50", "51", "52", "53"].includes(parsed.berthCode)) {
+            const opU = stripDiacriticsSimple(parsed.cargo || "").toUpperCase();
+            if (opU.includes("LIQUID") || parsed.agent === "PETRO" || parsed.agent === "OT" || parsed.name.includes("DESGAGNES")) {
+              otherValeroTankers.push({
+                berth: parsed.berthCode,
+                name: parsed.name,
+                flag: parsed.flag,
+                loa: parsed.loaNum || 135,
+                etd: parsed.etd,
+                agent: parsed.agent,
+                cargo: parsed.cargo
+              });
+            }
+          }
+
+          if (parsed.targets && parsed.targets.length) {
+            parsed.targets.forEach((berthKey) => {
+              const specs = inferTankerSpecsFromLoa(parsed.loaNum, berthKey, parsed.name, parsed.operation);
+              const entry = {
+                berth: berthKey,
+                name: parsed.name,
+                resNo: parsed.resNo || "",
+                flag: parsed.flag,
+                flagName: parsed.flagName,
+                loa: specs.loa,
+                gt: parsed.gt || 0,
+                beam: specs.beam,
+                dwtApprox: specs.dwtApprox,
+                typeLabel: specs.typeLabel,
+                arrival: parsed.arrival || "",
+                eta: parsed.eta || parsed.arrival || "",
+                etd: parsed.etd || "",
+                timeIso: parsed.timeIso || null,
+                agent: parsed.agent || "",
+                origin: parsed.origin || "",
+                dest: parsed.dest || "",
+                opCode: parsed.opCode || "",
+                operation: parsed.operation || "",
+                cargo: parsed.cargo || parsed.operation || ""
+              };
+              const bucket = isExpected ? expectedList[berthKey] : inPortList[berthKey];
+              if (!bucket.some((x) => x.name === entry.name && (x.resNo === entry.resNo || x.eta === entry.eta))) {
+                bucket.push(entry);
+              }
+            });
+          }
+        };
+
+        // 1. Analyse DOM HTML (FR & EN)
         if (/<table[\s>]|<tr[\s>]/i.test(rawText) && typeof DOMParser !== "undefined") {
           try {
             const doc = new DOMParser().parseFromString(rawText, "text/html");
             const tables = Array.from(doc.querySelectorAll("table"));
             tables.forEach((tbl, tIdx) => {
-              // Identifier si la table correspond à "Navires au port" ou "Navires attendus"
               let ctxText = "";
+              const captionEl = tbl.querySelector("caption");
+              if (captionEl) ctxText += " " + (captionEl.textContent || "");
               const parentSec = tbl.closest("[id], section, .tab-pane, .accordion-item, div");
               if (parentSec && parentSec.id) ctxText += " " + parentSec.id;
               let prev = tbl.previousElementSibling;
@@ -50783,184 +51289,511 @@
               let colMap = null;
               const ths = Array.from(tbl.querySelectorAll("thead th, tr:first-child th"));
               if (ths.length >= 3) {
-                colMap = buildHeaderColMap(ths.map((th) => th.textContent || ""));
+                colMap = buildHeaderColMap(ths.map((th) => th.innerHTML || th.textContent || ""));
               }
 
               const rows = Array.from(tbl.querySelectorAll("tr"));
               rows.forEach((tr) => {
                 const tds = Array.from(tr.querySelectorAll("td"));
                 if (tds.length < 3) return;
-                const cleanCells = tds.map((td) => {
-                  const clone = td.cloneNode(true);
-                  clone.querySelectorAll(".tooltip, .th-mobile, .sr-only, script, style").forEach((el) => el.remove());
-                  let txt = (clone.textContent || "").replace(/\s+/g, " ").trim();
-                  if (!txt) {
-                    const img = td.querySelector("img[alt], img[title], img[src]");
-                    if (img) {
-                      txt = img.getAttribute("alt") || img.getAttribute("title") || "";
-                      if (!txt) {
-                        const srcM = (img.getAttribute("src") || "").match(/\/([a-z]{2})\.(?:svg|png|webp|gif)/i);
-                        if (srcM) txt = srcM[1].toUpperCase();
-                      }
-                    }
-                  }
-                  return txt;
-                });
-                const parsed = parsePortQuebecRowCells(cleanCells, colMap);
-                if (!parsed || parsed.isHeader) return;
-                if (parsed.isPortRow) totalPortRows++;
-                if (parsed.targets && parsed.targets.length) {
-                  parsed.targets.forEach((berthKey) => {
-                    const specs = inferTankerSpecsFromLoa(parsed.loaNum, berthKey, parsed.name, parsed.operation);
-                    const entry = {
-                      name: parsed.name,
-                      flag: parsed.flag,
-                      flagName: parsed.flagName,
-                      loa: specs.loa,
-                      beam: specs.beam,
-                      dwtApprox: specs.dwtApprox,
-                      typeLabel: specs.typeLabel,
-                      arrival: parsed.arrival,
-                      eta: parsed.arrival,
-                      etd: parsed.etd,
-                      agent: parsed.agent,
-                      operation: parsed.operation
-                    };
-                    if (isExpectedTable) {
-                      if (!expectedFound[berthKey]) expectedFound[berthKey] = entry;
-                    } else {
-                      if (!inPortFound[berthKey]) inPortFound[berthKey] = entry;
-                    }
-                  });
+                const rawCellHtmls = tds.map((td) => td.innerHTML || td.textContent || "");
+                const parsed = parsePortQuebecRowCells(rawCellHtmls, colMap, isExpectedTable, refNowMs);
+                if (parsed && parsed.isHeader && parsed.headerMap) {
+                  colMap = parsed.headerMap;
+                } else if (parsed) {
+                  recordRow(parsed, isExpectedTable);
                 }
               });
             });
           } catch (e) {}
         }
 
-        // 2. Analyse Markdown / Tableaux texte (ex: r.jina.ai) si aucun tableau HTML n'a fourni les lignes
-        if (totalPortRows === 0) {
+        // 2. Analyse Markdown en tableau "|"
+        if (totalPortRows === 0 && rawText.includes("|")) {
           const lines = rawText.split(/\r?\n/);
-          let mode = "in_port";
+          let isExpected = false;
           let mdColMap = null;
           for (let i = 0; i < lines.length; i++) {
             const ln = lines[i].trim();
             if (!ln) continue;
             const upperLn = stripDiacriticsSimple(ln).toUpperCase();
-            if (
-              (upperLn.includes("NAVIRES AU PORT") || upperLn.includes("SHIPS IN PORT") || upperLn.includes("VESSELS IN PORT")) &&
-              ln.length < 90
-            ) {
-              mode = "in_port";
+            if ((upperLn.includes("NAVIRES AU PORT") || upperLn.includes("SHIPS IN PORT") || upperLn.includes("VESSELS IN PORT") || upperLn.includes("BATEAUX AU PORT")) && ln.length < 110) {
+              isExpected = false;
               mdColMap = null;
               continue;
             }
-            if (
-              (upperLn.includes("NAVIRES ATTENDUS") || upperLn.includes("EXPECTED SHIPS") || upperLn.includes("EXPECTED VESSELS")) &&
-              ln.length < 90
-            ) {
-              mode = "expected";
+            if ((upperLn.includes("NAVIRES ATTENDUS") || upperLn.includes("EXPECTED SHIPS") || upperLn.includes("EXPECTED VESSELS") || upperLn.includes("BATEAUX ATTENDUS")) && ln.length < 110) {
+              isExpected = true;
               mdColMap = null;
               continue;
             }
-            let rowCells = null;
-            if (ln.includes("|")) {
-              const parts = ln.replace(/^\|/, "").replace(/\|$/, "").split("|").map((s) => s.trim());
-              if (parts.length >= 3 && !parts.every((p) => /^[-:\s]+$/.test(p))) {
-                rowCells = parts;
-              }
-            } else if (ln.includes("\t")) {
-              const parts = ln.split("\t").map((s) => s.trim()).filter(Boolean);
-              if (parts.length >= 3) rowCells = parts;
-            }
-            if (!rowCells) continue;
-
-            const maybeHeader = buildHeaderColMap(rowCells);
-            if (maybeHeader && Object.keys(maybeHeader).length >= 3) {
-              mdColMap = maybeHeader;
-              continue;
-            }
-            const parsed = parsePortQuebecRowCells(rowCells, mdColMap);
-            if (!parsed || parsed.isHeader) continue;
-            if (parsed.isPortRow) totalPortRows++;
-            if (parsed.targets && parsed.targets.length) {
-              parsed.targets.forEach((berthKey) => {
-                const specs = inferTankerSpecsFromLoa(parsed.loaNum, berthKey, parsed.name, parsed.operation);
-                const entry = {
-                  name: parsed.name,
-                  flag: parsed.flag,
-                  flagName: parsed.flagName,
-                  loa: specs.loa,
-                  beam: specs.beam,
-                  dwtApprox: specs.dwtApprox,
-                  typeLabel: specs.typeLabel,
-                  arrival: parsed.arrival,
-                  eta: parsed.arrival,
-                  etd: parsed.etd,
-                  agent: parsed.agent,
-                  operation: parsed.operation
-                };
-                if (mode === "expected") {
-                  if (!expectedFound[berthKey]) expectedFound[berthKey] = entry;
-                } else {
-                  if (!inPortFound[berthKey]) inPortFound[berthKey] = entry;
-                }
-              });
+            if (!ln.includes("|")) continue;
+            const parts = ln.replace(/^\|/, "").replace(/\|$/, "").split("|").map((s) => s.trim());
+            if (parts.length < 3 || parts.every((p) => /^[-:\s]+$/.test(p))) continue;
+            const parsed = parsePortQuebecRowCells(parts, mdColMap, isExpected, refNowMs);
+            if (parsed && parsed.isHeader && parsed.headerMap) {
+              mdColMap = parsed.headerMap;
+            } else if (parsed) {
+              recordRow(parsed, isExpected);
             }
           }
         }
 
-        const mentionsPortQc = /port\s*de\s*qu[eé]bec|portquebec|navires\s+au\s+port|ships\s+in\s+port/i.test(rawText);
-        if (totalPortRows === 0 && !Object.keys(inPortFound).length && !Object.keys(expectedFound).length) {
-          return null;
+        // 3. Analyse lexicale par 8-uplet invariant (Jina texte aplati / copier-coller direct)
+        if (totalPortRows === 0) {
+          const splitRe = /\b(?:Navires\s+attendus|Horaire\s+des\s+bateaux\s+attendus|Expected\s+vessels|Expected\s+ships)\b/i;
+          const sections = rawText.split(splitRe);
+          parseFlattenedPortQcTextSection(sections[0] || "", false, refNowMs).forEach((r) => recordRow(r, false));
+          if (sections.length > 1) {
+            parseFlattenedPortQcTextSection(sections.slice(1).join(" "), true, refNowMs).forEach((r) => recordRow(r, true));
+          }
         }
-        if (totalPortRows < 1 && !mentionsPortQc) return null;
+
+        if (totalPortRows < 2) return null;
 
         const buildBerthState = (berthKey) => {
-          const live = inPortFound[berthKey];
-          const exp = expectedFound[berthKey] || null;
+          const live = inPortList[berthKey][0] || null;
+          const upcoming = expectedList[berthKey];
+          const exp = upcoming[0] || null;
           if (live) {
             return {
+              berth: berthKey,
               occupied: true,
               name: live.name,
+              resNo: live.resNo,
               flag: live.flag,
               flagName: live.flagName,
               loa: live.loa,
+              gt: live.gt,
               beam: live.beam,
               dwtApprox: live.dwtApprox,
               typeLabel: live.typeLabel,
               arrival: live.arrival,
               etd: live.etd,
+              etdIso: live.timeIso,
               agent: live.agent,
+              origin: live.origin,
+              dest: live.dest,
+              opCode: live.opCode,
               operation: live.operation,
-              expected: exp
+              cargo: live.cargo,
+              expected: exp,
+              upcoming
             };
           }
           return {
+            berth: berthKey,
             occupied: false,
             name: exp ? exp.name : `POSTE ${berthKey} LIBRE`,
+            resNo: "",
             flag: exp ? exp.flag : "CA",
             flagName: exp ? exp.flagName : "Aucun navire \u00e0 quai",
-            loa: exp ? exp.loa : (berthKey === "87" ? 274 : 183),
-            beam: exp ? exp.beam : (berthKey === "87" ? 48 : 32),
+            loa: exp ? exp.loa : (berthKey === "87" ? 274 : 149),
+            gt: exp ? exp.gt : 0,
+            beam: exp ? exp.beam : (berthKey === "87" ? 48 : 25),
             dwtApprox: exp ? exp.dwtApprox : "",
             typeLabel: exp ? exp.typeLabel : "Poste libre",
             arrival: "",
             etd: "",
+            etdIso: null,
             agent: exp ? exp.agent : "",
+            origin: exp ? exp.origin : "",
+            dest: exp ? exp.dest : "",
+            opCode: exp ? exp.opCode : "",
             operation: exp ? exp.operation : "",
-            expected: exp
+            cargo: exp ? exp.cargo : "",
+            expected: exp,
+            upcoming
           };
         };
 
         return {
+          version: 3,
           source: "live_portqc",
-          fetchedAt: Date.now(),
+          syncChannel,
+          portUpdatedLabel: portUpdatedLabel || "Port de Qu\u00e9bec \u2022 Horaire officiel",
+          updatedAtIso: new Date(refNowMs).toISOString(),
+          fetchedAt: refNowMs,
+          totalPortRows,
+          otherValeroTankers,
           berth86: buildBerthState("86"),
           berth87: buildBerthState("87")
         };
       }
       window.parsePortQuebecSchedule = parsePortQuebecSchedule;
+
+      // Chargement des éventuelles saisies manuelles opérateur (hors-ligne / quart de travail)
+      if (!window.manualBerthOverrides) {
+        window.manualBerthOverrides = { "86": null, "87": null };
+        try {
+          const rawMan = localStorage.getItem("valero_manual_vessels_v1");
+          if (rawMan) {
+            const pMan = JSON.parse(rawMan);
+            if (pMan && typeof pMan === "object") {
+              window.manualBerthOverrides = {
+                "86": pMan["86"] || null,
+                "87": pMan["87"] || null
+              };
+            }
+          }
+        } catch (e) {}
+      }
+
+      function saveManualBerthOverrides() {
+        try {
+          localStorage.setItem("valero_manual_vessels_v1", JSON.stringify(window.manualBerthOverrides));
+        } catch (e) {}
+      }
+
+      function reconcilePortQcTimeline(rawSnap, nowMs = Date.now()) {
+        const base = rawSnap ? JSON.parse(JSON.stringify(rawSnap)) : JSON.parse(JSON.stringify(DEFAULT_PORTQC_SNAPSHOT));
+        const snapAgeMs = Math.max(0, nowMs - (base.fetchedAt || 0));
+        const isFreshLive = base.source === "live_portqc" && snapAgeMs < 3.5 * 3600 * 1000;
+
+        ["86", "87"].forEach((berthKey) => {
+          const prop = berthKey === "86" ? "berth86" : "berth87";
+          const b = base[prop] || {};
+          const upcomingRaw = Array.isArray(b.upcoming)
+            ? b.upcoming
+            : (b.expected ? [b.expected] : []);
+
+          // Purger les navires attendus dont l'ETA est dépassée de plus de 18h sans mise à jour
+          const validUpcoming = upcomingRaw.filter((u) => {
+            if (!u || !u.name) return false;
+            const iso = u.timeIso || parsePortQcDateToIso(u.eta || u.arrival, base.fetchedAt || nowMs);
+            if (!iso) return true;
+            const etaMs = Date.parse(iso);
+            return isNaN(etaMs) || etaMs > nowMs - 18 * 3600 * 1000;
+          });
+          b.upcoming = validUpcoming;
+          b.expected = validUpcoming[0] || null;
+
+          // Si la capture est ancienne/hors-ligne et que l'heure de départ prévue (ETD) est dépassée de > 2h30, libérer le quai
+          if (b.occupied && !isFreshLive) {
+            const etdIso = b.etdIso || parsePortQcDateToIso(b.etd, base.fetchedAt || nowMs);
+            if (etdIso) {
+              const etdMs = Date.parse(etdIso);
+              if (!isNaN(etdMs) && nowMs > etdMs + 2.5 * 3600 * 1000) {
+                b.occupied = false;
+                b.etd = "";
+                b.etdIso = null;
+                if (b.expected) {
+                  b.name = b.expected.name;
+                  b.flag = b.expected.flag || "CA";
+                  b.flagName = b.expected.flagName || "Canada";
+                  b.loa = b.expected.loa || (berthKey === "87" ? 274 : 149);
+                  b.agent = b.expected.agent || "";
+                  b.typeLabel = b.expected.typeLabel || "Poste libre";
+                } else {
+                  b.name = `POSTE ${berthKey} LIBRE`;
+                }
+              }
+            }
+          }
+
+          // Appliquer une éventuelle surcharge manuelle opérateur
+          const man = window.manualBerthOverrides && window.manualBerthOverrides[berthKey];
+          if (man) {
+            if (man.mode === "free") {
+              b.occupied = false;
+              b.isManual = true;
+              b.etd = "";
+              b.name = b.expected ? b.expected.name : `POSTE ${berthKey} LIBRE`;
+            } else if (man.mode === "occupied" && man.name) {
+              const flagInfo = normalizePortQcFlag(man.flag || "CA");
+              const specs = inferTankerSpecsFromLoa(Number(man.loa) || (berthKey === "87" ? 229 : 149), berthKey, man.name, man.cargo || "");
+              b.occupied = true;
+              b.isManual = true;
+              b.name = String(man.name).trim().toUpperCase();
+              b.flag = flagInfo.flag;
+              b.flagName = flagInfo.flagName;
+              b.loa = specs.loa;
+              b.beam = specs.beam;
+              b.dwtApprox = specs.dwtApprox;
+              b.typeLabel = specs.typeLabel;
+              b.etd = man.etd || "En cours (Manuel)";
+              b.agent = man.agent || "";
+              b.operation = man.cargo || "Vrac liquide";
+              b.cargo = man.cargo || "Vrac liquide";
+            }
+          } else {
+            b.isManual = false;
+          }
+
+          base[prop] = b;
+        });
+
+        return base;
+      }
+
+      window.rawPortVesselsSnapshot = JSON.parse(JSON.stringify(window.livePortVessels));
+      window.livePortVessels = reconcilePortQcTimeline(window.rawPortVesselsSnapshot);
+
+      let portQcFetchInFlight = false;
+
+      function applyIncomingPortQcSnapshot(snap, persistToStorage = true) {
+        if (!snap || !snap.berth86 || !snap.berth87) return;
+        window.rawPortVesselsSnapshot = snap;
+        if (persistToStorage) {
+          try {
+            localStorage.setItem("valero_live_portqc_v3", JSON.stringify(snap));
+          } catch (e) {}
+        }
+        window.livePortVessels = reconcilePortQcTimeline(snap);
+        if (typeof window.applyLiveVesselsTo3D === "function") {
+          window.applyLiveVesselsTo3D();
+        }
+        if (window.tugManeuver && typeof window.tugManeuver.updateUI === "function") {
+          window.tugManeuver.updateUI();
+        }
+        updateLiveVesselDOMBadges();
+        renderPortQcModalBodyIfOpen();
+      }
+
+      function escapeHtmlSimple(str) {
+        return String(str || "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+
+      function renderPortQcModalBodyIfOpen() {
+        const modal = document.getElementById("portqc-vessels-modal");
+        if (!modal || modal.style.display !== "flex") return;
+        const body = document.getElementById("portqc-modal-content");
+        if (!body) return;
+        const pv = window.livePortVessels || DEFAULT_PORTQC_SNAPSHOT;
+        const b86 = pv.berth86 || {};
+        const b87 = pv.berth87 || {};
+        const isLive = pv.source === "live_portqc";
+        const chanLbl = pv.syncChannel === "direct_portqc"
+          ? "Direct Port de Qu\u00e9bec"
+          : (pv.syncChannel === "github_actions_portqc" || pv.syncChannel === "github_relay"
+            ? "Relais Cloud Port de Qu\u00e9bec (GitHub)"
+            : (pv.syncChannel === "manual_paste" ? "Import Horaire Port QC" : "Horaire Port de Qu\u00e9bec"));
+        const fetchedStr = pv.fetchedAt
+          ? new Date(pv.fetchedAt).toLocaleTimeString("fr-CA", { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+          : "--:--";
+
+        const otherHtml = Array.isArray(pv.otherValeroTankers) && pv.otherValeroTankers.length
+          ? `<div style="padding:0.42rem 0.55rem;border-radius:6px;background:rgba(56,189,248,0.09);border:1px solid rgba(56,189,248,0.28);font-size:0.68rem;color:var(--text);">` +
+              `<strong>\u2139\uFE0F Autres p\u00e9troliers actifs au Port de Qu\u00e9bec :</strong> ` +
+              pv.otherValeroTankers.map((o) =>
+                `${flagIsoToEmoji(o.flag)} <strong>${escapeHtmlSimple(o.name)}</strong> au <strong>Poste ${escapeHtmlSimple(o.berth)}</strong> (${Math.round(o.loa || 135)}m \u2022 D\u00e9p: ${escapeHtmlSimple(o.etd || "En cours")})`
+              ).join(" &nbsp;|&nbsp; ") +
+            `</div>`
+          : "";
+
+        const renderBerthCard = (berthNum, bState, faceLbl) => {
+          const occ = Boolean(bState.occupied);
+          const simActive = berthNum === "87" ? Boolean(window.forceShowBerth87Ship) : Boolean(window.forceShowBerth86Ship);
+          const manOverride = window.manualBerthOverrides && window.manualBerthOverrides[berthNum];
+          const upcoming = Array.isArray(bState.upcoming) ? bState.upcoming : (bState.expected ? [bState.expected] : []);
+
+          const curStatusHtml = occ
+            ? `<div style="display:flex;justify-content:space-between;align-items:center;gap:0.4rem;padding:0.42rem 0.5rem;border-radius:6px;background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.35);">` +
+                `<div>` +
+                  `<div style="font-weight:800;font-size:0.78rem;color:#10b981;">\uD83D\uDFE2 \u00C0 QUAI : ${flagIsoToEmoji(bState.flag)} ${escapeHtmlSimple(bState.name)}</div>` +
+                  `<div class="mono" style="font-size:0.64rem;color:var(--text-light);margin-top:2px;">LOA ${Math.round(bState.loa || 185)}m \u2022 ${escapeHtmlSimple(bState.typeLabel || "P\u00e9trolier")} \u2022 D\u00e9p. pr\u00e9vu: <strong>${escapeHtmlSimple(bState.etd || "En cours")}</strong>${bState.agent ? " \u2022 Agent " + escapeHtmlSimple(bState.agent) : ""}</div>` +
+                `</div>` +
+                `<button type="button" data-focus3d="${berthNum}" class="theme-toggle" style="font-size:0.62rem;padding:0.2rem 0.45rem;">\uD83C\uDFAF Voir 3D</button>` +
+              `</div>`
+            : `<div style="display:flex;justify-content:space-between;align-items:center;gap:0.4rem;padding:0.42rem 0.5rem;border-radius:6px;background:var(--surface-subtle);border:1px solid var(--border);">` +
+                `<div>` +
+                  `<div style="font-weight:800;font-size:0.75rem;color:var(--text-muted);">\u2693 POSTE ${berthNum} ACTUELLEMENT LIBRE</div>` +
+                  `<div class="mono" style="font-size:0.63rem;color:var(--text-light);margin-top:2px;">${bState.expected ? `Prochain attendu : ${flagIsoToEmoji(bState.expected.flag)} ${escapeHtmlSimple(bState.expected.name)} (${escapeHtmlSimple(bState.expected.eta || "")})` : "Aucun navire amarr\u00e9 en ce moment"}</div>` +
+                `</div>` +
+                `<button type="button" data-sim-toggle="${berthNum}" class="theme-toggle" style="font-size:0.62rem;padding:0.2rem 0.45rem;${simActive ? "border-color:#38bdf8;color:#38bdf8;" : ""}">${simActive ? "\uD83D\uDC41\uFE0F 3D Actif" : "\uD83D\uDC41\uFE0F Aper\u00e7u 3D"}</button>` +
+              `</div>`;
+
+          const queueRows = upcoming.length
+            ? upcoming.map((u, idx) =>
+                `<div style="display:flex;justify-content:space-between;align-items:center;gap:0.35rem;padding:0.26rem 0.38rem;border-bottom:1px solid var(--border);font-size:0.64rem;">` +
+                  `<div style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">` +
+                    `<strong>${flagIsoToEmoji(u.flag)} ${escapeHtmlSimple(u.name)}</strong> ` +
+                    `<span class="mono" style="color:var(--text-light);">(${Math.round(u.loa || 180)}m \u2022 ETA ${escapeHtmlSimple(u.eta || u.arrival || "--")} \u2022 ${escapeHtmlSimple(u.cargo || u.operation || "Vrac liquide")})</span>` +
+                  `</div>` +
+                  `<button type="button" data-preview-upcoming="${berthNum}:${idx}" class="theme-toggle" style="font-size:0.56rem;padding:0.08rem 0.32rem;flex-shrink:0;" title="Pr\u00e9visualiser ce navire en 3D au Poste ${berthNum}">\uD83D\uDC41\uFE0F 3D</button>` +
+                `</div>`
+              ).join("")
+            : `<div style="padding:0.3rem;font-size:0.63rem;color:var(--text-light);">Aucune escale planifi\u00e9e dans la liste publique actuelle.</div>`;
+
+          return (
+            `<div style="border:1px solid var(--border);border-radius:8px;padding:0.6rem;background:var(--surface);display:flex;flex-direction:column;gap:0.45rem;">` +
+              `<div style="display:flex;justify-content:space-between;align-items:center;">` +
+                `<span style="font-weight:900;font-size:0.8rem;color:var(--text);">POSTE ${berthNum} <span style="font-weight:600;font-size:0.66rem;color:var(--text-light);">(${faceLbl})</span></span>` +
+                (manOverride
+                  ? `<button type="button" data-clear-manual="${berthNum}" class="theme-toggle" style="font-size:0.58rem;padding:0.1rem 0.36rem;border-color:#f59e0b;color:#f59e0b;">\u21BA Mode Auto Port QC</button>`
+                  : `<span class="mono" style="font-size:0.58rem;color:#10b981;">AUTO PORT QC</span>`) +
+              `</div>` +
+              curStatusHtml +
+              `<div>` +
+                `<div class="mono" style="font-size:0.6rem;font-weight:700;color:var(--text-light);margin-bottom:0.18rem;">PROCHAINS NAVIRES ATTENDUS AU POSTE ${berthNum} (${upcoming.length})</div>` +
+                `<div style="border:1px solid var(--border);border-radius:5px;background:var(--surface-subtle);max-height:125px;overflow-y:auto;">${queueRows}</div>` +
+              `</div>` +
+              `<details style="font-size:0.64rem;color:var(--text-light);">` +
+                `<summary style="cursor:pointer;font-weight:700;user-select:none;">\u270F\uFE0F Saisie manuelle op\u00e9rateur (Poste ${berthNum})</summary>` +
+                `<div style="display:grid;grid-template-columns:1fr 64px 52px;gap:0.28rem;margin-top:0.35rem;">` +
+                  `<input type="text" id="man-name-${berthNum}" placeholder="Nom du navire (ex: ESPADA DESGAGNES)" value="${escapeHtmlSimple(manOverride && manOverride.name ? manOverride.name : (occ ? bState.name : ""))}" style="padding:0.24rem 0.36rem;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.64rem;" />` +
+                  `<input type="number" id="man-loa-${berthNum}" placeholder="LOA m" min="50" max="340" value="${Math.round((manOverride && manOverride.loa) || bState.loa || (berthNum === "87" ? 229 : 149))}" style="padding:0.24rem 0.3rem;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.64rem;" />` +
+                  `<input type="text" id="man-flag-${berthNum}" placeholder="CA" maxlength="3" value="${escapeHtmlSimple((manOverride && manOverride.flag) || bState.flag || "CA")}" style="padding:0.24rem 0.3rem;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.64rem;text-transform:uppercase;" />` +
+                `</div>` +
+                `<div style="display:flex;gap:0.28rem;margin-top:0.28rem;">` +
+                  `<input type="text" id="man-etd-${berthNum}" placeholder="D\u00e9part pr\u00e9vu (ex: 19 nov. 18:00)" value="${escapeHtmlSimple((manOverride && manOverride.etd) || bState.etd || "")}" style="flex:1;padding:0.24rem 0.36rem;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.64rem;" />` +
+                  `<button type="button" data-save-manual="${berthNum}" class="theme-toggle" style="font-size:0.6rem;padding:0.2rem 0.45rem;border-color:#10b981;color:#10b981;">\u2713 Mettre \u00e0 quai</button>` +
+                  `<button type="button" data-free-manual="${berthNum}" class="theme-toggle" style="font-size:0.6rem;padding:0.2rem 0.45rem;">Quai libre</button>` +
+                `</div>` +
+              `</details>` +
+            `</div>`
+          );
+        };
+
+        body.innerHTML =
+          `<div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:0.4rem;padding:0.42rem 0.55rem;border-radius:6px;background:var(--surface-subtle);border:1px solid var(--border);font-size:0.66rem;">` +
+            `<div>` +
+              `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${isLive ? "#10b981" : "#f59e0b"};margin-right:5px;"></span>` +
+              `<strong>${chanLbl}</strong> \u2022 Synchro ${fetchedStr}` +
+              (pv.portUpdatedLabel ? `<div class="mono" style="font-size:0.59rem;color:var(--text-light);margin-top:2px;">Port de Qu\u00e9bec : ${escapeHtmlSimple(pv.portUpdatedLabel)}</div>` : "") +
+            `</div>` +
+            `<div style="display:flex;gap:0.35rem;align-items:center;">` +
+              `<button type="button" id="portqc-modal-sync-btn" class="theme-toggle" style="font-size:0.64rem;padding:0.22rem 0.52rem;border-color:#38bdf8;color:#38bdf8;">${portQcFetchInFlight ? "\u27F3 Synchronisation..." : "\u27F3 Actualiser en direct"}</button>` +
+              `<a href="${PORTQC_SCHEDULE_URL}" target="_blank" rel="noopener noreferrer" class="theme-toggle" style="font-size:0.62rem;padding:0.22rem 0.48rem;text-decoration:none;">\uD83C\uDF10 Site Port QC</a>` +
+            `</div>` +
+          `</div>` +
+          otherHtml +
+          `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(275px,1fr));gap:0.6rem;">` +
+            renderBerthCard("86", b86, "Face Sud-Est vers L\u00e9vis") +
+            renderBerthCard("87", b87, "Face Nord-Ouest vers Qu\u00e9bec") +
+          `</div>` +
+          `<details style="font-size:0.64rem;color:var(--text-light);border-top:1px solid var(--border);padding-top:0.4rem;">` +
+            `<summary style="cursor:pointer;font-weight:700;user-select:none;">\uD83D\uDCCB Mode secours hors-ligne : Coller le texte de la page Port de Qu\u00e9bec</summary>` +
+            `<div style="display:flex;flex-direction:column;gap:0.3rem;margin-top:0.35rem;">` +
+              `<textarea id="portqc-raw-paste" rows="3" placeholder="Si votre r\u00e9seau bloque Internet, copiez tout le texte (Ctrl+A, Ctrl+C) de la page Horaire des navires du Port de Qu\u00e9bec et collez-le ici..." style="width:100%;padding:0.35rem;border-radius:5px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.62rem;font-family:monospace;"></textarea>` +
+              `<button type="button" id="portqc-parse-paste-btn" class="theme-toggle" style="align-self:flex-end;font-size:0.62rem;padding:0.22rem 0.6rem;border-color:#10b981;color:#10b981;">Analyser l'horaire coll\u00e9</button>` +
+            `</div>` +
+          `</details>`;
+
+        body.querySelector("#portqc-modal-sync-btn")?.addEventListener("click", () => fetchLiveBerthVessels(true));
+        body.querySelectorAll("[data-focus3d]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const bNum = btn.getAttribute("data-focus3d");
+            modal.style.display = "none";
+            if (typeof window.focusBerthIn3D === "function") window.focusBerthIn3D(bNum);
+          });
+        });
+        body.querySelectorAll("[data-sim-toggle]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const bNum = btn.getAttribute("data-sim-toggle");
+            if (bNum === "87") {
+              window.forceShowBerth87Ship = !window.forceShowBerth87Ship;
+              if (!window.forceShowBerth87Ship) window.previewShip87Override = null;
+            } else {
+              window.forceShowBerth86Ship = !window.forceShowBerth86Ship;
+              if (!window.forceShowBerth86Ship) window.previewShip86Override = null;
+            }
+            if (typeof window.applyLiveVesselsTo3D === "function") window.applyLiveVesselsTo3D();
+            if (window.tugManeuver && typeof window.tugManeuver.updateUI === "function") window.tugManeuver.updateUI();
+            updateLiveVesselDOMBadges();
+            renderPortQcModalBodyIfOpen();
+          });
+        });
+        body.querySelectorAll("[data-preview-upcoming]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const [bNum, idxStr] = (btn.getAttribute("data-preview-upcoming") || "").split(":");
+            const bObj = bNum === "87" ? b87 : b86;
+            const item = bObj && Array.isArray(bObj.upcoming) ? bObj.upcoming[parseInt(idxStr, 10)] : null;
+            if (!item) return;
+            if (bNum === "87") {
+              window.previewShip87Override = item;
+              window.forceShowBerth87Ship = true;
+            } else {
+              window.previewShip86Override = item;
+              window.forceShowBerth86Ship = true;
+            }
+            if (typeof window.applyLiveVesselsTo3D === "function") window.applyLiveVesselsTo3D();
+            if (window.tugManeuver && typeof window.tugManeuver.updateUI === "function") window.tugManeuver.updateUI();
+            updateLiveVesselDOMBadges();
+            modal.style.display = "none";
+            if (typeof window.focusBerthIn3D === "function") window.focusBerthIn3D(bNum);
+          });
+        });
+        body.querySelectorAll("[data-save-manual]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const bNum = btn.getAttribute("data-save-manual");
+            const nm = (document.getElementById(`man-name-${bNum}`)?.value || "").trim();
+            if (!nm) return;
+            const loa = parseFloat(document.getElementById(`man-loa-${bNum}`)?.value || "180") || 180;
+            const flag = (document.getElementById(`man-flag-${bNum}`)?.value || "CA").trim().toUpperCase();
+            const etd = (document.getElementById(`man-etd-${bNum}`)?.value || "").trim();
+            window.manualBerthOverrides[bNum] = { mode: "occupied", name: nm, loa, flag, etd, cargo: "Vrac liquide" };
+            if (bNum === "87") window.previewShip87Override = null;
+            else window.previewShip86Override = null;
+            saveManualBerthOverrides();
+            applyIncomingPortQcSnapshot(window.rawPortVesselsSnapshot || window.livePortVessels, false);
+          });
+        });
+        body.querySelectorAll("[data-free-manual]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const bNum = btn.getAttribute("data-free-manual");
+            window.manualBerthOverrides[bNum] = { mode: "free" };
+            if (bNum === "87") {
+              window.forceShowBerth87Ship = false;
+              window.previewShip87Override = null;
+            } else {
+              window.forceShowBerth86Ship = false;
+              window.previewShip86Override = null;
+            }
+            saveManualBerthOverrides();
+            applyIncomingPortQcSnapshot(window.rawPortVesselsSnapshot || window.livePortVessels, false);
+          });
+        });
+        body.querySelectorAll("[data-clear-manual]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const bNum = btn.getAttribute("data-clear-manual");
+            window.manualBerthOverrides[bNum] = null;
+            saveManualBerthOverrides();
+            applyIncomingPortQcSnapshot(window.rawPortVesselsSnapshot || window.livePortVessels, false);
+          });
+        });
+        body.querySelector("#portqc-parse-paste-btn")?.addEventListener("click", () => {
+          const rawTxt = document.getElementById("portqc-raw-paste")?.value || "";
+          const parsed = parsePortQuebecSchedule(rawTxt, "manual_paste");
+          if (parsed) {
+            window.manualBerthOverrides = { "86": null, "87": null };
+            saveManualBerthOverrides();
+            applyIncomingPortQcSnapshot(parsed, true);
+          }
+        });
+      }
+
+      function openPortQcScheduleModal() {
+        let modal = document.getElementById("portqc-vessels-modal");
+        if (!modal) {
+          modal = document.createElement("div");
+          modal.id = "portqc-vessels-modal";
+          modal.style.cssText =
+            "position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;padding:0.8rem;background:rgba(2,6,23,0.76);backdrop-filter:blur(6px);";
+          modal.innerHTML =
+            `<div style="width:min(760px,96vw);max-height:90vh;overflow-y:auto;border-radius:12px;background:var(--surface);border:1px solid var(--border);box-shadow:0 20px 50px rgba(0,0,0,0.55);padding:0.85rem;display:flex;flex-direction:column;gap:0.65rem;">` +
+              `<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);padding-bottom:0.45rem;">` +
+                `<div style="font-weight:900;font-size:0.9rem;color:var(--text);">\uD83D\uDEA2 Navires en Direct \u2014 Quais Valero 86 &amp; 87 (Port de Qu\u00e9bec)</div>` +
+                `<button type="button" id="portqc-modal-close" class="theme-toggle" style="padding:0.15rem 0.48rem;font-size:0.75rem;">\u2715</button>` +
+              `</div>` +
+              `<div id="portqc-modal-content" style="display:flex;flex-direction:column;gap:0.6rem;"></div>` +
+            `</div>`;
+          document.body.appendChild(modal);
+          modal.addEventListener("click", (e) => {
+            if (e.target === modal) modal.style.display = "none";
+          });
+          modal.querySelector("#portqc-modal-close")?.addEventListener("click", () => {
+            modal.style.display = "none";
+          });
+        }
+        modal.style.display = "flex";
+        renderPortQcModalBodyIfOpen();
+      }
+      window.openPortQcScheduleModal = openPortQcScheduleModal;
 
       function updateLiveVesselDOMBadges() {
         const pv = window.livePortVessels;
@@ -50971,9 +51804,10 @@
         // 1. Synchroniser le nom sur la coque SVG 2D (#boat-container svg text)
         const svgHullTxt = document.querySelector("#boat-container svg text");
         if (svgHullTxt) {
+          const sim87Spec = window.previewShip87Override || b87.expected;
           svgHullTxt.textContent = b87.occupied
             ? b87.name
-            : (window.forceShowBerth87Ship ? (b87.expected ? b87.expected.name : "CAP QUEBEC (SIM)") : "POSTE 87 LIBRE");
+            : (window.forceShowBerth87Ship ? ((sim87Spec && sim87Spec.name) || "CAP QUEBEC") + " (3D)" : "POSTE 87 LIBRE");
         }
 
         // Synchroniser l'azimut du bouton Chantier Davie avec la géomorphologie réelle de Lauzon (74°)
@@ -50991,7 +51825,9 @@
           const timeLbl = fetchedDate && !isNaN(fetchedDate.getTime())
             ? fetchedDate.toLocaleTimeString("fr-CA", { hour: "2-digit", minute: "2-digit" })
             : "--:--";
-          const srcTag = isLive ? `Port QC \u2022 ${timeLbl}` : "Cache Port QC";
+          const srcTag = pv.portUpdatedLabel
+            ? `Port QC (${pv.portUpdatedLabel})`
+            : (isLive ? `Port QC \u2022 ${timeLbl}` : "Horaire Port QC");
 
           const renderBerthPill = (blockEl, pillId, berthNum, bState) => {
             let pill = document.getElementById(pillId);
@@ -51013,57 +51849,73 @@
             }
 
             const occ = Boolean(bState.occupied);
-            const dotCol = occ ? "#10b981" : (bState.expected ? "#f59e0b" : "#64748b");
+            const isSimOn = berthNum === "87" ? Boolean(window.forceShowBerth87Ship) : Boolean(window.forceShowBerth86Ship);
+            const dotCol = occ ? "#10b981" : (isSimOn ? "#38bdf8" : (bState.expected ? "#f59e0b" : "#64748b"));
             pill.style.borderLeft = `3px solid ${dotCol}`;
 
+            const previewSpec = berthNum === "87" ? (window.previewShip87Override || bState.expected) : (window.previewShip86Override || bState.expected);
             const flagEmo = occ
               ? flagIsoToEmoji(bState.flag)
-              : (bState.expected ? flagIsoToEmoji(bState.expected.flag) : "\u2693");
+              : (previewSpec ? flagIsoToEmoji(previewSpec.flag) : "\u2693");
             const shipHeadline = occ
               ? `${flagEmo} ${bState.name}`
-              : (bState.expected ? `\u23F3 Attendu: ${bState.expected.name}` : "Poste libre (aucun navire)");
+              : (isSimOn && previewSpec
+                ? `\uD83D\uDC41\uFE0F 3D: ${flagEmo} ${previewSpec.name}`
+                : (bState.expected ? `Libre \u2022 \u23F3 ${flagEmo} ${bState.expected.name}` : "Poste libre (aucun navire)"));
+
+            const nextNote = (occ && bState.expected && bState.expected.name)
+              ? ` \u2022 Suiv: ${bState.expected.name}`
+              : "";
             const metaLine = occ
-              ? `LOA ${Math.round(bState.loa || (berthNum === "87" ? 274 : 183))}m \u2022 ${bState.etd ? `D\u00e9p: ${bState.etd}` : bState.typeLabel || "À quai"}`
+              ? `LOA ${Math.round(bState.loa || (berthNum === "87" ? 274 : 149))}m \u2022 ${bState.etd ? `D\u00e9p: ${bState.etd}` : (bState.typeLabel || "\u00C0 quai")}${nextNote}`
               : (bState.expected
-                ? `ETA: ${bState.expected.eta || "Sous peu"} \u2022 ${Math.round(bState.expected.loa || 185)}m`
+                ? `Attendu: ${bState.expected.eta || "Sous peu"} \u2022 ${Math.round(bState.expected.loa || 149)}m`
                 : `${srcTag}`);
 
-            const previewBtnHtml = (!occ && berthNum === "87")
-              ? `<button type="button" data-act="sim87" class="theme-toggle" style="padding:0.02rem 0.24rem;font-size:0.54rem;line-height:1.2;${window.forceShowBerth87Ship ? "border-color:#38bdf8;color:#38bdf8;" : ""}" title="Afficher/masquer un p\u00e9trolier 3D de d\u00e9monstration lorsque le Poste 87 est libre">\uD83D\uDC41\uFE0F 3D</button>`
+            const previewBtnHtml = !occ
+              ? `<button type="button" data-act="sim-berth" data-berth="${berthNum}" class="theme-toggle" style="padding:0.02rem 0.24rem;font-size:0.54rem;line-height:1.2;${isSimOn ? "border-color:#38bdf8;color:#38bdf8;" : ""}" title="Afficher/masquer le prochain navire attendu en 3D au Poste ${berthNum}">\uD83D\uDC41\uFE0F 3D</button>`
               : "";
 
+            const badgeLabel = bState.isManual ? "MANUEL" : (isLive ? "LIVE" : "HORAIRE");
+            const badgeColor = bState.isManual ? "#38bdf8" : (isLive ? "#10b981" : "#f59e0b");
+
             pill.innerHTML =
-              `<div style="display:flex;justify-content:space-between;align-items:center;gap:0.22rem;">` +
-                `<span class="mono" style="font-size:0.62rem;font-weight:800;color:${occ ? "var(--text)" : "var(--text-muted)"};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${shipHeadline.replace(/"/g, "&quot;")}">` +
-                  `<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${dotCol};margin-right:4px;vertical-align:middle;"></span>${shipHeadline}` +
+              `<div style="display:flex;justify-content:space-between;align-items:center;gap:0.2rem;">` +
+                `<span class="mono" style="font-size:0.61rem;font-weight:800;color:${occ || isSimOn ? "var(--text)" : "var(--text-muted)"};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escapeHtmlSimple(shipHeadline + " — " + srcTag)}">` +
+                  `<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${dotCol};margin-right:4px;vertical-align:middle;"></span>${escapeHtmlSimple(shipHeadline)}` +
                 `</span>` +
-                `<span style="display:inline-flex;gap:0.16rem;align-items:center;flex-shrink:0;">` +
+                `<span style="display:inline-flex;gap:0.14rem;align-items:center;flex-shrink:0;">` +
                   previewBtnHtml +
-                  `<button type="button" data-act="refresh-portqc" class="theme-toggle" style="padding:0.02rem 0.22rem;font-size:0.55rem;line-height:1.2;" title="Actualiser les navires en direct (Port de Qu\u00e9bec — ${srcTag})">\u27F3</button>` +
+                  `<button type="button" data-act="open-portqc-modal" class="theme-toggle" style="padding:0.02rem 0.2rem;font-size:0.54rem;line-height:1.2;" title="Voir l'horaire complet des Postes 86 &amp; 87 et options manuelles">\uD83D\uDCCB</button>` +
+                  `<button type="button" data-act="refresh-portqc" class="theme-toggle" style="padding:0.02rem 0.22rem;font-size:0.55rem;line-height:1.2;${portQcFetchInFlight ? "opacity:0.6;" : ""}" title="Actualiser en direct (${escapeHtmlSimple(srcTag)})">\u27F3</button>` +
                 `</span>` +
               `</div>` +
-              `<div class="mono" style="font-size:0.55rem;color:var(--text-light);display:flex;justify-content:space-between;gap:0.2rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">` +
-                `<span style="overflow:hidden;text-overflow:ellipsis;">${metaLine}</span>` +
-                `<span style="opacity:0.78;flex-shrink:0;">${isLive ? "LIVE" : "CACHE"}</span>` +
+              `<div class="mono" style="font-size:0.54rem;color:var(--text-light);display:flex;justify-content:space-between;gap:0.2rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">` +
+                `<span style="overflow:hidden;text-overflow:ellipsis;" title="${escapeHtmlSimple(metaLine)}">${escapeHtmlSimple(metaLine)}</span>` +
+                `<span style="color:${badgeColor};font-weight:800;flex-shrink:0;">${badgeLabel}</span>` +
               `</div>`;
 
-            const refreshBtn = pill.querySelector('[data-act="refresh-portqc"]');
-            if (refreshBtn) {
-              refreshBtn.addEventListener("click", (e) => {
-                e.stopPropagation();
-                fetchLiveBerthVessels(true);
-              });
-            }
-            const sim87Btn = pill.querySelector('[data-act="sim87"]');
-            if (sim87Btn) {
-              sim87Btn.addEventListener("click", (e) => {
-                e.stopPropagation();
+            pill.querySelector('[data-act="refresh-portqc"]')?.addEventListener("click", (e) => {
+              e.stopPropagation();
+              fetchLiveBerthVessels(true);
+            });
+            pill.querySelector('[data-act="open-portqc-modal"]')?.addEventListener("click", (e) => {
+              e.stopPropagation();
+              openPortQcScheduleModal();
+            });
+            pill.querySelector('[data-act="sim-berth"]')?.addEventListener("click", (e) => {
+              e.stopPropagation();
+              if (berthNum === "87") {
                 window.forceShowBerth87Ship = !window.forceShowBerth87Ship;
-                if (typeof window.applyLiveVesselsTo3D === "function") window.applyLiveVesselsTo3D();
-                if (window.tugManeuver && typeof window.tugManeuver.updateUI === "function") window.tugManeuver.updateUI();
-                updateLiveVesselDOMBadges();
-              });
-            }
+                if (!window.forceShowBerth87Ship) window.previewShip87Override = null;
+              } else {
+                window.forceShowBerth86Ship = !window.forceShowBerth86Ship;
+                if (!window.forceShowBerth86Ship) window.previewShip86Override = null;
+              }
+              if (typeof window.applyLiveVesselsTo3D === "function") window.applyLiveVesselsTo3D();
+              if (window.tugManeuver && typeof window.tugManeuver.updateUI === "function") window.tugManeuver.updateUI();
+              updateLiveVesselDOMBadges();
+            });
           };
 
           renderBerthPill(blocks[0], "live-berth86-pill", "86", b86);
@@ -51072,14 +51924,13 @@
       }
       window.updateLiveVesselDOMBadges = updateLiveVesselDOMBadges;
 
-      let portQcFetchInFlight = false;
-      async function fetchWithTimeoutText(url, timeoutMs = 9500) {
+      // Requête HTTP simple sans en-têtes personnalisés (zéro requête preflight OPTIONS CORS, compatible file:// !)
+      async function fetchCorsSafeText(url, timeoutMs = 6500) {
         const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
         const timer = ctrl ? setTimeout(() => ctrl.abort(), timeoutMs) : null;
         try {
           const resp = await fetch(url, {
             signal: ctrl ? ctrl.signal : undefined,
-            headers: { Accept: "text/html,text/plain,*/*" },
             cache: "no-store"
           });
           if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
@@ -51089,44 +51940,115 @@
         }
       }
 
+      function decodeBase64Utf8(b64) {
+        const bin = atob(String(b64 || "").replace(/\s+/g, ""));
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        return new TextDecoder("utf-8").decode(bytes);
+      }
+
+      // Canal 1 : Relais Cloud GitHub (instantané, Access-Control-Allow-Origin: * partout y compris depuis file:// !)
+      async function fetchGithubRelaySnapshot(timeoutMs = 5000) {
+        const bust = Math.floor(Date.now() / 30000);
+        const tasks = [
+          // 1A. API GitHub Contents (zéro délai de cache CDN)
+          fetchCorsSafeText(`${PORTQC_GITHUB_API_URL}&_t=${bust}`, timeoutMs).then((raw) => {
+            const meta = JSON.parse(raw);
+            const jsonStr = meta && meta.content ? decodeBase64Utf8(meta.content) : raw;
+            const snap = JSON.parse(jsonStr);
+            if (!snap || !snap.berth86 || !snap.berth87) throw new Error("Invalid GH API JSON");
+            snap.source = "live_portqc";
+            snap.syncChannel = snap.syncChannel || "github_relay";
+            return snap;
+          }),
+          // 1B. GitHub Raw CDN
+          fetchCorsSafeText(`${PORTQC_GITHUB_RAW_URL}?_t=${bust}`, timeoutMs).then((raw) => {
+            const snap = JSON.parse(raw);
+            if (!snap || !snap.berth86 || !snap.berth87) throw new Error("Invalid GH Raw JSON");
+            snap.source = "live_portqc";
+            snap.syncChannel = snap.syncChannel || "github_relay";
+            return snap;
+          })
+        ];
+
+        // 1C. Lecture locale même-origine (si servi via HTTP/HTTPS/GitHub Pages)
+        if (window.location.protocol === "http:" || window.location.protocol === "https:") {
+          tasks.unshift(
+            fetchCorsSafeText(`./live-vessels-86-87.json?_t=${bust}`, 2500).then((raw) => {
+              const snap = JSON.parse(raw);
+              if (!snap || !snap.berth86 || !snap.berth87) throw new Error("Invalid local JSON");
+              snap.source = "live_portqc";
+              return snap;
+            })
+          );
+        }
+
+        return Promise.any(tasks);
+      }
+
+      // Canal 2 : Course parallèle multi-passerelles directement sur portquebec.ca (FR + EN)
+      async function fetchDirectPortQcLive(timeoutMs = 7000) {
+        const bust = Math.floor(Date.now() / 60000);
+        const frBust = `${PORTQC_SCHEDULE_URL}?_t=${bust}`;
+        const enBust = `${PORTQC_EN_SCHEDULE_URL}?_t=${bust}`;
+
+        const directGateways = [
+          `https://api.allorigins.win/get?url=${encodeURIComponent(frBust)}`,
+          `https://api.allorigins.win/get?url=${encodeURIComponent(enBust)}`,
+          `https://r.jina.ai/${PORTQC_SCHEDULE_URL}`,
+          `https://r.jina.ai/${PORTQC_EN_SCHEDULE_URL}`,
+          `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(PORTQC_SCHEDULE_URL)}`,
+          `https://corsproxy.io/?url=${encodeURIComponent(PORTQC_SCHEDULE_URL)}`
+        ];
+
+        return Promise.any(
+          directGateways.map(async (gwUrl) => {
+            const txt = await fetchCorsSafeText(gwUrl, timeoutMs);
+            const parsed = parsePortQuebecSchedule(txt, "direct_portqc");
+            if (!parsed || !parsed.berth86 || !parsed.berth87) {
+              throw new Error("Unparseable gateway response");
+            }
+            return parsed;
+          })
+        );
+      }
+
       async function fetchLiveBerthVessels(manualTrigger = false) {
         if (portQcFetchInFlight) return;
         portQcFetchInFlight = true;
-        const cacheBust = Math.floor(Date.now() / 60000);
-        const targetWithBust = `${PORTQC_SCHEDULE_URL}?_t=${cacheBust}`;
-        const endpoints = [
-          targetWithBust,
-          `https://r.jina.ai/${PORTQC_SCHEDULE_URL}`,
-          `https://api.allorigins.win/raw?url=${encodeURIComponent(targetWithBust)}`,
-          `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(PORTQC_SCHEDULE_URL)}`
-        ];
+        updateLiveVesselDOMBadges();
+        renderPortQcModalBodyIfOpen();
 
+        let appliedDirect = false;
         try {
-          for (let i = 0; i < endpoints.length; i++) {
-            try {
-              const txt = await fetchWithTimeoutText(endpoints[i], manualTrigger ? 10500 : 9000);
-              const parsed = parsePortQuebecSchedule(txt);
-              if (parsed) {
-                window.livePortVessels = parsed;
-                try {
-                  localStorage.setItem("valero_live_portqc_v2", JSON.stringify(parsed));
-                } catch (e) {}
-                if (typeof window.applyLiveVesselsTo3D === "function") {
-                  window.applyLiveVesselsTo3D();
-                }
-                if (window.tugManeuver && typeof window.tugManeuver.updateUI === "function") {
-                  window.tugManeuver.updateUI();
-                }
-                updateLiveVesselDOMBadges();
-                return;
+          const timeoutRelay = manualTrigger ? 6000 : 4800;
+          const timeoutDirect = manualTrigger ? 8500 : 6800;
+
+          const relayPromise = fetchGithubRelaySnapshot(timeoutRelay)
+            .then((relaySnap) => {
+              if (!appliedDirect && relaySnap) {
+                applyIncomingPortQcSnapshot(relaySnap, true);
               }
-            } catch (innerErr) {
-              // Essayer la passerelle CORS suivante en transparence
-            }
-          }
+              return relaySnap;
+            })
+            .catch(() => null);
+
+          const directPromise = fetchDirectPortQcLive(timeoutDirect)
+            .then((directSnap) => {
+              if (directSnap) {
+                appliedDirect = true;
+                applyIncomingPortQcSnapshot(directSnap, true);
+              }
+              return directSnap;
+            })
+            .catch(() => null);
+
+          await Promise.allSettled([relayPromise, directPromise]);
         } finally {
           portQcFetchInFlight = false;
+          window.livePortVessels = reconcilePortQcTimeline(window.rawPortVesselsSnapshot || window.livePortVessels);
           updateLiveVesselDOMBadges();
+          renderPortQcModalBodyIfOpen();
         }
       }
       window.fetchLiveBerthVessels = fetchLiveBerthVessels;
@@ -51136,6 +52058,13 @@
       setInterval(() => {
         fetchLiveBerthVessels(false);
       }, 300000);
+      setInterval(() => {
+        if (window.rawPortVesselsSnapshot) {
+          window.livePortVessels = reconcilePortQcTimeline(window.rawPortVesselsSnapshot);
+          if (typeof window.applyLiveVesselsTo3D === "function") window.applyLiveVesselsTo3D();
+          updateLiveVesselDOMBadges();
+        }
+      }, 60000);
       document.addEventListener("visibilitychange", () => {
         if (!document.hidden && window.livePortVessels) {
           const ageMs = Date.now() - (window.livePortVessels.fetchedAt || 0);

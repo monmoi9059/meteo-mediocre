@@ -1,0 +1,50 @@
+name: Sync Port de Québec Vessels (Postes 86 & 87)
+
+on:
+  schedule:
+    - cron: "*/20 * * * *"
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "scripts/sync-portqc-vessels.mjs"
+      - ".github/workflows/sync-portqc-vessels.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-portqc-vessels
+  cancel-in-progress: false
+
+jobs:
+  sync-vessels:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Fetch live Port de Québec schedule (Postes 86 & 87)
+        run: node scripts/sync-portqc-vessels.mjs --force
+
+      - name: Commit and push updated vessel snapshot
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- live-vessels-86-87.json; then
+            echo "No changes in live-vessels-86-87.json"
+            exit 0
+          fi
+          git add live-vessels-86-87.json
+          git commit -m "chore(portqc): sync live vessels 86 & 87 [skip ci]"
+          git pull --rebase origin main
+          git push origin HEAD:main
