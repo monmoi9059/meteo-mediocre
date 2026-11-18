@@ -53055,7 +53055,10 @@
           "map-card": document.getElementById("map-card")
         };
 
-        function activateTab(targetTabId) {
+        let isInternalTabResize = false;
+        let lastKnownMobileViewport = window.innerWidth <= 900;
+
+        function applyMobileTabLayout(targetTabId) {
           tabButtons.forEach((btn) => {
             btn.classList.toggle("active", btn.dataset.tab === targetTabId);
           });
@@ -53086,36 +53089,50 @@
               }
             });
           }
+        }
 
-          if (window.innerWidth <= 900) {
-            window.scrollTo({ top: 0, behavior: "smooth" });
+        function activateTab(targetTabId, { scrollToTop = false } = {}) {
+          applyMobileTabLayout(targetTabId);
+
+          if (scrollToTop && window.innerWidth <= 900) {
+            window.scrollTo({ top: 0, behavior: "auto" });
           }
 
           setTimeout(() => {
-            window.dispatchEvent(new Event("resize"));
+            isInternalTabResize = true;
+            try {
+              window.dispatchEvent(new Event("resize"));
+            } finally {
+              isInternalTabResize = false;
+            }
           }, 60);
         }
 
         tabButtons.forEach((btn) => {
           btn.addEventListener("click", () => {
             hapticTap(10);
-            activateTab(btn.dataset.tab);
+            activateTab(btn.dataset.tab, { scrollToTop: true });
           });
         });
 
         window.addEventListener("resize", () => {
-          if (window.innerWidth > 900) {
-            document.querySelectorAll(".col-left, .col-mid, .col-right").forEach((col) => {
-              col.style.display = "";
-            });
-          } else {
+          if (isInternalTabResize) return;
+          const isMobileNow = window.innerWidth <= 900;
+          if (!isMobileNow) {
+            if (lastKnownMobileViewport) {
+              document.querySelectorAll(".col-left, .col-mid, .col-right").forEach((col) => {
+                col.style.display = "";
+              });
+            }
+          } else if (!lastKnownMobileViewport) {
             const activeBtn = tabNav.querySelector(".mobile-tab-btn.active");
-            if (activeBtn) activateTab(activeBtn.dataset.tab);
+            if (activeBtn) applyMobileTabLayout(activeBtn.dataset.tab);
           }
+          lastKnownMobileViewport = isMobileNow;
         });
 
-        // Activer la vue 3D par défaut au chargement
-        activateTab("anim-card");
+        // Activer la vue 3D par défaut au chargement (sans boucle de scroll)
+        activateTab("anim-card", { scrollToTop: false });
       }
 
       initMobileTabNavigation();
