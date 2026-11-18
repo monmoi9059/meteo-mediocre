@@ -36539,6 +36539,527 @@
               };
         }
 
+        // --- TEXTURES PROCÉDURALES HAUTE DÉFINITION (COQUES SOUDÉES, BÉTON MARITIME, BARDAGE, HUBLOTS & PATRIMOINE) ---
+        function createHullPlatingTexture() {
+          const cnv = document.createElement("canvas");
+          cnv.width = 512;
+          cnv.height = 256;
+          const ctx = cnv.getContext("2d");
+          ctx.fillStyle = "#eef2f6";
+          ctx.fillRect(0, 0, 512, 256);
+
+          // Virures horizontales de bordé d'acier soudé (strakes)
+          for (let y = 0; y < 256; y += 24) {
+            const bandShade = (y / 24) % 2 === 0 ? "rgba(255,255,255,0.35)" : "rgba(185,196,210,0.28)";
+            ctx.fillStyle = bandShade;
+            ctx.fillRect(0, y, 512, 24);
+            ctx.fillStyle = "rgba(71, 85, 105, 0.52)";
+            ctx.fillRect(0, y, 512, 1.6);
+            ctx.fillStyle = "rgba(255, 255, 255, 0.55)";
+            ctx.fillRect(0, y + 1.8, 512, 1.1);
+
+            // Cordons de soudure verticaux en quinconce (butt welds) + membrures internes subtiles
+            const stagger = ((y / 24) % 2) * 32;
+            for (let x = stagger; x < 512; x += 64) {
+              ctx.fillStyle = "rgba(71, 85, 105, 0.44)";
+              ctx.fillRect(x, y, 1.5, 24);
+              ctx.fillStyle = "rgba(255, 255, 255, 0.36)";
+              ctx.fillRect(x + 1.5, y, 1.0, 24);
+            }
+          }
+          // Subtiles coulures marines verticales (sel & dalots)
+          for (let s = 0; s < 28; s++) {
+            const sx = ((s * 79 + 17) % 504) + 4;
+            const sy = ((s * 43) % 140);
+            const g = ctx.createLinearGradient(sx, sy, sx, sy + 72);
+            g.addColorStop(0, "rgba(100, 116, 139, 0.30)");
+            g.addColorStop(1, "rgba(100, 116, 139, 0.0)");
+            ctx.fillStyle = g;
+            ctx.fillRect(sx, sy, 2.5, 72);
+          }
+          const tex = new THREE.CanvasTexture(cnv);
+          tex.wrapS = THREE.RepeatWrapping;
+          tex.wrapT = THREE.RepeatWrapping;
+          tex.repeat.set(5, 2);
+          return tex;
+        }
+
+        function createPlimsollAndDraftTexture() {
+          const cnv = document.createElement("canvas");
+          cnv.width = 512;
+          cnv.height = 192;
+          const ctx = cnv.getContext("2d");
+          ctx.clearRect(0, 0, 512, 192);
+          ctx.strokeStyle = "rgba(248, 250, 252, 0.92)";
+          ctx.fillStyle = "rgba(248, 250, 252, 0.92)";
+          ctx.lineWidth = 4;
+
+          // Disque de franc-bord OMI (Plimsoll Ring) au centre
+          const cx = 236, cy = 106, r = 28;
+          ctx.beginPath();
+          ctx.arc(cx, cy, r, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.fillRect(cx - 46, cy - 2.5, 92, 5);
+          ctx.font = "800 18px 'Inter', Arial, sans-serif";
+          ctx.fillText("L", cx - 44, cy - 8);
+          ctx.fillText("R", cx + 31, cy - 8);
+
+          // Peigne de charge (TF, F, T, S, W, WNA)
+          const gx = 308;
+          ctx.fillRect(gx, 44, 4.5, 112);
+          const marks = [
+            { lbl: "TF", y: 48, dir: -1 },
+            { lbl: "F", y: 68, dir: -1 },
+            { lbl: "T", y: 86, dir: 1 },
+            { lbl: "S", y: 106, dir: 1 },
+            { lbl: "W", y: 126, dir: 1 },
+            { lbl: "WNA", y: 148, dir: -1 }
+          ];
+          ctx.font = "800 14px 'JetBrains Mono', monospace";
+          marks.forEach((m) => {
+            const len = 24;
+            ctx.fillRect(m.dir > 0 ? gx : gx - len, m.y - 2, len, 4);
+            ctx.fillText(m.lbl, m.dir > 0 ? gx + len + 5 : gx - len - (m.lbl.length * 9) - 4, m.y + 4);
+          });
+
+          // Échelle de tirant d'eau métrique (16M..8M) à gauche et à droite
+          [44, 442].forEach((dx, idx) => {
+            ctx.font = "800 15px 'JetBrains Mono', monospace";
+            for (let dm = 0; dm < 6; dm++) {
+              const dy = 34 + dm * 26;
+              const meters = 16 - dm * 2;
+              ctx.fillRect(dx, dy, 14, 3.2);
+              ctx.fillRect(dx + 4, dy + 13, 8, 2.2);
+              ctx.fillText(meters + "M", dx + (idx === 0 ? 18 : -34), dy + 6);
+            }
+          });
+          const tex = new THREE.CanvasTexture(cnv);
+          tex.minFilter = THREE.LinearFilter;
+          return tex;
+        }
+
+        function createBridgeWindowsTextures() {
+          const cDay = document.createElement("canvas");
+          cDay.width = 512;
+          cDay.height = 96;
+          const ctxD = cDay.getContext("2d");
+          const cEm = document.createElement("canvas");
+          cEm.width = 512;
+          cEm.height = 96;
+          const ctxE = cEm.getContext("2d");
+
+          ctxD.fillStyle = "#e2e8f0";
+          ctxD.fillRect(0, 0, 512, 96);
+          ctxE.fillStyle = "#000000";
+          ctxE.fillRect(0, 0, 512, 96);
+
+          const panes = 14;
+          const pad = 6;
+          const pw = (512 - pad * (panes + 1)) / panes;
+          for (let i = 0; i < panes; i++) {
+            const px = pad + i * (pw + pad);
+            const gD = ctxD.createLinearGradient(px, 12, px, 84);
+            gD.addColorStop(0, "#082f49");
+            gD.addColorStop(0.55, "#0f172a");
+            gD.addColorStop(1, "#1e293b");
+            ctxD.fillStyle = gD;
+            ctxD.fillRect(px, 12, pw, 72);
+            ctxD.strokeStyle = "#475569";
+            ctxD.lineWidth = 2;
+            ctxD.strokeRect(px, 12, pw, 72);
+
+            // Essuie-glace marin pantographe + hublot tournant (clear-view screen) sur 2 vitres centrales
+            ctxD.strokeStyle = "rgba(148, 163, 184, 0.65)";
+            ctxD.lineWidth = 1.5;
+            ctxD.beginPath();
+            ctxD.moveTo(px + pw * 0.5, 14);
+            ctxD.lineTo(px + pw * 0.36, 56);
+            ctxD.stroke();
+            if (i === 5 || i === 8) {
+              ctxD.beginPath();
+              ctxD.arc(px + pw * 0.5, 48, pw * 0.28, 0, Math.PI * 2);
+              ctxD.stroke();
+            }
+
+            // Lueur nocturne réaliste d'instruments ECDIS / Radar (ambre tamisé & vert/cyan console)
+            const gE = ctxE.createLinearGradient(px, 14, px, 82);
+            const isConsoleCyan = i === 4 || i === 9;
+            gE.addColorStop(0, isConsoleCyan ? "#0284c7" : "#b45309");
+            gE.addColorStop(0.55, isConsoleCyan ? "#38bdf8" : "#fbbf24");
+            gE.addColorStop(1, "#fef08a");
+            ctxE.fillStyle = gE;
+            ctxE.fillRect(px + 2, 14, pw - 4, 68);
+          }
+          const dayTex = new THREE.CanvasTexture(cDay);
+          const emTex = new THREE.CanvasTexture(cEm);
+          dayTex.wrapS = THREE.RepeatWrapping;
+          emTex.wrapS = THREE.RepeatWrapping;
+          return { dayTex, emTex };
+        }
+
+        function createPortholeRowTextures() {
+          const cDay = document.createElement("canvas");
+          cDay.width = 512;
+          cDay.height = 128;
+          const ctxD = cDay.getContext("2d");
+          const cEm = document.createElement("canvas");
+          cEm.width = 512;
+          cEm.height = 128;
+          const ctxE = cEm.getContext("2d");
+
+          ctxD.fillStyle = "#f8fafc";
+          ctxD.fillRect(0, 0, 512, 128);
+          ctxD.fillStyle = "rgba(148, 163, 184, 0.35)";
+          ctxD.fillRect(0, 62, 512, 3);
+
+          ctxE.fillStyle = "#000000";
+          ctxE.fillRect(0, 0, 512, 128);
+
+          for (let row = 0; row < 2; row++) {
+            const wy = row === 0 ? 22 : 84;
+            for (let col = 0; col < 12; col++) {
+              const wx = 14 + col * 42;
+              ctxD.fillStyle = "#0f172a";
+              ctxD.fillRect(wx, wy, 20, 22);
+              ctxD.strokeStyle = "#94a3b8";
+              ctxD.lineWidth = 2;
+              ctxD.strokeRect(wx, wy, 20, 22);
+
+              const lit = ((col * 7 + row * 5) % 4) !== 0;
+              if (lit) {
+                ctxE.fillStyle = (col + row) % 3 === 0 ? "#fde68a" : "#fbbf24";
+                ctxE.fillRect(wx + 2, wy + 2, 16, 18);
+              }
+            }
+          }
+          const dayTex = new THREE.CanvasTexture(cDay);
+          const emTex = new THREE.CanvasTexture(cEm);
+          dayTex.wrapS = THREE.RepeatWrapping;
+          emTex.wrapS = THREE.RepeatWrapping;
+          return { dayTex, emTex };
+        }
+
+        function createSafetyFasciaSign(textMain) {
+          const cnv = document.createElement("canvas");
+          cnv.width = 512;
+          cnv.height = 80;
+          const ctx = cnv.getContext("2d");
+          ctx.fillStyle = "#f8fafc";
+          ctx.fillRect(0, 0, 512, 80);
+          ctx.strokeStyle = "#dc2626";
+          ctx.lineWidth = 6;
+          ctx.strokeRect(4, 4, 504, 72);
+          ctx.fillStyle = "#dc2626";
+          ctx.font = "900 34px 'Inter', 'Arial Black', sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(textMain, 256, 42);
+          const tex = new THREE.CanvasTexture(cnv);
+          tex.minFilter = THREE.LinearFilter;
+          return tex;
+        }
+
+        function createDockConcreteDeckTexture() {
+          const cnv = document.createElement("canvas");
+          cnv.width = 512;
+          cnv.height = 512;
+          const ctx = cnv.getContext("2d");
+          ctx.fillStyle = "#d6dde6";
+          ctx.fillRect(0, 0, 512, 512);
+
+          // Micro-granulat antidérapant de béton portuaire balayé
+          for (let i = 0; i < 3200; i++) {
+            const gx = Math.floor((Math.sin(i * 12.9898) * 43758.5453 - Math.floor(Math.sin(i * 12.9898) * 43758.5453)) * 512);
+            const gy = Math.floor((Math.sin(i * 78.233 + 1.7) * 29431.112 - Math.floor(Math.sin(i * 78.233 + 1.7) * 29431.112)) * 512);
+            const lum = 185 + (i % 58);
+            ctx.fillStyle = `rgba(${lum}, ${lum + 2}, ${lum + 5}, 0.36)`;
+            ctx.fillRect(gx, gy, 2, 2);
+          }
+
+          // Joints de dilatation sciés dans les dalles de béton armé + caniveaux de drainage
+          ctx.strokeStyle = "rgba(71, 85, 105, 0.52)";
+          ctx.lineWidth = 2.2;
+          for (let j = 0; j <= 512; j += 64) {
+            ctx.beginPath();
+            ctx.moveTo(j, 0);
+            ctx.lineTo(j, 512);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(0, j);
+            ctx.lineTo(512, j);
+            ctx.stroke();
+          }
+          // Bandes subtiles d'usure industrielle et grilles d'avaloirs
+          ctx.fillStyle = "rgba(100, 116, 139, 0.16)";
+          ctx.fillRect(0, 96, 512, 36);
+          ctx.fillRect(0, 380, 512, 36);
+          for (let d = 32; d < 512; d += 128) {
+            ctx.fillStyle = "rgba(51, 65, 85, 0.55)";
+            ctx.fillRect(d - 10, 248, 20, 16);
+          }
+          const tex = new THREE.CanvasTexture(cnv);
+          tex.wrapS = THREE.RepeatWrapping;
+          tex.wrapT = THREE.RepeatWrapping;
+          tex.repeat.set(3, 2);
+          return tex;
+        }
+
+        function createCorrugatedSidingTexture() {
+          const cnv = document.createElement("canvas");
+          cnv.width = 256;
+          cnv.height = 256;
+          const ctx = cnv.getContext("2d");
+          ctx.fillStyle = "#dce3ec";
+          ctx.fillRect(0, 0, 256, 256);
+          for (let x = 0; x < 256; x += 8) {
+            ctx.fillStyle = "rgba(255, 255, 255, 0.38)";
+            ctx.fillRect(x, 0, 3, 256);
+            ctx.fillStyle = "rgba(71, 85, 105, 0.42)";
+            ctx.fillRect(x + 4, 0, 3, 256);
+          }
+          ctx.fillStyle = "rgba(51, 65, 85, 0.45)";
+          ctx.fillRect(0, 84, 256, 2.5);
+          ctx.fillRect(0, 172, 256, 2.5);
+          const tex = new THREE.CanvasTexture(cnv);
+          tex.wrapS = THREE.RepeatWrapping;
+          tex.wrapT = THREE.RepeatWrapping;
+          tex.repeat.set(2, 1);
+          return tex;
+        }
+
+        function createHeritageFacadeTextures() {
+          const cDay = document.createElement("canvas");
+          cDay.width = 512;
+          cDay.height = 512;
+          const ctxD = cDay.getContext("2d");
+          const cEm = document.createElement("canvas");
+          cEm.width = 512;
+          cEm.height = 512;
+          const ctxE = cEm.getContext("2d");
+
+          // Base claire à maçonnerie de pierre/brique (multipliée par brickMat / qcStoneMat)
+          ctxD.fillStyle = "#e6dfd8";
+          ctxD.fillRect(0, 0, 512, 512);
+          ctxE.fillStyle = "#000000";
+          ctxE.fillRect(0, 0, 512, 512);
+
+          // Assises de maçonnerie et corniches de pierre
+          for (let y = 0; y < 512; y += 16) {
+            ctxD.fillStyle = y % 64 === 0 ? "rgba(255,255,255,0.45)" : "rgba(120,113,108,0.22)";
+            ctxD.fillRect(0, y, 512, y % 64 === 0 ? 4 : 1.5);
+          }
+
+          const floors = 8;
+          const cols = 10;
+          const cellW = 512 / cols;
+          const cellH = 512 / floors;
+          for (let r = 0; r < floors; r++) {
+            for (let c = 0; c < cols; c++) {
+              const wx = c * cellW + 11;
+              const wy = r * cellH + 13;
+              const ww = cellW - 22;
+              const wh = cellH - 22;
+
+              // Linteau et appui de fenêtre en pierre de taille claire
+              ctxD.fillStyle = "rgba(248, 250, 252, 0.68)";
+              ctxD.fillRect(wx - 3, wy - 4, ww + 6, 4);
+              ctxD.fillRect(wx - 3, wy + wh, ww + 6, 3.5);
+
+              // Vitrage sombre à croisillons patrimoniaux
+              ctxD.fillStyle = "#1c2432";
+              ctxD.fillRect(wx, wy, ww, wh);
+              ctxD.fillStyle = "rgba(226, 232, 240, 0.55)";
+              ctxD.fillRect(wx + ww * 0.48, wy, 2, wh);
+              ctxD.fillRect(wx, wy + wh * 0.46, ww, 2);
+
+              // Fenêtres dorées chaleureuses du Château Frontenac / Parlement la nuit
+              const hHash = Math.sin(r * 19.3 + c * 37.7) * 43758.5453;
+              const frac = hHash - Math.floor(hHash);
+              if (frac > 0.24) {
+                const warmCol = frac > 0.72 ? "#fef08a" : (frac > 0.46 ? "#fbbf24" : "#f59e0b");
+                ctxE.fillStyle = warmCol;
+                ctxE.fillRect(wx + 2, wy + 2, ww - 4, wh - 4);
+              }
+            }
+          }
+          const dayTex = new THREE.CanvasTexture(cDay);
+          const emTex = new THREE.CanvasTexture(cEm);
+          dayTex.wrapS = THREE.RepeatWrapping;
+          dayTex.wrapT = THREE.RepeatWrapping;
+          emTex.wrapS = THREE.RepeatWrapping;
+          emTex.wrapT = THREE.RepeatWrapping;
+          dayTex.repeat.set(1.5, 2.0);
+          emTex.repeat.set(1.5, 2.0);
+          return { dayTex, emTex };
+        }
+
+        function createCopperPatinaTexture() {
+          const cnv = document.createElement("canvas");
+          cnv.width = 256;
+          cnv.height = 256;
+          const ctx = cnv.getContext("2d");
+          ctx.fillStyle = "#d9ece8";
+          ctx.fillRect(0, 0, 256, 256);
+          for (let x = 0; x < 256; x += 12) {
+            ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
+            ctx.fillRect(x, 0, 2.5, 256);
+            ctx.fillStyle = "rgba(15, 118, 110, 0.38)";
+            ctx.fillRect(x + 3, 0, 3, 256);
+          }
+          for (let y = 32; y < 256; y += 64) {
+            ctx.fillStyle = "rgba(17, 94, 89, 0.32)";
+            ctx.fillRect(0, y, 256, 2.5);
+          }
+          const tex = new THREE.CanvasTexture(cnv);
+          tex.wrapS = THREE.RepeatWrapping;
+          tex.wrapT = THREE.RepeatWrapping;
+          tex.repeat.set(3, 2);
+          return tex;
+        }
+
+        function createKelvinWakeTexture() {
+          const cnv = document.createElement("canvas");
+          cnv.width = 256;
+          cnv.height = 256;
+          const ctx = cnv.getContext("2d");
+          ctx.clearRect(0, 0, 256, 256);
+          // Sillage en V de Kelvin + remous central d'hélice (proue en haut y=16 -> traîne en bas y=250)
+          for (let side of [-1, 1]) {
+            const gArm = ctx.createLinearGradient(128, 18, 128 + side * 112, 248);
+            gArm.addColorStop(0.0, "rgba(255, 255, 255, 0.92)");
+            gArm.addColorStop(0.35, "rgba(224, 242, 254, 0.65)");
+            gArm.addColorStop(0.75, "rgba(186, 230, 253, 0.25)");
+            gArm.addColorStop(1.0, "rgba(186, 230, 253, 0.0)");
+            ctx.strokeStyle = gArm;
+            ctx.lineWidth = 16;
+            ctx.lineCap = "round";
+            ctx.beginPath();
+            ctx.moveTo(128, 22);
+            ctx.quadraticCurveTo(128 + side * 54, 115, 128 + side * 114, 248);
+            ctx.stroke();
+          }
+          const gCenter = ctx.createLinearGradient(128, 26, 128, 252);
+          gCenter.addColorStop(0.0, "rgba(240, 249, 255, 0.85)");
+          gCenter.addColorStop(0.45, "rgba(224, 242, 254, 0.42)");
+          gCenter.addColorStop(1.0, "rgba(186, 230, 253, 0.0)");
+          ctx.fillStyle = gCenter;
+          ctx.beginPath();
+          ctx.moveTo(118, 26);
+          ctx.lineTo(138, 26);
+          ctx.lineTo(162, 252);
+          ctx.lineTo(94, 252);
+          ctx.closePath();
+          ctx.fill();
+          return new THREE.CanvasTexture(cnv);
+        }
+
+        function createGodRayShaftTexture() {
+          const cnv = document.createElement("canvas");
+          cnv.width = 128;
+          cnv.height = 256;
+          const ctx = cnv.getContext("2d");
+          const img = ctx.createImageData(128, 256);
+          const d = img.data;
+          for (let y = 0; y < 256; y++) {
+            const v = y / 255;
+            const vFade = Math.sin(Math.pow(v, 0.78) * Math.PI) * (1.0 - v * 0.22);
+            for (let x = 0; x < 128; x++) {
+              const u = Math.abs((x - 63.5) / 63.5);
+              const hFade = Math.pow(Math.max(0, 1.0 - u), 2.2);
+              const a = Math.max(0, Math.min(1, vFade * hFade));
+              const idx = (y * 128 + x) * 4;
+              d[idx] = 255;
+              d[idx + 1] = 250;
+              d[idx + 2] = 232;
+              d[idx + 3] = Math.round(a * 255);
+            }
+          }
+          ctx.putImageData(img, 0, 0);
+          return new THREE.CanvasTexture(cnv);
+        }
+
+        const hullPlatingTex = createHullPlatingTexture();
+        const plimsollDraftTex = createPlimsollAndDraftTexture();
+        const bridgeWinTexPack = createBridgeWindowsTextures();
+        const portholeTexPack = createPortholeRowTextures();
+        const noSmokingTex = createSafetyFasciaSign("NO SMOKING  •  SAFETY FIRST");
+        const dockConcreteDeckTex = createDockConcreteDeckTexture();
+        const corrugatedSidingTex = createCorrugatedSidingTexture();
+        const heritageFacadeTexPack = createHeritageFacadeTextures();
+        const copperPatinaTex = createCopperPatinaTexture();
+        const kelvinWakeTex = createKelvinWakeTexture();
+        const godRayShaftTex = createGodRayShaftTexture();
+
+        const plimsollDecalMat = new THREE.MeshBasicMaterial({
+          map: plimsollDraftTex,
+          transparent: true,
+          opacity: 0.9,
+          depthWrite: false,
+          polygonOffset: true,
+          polygonOffsetFactor: -1
+        });
+        const sharedAnchorSteelMat = new THREE.MeshPhongMaterial({
+          color: 0x1e293b,
+          specular: new THREE.Color(0x64748b),
+          shininess: 48
+        });
+        const sharedValveWheelMat = new THREE.MeshLambertMaterial({ color: 0xef4444 });
+        const sharedDripTrayMat = new THREE.MeshLambertMaterial({ color: 0xf8fafc });
+        const sharedAccommodationMat = new THREE.MeshPhongMaterial({
+          color: 0xf8fafc,
+          map: portholeTexPack.dayTex,
+          emissive: new THREE.Color(0xfbbf24),
+          emissiveMap: portholeTexPack.emissiveMap || portholeTexPack.emTex,
+          emissiveIntensity: 0.0,
+          shininess: 24
+        });
+
+        // Helper : ancre marine Hall + écubier en relief sur l'étrave bâbord/tribord
+        function addBowAnchorsAndWindlass(parentGroup, bowX, hullHalfZ, deckY, scaleF) {
+          [-1, 1].forEach((sideZ) => {
+            const az = sideZ * (hullHalfZ + 0.08);
+            const pocket = new THREE.Mesh(
+              new THREE.BoxGeometry(1.7 * scaleF, 2.2 * scaleF, 0.22),
+              sharedAnchorSteelMat
+            );
+            pocket.position.set(bowX, deckY - 1.7 * scaleF, az);
+            parentGroup.add(pocket);
+
+            const shank = new THREE.Mesh(
+              new THREE.BoxGeometry(0.32 * scaleF, 2.1 * scaleF, 0.36 * scaleF),
+              sharedAnchorSteelMat
+            );
+            shank.position.set(bowX, deckY - 1.9 * scaleF, az + sideZ * 0.14);
+            shank.rotation.z = -0.18;
+            parentGroup.add(shank);
+
+            const flukes = new THREE.Mesh(
+              new THREE.BoxGeometry(1.35 * scaleF, 0.95 * scaleF, 0.42 * scaleF),
+              sharedAnchorSteelMat
+            );
+            flukes.position.set(bowX - 0.1 * scaleF, deckY - 2.65 * scaleF, az + sideZ * 0.2);
+            parentGroup.add(flukes);
+          });
+
+          // Guindeau hydraulique double (Anchor Windlass) + stoppeurs de chaînes sur le gaillard d'étrave
+          const windlassDrum = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.65 * scaleF, 0.65 * scaleF, 4.6 * scaleF, 10),
+            sharedAnchorSteelMat
+          );
+          windlassDrum.rotation.x = Math.PI / 2;
+          windlassDrum.position.set(bowX - 3.2 * scaleF, deckY + 0.72 * scaleF, 0);
+          parentGroup.add(windlassDrum);
+
+          [-1.55 * scaleF, 1.55 * scaleF].forEach((cz) => {
+            const chainStopper = new THREE.Mesh(
+              new THREE.BoxGeometry(2.4 * scaleF, 0.55 * scaleF, 0.52 * scaleF),
+              sharedAnchorSteelMat
+            );
+            chainStopper.position.set(bowX - 1.1 * scaleF, deckY + 0.45 * scaleF, cz);
+            parentGroup.add(chainStopper);
+          });
+        }
+
         // --- 2A. NAVIRE TEMPS RÉEL — POSTE 87 (FACE EXTERNE VERS QUÉBEC DU QUAI DOUBLE VALERO) ---
         const tankerGroup = new THREE.Group();
         const tankerBasePos = new THREE.Vector3(74.58, 0, 67.02); // Poste 87 côté fleuve / Québec (lx = +4.0m, lz = -17.40m)
@@ -36548,7 +37069,7 @@
         scene.add(tankerGroup);
         window.tankerGroup = tankerGroup;
 
-        // Sillage / anneau d'écume blanche autour de la coque dans l'eau
+        // Sillage / anneau d'écume blanche autour de la coque dans l'eau + Sillage en V de Kelvin lors des manœuvres
         const wakeGeo = new THREE.RingGeometry(11, 50, 48);
         wakeGeo.rotateX(-Math.PI / 2);
         wakeGeo.scale(1.95, 1, 0.36);
@@ -36562,9 +37083,29 @@
         wakeRingMesh.position.set(0, 0.25, 0);
         tankerGroup.add(wakeRingMesh);
 
-        // Coque inférieure rouge (anti-fouling, partiellement immergée dans l'eau)
+        const tankerKelvinWakeMat = new THREE.MeshBasicMaterial({
+          map: kelvinWakeTex,
+          transparent: true,
+          opacity: 0.0,
+          depthWrite: false,
+          side: THREE.DoubleSide
+        });
+        const tankerKelvinWakeMesh = new THREE.Mesh(new THREE.PlaneGeometry(58, 155), tankerKelvinWakeMat);
+        tankerKelvinWakeMesh.rotation.x = -Math.PI / 2;
+        tankerKelvinWakeMesh.rotation.z = -Math.PI / 2;
+        tankerKelvinWakeMesh.position.set(-22, 0.22, 0);
+        tankerKelvinWakeMesh.visible = false;
+        tankerGroup.add(tankerKelvinWakeMesh);
+
+        // Coque inférieure rouge (anti-fouling, partiellement immergée dans l'eau) avec virures soudées
         const redHullGeo = new THREE.BoxGeometry(82, 4.6, 15.6);
-        const redHullMat = new THREE.MeshLambertMaterial({ color: 0xb91c1c });
+        const redHullMat = new THREE.MeshPhongMaterial({
+          color: 0xb91c1c,
+          map: hullPlatingTex,
+          bumpMap: hullPlatingTex,
+          bumpScale: 0.10,
+          shininess: 22
+        });
         const redHullMesh = new THREE.Mesh(redHullGeo, redHullMat);
         redHullMesh.position.set(0, 0.6, 0);
         tankerGroup.add(redHullMesh);
@@ -36576,17 +37117,29 @@
         waterlineMesh.position.set(0, 2.85, 0);
         tankerGroup.add(waterlineMesh);
 
-        // Coque supérieure (franc-bord dynamique selon l'armateur)
+        // Coque supérieure (franc-bord dynamique selon l'armateur + tôles soudées en relief)
         const blackHullGeo = new THREE.BoxGeometry(84, 5.2, 16.0);
         const blackHullMat = new THREE.MeshPhongMaterial({
           color: 0x111827,
-          shininess: 40,
+          map: hullPlatingTex,
+          bumpMap: hullPlatingTex,
+          bumpScale: 0.16,
+          specular: new THREE.Color(0x475569),
+          shininess: 46,
         });
         const blackHullMesh = new THREE.Mesh(blackHullGeo, blackHullMat);
         blackHullMesh.position.set(0, 5.4, 0);
         tankerGroup.add(blackHullMesh);
 
-        // Proue profilée (avant du navire, côté +X) et bulbe d'étrave
+        // Marques officielles de franc-bord (Disque Plimsoll OMI + Échelles de tirant d'eau métriques bâbord/tribord)
+        [-8.04, 8.04].forEach((pz) => {
+          const plimMesh = new THREE.Mesh(new THREE.PlaneGeometry(16.0, 4.2), plimsollDecalMat);
+          plimMesh.position.set(2.0, 4.15, pz);
+          if (pz < 0) plimMesh.rotation.y = Math.PI;
+          tankerGroup.add(plimMesh);
+        });
+
+        // Proue profilée (avant du navire, côté +X), pavois de gaillard d'étrave et bulbe d'étrave
         const bowConeGeo = new THREE.ConeGeometry(11.3, 22, 4);
         bowConeGeo.rotateZ(-Math.PI / 2);
         bowConeGeo.rotateX(Math.PI / 4);
@@ -36600,6 +37153,8 @@
         const bulbMesh = new THREE.Mesh(bulbGeo, redHullMat);
         bulbMesh.position.set(54, 0.4, 0);
         tankerGroup.add(bulbMesh);
+
+        addBowAnchorsAndWindlass(tankerGroup, 44.5, 7.6, 8.2, 1.05);
 
         // Plaques de nom 3D dynamiques (Bâbord, Tribord, Poupe & Passerelle) — Poste 87
         const ship87BowPortBoard = createDynamicNameplateBoard(18.5, 2.35, "hull");
@@ -36634,12 +37189,38 @@
         ship87Flag.mesh.position.set(-43.1, 12.2, 0);
         tankerGroup.add(ship87Flag.mesh);
 
-        // Pont principal rouge-brun et tuyauteries de cargaison
+        // Pont principal rouge-brun, lisses de pavois et tuyauteries de cargaison
         const deckGeo = new THREE.BoxGeometry(84, 0.6, 15.2);
         const deckMat = new THREE.MeshLambertMaterial({ color: 0x7f1d1d });
         const deckMesh = new THREE.Mesh(deckGeo, deckMat);
         deckMesh.position.set(0, 8.1, 0);
         tankerGroup.add(deckMesh);
+
+        // Garde-corps périphériques blancs de franc-bord (bâbord & tribord)
+        [-7.55, 7.55].forEach((rz) => {
+          const gunwaleRail = new THREE.Mesh(
+            new THREE.BoxGeometry(82.0, 0.85, 0.12),
+            new THREE.MeshLambertMaterial({ color: 0xe2e8f0 })
+          );
+          gunwaleRail.position.set(0, 8.78, rz);
+          tankerGroup.add(gunwaleRail);
+        });
+
+        // Passerelle longitudinale surélevée ("Flying Catwalk") du château arrière jusqu'au gaillard d'étrave
+        const tankerCatwalk = new THREE.Mesh(
+          new THREE.BoxGeometry(58, 0.24, 1.55),
+          new THREE.MeshLambertMaterial({ color: 0xcbd5e1 })
+        );
+        tankerCatwalk.position.set(9.0, 9.85, 0);
+        tankerGroup.add(tankerCatwalk);
+        [-0.72, 0.72].forEach((cz) => {
+          const cwRail = new THREE.Mesh(
+            new THREE.BoxGeometry(58, 0.68, 0.08),
+            new THREE.MeshLambertMaterial({ color: 0xfacc15 })
+          );
+          cwRail.position.set(9.0, 10.28, cz);
+          tankerGroup.add(cwRail);
+        });
 
         // Manteau neigeux sur le pont principal du navire Poste 87 en hiver
         const tankerSnowMat = new THREE.MeshLambertMaterial({
@@ -36666,32 +37247,106 @@
           tankerGroup.add(pipe);
         }
 
-        // Manifold central (collecteur de chargement au milieu du navire)
-        const manifoldGeo = new THREE.BoxGeometry(6.5, 2.8, 14.5);
-        const manifoldMat = new THREE.MeshLambertMaterial({ color: 0xf59e0b });
+        // Dômes de citernes à pétrole brut, soupapes P/V de gaz inerte et treuils d'amarrage de pont
+        for (let tx of [-14, -4, 14, 23, 32]) {
+          [-4.4, 4.4].forEach((tz) => {
+            const pvDome = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.85, 0.98, 0.92, 10),
+              pipeMat
+            );
+            pvDome.position.set(tx, 8.75, tz);
+            tankerGroup.add(pvDome);
+
+            const pvRiser = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.16, 0.18, 1.85, 6),
+              new THREE.MeshLambertMaterial({ color: 0x94a3b8 })
+            );
+            pvRiser.position.set(tx, 9.75, tz);
+            tankerGroup.add(pvRiser);
+          });
+        }
+
+        // Manifold central haute précision (gattes d'égouttures blanches + 5 conduites transversales à brides ANSI + volants de vannes)
+        const manifoldGeo = new THREE.BoxGeometry(7.2, 0.65, 14.8);
+        const manifoldMat = sharedDripTrayMat;
         const manifoldMesh = new THREE.Mesh(manifoldGeo, manifoldMat);
-        manifoldMesh.position.set(4, 9.5, 0);
+        manifoldMesh.position.set(4, 8.62, 0);
         tankerGroup.add(manifoldMesh);
 
-        // Château arrière (Superstructure blanche multi-étages)
+        const manifoldRackFrame = new THREE.Mesh(
+          new THREE.BoxGeometry(6.4, 2.4, 0.35),
+          new THREE.MeshLambertMaterial({ color: 0xf59e0b })
+        );
+        manifoldRackFrame.position.set(4, 9.8, 0);
+        tankerGroup.add(manifoldRackFrame);
+
+        [-2.2, -1.1, 0.0, 1.1, 2.2].forEach((mx, mIdx) => {
+          const xPos = 4.0 + mx;
+          const headerPipe = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.32, 0.32, 14.2, 10),
+            mIdx % 2 === 0 ? pipeMat : new THREE.MeshLambertMaterial({ color: 0xf59e0b })
+          );
+          headerPipe.rotation.x = Math.PI / 2;
+          headerPipe.position.set(xPos, 9.65, 0);
+          tankerGroup.add(headerPipe);
+
+          [-7.15, 7.15].forEach((fz) => {
+            const flange = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.54, 0.54, 0.22, 12),
+              new THREE.MeshLambertMaterial({ color: 0xfacc15 })
+            );
+            flange.rotation.x = Math.PI / 2;
+            flange.position.set(xPos, 9.65, fz);
+            tankerGroup.add(flange);
+
+            const valveWheel = new THREE.Mesh(
+              new THREE.TorusGeometry(0.34, 0.06, 6, 12),
+              sharedValveWheelMat
+            );
+            valveWheel.position.set(xPos, 10.22, fz * 0.78);
+            tankerGroup.add(valveWheel);
+          });
+        });
+
+        // Château arrière (Superstructure blanche multi-étages avec rangées de hublots illuminés la nuit & panneau NO SMOKING)
         const bridgeWhiteMat = new THREE.MeshLambertMaterial({
           color: 0xf8fafc,
         });
         const tier1 = new THREE.Mesh(
           new THREE.BoxGeometry(15, 4.5, 13.5),
-          bridgeWhiteMat
+          sharedAccommodationMat
         );
         tier1.position.set(-28, 10.3, 0);
         tankerGroup.add(tier1);
 
         const tier2 = new THREE.Mesh(
           new THREE.BoxGeometry(12, 4.0, 11.5),
-          bridgeWhiteMat
+          sharedAccommodationMat
         );
         tier2.position.set(-28.5, 14.4, 0);
         tankerGroup.add(tier2);
 
-        // Passerelle de navigation panoramique (avec ailerons bâbord/tribord)
+        // Inscription réglementaire "NO SMOKING • SAFETY FIRST" sur le fronton du château face au pont des citernes
+        const noSmokingBoard87 = new THREE.Mesh(
+          new THREE.PlaneGeometry(11.6, 1.55),
+          new THREE.MeshBasicMaterial({ map: noSmokingTex })
+        );
+        noSmokingBoard87.position.set(-20.42, 11.75, 0);
+        noSmokingBoard87.rotation.y = Math.PI / 2;
+        tankerGroup.add(noSmokingBoard87);
+
+        // Escaliers extérieurs inclinés d'emménagement (bâbord & tribord du château)
+        [-6.95, 6.95].forEach((sz) => {
+          const extStair = new THREE.Mesh(
+            new THREE.BoxGeometry(3.8, 0.25, 0.75),
+            bridgeWhiteMat
+          );
+          extStair.position.set(-23.8, 10.4, sz);
+          extStair.rotation.z = 0.62;
+          tankerGroup.add(extStair);
+        });
+
+        // Passerelle de navigation panoramique (avec ailerons de manœuvre bâbord/tribord et répétiteurs gyro)
         const navBridge = new THREE.Mesh(
           new THREE.BoxGeometry(8.5, 2.8, 16.8),
           bridgeWhiteMat
@@ -36699,21 +37354,35 @@
         navBridge.position.set(-27.5, 17.6, 0);
         tankerGroup.add(navBridge);
 
-        // Fenêtres de la passerelle (s'illuminent la nuit)
-        const bridgeWinMat = new THREE.MeshBasicMaterial({ color: 0x0f172a });
+        // Fenêtres blindées de la passerelle avec essuie-glaces et lueur ECDIS/Radar la nuit
+        const bridgeWinMat = new THREE.MeshPhongMaterial({
+          color: 0xffffff,
+          map: bridgeWinTexPack.dayTex,
+          emissive: new THREE.Color(0xffffff),
+          emissiveMap: bridgeWinTexPack.emTex,
+          emissiveIntensity: 0.0,
+          shininess: 85
+        });
         const bridgeWin = new THREE.Mesh(
-          new THREE.BoxGeometry(8.7, 1.1, 16.2),
+          new THREE.BoxGeometry(8.7, 1.15, 16.2),
           bridgeWinMat
         );
         bridgeWin.position.set(-27.4, 17.8, 0);
         tankerGroup.add(bridgeWin);
 
-        // Cheminée dynamique selon l'armateur du navire au Poste 87
+        // Cheminée dynamique selon l'armateur du navire au Poste 87 + buses d'échappement noires au sommet
         const funnelGeo = new THREE.CylinderGeometry(2.2, 2.8, 7.5, 16);
         const funnelMat = new THREE.MeshLambertMaterial({ color: 0x1e40af });
         const funnelMesh = new THREE.Mesh(funnelGeo, funnelMat);
         funnelMesh.position.set(-33.5, 20.2, 0);
         tankerGroup.add(funnelMesh);
+
+        const funnelCapTop = new THREE.Mesh(
+          new THREE.CylinderGeometry(2.15, 2.22, 0.55, 16),
+          sharedAnchorSteelMat
+        );
+        funnelCapTop.position.set(-33.5, 24.0, 0);
+        tankerGroup.add(funnelCapTop);
 
         const funnelBandMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
         const funnelBand = new THREE.Mesh(
@@ -36723,22 +37392,43 @@
         funnelBand.position.set(-33.5, 21.2, 0);
         tankerGroup.add(funnelBand);
 
-        // Mât radar rotatif 3D sur le toit de la passerelle
+        // Mât radar principal + Double scanner rotatif (Bande S 3 GHz + Bande X 9 GHz) + Feu rouge ISGOTT marchandises dangereuses
         const radarMast = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.35, 0.5, 6.5, 8),
+          new THREE.CylinderGeometry(0.35, 0.5, 6.8, 8),
           bridgeWhiteMat
         );
-        radarMast.position.set(-27.5, 22.0, 0);
+        radarMast.position.set(-27.5, 22.1, 0);
         tankerGroup.add(radarMast);
+
+        const mastYardarm = new THREE.Mesh(
+          new THREE.BoxGeometry(0.28, 0.28, 6.4),
+          bridgeWhiteMat
+        );
+        mastYardarm.position.set(-27.5, 23.4, 0);
+        tankerGroup.add(mastYardarm);
 
         const radarScanner = new THREE.Mesh(
           new THREE.BoxGeometry(0.4, 0.55, 4.8),
           new THREE.MeshBasicMaterial({ color: 0xfef08a })
         );
-        radarScanner.position.set(-27.5, 25.3, 0);
+        radarScanner.position.set(-27.5, 25.5, 0);
         tankerGroup.add(radarScanner);
 
-        // Mât avant sur le gaillard d'étrave
+        const radarScannerX87 = new THREE.Mesh(
+          new THREE.BoxGeometry(0.32, 0.42, 3.1),
+          new THREE.MeshBasicMaterial({ color: 0xf8fafc })
+        );
+        radarScannerX87.position.set(-26.2, 23.75, 0);
+        tankerGroup.add(radarScannerX87);
+
+        const isgottRedMastLight87 = new THREE.Mesh(
+          new THREE.SphereGeometry(0.42, 8, 8),
+          new THREE.MeshBasicMaterial({ color: 0xef4444 })
+        );
+        isgottRedMastLight87.position.set(-27.5, 26.35, 0);
+        tankerGroup.add(isgottRedMastLight87);
+
+        // Mât avant sur le gaillard d'étrave + feu de tête de mât COLREG blanc
         const fwdMast = new THREE.Mesh(
           new THREE.CylinderGeometry(0.3, 0.45, 9.5, 8),
           bridgeWhiteMat
@@ -36746,16 +37436,23 @@
         fwdMast.position.set(38, 12.8, 0);
         tankerGroup.add(fwdMast);
 
-        // Feux de navigation 3D (Rouge bâbord, Vert tribord)
+        const fwdMastLight87 = new THREE.Mesh(
+          new THREE.SphereGeometry(0.44, 8, 8),
+          new THREE.MeshBasicMaterial({ color: 0xfef9c3 })
+        );
+        fwdMastLight87.position.set(38, 17.75, 0);
+        tankerGroup.add(fwdMastLight87);
+
+        // Feux de navigation 3D COLREG (Rouge bâbord, Vert tribord dans écrans noirs réglementaires)
         const navLightPort = new THREE.Mesh(
-          new THREE.SphereGeometry(0.65, 8, 8),
+          new THREE.SphereGeometry(0.58, 8, 8),
           new THREE.MeshBasicMaterial({ color: 0xef4444 })
         );
         navLightPort.position.set(-27.5, 18.2, -8.6);
         tankerGroup.add(navLightPort);
 
         const navLightStbd = new THREE.Mesh(
-          new THREE.SphereGeometry(0.65, 8, 8),
+          new THREE.SphereGeometry(0.58, 8, 8),
           new THREE.MeshBasicMaterial({ color: 0x10b981 })
         );
         navLightStbd.position.set(-27.5, 18.2, 8.6);
@@ -36777,12 +37474,12 @@
             new THREE.SphereGeometry(1.4, 8, 8),
             smokeMat.clone()
           );
-          puff.position.set(-33.5, 24 + i * 2.2, 0);
+          puff.position.set(-33.5, 24.3 + i * 2.2, 0);
           tankerGroup.add(puff);
           shipSmokePuffs.push({ mesh: puff, age: i / 14 });
         }
 
-        // Détails de pont du Suezmax Poste 87 (chaloupe free-fall, grue, héliport, projecteur)
+        // Détails de pont du Suezmax Poste 87 (chaloupe free-fall sur bossoirs, grue à flexibles + câble, héliport H, radômes VSAT)
         const lifeboatRamp = new THREE.Mesh(
           new THREE.BoxGeometry(4.5, 0.35, 2.2),
           new THREE.MeshLambertMaterial({ color: 0x475569 })
@@ -36819,7 +37516,7 @@
           new THREE.MeshBasicMaterial({ color: 0xfacc15, side: THREE.DoubleSide })
         );
         heliRing.rotation.x = -Math.PI / 2;
-        heliRing.position.set(24, 8.43, 0);
+        heliRing.position.set(24, 8.43, 3.2);
         tankerGroup.add(heliRing);
 
         [-3.6, 3.6].forEach((rz) => {
@@ -36874,7 +37571,13 @@
         wake86RingMesh.position.set(2, 0.24, 0);
         vessel86Group.add(wake86RingMesh);
 
-        const hull86BootMat = new THREE.MeshLambertMaterial({ color: 0x991b1b });
+        const hull86BootMat = new THREE.MeshPhongMaterial({
+          color: 0x991b1b,
+          map: hullPlatingTex,
+          bumpMap: hullPlatingTex,
+          bumpScale: 0.09,
+          shininess: 22
+        });
         const hull86BootMesh = new THREE.Mesh(
           new THREE.BoxGeometry(50, 3.8, 12.2),
           hull86BootMat
@@ -36889,13 +37592,28 @@
         hull86Plimsoll.position.set(0, 2.48, 0);
         vessel86Group.add(hull86Plimsoll);
 
-        const hull86TopMat = new THREE.MeshPhongMaterial({ color: 0x172554, shininess: 42 });
+        const hull86TopMat = new THREE.MeshPhongMaterial({
+          color: 0x172554,
+          map: hullPlatingTex,
+          bumpMap: hullPlatingTex,
+          bumpScale: 0.14,
+          specular: new THREE.Color(0x475569),
+          shininess: 48
+        });
         const hull86TopMesh = new THREE.Mesh(
           new THREE.BoxGeometry(51.5, 4.3, 12.5),
           hull86TopMat
         );
         hull86TopMesh.position.set(0, 4.75, 0);
         vessel86Group.add(hull86TopMesh);
+
+        // Marques de franc-bord Plimsoll Classe Glace & échelles de tirant d'eau — Poste 86
+        [-6.29, 6.29].forEach((pz) => {
+          const plim86 = new THREE.Mesh(new THREE.PlaneGeometry(11.8, 3.3), plimsollDecalMat);
+          plim86.position.set(1.5, 3.7, pz);
+          if (pz < 0) plim86.rotation.y = Math.PI;
+          vessel86Group.add(plim86);
+        });
 
         const bow86ConeGeo = new THREE.ConeGeometry(8.85, 15.5, 4);
         bow86ConeGeo.rotateZ(-Math.PI / 2);
@@ -36910,6 +37628,8 @@
         const bulb86Mesh = new THREE.Mesh(bulb86Geo, hull86BootMat);
         bulb86Mesh.position.set(34.5, 0.35, 0);
         vessel86Group.add(bulb86Mesh);
+
+        addBowAnchorsAndWindlass(vessel86Group, 27.6, 5.95, 7.1, 0.84);
 
         // Plaques de nom 3D dynamiques — Poste 86
         const ship86BowPortBoard = createDynamicNameplateBoard(14.5, 1.95, "hull");
@@ -36951,6 +37671,15 @@
         deck86Mesh.position.set(0, 7.0, 0);
         vessel86Group.add(deck86Mesh);
 
+        [-5.9, 5.9].forEach((rz) => {
+          const rail86 = new THREE.Mesh(
+            new THREE.BoxGeometry(50.2, 0.72, 0.1),
+            new THREE.MeshLambertMaterial({ color: 0xe2e8f0 })
+          );
+          rail86.position.set(0, 7.58, rz);
+          vessel86Group.add(rail86);
+        });
+
         const vessel86SnowMat = new THREE.MeshLambertMaterial({
           color: 0xf8fafc,
           transparent: true,
@@ -36973,6 +37702,14 @@
         );
         chemCatwalk.position.set(5, 8.35, 0);
         vessel86Group.add(chemCatwalk);
+        [-0.65, 0.65].forEach((cz) => {
+          const cw86Rail = new THREE.Mesh(
+            new THREE.BoxGeometry(36, 0.58, 0.08),
+            new THREE.MeshLambertMaterial({ color: 0xfacc15 })
+          );
+          cw86Rail.position.set(5, 8.74, cz);
+          vessel86Group.add(cw86Rail);
+        });
 
         const pipe86Mat = new THREE.MeshPhongMaterial({ color: 0xe2e8f0, shininess: 65 });
         for (let p = -1.5; p <= 1.5; p += 1) {
@@ -36983,7 +37720,7 @@
           vessel86Group.add(pMesh);
         }
 
-        // Dômes de citernes et collecteur inox multi-produits au milieu du navire Poste 86
+        // Dômes de citernes inox, réchauffeurs de cargaison et collecteur multi-produits à brides au milieu du navire Poste 86
         for (let tx of [-6, 1.5, 9, 16.5]) {
           for (let tz of [-3.2, 3.2]) {
             const tankDome = new THREE.Mesh(
@@ -36996,11 +37733,39 @@
         }
 
         const manifold86Mesh = new THREE.Mesh(
-          new THREE.BoxGeometry(4.8, 2.2, 11.2),
-          new THREE.MeshLambertMaterial({ color: 0xf59e0b })
+          new THREE.BoxGeometry(5.2, 0.55, 11.4),
+          sharedDripTrayMat
         );
-        manifold86Mesh.position.set(2.0, 8.2, 0);
+        manifold86Mesh.position.set(2.0, 7.45, 0);
         vessel86Group.add(manifold86Mesh);
+
+        [-1.6, -0.55, 0.55, 1.6].forEach((mx) => {
+          const xPos = 2.0 + mx;
+          const mPipe86 = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.24, 0.24, 11.0, 8),
+            pipe86Mat
+          );
+          mPipe86.rotation.x = Math.PI / 2;
+          mPipe86.position.set(xPos, 8.28, 0);
+          vessel86Group.add(mPipe86);
+
+          [-5.55, 5.55].forEach((fz) => {
+            const fl86 = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.42, 0.42, 0.18, 10),
+              new THREE.MeshLambertMaterial({ color: 0xf59e0b })
+            );
+            fl86.rotation.x = Math.PI / 2;
+            fl86.position.set(xPos, 8.28, fz);
+            vessel86Group.add(fl86);
+
+            const vw86 = new THREE.Mesh(
+              new THREE.TorusGeometry(0.26, 0.05, 6, 10),
+              sharedValveWheelMat
+            );
+            vw86.position.set(xPos, 8.72, fz * 0.78);
+            vessel86Group.add(vw86);
+          });
+        });
 
         // Grue à flexibles centrale rouge (Hose Handling Crane)
         const crane86Ped = new THREE.Mesh(
@@ -37018,20 +37783,28 @@
         crane86Jib.position.set(10.2, 12.1, 0);
         vessel86Group.add(crane86Jib);
 
-        // Château arrière et timonerie brise-glace panoramique — Poste 86
+        // Château arrière, hublots illuminés, panneau NO SMOKING et timonerie brise-glace panoramique — Poste 86
         const tier86_1 = new THREE.Mesh(
           new THREE.BoxGeometry(10.8, 3.8, 10.6),
-          bridgeWhiteMat
+          sharedAccommodationMat
         );
         tier86_1.position.set(-18.2, 8.9, 0);
         vessel86Group.add(tier86_1);
 
         const tier86_2 = new THREE.Mesh(
           new THREE.BoxGeometry(8.8, 3.4, 9.2),
-          bridgeWhiteMat
+          sharedAccommodationMat
         );
         tier86_2.position.set(-18.4, 12.3, 0);
         vessel86Group.add(tier86_2);
+
+        const noSmokingBoard86 = new THREE.Mesh(
+          new THREE.PlaneGeometry(8.8, 1.25),
+          new THREE.MeshBasicMaterial({ map: noSmokingTex })
+        );
+        noSmokingBoard86.position.set(-12.74, 10.1, 0);
+        noSmokingBoard86.rotation.y = Math.PI / 2;
+        vessel86Group.add(noSmokingBoard86);
 
         const navBridge86 = new THREE.Mesh(
           new THREE.BoxGeometry(6.8, 2.4, 13.4),
@@ -37040,9 +37813,16 @@
         navBridge86.position.set(-17.2, 15.1, 0);
         vessel86Group.add(navBridge86);
 
-        const bridge86WinMat = new THREE.MeshBasicMaterial({ color: 0x0f172a });
+        const bridge86WinMat = new THREE.MeshPhongMaterial({
+          color: 0xffffff,
+          map: bridgeWinTexPack.dayTex,
+          emissive: new THREE.Color(0xffffff),
+          emissiveMap: bridgeWinTexPack.emTex,
+          emissiveIntensity: 0.0,
+          shininess: 85
+        });
         const bridge86Win = new THREE.Mesh(
-          new THREE.BoxGeometry(7.0, 0.95, 12.9),
+          new THREE.BoxGeometry(7.0, 0.98, 12.9),
           bridge86WinMat
         );
         bridge86Win.position.set(-17.1, 15.25, 0);
@@ -37056,6 +37836,13 @@
         funnel86Mesh.position.set(-22.0, 17.2, 0);
         vessel86Group.add(funnel86Mesh);
 
+        const funnel86Cap = new THREE.Mesh(
+          new THREE.CylinderGeometry(1.6, 1.66, 0.45, 14),
+          sharedAnchorSteelMat
+        );
+        funnel86Cap.position.set(-22.0, 20.35, 0);
+        vessel86Group.add(funnel86Cap);
+
         const funnel86BandMat = new THREE.MeshBasicMaterial({ color: 0xf8fafc });
         const funnel86Band = new THREE.Mesh(
           new THREE.CylinderGeometry(1.78, 1.88, 1.25, 14),
@@ -37065,18 +37852,32 @@
         vessel86Group.add(funnel86Band);
 
         const radar86Mast = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.28, 0.42, 5.2, 8),
+          new THREE.CylinderGeometry(0.28, 0.42, 5.4, 8),
           bridgeWhiteMat
         );
-        radar86Mast.position.set(-17.2, 18.7, 0);
+        radar86Mast.position.set(-17.2, 18.8, 0);
         vessel86Group.add(radar86Mast);
 
         const radar86Scanner = new THREE.Mesh(
           new THREE.BoxGeometry(0.35, 0.45, 3.8),
           new THREE.MeshBasicMaterial({ color: 0xfef08a })
         );
-        radar86Scanner.position.set(-17.2, 21.4, 0);
+        radar86Scanner.position.set(-17.2, 21.5, 0);
         vessel86Group.add(radar86Scanner);
+
+        const radar86ScannerX = new THREE.Mesh(
+          new THREE.BoxGeometry(0.28, 0.35, 2.5),
+          new THREE.MeshBasicMaterial({ color: 0xf8fafc })
+        );
+        radar86ScannerX.position.set(-16.1, 20.1, 0);
+        vessel86Group.add(radar86ScannerX);
+
+        const isgottRedMastLight86 = new THREE.Mesh(
+          new THREE.SphereGeometry(0.36, 8, 8),
+          new THREE.MeshBasicMaterial({ color: 0xef4444 })
+        );
+        isgottRedMastLight86.position.set(-17.2, 22.25, 0);
+        vessel86Group.add(isgottRedMastLight86);
 
         const fwd86Mast = new THREE.Mesh(
           new THREE.CylinderGeometry(0.24, 0.36, 7.6, 8),
@@ -37094,14 +37895,14 @@
         vessel86Group.add(lifeboat86);
 
         const nav86Port = new THREE.Mesh(
-          new THREE.SphereGeometry(0.52, 8, 8),
+          new THREE.SphereGeometry(0.48, 8, 8),
           new THREE.MeshBasicMaterial({ color: 0xef4444 })
         );
         nav86Port.position.set(-17.2, 15.6, -6.85);
         vessel86Group.add(nav86Port);
 
         const nav86Stbd = new THREE.Mesh(
-          new THREE.SphereGeometry(0.52, 8, 8),
+          new THREE.SphereGeometry(0.48, 8, 8),
           new THREE.MeshBasicMaterial({ color: 0x10b981 })
         );
         nav86Stbd.position.set(-17.2, 15.6, 6.85);
@@ -37117,10 +37918,11 @@
             new THREE.SphereGeometry(1.05, 8, 8),
             smokeMat.clone()
           );
-          puff86.position.set(-22.0, 20.4 + i * 1.85, 0);
+          puff86.position.set(-22.0, 20.6 + i * 1.85, 0);
           vessel86Group.add(puff86);
           vessel86SmokePuffs.push({ mesh: puff86, age: i / 10 });
         }
+
 
         // --- 3. QUAI ULTRAMAR / VALERO ST-ROMUALD — VRAIE FORME AÉRIENNE (QUAI DOUBLE-FACE 86/87 + DUCS-D'ALBE CIRCULAIRES EN "T" & MÔLE) ---
         // Architecture réelle conforme à la vue satellite (Station SHC 03253, Saint-Romuald / Lévis) :
@@ -37152,6 +37954,9 @@
 
         const concreteMat = new THREE.MeshPhongMaterial({
           color: 0x64748b,
+          map: dockConcreteDeckTex,
+          bumpMap: dockConcreteDeckTex,
+          bumpScale: 0.04,
           specular: new THREE.Color(0x1e293b),
           shininess: 16,
           normalMap: wetSurfaceNormalTex,
@@ -37162,6 +37967,9 @@
         });
         const concreteDarkMat = new THREE.MeshPhongMaterial({
           color: 0x475569,
+          map: dockConcreteDeckTex,
+          bumpMap: dockConcreteDeckTex,
+          bumpScale: 0.045,
           specular: new THREE.Color(0x1e293b),
           shininess: 18,
           normalMap: wetSurfaceNormalTex,
@@ -37170,9 +37978,17 @@
           reflectivity: 0.025,
           combine: THREE.MixOperation,
         });
-        const caissonWhiteMat = new THREE.MeshLambertMaterial({ color: 0xcbd5e1 });
+        const caissonWhiteMat = new THREE.MeshPhongMaterial({
+          color: 0xcbd5e1,
+          bumpMap: dockConcreteDeckTex,
+          bumpScale: 0.025,
+          shininess: 14,
+        });
         const caissonCapMat = new THREE.MeshPhongMaterial({
           color: 0xe2e8f0,
+          map: dockConcreteDeckTex,
+          bumpMap: dockConcreteDeckTex,
+          bumpScale: 0.035,
           specular: new THREE.Color(0x1e293b),
           shininess: 15,
           normalMap: wetSurfaceNormalTex,
@@ -37186,13 +38002,35 @@
         const safetyYellowMat = new THREE.MeshBasicMaterial({
           color: 0xfacc15,
         });
-        const loadingArmMat = new THREE.MeshLambertMaterial({
+        const loadingArmMat = new THREE.MeshPhongMaterial({
           color: 0xdc2626,
+          shininess: 34,
         });
-        const loadingArm86Mat = new THREE.MeshLambertMaterial({
+        const loadingArm86Mat = new THREE.MeshPhongMaterial({
           color: 0xe2e8f0,
+          shininess: 36,
         });
-        const valeroTealMat = new THREE.MeshLambertMaterial({ color: 0x0f766e });
+        const valeroTealMat = new THREE.MeshPhongMaterial({
+          color: 0x0f766e,
+          map: corrugatedSidingTex,
+          bumpMap: corrugatedSidingTex,
+          bumpScale: 0.035,
+          shininess: 24,
+        });
+        const corrugatedCabinMat = new THREE.MeshPhongMaterial({
+          color: 0x334155,
+          map: corrugatedSidingTex,
+          bumpMap: corrugatedSidingTex,
+          bumpScale: 0.04,
+          shininess: 22,
+        });
+        const dockCabinWinMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+        const solasOrangeMat = new THREE.MeshLambertMaterial({ color: 0xf97316 });
+        const ratGuardMat = new THREE.MeshPhongMaterial({
+          color: 0xcbd5e1,
+          specular: new THREE.Color(0x64748b),
+          shininess: 52,
+        });
         const steelGalvMat = new THREE.MeshPhongMaterial({
           color: 0x94a3b8,
           specular: new THREE.Color(0x334155),
@@ -37201,7 +38039,10 @@
           reflectivity: 0.10,
           combine: THREE.MixOperation,
         });
-        const fenderBlackMat = new THREE.MeshLambertMaterial({ color: 0x0f172a });
+        const fenderBlackMat = new THREE.MeshPhongMaterial({
+          color: 0x0f172a,
+          shininess: 18,
+        });
         const rockCausewayMat = new THREE.MeshLambertMaterial({ color: 0x334155 });
         const riprapBoulderMat = new THREE.MeshLambertMaterial({ color: 0x475569 });
 
@@ -37217,7 +38058,7 @@
         dockGroup.add(dockSnowMesh);
         window.dockSnowMesh = dockSnowMesh;
 
-        // Fonction utilitaire : passerelle métallique à claire-voie (Catwalk) avec garde-corps jaunes (dessus de plancher à y = 7.35m)
+        // Fonction utilitaire : passerelle métallique à claire-voie (Catwalk) avec garde-corps ajourés, montants et bouées SOLAS extérieures
         function addCatwalkSpan(x1, z1, x2, z2, yLevel = 7.21) {
           const dx = x2 - x1;
           const dz = z2 - z1;
@@ -37237,24 +38078,64 @@
           );
           spanGroup.add(walkway);
 
-          const railFront = new THREE.Mesh(
-            new THREE.BoxGeometry(len, 0.88, 0.1),
-            safetyYellowMat
-          );
-          railFront.position.set(0, 0.54, -0.72);
-          spanGroup.add(railFront);
+          // Plinthes basses + lisses intermédiaires et supérieures ajourées sur les deux bords (±0.72m)
+          [-0.72, 0.72].forEach((rz) => {
+            const kickPlate = new THREE.Mesh(
+              new THREE.BoxGeometry(len, 0.16, 0.06),
+              safetyYellowMat
+            );
+            kickPlate.position.set(0, 0.22, rz);
+            spanGroup.add(kickPlate);
 
-          const railBack = new THREE.Mesh(
-            new THREE.BoxGeometry(len, 0.88, 0.1),
-            safetyYellowMat
-          );
-          railBack.position.set(0, 0.54, 0.72);
-          spanGroup.add(railBack);
+            const midRail = new THREE.Mesh(
+              new THREE.BoxGeometry(len, 0.06, 0.06),
+              safetyYellowMat
+            );
+            midRail.position.set(0, 0.58, rz);
+            spanGroup.add(midRail);
+
+            const topRail = new THREE.Mesh(
+              new THREE.BoxGeometry(len, 0.08, 0.08),
+              safetyYellowMat
+            );
+            topRail.position.set(0, 0.98, rz);
+            spanGroup.add(topRail);
+          });
+
+          const postCount = Math.max(2, Math.floor(len / 5.2) + 1);
+          for (let p = 0; p < postCount; p++) {
+            const px = -len * 0.48 + (len * 0.96 * p) / (postCount - 1);
+            [-0.72, 0.72].forEach((rz) => {
+              const post = new THREE.Mesh(
+                new THREE.BoxGeometry(0.07, 0.92, 0.07),
+                safetyYellowMat
+              );
+              post.position.set(px, 0.56, rz);
+              spanGroup.add(post);
+            });
+          }
+
+          // Bouée couronne SOLAS orange/blanc accrochée à l'EXTÉRIEUR du garde-corps (+0.85m, zéro intrusion sur la passerelle!)
+          if (len >= 9.0) {
+            const buoyRing = new THREE.Mesh(
+              new THREE.TorusGeometry(0.36, 0.085, 8, 16),
+              solasOrangeMat
+            );
+            buoyRing.position.set(0, 0.62, 0.85);
+            spanGroup.add(buoyRing);
+
+            const buoyBandH = new THREE.Mesh(
+              new THREE.BoxGeometry(0.86, 0.12, 0.19),
+              loadingArm86Mat
+            );
+            buoyBandH.position.set(0, 0.62, 0.85);
+            spanGroup.add(buoyBandH);
+          }
 
           dockGroup.add(spanGroup);
         }
 
-        // Fonction utilitaire : défense d'accostage en caoutchouc noir (face -Z Poste 87 à z = -9.4m ou face +Z Poste 86 à z = +9.4m)
+        // Fonction utilitaire : défense d'accostage cellulaire à bouclier UHMW-PE et chaînes de retenue
         function addBerthFenderUnit(fx, sideSign, widthX = 4.6) {
           const cylZ = sideSign * 8.55;
           const shieldZ = sideSign * 9.35;
@@ -37272,9 +38153,27 @@
           );
           fenderShield.position.set(fx, 5.25, shieldZ);
           dockGroup.add(fenderShield);
+
+          // Bandes frontales UHMW-PE jaune sécurité en tête de bouclier + chaînes de retenue latérales
+          const wearStrip = new THREE.Mesh(
+            new THREE.BoxGeometry(widthX * 0.92, 0.24, 0.66),
+            safetyYellowMat
+          );
+          wearStrip.position.set(fx, 6.95, shieldZ);
+          dockGroup.add(wearStrip);
+
+          [-widthX * 0.42, widthX * 0.42].forEach((cxOff) => {
+            const checkChain = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.07, 0.07, 1.45, 6),
+              steelGalvMat
+            );
+            checkChain.rotation.x = sideSign * 0.55;
+            checkChain.position.set(fx + cxOff, 6.45, sideSign * 8.75);
+            dockGroup.add(checkChain);
+          });
         }
 
-        // Fonction utilitaire : grand duc-d'Albe circulaire blanc en caisson de béton + collerette d'écume hydrodynamique
+        // Fonction utilitaire : grand duc-d'Albe circulaire blanc en caisson de béton + échelle de marée + croc à largage rapide QRH
         const caissonFoamRings3D = [];
         function addCircularCaissonDolphin(cx, cz, radius, opts = {}) {
           const tidalSkirt = new THREE.Mesh(
@@ -37326,6 +38225,7 @@
           rimCurb.position.set(cx, 7.42, cz);
           dockGroup.add(rimCurb);
 
+          // Socle central + Ensemble triple croc d'amarrage à largage rapide (QRH) & cabestan électrique
           const bollardPed = new THREE.Mesh(
             new THREE.CylinderGeometry(0.95, 1.15, 0.45, 12),
             concreteDarkMat
@@ -37334,11 +38234,47 @@
           dockGroup.add(bollardPed);
 
           const qrBollard = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.55, 0.72, 1.35, 10),
+            new THREE.CylinderGeometry(0.55, 0.72, 1.05, 10),
             safetyYellowMat
           );
-          qrBollard.position.set(cx, 8.15, cz);
+          qrBollard.position.set(cx, 8.05, cz);
           dockGroup.add(qrBollard);
+
+          const capstanDrum = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.32, 0.38, 0.58, 10),
+            pilingMat
+          );
+          capstanDrum.position.set(cx, 8.78, cz);
+          dockGroup.add(capstanDrum);
+
+          for (let hIdx = -1; hIdx <= 1; hIdx++) {
+            const qrhHook = new THREE.Mesh(
+              new THREE.BoxGeometry(0.22, 0.24, 0.72),
+              steelGalvMat
+            );
+            qrhHook.position.set(cx + hIdx * 0.36, 8.02, cz - 0.52);
+            dockGroup.add(qrhHook);
+          }
+
+          // Échelle d'accès de marée en acier noir plaquée sur la paroi extérieure du caisson (hors dalle supérieure)
+          const ladderDirZ = cz < -2 ? -1 : 1;
+          const ladderZ = cz + ladderDirZ * (radius + 0.12);
+          [-0.26, 0.26].forEach((lxOff) => {
+            const stringer = new THREE.Mesh(
+              new THREE.BoxGeometry(0.07, 6.8, 0.08),
+              pilingMat
+            );
+            stringer.position.set(cx + lxOff, 3.85, ladderZ);
+            dockGroup.add(stringer);
+          });
+          for (let ry = 0.8; ry <= 6.9; ry += 0.62) {
+            const rung = new THREE.Mesh(
+              new THREE.BoxGeometry(0.52, 0.05, 0.06),
+              safetyYellowMat
+            );
+            rung.position.set(cx, ry, ladderZ + ladderDirZ * 0.03);
+            dockGroup.add(rung);
+          }
 
           const snowDisc = new THREE.Mesh(
             new THREE.CylinderGeometry(radius - 0.12, radius - 0.12, 0.14, 24),
@@ -37379,7 +38315,7 @@
         snowCentralPad.position.set(0, 7.39, 0);
         dockSnowMesh.add(snowCentralPad);
 
-        // Bordures jaunes de sécurité sur les DEUX faces d'accostage du même quai (-Z = Poste 87 Québec, +Z = Poste 86 Lévis)
+        // Bordures jaunes de sécurité + Bittes d'amarrage doubles en fonte sur les DEUX faces (-Z = Poste 87, +Z = Poste 86)
         const edge87 = new THREE.Mesh(
           new THREE.BoxGeometry(26.2, 0.35, 0.44),
           safetyYellowMat
@@ -37393,6 +38329,26 @@
         );
         edge86.position.set(0, 7.42, 8.0);
         dockGroup.add(edge86);
+
+        function addDoubleBittBollard(bx, bz) {
+          const base = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.16, 0.56), pilingMat);
+          base.position.set(bx, 7.43, bz);
+          dockGroup.add(base);
+          [-0.32, 0.32].forEach((ox) => {
+            const post = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.21, 0.62, 10), pilingMat);
+            post.position.set(bx + ox, 7.78, bz);
+            dockGroup.add(post);
+            const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.1, 10), safetyYellowMat);
+            cap.position.set(bx + ox, 8.12, bz);
+            dockGroup.add(cap);
+          });
+        }
+        addDoubleBittBollard(-11.5, -7.72);
+        addDoubleBittBollard(11.5, -7.72);
+        addDoubleBittBollard(-9.5, 7.72);
+        addDoubleBittBollard(11.5, 7.72);
+        addDoubleBittBollard(-24.0, -7.72);
+        addDoubleBittBollard(-24.0, 7.72);
 
         // Défenses d'accostage sur les deux faces de la plateforme centrale (fender line à z = -9.4m pour 87 et z = +9.4m pour 86)
         addBerthFenderUnit(-9.2, -1, 4.8);
@@ -37576,42 +38532,87 @@
           }
         });
 
-        // E1. 4 BRAS DE CHARGEMENT ARTICULÉS CHIKSAN 3D — POSTE 87 (Face Nord-Ouest -Z vers Québec, Brut & Grands volumes)
+        // E1. 4 BRAS DE CHARGEMENT ARTICULÉS CHIKSAN 3D — POSTE 87 (Joints tournants Style-80, câble pantographe, bac d'égouttures, coupleur ERC)
         const chiksanBooms3D = [];
         for (let armIdx = -1.5; armIdx <= 1.5; armIdx += 1) {
           const armX = armIdx * 3.8;
+          // Socle à brides + bac de rétention blanc au pied du riser (z = -5.0m, hors piste Batman z = -6.8m)
+          const dripCurb = new THREE.Mesh(new THREE.BoxGeometry(1.45, 0.22, 1.35), loadingArm86Mat);
+          dripCurb.position.set(armX, 7.45, -5.0);
+          dockGroup.add(dripCurb);
+
+          const riserFlange = new THREE.Mesh(new THREE.CylinderGeometry(0.78, 0.82, 0.34, 12), steelGalvMat);
+          riserFlange.position.set(armX, 7.68, -5.0);
+          dockGroup.add(riserFlange);
+
           const riser = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.45, 0.58, 11.5, 10),
+            new THREE.CylinderGeometry(0.45, 0.58, 11.5, 12),
             loadingArmMat
           );
           riser.position.set(armX, 12.0, -5.0);
           dockGroup.add(riser);
 
+          // Vanne d'isolement pied de bras + volant manuel
+          const baseValve = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.06, 8, 14), safetyYellowMat);
+          baseValve.position.set(armX + 0.62, 9.1, -5.0);
+          baseValve.rotation.y = Math.PI / 2;
+          dockGroup.add(baseValve);
+
           const pivotGroup = new THREE.Group();
           pivotGroup.position.set(armX, 17.5, -5.0);
           dockGroup.add(pivotGroup);
 
+          // Tambour rotatif triple joint Chiksan au sommet (Apex Swivel)
+          const apexSwivel = new THREE.Mesh(new THREE.CylinderGeometry(0.58, 0.58, 0.92, 12), steelGalvMat);
+          apexSwivel.rotation.z = Math.PI / 2;
+          pivotGroup.add(apexSwivel);
+
           const boom = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.35, 0.38, 13.5, 8),
+            new THREE.CylinderGeometry(0.35, 0.38, 13.5, 10),
             loadingArmMat
           );
           boom.rotation.x = Math.PI / 2.5;
           boom.position.set(0, -1.2, -5.8);
           pivotGroup.add(boom);
 
+          // Tirant supérieur de pantographe reliant le contrepoids au coude extérieur
+          const pantoRod = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 14.2, 6), steelGalvMat);
+          pantoRod.rotation.x = Math.PI / 2.42;
+          pantoRod.position.set(0, -0.35, -4.4);
+          pivotGroup.add(pantoRod);
+
+          // Joint tournant coudé extérieur (Outboard Swivel)
+          const elbowSwivel = new THREE.Mesh(new THREE.CylinderGeometry(0.46, 0.46, 0.78, 12), steelGalvMat);
+          elbowSwivel.rotation.z = Math.PI / 2;
+          elbowSwivel.position.set(0, -2.35, -11.45);
+          pivotGroup.add(elbowSwivel);
+
           const dropPipe = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.3, 0.3, 5.2, 8),
-            new THREE.MeshLambertMaterial({ color: 0xf8fafc })
+            new THREE.CylinderGeometry(0.3, 0.3, 5.2, 10),
+            loadingArm86Mat
           );
           dropPipe.position.set(0, -4.8, -11.5);
           pivotGroup.add(dropPipe);
 
+          // Coupleur hydraulique de déconnexion d'urgence (ERC) + double vanne à boisseau
+          const ercCollar = new THREE.Mesh(new THREE.CylinderGeometry(0.52, 0.52, 0.62, 12), safetyYellowMat);
+          ercCollar.position.set(0, -6.95, -11.5);
+          pivotGroup.add(ercCollar);
+
+          const manifoldClamp = new THREE.Mesh(new THREE.CylinderGeometry(0.48, 0.48, 0.28, 12), loadingArmMat);
+          manifoldClamp.position.set(0, -7.42, -11.5);
+          pivotGroup.add(manifoldClamp);
+
           const counterWeight = new THREE.Mesh(
-            new THREE.BoxGeometry(1.2, 1.4, 2.8),
+            new THREE.BoxGeometry(1.25, 1.45, 2.85),
             safetyYellowMat
           );
-          counterWeight.position.set(0, 1.2, 2.4);
+          counterWeight.position.set(0, 1.2, 2.45);
           pivotGroup.add(counterWeight);
+
+          const cwArm = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.36, 2.6), loadingArmMat);
+          cwArm.position.set(0, 0.55, 1.25);
+          pivotGroup.add(cwArm);
 
           chiksanBooms3D.push({ pivot: pivotGroup, idx: armIdx });
         }
@@ -37620,12 +38621,25 @@
         const chiksan86Booms3D = [];
         for (let armIdx = -1; armIdx <= 1; armIdx += 1) {
           const armX = 5.8 + armIdx * 3.5;
+          const drip86 = new THREE.Mesh(new THREE.BoxGeometry(1.32, 0.2, 1.25), loadingArm86Mat);
+          drip86.position.set(armX, 7.45, 5.0);
+          dockGroup.add(drip86);
+
+          const flange86 = new THREE.Mesh(new THREE.CylinderGeometry(0.68, 0.72, 0.3, 12), steelGalvMat);
+          flange86.position.set(armX, 7.65, 5.0);
+          dockGroup.add(flange86);
+
           const riser86 = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.38, 0.5, 9.8, 10),
+            new THREE.CylinderGeometry(0.38, 0.5, 9.8, 12),
             armIdx === 0 ? valeroTealMat : loadingArm86Mat
           );
           riser86.position.set(armX, 11.2, 5.0);
           dockGroup.add(riser86);
+
+          const valve86 = new THREE.Mesh(new THREE.TorusGeometry(0.36, 0.055, 8, 14), safetyYellowMat);
+          valve86.position.set(armX + 0.54, 8.95, 5.0);
+          valve86.rotation.y = Math.PI / 2;
+          dockGroup.add(valve86);
 
           // Groupe orienté à 180° autour de Y afin que les bras du Poste 86 se déploient vers +Z (côté Lévis!)
           const mount86 = new THREE.Group();
@@ -37636,23 +38650,41 @@
           const pivot86 = new THREE.Group();
           mount86.add(pivot86);
 
+          const apex86 = new THREE.Mesh(new THREE.CylinderGeometry(0.48, 0.48, 0.82, 12), steelGalvMat);
+          apex86.rotation.z = Math.PI / 2;
+          pivot86.add(apex86);
+
           const boom86 = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.28, 0.32, 11.6, 8),
+            new THREE.CylinderGeometry(0.28, 0.32, 11.6, 10),
             loadingArmMat
           );
           boom86.rotation.x = Math.PI / 2.45;
           boom86.position.set(0, -1.0, -5.0);
           pivot86.add(boom86);
 
+          const panto86 = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 12.2, 6), steelGalvMat);
+          panto86.rotation.x = Math.PI / 2.38;
+          panto86.position.set(0, -0.25, -3.8);
+          pivot86.add(panto86);
+
+          const elbow86 = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.68, 12), steelGalvMat);
+          elbow86.rotation.z = Math.PI / 2;
+          elbow86.position.set(0, -2.05, -9.85);
+          pivot86.add(elbow86);
+
           const drop86 = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.24, 0.24, 4.6, 8),
+            new THREE.CylinderGeometry(0.24, 0.24, 4.6, 10),
             loadingArm86Mat
           );
           drop86.position.set(0, -4.2, -9.9);
           pivot86.add(drop86);
 
+          const erc86 = new THREE.Mesh(new THREE.CylinderGeometry(0.44, 0.44, 0.54, 12), safetyYellowMat);
+          erc86.position.set(0, -6.12, -9.9);
+          pivot86.add(erc86);
+
           const cw86 = new THREE.Mesh(
-            new THREE.BoxGeometry(1.0, 1.2, 2.4),
+            new THREE.BoxGeometry(1.05, 1.25, 2.45),
             safetyYellowMat
           );
           cw86.position.set(0, 1.0, 2.1);
@@ -37661,17 +38693,42 @@
           chiksan86Booms3D.push({ pivot: pivot86, idx: armIdx });
         }
 
-        // Cabine centrale d'opérations 86/87 positionnée sur l'axe médian (z = 0), dégageant à 100% les deux tabliers (-6.8m et +6.8m) pour Batman!
+        // Cabine centrale d'opérations 86/87 sur l'axe médian (z = 0), bardage nervuré, toit débordant, unité CVC, antennes VHF et armoire incendie
         const dockCabin = new THREE.Mesh(
           new THREE.BoxGeometry(7.2, 3.5, 3.2),
-          new THREE.MeshLambertMaterial({ color: 0x334155 })
+          corrugatedCabinMat
         );
         dockCabin.position.set(-6.8, 9.1, 0.0);
         dockGroup.add(dockCabin);
 
+        const dockCabinRoof = new THREE.Mesh(new THREE.BoxGeometry(7.65, 0.24, 3.65), steelGalvMat);
+        dockCabinRoof.position.set(-6.8, 10.95, 0.0);
+        dockGroup.add(dockCabinRoof);
+
+        const dockCabinHvac = new THREE.Mesh(new THREE.BoxGeometry(1.55, 0.85, 1.25), loadingArm86Mat);
+        dockCabinHvac.position.set(-8.6, 11.48, 0.0);
+        dockGroup.add(dockCabinHvac);
+
+        const hvacGrille = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.9, 12), pilingMat);
+        hvacGrille.position.set(-8.6, 11.49, 0.0);
+        dockGroup.add(hvacGrille);
+
+        [-5.2, -4.4].forEach((ax, aIdx) => {
+          const vhfWhip = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.025, 0.05, 3.6 + aIdx * 0.9, 6),
+            loadingArm86Mat
+          );
+          vhfWhip.position.set(ax, 12.8 + aIdx * 0.45, (aIdx === 0 ? -0.9 : 0.9));
+          dockGroup.add(vhfWhip);
+        });
+
+        const fireHoseCabinet = new THREE.Mesh(new THREE.BoxGeometry(0.36, 1.35, 0.95), loadingArmMat);
+        fireHoseCabinet.position.set(-3.05, 8.65, 0.0);
+        dockGroup.add(fireHoseCabinet);
+
         const dockCabinWin = new THREE.Mesh(
           new THREE.BoxGeometry(6.2, 1.3, 3.36),
-          new THREE.MeshBasicMaterial({ color: 0x38bdf8 })
+          dockCabinWinMat
         );
         dockCabinWin.position.set(-6.8, 9.45, 0.0);
         dockGroup.add(dockCabinWin);
@@ -37679,19 +38736,27 @@
         // Abri technique secondaire sur l'îlot Sud (axe médian z = 0)
         const dockCabin86 = new THREE.Mesh(
           new THREE.BoxGeometry(4.4, 2.9, 2.8),
-          new THREE.MeshLambertMaterial({ color: 0x334155 })
+          corrugatedCabinMat
         );
         dockCabin86.position.set(-24.0, 8.8, 0.0);
         dockGroup.add(dockCabin86);
 
+        const dockCabin86Roof = new THREE.Mesh(new THREE.BoxGeometry(4.78, 0.22, 3.16), steelGalvMat);
+        dockCabin86Roof.position.set(-24.0, 10.35, 0.0);
+        dockGroup.add(dockCabin86Roof);
+
+        const dockCabin86Hvac = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.65, 0.95), loadingArm86Mat);
+        dockCabin86Hvac.position.set(-24.9, 10.78, 0.0);
+        dockGroup.add(dockCabin86Hvac);
+
         const dockCabin86Win = new THREE.Mesh(
           new THREE.BoxGeometry(3.6, 1.05, 2.95),
-          new THREE.MeshBasicMaterial({ color: 0x38bdf8 })
+          dockCabinWinMat
         );
         dockCabin86Win.position.set(-24.0, 9.1, 0.0);
         dockGroup.add(dockCabin86Win);
 
-        // Aussières d'amarrage 3D — POSTE 87 (8 lignes vers bâbord z = -7.6) & POSTE 86 (6 lignes vers tribord z = +5.8 sur le même quai!)
+        // Aussières d'amarrage en chaînette physique (11 sommets zéro-GC) + garde-rats coniques galvanisés — POSTE 87 & POSTE 86
         const mooringLinesGroup = new THREE.Group();
         scene.add(mooringLinesGroup);
         const mooringLines3D = [];
@@ -37699,44 +38764,54 @@
         const mooringLineMat = new THREE.LineBasicMaterial({
           color: 0xe2e8f0,
           transparent: true,
-          opacity: 0.85,
+          opacity: 0.9,
         });
+        const ratGuardGeo = new THREE.ConeGeometry(0.44, 0.26, 12);
+        ratGuardGeo.rotateX(Math.PI / 2);
+
+        function createCatenaryHawserEntry(ms) {
+          const lGeo = new THREE.BufferGeometry();
+          const posArr = new Float32Array(11 * 3);
+          lGeo.setAttribute("position", new THREE.BufferAttribute(posArr, 3));
+          const lMesh = new THREE.Line(lGeo, mooringLineMat);
+          lMesh.frustumCulled = false;
+          mooringLinesGroup.add(lMesh);
+
+          const ratGuard = new THREE.Mesh(ratGuardGeo, ratGuardMat);
+          mooringLinesGroup.add(ratGuard);
+          return {
+            line: lMesh,
+            geo: lGeo,
+            ratGuard: ratGuard,
+            dockLocal: ms.dockLocal,
+            shipLocal: ms.shipLocal,
+          };
+        }
+
         const mooringSpecs = [
           { dockLocal: new THREE.Vector3(-56.0, 8.15, -31.0), shipLocal: new THREE.Vector3(53, 8.6, -4.8) }, // Ligne de pointe avant -> Caisson T #6
           { dockLocal: new THREE.Vector3(-56.0, 8.15, -6.0), shipLocal: new THREE.Vector3(48, 8.5, -6.8) },  // Traversier avant -> Caisson T #5
           { dockLocal: new THREE.Vector3(-39.0, 8.15, 0.4), shipLocal: new THREE.Vector3(38, 8.5, -7.6) },   // Garde avant -> Caisson Coude #3
-          { dockLocal: new THREE.Vector3(-24.0, 7.85, -7.4), shipLocal: new THREE.Vector3(16, 8.5, -7.6) },  // Garde centrale S -> Îlot Sud (-Z)
-          { dockLocal: new THREE.Vector3(11.5, 7.85, -7.4), shipLocal: new THREE.Vector3(-12, 8.5, -7.6) },  // Garde centrale N -> Plateforme (-Z)
+          { dockLocal: new THREE.Vector3(-24.0, 7.85, -7.7), shipLocal: new THREE.Vector3(16, 8.5, -7.6) },  // Garde centrale S -> Îlot Sud (-Z)
+          { dockLocal: new THREE.Vector3(11.5, 7.85, -7.7), shipLocal: new THREE.Vector3(-12, 8.5, -7.6) },  // Garde centrale N -> Plateforme (-Z)
           { dockLocal: new THREE.Vector3(30.0, 8.15, -1.2), shipLocal: new THREE.Vector3(-28, 8.5, -7.6) },  // Traversier arrière -> Caisson #2
           { dockLocal: new THREE.Vector3(78.0, 8.15, -1.2), shipLocal: new THREE.Vector3(-38, 8.5, -6.8) },  // Ligne de poupe 1 -> Caisson NE #1
           { dockLocal: new THREE.Vector3(78.0, 8.15, 0.0), shipLocal: new THREE.Vector3(-41, 8.6, -4.8) },   // Ligne de poupe 2 -> Caisson NE #1
         ];
         mooringSpecs.forEach((ms) => {
-          const lGeo = new THREE.BufferGeometry().setFromPoints([
-            new THREE.Vector3(),
-            new THREE.Vector3(),
-          ]);
-          const lMesh = new THREE.Line(lGeo, mooringLineMat);
-          mooringLinesGroup.add(lMesh);
-          mooringLines3D.push({ line: lMesh, geo: lGeo, dockLocal: ms.dockLocal, shipLocal: ms.shipLocal });
+          mooringLines3D.push(createCatenaryHawserEntry(ms));
         });
 
         const mooringSpecs86 = [
           { dockLocal: new THREE.Vector3(-39.0, 8.15, 1.8), shipLocal: new THREE.Vector3(32, 7.4, 4.2) },    // Ligne de pointe avant 86 -> Caisson Coude #3
-          { dockLocal: new THREE.Vector3(-24.0, 7.85, 7.4), shipLocal: new THREE.Vector3(24, 7.3, 5.8) },    // Traversier avant 86 -> Îlot Sud (+Z)
-          { dockLocal: new THREE.Vector3(-9.5, 7.85, 7.4), shipLocal: new THREE.Vector3(10, 7.3, 6.0) },     // Garde avant 86 -> Plateforme (+Z)
-          { dockLocal: new THREE.Vector3(11.5, 7.85, 7.4), shipLocal: new THREE.Vector3(-8, 7.3, 6.0) },     // Garde arrière 86 -> Plateforme (+Z)
+          { dockLocal: new THREE.Vector3(-24.0, 7.85, 7.7), shipLocal: new THREE.Vector3(24, 7.3, 5.8) },    // Traversier avant 86 -> Îlot Sud (+Z)
+          { dockLocal: new THREE.Vector3(-9.5, 7.85, 7.7), shipLocal: new THREE.Vector3(10, 7.3, 6.0) },     // Garde avant 86 -> Plateforme (+Z)
+          { dockLocal: new THREE.Vector3(11.5, 7.85, 7.7), shipLocal: new THREE.Vector3(-8, 7.3, 6.0) },     // Garde arrière 86 -> Plateforme (+Z)
           { dockLocal: new THREE.Vector3(30.0, 8.15, 1.5), shipLocal: new THREE.Vector3(-21, 7.3, 5.6) },    // Traversier arrière 86 -> Caisson #2
           { dockLocal: new THREE.Vector3(78.0, 8.15, 1.5), shipLocal: new THREE.Vector3(-25, 7.4, 4.0) },    // Ligne de poupe 86 -> Caisson NE #1
         ];
         mooringSpecs86.forEach((ms) => {
-          const lGeo = new THREE.BufferGeometry().setFromPoints([
-            new THREE.Vector3(),
-            new THREE.Vector3(),
-          ]);
-          const lMesh = new THREE.Line(lGeo, mooringLineMat);
-          mooringLinesGroup.add(lMesh);
-          mooringLines86_3D.push({ line: lMesh, geo: lGeo, dockLocal: ms.dockLocal, shipLocal: ms.shipLocal });
+          mooringLines86_3D.push(createCatenaryHawserEntry(ms));
         });
 
         // F. BARRE TERRESTRE DU "T" (x = -56m) : ESTACADE SUR PIEUX (z = +23.8m à +74m) & MÔLE D'ENROCHEMENT (z = +74m à +232m)
@@ -37830,7 +38905,7 @@
         waveParapet.position.set(-59.8, 7.52, 153.0);
         dockGroup.add(waveParapet);
 
-        // Aire d'enracinement côtier et guérite de sécurité portuaire à Valero Levishipping (z = +218m)
+        // Aire d'enracinement côtier et guérite de sécurité portuaire ISPS à Valero Levishipping (z = +218m)
         const gatePad = new THREE.Mesh(
           new THREE.BoxGeometry(17.0, 1.15, 18.0),
           concreteDarkMat
@@ -37844,6 +38919,14 @@
         );
         gateHouse.position.set(-50.4, 8.7, 216.0);
         dockGroup.add(gateHouse);
+
+        const gateRoof = new THREE.Mesh(new THREE.BoxGeometry(5.05, 0.24, 4.2), steelGalvMat);
+        gateRoof.position.set(-50.4, 10.42, 216.0);
+        dockGroup.add(gateRoof);
+
+        const gateWin = new THREE.Mesh(new THREE.BoxGeometry(4.75, 1.05, 3.0), dockCabinWinMat);
+        gateWin.position.set(-50.4, 9.0, 216.0);
+        dockGroup.add(gateWin);
 
         // 5 Conduites pétrolières principales le long de l'estacade et du môle (x = -56m, z = +18m à +228m)
         const pipeColors = [0xe2e8f0, 0x94a3b8, 0xdc2626, 0xfacc15, 0x0284c7];
@@ -37882,7 +38965,7 @@
           dockGroup.add(portalBeam);
         }
 
-        // Tours rouges de canons à mousse incendie (Fire Monitor Towers) sur les faces 87 (-Z) et 86 (+Z) du quai
+        // Tours rouges de canons à mousse incendie (Fire Monitor Towers) + échelles à crinoline et garde-corps
         [
           { x: -12.0, z: -5.8, h: 14.5, side: -1 },
           { x: 12.0, z: -5.8, h: 14.5, side: -1 },  // Cible Grappin #1 Batman (Poste 87 • y = 21.75)
@@ -37890,29 +38973,65 @@
           { x: 12.0, z: 5.8, h: 13.2, side: 1 }     // Cible Grappin #2 Batman (Poste 86 • y = 20.45)
         ].forEach((ft) => {
           const fireTower = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.42, 0.58, ft.h, 8),
+            new THREE.CylinderGeometry(0.42, 0.58, ft.h, 10),
             loadingArmMat
           );
           fireTower.position.set(ft.x, 7.25 + ft.h * 0.5, ft.z);
           dockGroup.add(fireTower);
 
+          // Échelle verticale à crinoline de sécurité côté terre du fût (hors piste Batman!)
+          const ladZ = ft.z - ft.side * 0.62;
+          [-0.22, 0.22].forEach((lx) => {
+            const lRail = new THREE.Mesh(new THREE.BoxGeometry(0.05, ft.h - 0.5, 0.05), safetyYellowMat);
+            lRail.position.set(ft.x + lx, 7.25 + ft.h * 0.5, ladZ);
+            dockGroup.add(lRail);
+          });
+          for (let cy = 9.8; cy < 7.0 + ft.h; cy += 1.9) {
+            const hoop = new THREE.Mesh(new THREE.TorusGeometry(0.38, 0.035, 6, 12), safetyYellowMat);
+            hoop.rotation.x = Math.PI / 2;
+            hoop.position.set(ft.x, cy, ladZ - ft.side * 0.16);
+            dockGroup.add(hoop);
+          }
+
           const firePlatform = new THREE.Mesh(
-            new THREE.CylinderGeometry(1.55, 1.55, 0.4, 10),
+            new THREE.CylinderGeometry(1.55, 1.55, 0.4, 12),
             safetyYellowMat
           );
           firePlatform.position.set(ft.x, 7.25 + ft.h, ft.z);
           dockGroup.add(firePlatform);
 
+          const fireRail = new THREE.Mesh(
+            new THREE.TorusGeometry(1.48, 0.055, 6, 16),
+            safetyYellowMat
+          );
+          fireRail.rotation.x = Math.PI / 2;
+          fireRail.position.set(ft.x, 8.15 + ft.h, ft.z);
+          dockGroup.add(fireRail);
+
           const fireCannon = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.22, 0.32, 2.4, 8),
+            new THREE.CylinderGeometry(0.22, 0.32, 2.4, 10),
             loadingArmMat
           );
           fireCannon.rotation.x = ft.side < 0 ? (Math.PI / 3) : (-Math.PI / 3);
           fireCannon.position.set(ft.x, 8.05 + ft.h, ft.z + ft.side * 0.8);
           dockGroup.add(fireCannon);
+
+          const foamNozzle = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.32, 0.22, 0.55, 10),
+            steelGalvMat
+          );
+          foamNozzle.rotation.x = fireCannon.rotation.x;
+          foamNozzle.position.set(ft.x, 8.65 + ft.h, ft.z + ft.side * 1.78);
+          dockGroup.add(foamNozzle);
         });
 
-        // Tours d'embarquement & Coupées (Gangways) sur la face Québec Poste 87 (-Z) et la face Lévis Poste 86 (+Z)
+        // Tours d'embarquement & Coupées (Gangways) avec garde-corps jaunes, taquets antidérapants et filets SOLAS sous coupée
+        const gangwayNetMat = new THREE.MeshBasicMaterial({
+          color: 0x14b8a6,
+          wireframe: true,
+          transparent: true,
+          opacity: 0.52,
+        });
         const gangwayTower = new THREE.Mesh(
           new THREE.BoxGeometry(2.9, 6.2, 2.9),
           steelGalvMat
@@ -37920,13 +39039,27 @@
         gangwayTower.position.set(9.2, 10.3, -5.6);
         dockGroup.add(gangwayTower);
 
-        const gangwayBridge = new THREE.Mesh(
-          new THREE.BoxGeometry(1.3, 0.55, 11.2),
-          steelGalvMat
-        );
+        const gangwayBridge = new THREE.Group();
         gangwayBridge.position.set(9.2, 12.0, -11.0);
         gangwayBridge.rotation.x = -0.15;
         dockGroup.add(gangwayBridge);
+        {
+          const gDeck = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.24, 11.2), steelGalvMat);
+          gangwayBridge.add(gDeck);
+          [-0.62, 0.62].forEach((gx) => {
+            const gRail = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.92, 11.2), safetyYellowMat);
+            gRail.position.set(gx, 0.52, 0);
+            gangwayBridge.add(gRail);
+          });
+          for (let gz = -5.0; gz <= 5.0; gz += 0.85) {
+            const cleat = new THREE.Mesh(new THREE.BoxGeometry(1.18, 0.08, 0.14), pilingMat);
+            cleat.position.set(0, 0.15, gz);
+            gangwayBridge.add(cleat);
+          }
+          const safetyNet = new THREE.Mesh(new THREE.BoxGeometry(2.35, 0.85, 10.8, 4, 2, 10), gangwayNetMat);
+          safetyNet.position.set(0, -0.58, 0);
+          gangwayBridge.add(safetyNet);
+        }
 
         const gangway86Mount = new THREE.Group();
         gangway86Mount.position.set(-2.6, 0, 5.6);
@@ -37940,41 +39073,114 @@
         gangway86Tower.position.set(0, 9.9, 0);
         gangway86Mount.add(gangway86Tower);
 
-        const gangway86Bridge = new THREE.Mesh(
-          new THREE.BoxGeometry(1.2, 0.5, 9.8),
-          steelGalvMat
-        );
+        const gangway86Bridge = new THREE.Group();
         gangway86Bridge.position.set(0, 11.1, -4.9);
         gangway86Bridge.rotation.x = -0.16;
         gangway86Mount.add(gangway86Bridge);
+        {
+          const gDeck86 = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.22, 9.8), steelGalvMat);
+          gangway86Bridge.add(gDeck86);
+          [-0.57, 0.57].forEach((gx) => {
+            const gRail86 = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.88, 9.8), safetyYellowMat);
+            gRail86.position.set(gx, 0.48, 0);
+            gangway86Bridge.add(gRail86);
+          });
+          for (let gz = -4.4; gz <= 4.4; gz += 0.85) {
+            const cleat86 = new THREE.Mesh(new THREE.BoxGeometry(1.08, 0.08, 0.13), pilingMat);
+            cleat86.position.set(0, 0.14, gz);
+            gangway86Bridge.add(cleat86);
+          }
+          const safetyNet86 = new THREE.Mesh(new THREE.BoxGeometry(2.15, 0.78, 9.4, 4, 2, 9), gangwayNetMat);
+          safetyNet86.position.set(0, -0.54, 0);
+          gangway86Bridge.add(safetyNet86);
+        }
 
-        // Camionnette d'intervention stationnée sur l'axe médian (z = 0) pour dégager les deux fronts 87 et 86
+        // Camionnette pickup d'intervention Valero détaillée sur l'axe médian (z = 0, roues, calandre, vitres, phares, cônes)
         const serviceTruck = new THREE.Group();
         serviceTruck.position.set(5.4, 7.4, 0.0);
         dockGroup.add(serviceTruck);
 
+        const truckChassis = new THREE.Mesh(new THREE.BoxGeometry(5.1, 0.36, 1.95), pilingMat);
+        truckChassis.position.set(0, 0.42, 0);
+        serviceTruck.add(truckChassis);
+
         const truckBody = new THREE.Mesh(
-          new THREE.BoxGeometry(5.0, 1.7, 2.1),
-          new THREE.MeshLambertMaterial({ color: 0xf8fafc })
+          new THREE.BoxGeometry(2.55, 0.92, 2.08),
+          loadingArm86Mat
         );
-        truckBody.position.set(0, 0.85, 0);
+        truckBody.position.set(-1.22, 0.96, 0);
         serviceTruck.add(truckBody);
 
-        const truckCabin = new THREE.Mesh(
-          new THREE.BoxGeometry(2.1, 1.35, 2.0),
-          new THREE.MeshLambertMaterial({ color: 0xdc2626 })
+        const truckHood = new THREE.Mesh(
+          new THREE.BoxGeometry(1.35, 0.88, 2.04),
+          loadingArmMat
         );
-        truckCabin.position.set(1.1, 2.0, 0);
+        truckHood.position.set(1.88, 0.94, 0);
+        serviceTruck.add(truckHood);
+
+        const truckCabin = new THREE.Mesh(
+          new THREE.BoxGeometry(1.65, 1.48, 2.02),
+          loadingArmMat
+        );
+        truckCabin.position.set(0.45, 1.38, 0);
         serviceTruck.add(truckCabin);
 
+        const truckWindshield = new THREE.Mesh(
+          new THREE.BoxGeometry(1.72, 0.62, 1.88),
+          dockCabinWinMat
+        );
+        truckWindshield.position.set(0.48, 1.66, 0);
+        serviceTruck.add(truckWindshield);
+
+        const truckGrille = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.52, 1.42), steelGalvMat);
+        truckGrille.position.set(2.56, 0.92, 0);
+        serviceTruck.add(truckGrille);
+
+        [-0.74, 0.74].forEach((wz) => {
+          const headLight = new THREE.Mesh(
+            new THREE.BoxGeometry(0.12, 0.22, 0.32),
+            new THREE.MeshBasicMaterial({ color: 0xfef08a })
+          );
+          headLight.position.set(2.57, 1.02, wz);
+          serviceTruck.add(headLight);
+
+          const tailLight = new THREE.Mesh(
+            new THREE.BoxGeometry(0.12, 0.34, 0.22),
+            new THREE.MeshBasicMaterial({ color: 0xef4444 })
+          );
+          tailLight.position.set(-2.51, 1.02, wz * 1.12);
+          serviceTruck.add(tailLight);
+        });
+
+        [[-1.45, -1.02], [-1.45, 1.02], [1.65, -1.02], [1.65, 1.02]].forEach(([wx, wz]) => {
+          const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.44, 0.44, 0.34, 14), fenderBlackMat);
+          tire.rotation.x = Math.PI / 2;
+          tire.position.set(wx, 0.44, wz);
+          serviceTruck.add(tire);
+          const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.36, 10), steelGalvMat);
+          hub.rotation.x = Math.PI / 2;
+          hub.position.set(wx, 0.44, wz);
+          serviceTruck.add(hub);
+        });
+
+        // Coffre d'outillage aluminium + 2 cônes de sécurité orange dans la benne arrière
+        const truckToolbox = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.45, 1.82), steelGalvMat);
+        truckToolbox.position.set(-0.32, 1.52, 0);
+        serviceTruck.add(truckToolbox);
+        [-0.45, 0.45].forEach((cz) => {
+          const safetyCone = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.52, 8), solasOrangeMat);
+          safetyCone.position.set(-1.95, 1.66, cz);
+          serviceTruck.add(safetyCone);
+        });
+
         const truckBeacon = new THREE.Mesh(
-          new THREE.SphereGeometry(0.35, 8, 8),
+          new THREE.BoxGeometry(0.36, 0.22, 1.28),
           new THREE.MeshBasicMaterial({ color: 0xf59e0b })
         );
-        truckBeacon.position.set(1.1, 2.9, 0);
+        truckBeacon.position.set(0.45, 2.24, 0);
         serviceTruck.add(truckBeacon);
 
-        // Lampadaires industriels au sodium + cônes volumétriques nocturnes sur le quai double-face, les caissons en T et le môle
+        // Lampadaires industriels haute-mât à traverses doubles + projecteurs orientés + cônes volumétriques nocturnes
         const dockLights = [];
         const dockLightCones3D = [];
         const dockLightConeGeo = new THREE.ConeGeometry(5.6, 12.2, 14, 1, true);
@@ -38000,17 +39206,28 @@
           { x: -53.2, z: 182.0 },
         ].forEach((lp) => {
           const pole = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.2, 0.28, 13, 6),
-            concreteMat
+            new THREE.CylinderGeometry(0.18, 0.3, 13, 8),
+            steelGalvMat
           );
           pole.position.set(lp.x, 12.5, lp.z);
           dockGroup.add(pole);
 
+          const crossArm = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.2, 2.1), steelGalvMat);
+          crossArm.position.set(lp.x, 19.35, lp.z);
+          dockGroup.add(crossArm);
+
+          [-0.78, 0.78].forEach((hz) => {
+            const floodHood = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.28, 0.56), pilingMat);
+            floodHood.position.set(lp.x, 19.48, lp.z + hz);
+            floodHood.rotation.x = hz < 0 ? 0.35 : -0.35;
+            dockGroup.add(floodHood);
+          });
+
           const bulb = new THREE.Mesh(
-            new THREE.SphereGeometry(0.75, 8, 8),
+            new THREE.SphereGeometry(0.68, 8, 8),
             new THREE.MeshBasicMaterial({ color: 0xfef08a })
           );
-          bulb.position.set(lp.x, 19.2, lp.z);
+          bulb.position.set(lp.x, 19.15, lp.z);
           dockGroup.add(bulb);
           dockLights.push(bulb);
 
@@ -39481,17 +40698,64 @@
           }
         }
 
-        // Unités de procédés de la Raffinerie Jean-Gaulin (Tours de distillation atmosphérique/sous vide & FCC, Az 141°–149°, Dist 565m–605m)
+        // Sphères pressurisées GPL / Butane (Sphères de Horton blanches sur pieds équatoriaux, Az 139.0°–142.6°, Dist 532m)
+        [139.0, 140.2, 141.4, 142.6].forEach((sAz, sIdx) => {
+          const sR = sIdx % 2 === 0 ? 6.6 : 5.8;
+          const groundY = 41.2;
+          const centerPos = azDistToVec3(sAz, 532, groundY + sR + 3.2);
+          const hortonSphere = new THREE.Mesh(
+            new THREE.SphereGeometry(sR, 16, 14),
+            tankWhiteMat
+          );
+          hortonSphere.position.copy(centerPos);
+          southShoreGroup.add(hortonSphere);
+
+          const eqRing = new THREE.Mesh(
+            new THREE.TorusGeometry(sR * 0.98, 0.28, 6, 18),
+            unitSteelMat
+          );
+          eqRing.rotation.x = Math.PI / 2;
+          eqRing.position.copy(centerPos);
+          southShoreGroup.add(eqRing);
+
+          for (let legIdx = 0; legIdx < 6; legIdx++) {
+            const ang = (legIdx / 6) * Math.PI * 2;
+            const legH = sR + 3.2;
+            const leg = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.28, 0.34, legH, 6),
+              tankRoofMat
+            );
+            leg.position.set(
+              centerPos.x + Math.cos(ang) * (sR * 0.92),
+              groundY + legH * 0.5,
+              centerPos.z + Math.sin(ang) * (sR * 0.92)
+            );
+            southShoreGroup.add(leg);
+          }
+        });
+
+        // Unités de procédés de la Raffinerie Jean-Gaulin (Tours de distillation atmosphérique/sous vide & FCC + passerelles annulaires)
         [141.2, 143.0, 144.8, 146.6, 148.4].forEach((uAz, uIdx) => {
           const uDist = 565 + (uIdx % 2) * 28;
           const uH = 40 + (uIdx % 3) * 13;
           const uPos = azDistToVec3(uAz, uDist, 42.5 + uH / 2);
           const tower = new THREE.Mesh(
-            new THREE.CylinderGeometry(3.4, 4.5, uH, 12),
+            new THREE.CylinderGeometry(3.4, 4.5, uH, 14),
             unitSteelMat
           );
           tower.position.copy(uPos);
           southShoreGroup.add(tower);
+
+          // 3 Passerelles de service annulaires sur chaque colonne de fractionnement
+          [-0.28, 0.04, 0.34].forEach((fracY) => {
+            const catRing = new THREE.Mesh(
+              new THREE.TorusGeometry(4.25, 0.26, 6, 14),
+              tankBermMat
+            );
+            catRing.rotation.x = Math.PI / 2;
+            catRing.position.set(uPos.x, uPos.y + uH * fracY, uPos.z);
+            southShoreGroup.add(catRing);
+          });
 
           const uLight = new THREE.Mesh(
             new THREE.BoxGeometry(3.8, 2.4, 3.8),
@@ -39500,6 +40764,40 @@
           uLight.position.set(uPos.x, uPos.y + uH * 0.25, uPos.z);
           scene.add(uLight);
           cityLightsList.push(uLight);
+        });
+
+        // Cellules d'aéroréfrigération & Panaches de vapeur industrielle dérivant au vent (refinerySteamPuffs3D)
+        const refinerySteamPuffs3D = [];
+        const refinerySteamMat = new THREE.MeshBasicMaterial({
+          color: 0xf1f5f9,
+          transparent: true,
+          opacity: 0.24,
+          depthWrite: false,
+        });
+        const refinerySteamGeo = new THREE.SphereGeometry(3.4, 8, 8);
+        [145.4, 147.4].forEach((cAz, cIdx) => {
+          const ctBase = azDistToVec3(cAz, 582, 47.0);
+          const ctCell = new THREE.Mesh(
+            new THREE.CylinderGeometry(5.6, 7.2, 11.0, 12),
+            tankRoofMat
+          );
+          ctCell.position.copy(ctBase);
+          southShoreGroup.add(ctCell);
+
+          for (let p = 0; p < 9; p++) {
+            const puff = new THREE.Mesh(refinerySteamGeo, refinerySteamMat);
+            const seedPhase = (p / 9) + cIdx * 0.47;
+            puff.position.set(ctBase.x, ctBase.y + 6.5, ctBase.z);
+            southShoreGroup.add(puff);
+            refinerySteamPuffs3D.push({
+              mesh: puff,
+              originX: ctBase.x,
+              originY: ctBase.y + 6.2,
+              originZ: ctBase.z,
+              phase: seedPhase,
+              speed: 0.085 + (p % 3) * 0.018,
+            });
+          }
         });
 
         // Torchères 3D de la Raffinerie Jean-Gaulin sur le plateau Sud-Est (Az 142.5° et 146.5°, Dist 595m — visibles au-dessus de la falaise de Hadlow!)
@@ -39946,11 +41244,13 @@
         // --- 6. PONTS DE QUÉBEC & PIERRE-LAPORTE 3D CALIBRÉS WGS84 (GORGE ÉTROITE CAP-ROUGE / CHAUDIÈRE : AZ 232.6° À 241.6°, DIST 1365m — 7,2 KM RÉEL!) ---
         const bridgesGroup = new THREE.Group();
         scene.add(bridgesGroup);
+        const bridgeAviationBeacons3D = [];
 
-        const qcBridgeMat = new THREE.MeshLambertMaterial({ color: 0x92400e });
-        const plBridgeMat = new THREE.MeshLambertMaterial({ color: 0x3f6212 });
+        const qcBridgeMat = new THREE.MeshPhongMaterial({ color: 0x92400e, shininess: 22 });
+        const plBridgeMat = new THREE.MeshPhongMaterial({ color: 0x3f6212, shininess: 26 });
         const bridgePierMat = new THREE.MeshLambertMaterial({ color: 0x94a3b8 });
         const cableMat = new THREE.MeshBasicMaterial({ color: 0x4d7c0f });
+        const beaconRedMat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
 
         // Coordonnées 3D des Culées Rive-Sud (232.6°, 1365m) et Rive-Nord (241.6°, 1365m) — centre Az 237.1°
         const southAbutmentWorld = azDistToVec3(232.6, 1365, 0);
@@ -39996,6 +41296,7 @@
         });
 
         // Piliers principaux en eau profonde et tours des deux ponts (x = -62 et x = +62)
+        const plTowerX = 62 * 1.06;
         [-62, 62].forEach((px) => {
           const sideSign = Math.sign(px);
           const pierQC = new THREE.Mesh(
@@ -40005,12 +41306,20 @@
           pierQC.position.set(px, 11, 0);
           bridgesGroup.add(pierQC);
 
-          const towerQC = new THREE.Mesh(
-            new THREE.BoxGeometry(9, 90, 9),
-            qcBridgeMat
-          );
-          towerQC.position.set(px, 60, 0);
-          bridgesGroup.add(towerQC);
+          // Jambes jumelées du pylône cantilever du Pont de Québec
+          [-3.8, 3.8].forEach((tz) => {
+            const towerLegQC = new THREE.Mesh(
+              new THREE.BoxGeometry(4.2, 92, 2.4),
+              qcBridgeMat
+            );
+            towerLegQC.position.set(px, 60, tz);
+            bridgesGroup.add(towerLegQC);
+          });
+          [52, 78, 102].forEach((portalY) => {
+            const portalQC = new THREE.Mesh(new THREE.BoxGeometry(4.0, 2.2, 9.2), qcBridgeMat);
+            portalQC.position.set(px, portalY, 0);
+            bridgesGroup.add(portalQC);
+          });
 
           const diamond = new THREE.Mesh(
             new THREE.OctahedronGeometry(34, 0),
@@ -40021,7 +41330,7 @@
           bridgesGroup.add(diamond);
 
           const shoreChord = new THREE.Mesh(
-            new THREE.BoxGeometry(58, 2.8, 6.5),
+            new THREE.BoxGeometry(58, 2.6, 8.4),
             qcBridgeMat
           );
           shoreChord.position.set(px + sideSign * 26, 70, 0);
@@ -40029,85 +41338,145 @@
           bridgesGroup.add(shoreChord);
 
           const riverChord = new THREE.Mesh(
-            new THREE.BoxGeometry(44, 2.8, 6.5),
+            new THREE.BoxGeometry(44, 2.6, 8.4),
             qcBridgeMat
           );
           riverChord.position.set(px - sideSign * 20, 74, 0);
           riverChord.rotation.z = sideSign * 0.42;
           bridgesGroup.add(riverChord);
 
+          // Pylônes en H à entretoises croisillonnées du Pont Pierre-Laporte (z = -42 ± 5.2)
           const pierPL = new THREE.Mesh(
-            new THREE.BoxGeometry(14, 32, 14),
+            new THREE.BoxGeometry(14, 32, 16),
             bridgePierMat
           );
           pierPL.position.set(px * 1.06, 10, -42);
           bridgesGroup.add(pierPL);
 
-          const pylonPL = new THREE.Mesh(
-            new THREE.BoxGeometry(7.5, 108, 9),
-            plBridgeMat
-          );
-          pylonPL.position.set(px * 1.06, 64, -42);
-          bridgesGroup.add(pylonPL);
+          [-5.2, 5.2].forEach((lz) => {
+            const legPL = new THREE.Mesh(
+              new THREE.BoxGeometry(4.4, 108, 3.0),
+              plBridgeMat
+            );
+            legPL.position.set(px * 1.06, 64, -42 + lz);
+            bridgesGroup.add(legPL);
+          });
+          [48, 82, 114].forEach((crossY) => {
+            const crossBeamPL = new THREE.Mesh(new THREE.BoxGeometry(4.0, 2.6, 12.8), plBridgeMat);
+            crossBeamPL.position.set(px * 1.06, crossY, -42);
+            bridgesGroup.add(crossBeamPL);
+          });
+          [-1, 1].forEach((diagDir) => {
+            const xBracePL = new THREE.Mesh(new THREE.BoxGeometry(1.8, 32, 1.2), plBridgeMat);
+            xBracePL.rotation.x = diagDir * 0.34;
+            xBracePL.position.set(px * 1.06, 98, -42);
+            bridgesGroup.add(xBracePL);
+          });
 
           const beaconQC = new THREE.Mesh(
-            new THREE.SphereGeometry(1.7, 8, 8),
-            new THREE.MeshBasicMaterial({ color: 0xef4444 })
+            new THREE.SphereGeometry(1.6, 8, 8),
+            beaconRedMat
           );
-          beaconQC.position.set(px, 107, 0);
+          beaconQC.position.set(px, 108, 0);
           bridgesGroup.add(beaconQC);
+          bridgeAviationBeacons3D.push(beaconQC);
 
           const beaconPL = new THREE.Mesh(
-            new THREE.SphereGeometry(1.7, 8, 8),
-            new THREE.MeshBasicMaterial({ color: 0xef4444 })
+            new THREE.SphereGeometry(1.6, 8, 8),
+            beaconRedMat
           );
-          beaconPL.position.set(px * 1.06, 119, -42);
+          beaconPL.position.set(px * 1.06, 120, -42);
           bridgesGroup.add(beaconPL);
+          bridgeAviationBeacons3D.push(beaconPL);
         });
 
+        // Travée centrale suspendue et triangulation K-Truss du Pont de Québec
         const centerTrussTop = new THREE.Mesh(
-          new THREE.BoxGeometry(50, 2.6, 6.8),
+          new THREE.BoxGeometry(50, 2.4, 8.4),
           qcBridgeMat
         );
         centerTrussTop.position.set(0, 58, 0);
         bridgesGroup.add(centerTrussTop);
 
-        for (let tx = -120; tx <= 120; tx += 15) {
+        for (let tx = -120; tx <= 120; tx += 12) {
           const distFromTower = Math.min(Math.abs(tx - 62), Math.abs(tx + 62));
           const strutH = Math.max(12, 48 - distFromTower * 0.65);
-          const strut = new THREE.Mesh(
-            new THREE.BoxGeometry(1.4, strutH, 6.2),
-            qcBridgeMat
-          );
-          strut.position.set(tx, 44 + strutH * 0.5, 0);
-          bridgesGroup.add(strut);
+          [-4.0, 4.0].forEach((tz) => {
+            const strut = new THREE.Mesh(
+              new THREE.BoxGeometry(1.05, strutH, 0.85),
+              qcBridgeMat
+            );
+            strut.position.set(tx, 44 + strutH * 0.5, tz);
+            bridgesGroup.add(strut);
+
+            if (tx < 120) {
+              const diagLen = Math.hypot(12, strutH * 0.52);
+              const kUp = new THREE.Mesh(new THREE.BoxGeometry(diagLen, 0.72, 0.65), qcBridgeMat);
+              kUp.position.set(tx + 6, 44 + strutH * 0.72, tz);
+              kUp.rotation.z = 0.42;
+              bridgesGroup.add(kUp);
+
+              const kDn = new THREE.Mesh(new THREE.BoxGeometry(diagLen, 0.72, 0.65), qcBridgeMat);
+              kDn.position.set(tx + 6, 44 + strutH * 0.28, tz);
+              kDn.rotation.z = -0.42;
+              bridgesGroup.add(kDn);
+            }
+          });
         }
 
-        const plTowerX = 62 * 1.06;
-        for (let sx = -132; sx <= 132; sx += 11) {
-          let cableY = 48;
+        // Fonction profil parabolique exact des câbles porteurs du Pont Pierre-Laporte
+        function evalPierreLaporteCableY(sx) {
           if (Math.abs(sx) <= plTowerX) {
             const norm = sx / plTowerX;
-            cableY = 50 + norm * norm * 64;
-          } else {
-            const normSide =
-              (Math.abs(sx) - plTowerX) / (134 - plTowerX);
-            cableY = 114 - normSide * 66;
+            return 50.2 + norm * norm * 65.8;
           }
-          const suspH = Math.max(2, cableY - 46);
-          const suspender = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.28, 0.28, suspH, 6),
-            cableMat
-          );
-          suspender.position.set(sx, 46 + suspH * 0.5, -42);
-          bridgesGroup.add(suspender);
+          const normSide = Math.min(1, (Math.abs(sx) - plTowerX) / (134 - plTowerX));
+          return 116.0 - normSide * 67.5 + normSide * (1 - normSide) * (-5.2);
+        }
 
-          const cableNode = new THREE.Mesh(
-            new THREE.BoxGeometry(12.2, 1.4, 2.2),
-            plBridgeMat
-          );
-          cableNode.position.set(sx, cableY, -42);
-          bridgesGroup.add(cableNode);
+        // Deux câbles porteurs paraboliques continus (TubeGeometry lissée) sur chaque rive du tablier (-42 ± 5.2)
+        [-5.2, 5.2].forEach((czOff) => {
+          const mainCablePtsLeft = [];
+          const mainCablePtsMid = [];
+          const mainCablePtsRight = [];
+          for (let sx = -134; sx <= -plTowerX; sx += 5.5) {
+            mainCablePtsLeft.push(new THREE.Vector3(sx, evalPierreLaporteCableY(sx), -42 + czOff));
+          }
+          mainCablePtsLeft.push(new THREE.Vector3(-plTowerX, 116.2, -42 + czOff));
+
+          for (let sx = -plTowerX; sx <= plTowerX; sx += 5.5) {
+            mainCablePtsMid.push(new THREE.Vector3(sx, evalPierreLaporteCableY(sx), -42 + czOff));
+          }
+          mainCablePtsMid.push(new THREE.Vector3(plTowerX, 116.2, -42 + czOff));
+
+          for (let sx = plTowerX; sx <= 134; sx += 5.5) {
+            mainCablePtsRight.push(new THREE.Vector3(sx, evalPierreLaporteCableY(sx), -42 + czOff));
+          }
+          mainCablePtsRight.push(new THREE.Vector3(134, evalPierreLaporteCableY(134), -42 + czOff));
+
+          [mainCablePtsLeft, mainCablePtsMid, mainCablePtsRight].forEach((segPts) => {
+            const cCurve = new THREE.CatmullRomCurve3(segPts);
+            const cTube = new THREE.Mesh(
+              new THREE.TubeGeometry(cCurve, 24, 0.72, 8, false),
+              plBridgeMat
+            );
+            bridgesGroup.add(cTube);
+          });
+        });
+
+        // Suspentes verticales jumelées reliant les 2 câbles porteurs aux rives du tablier du Pont Pierre-Laporte
+        for (let sx = -130; sx <= 130; sx += 9.5) {
+          if (Math.abs(Math.abs(sx) - plTowerX) < 3.2) continue;
+          const cableY = evalPierreLaporteCableY(sx);
+          const suspH = Math.max(1.8, cableY - 46.2);
+          [-5.2, 5.2].forEach((czOff) => {
+            const suspender = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.18, 0.18, suspH, 6),
+              cableMat
+            );
+            suspender.position.set(sx, 46.2 + suspH * 0.5, -42 + czOff);
+            bridgesGroup.add(suspender);
+          });
         }
 
         const totalDeckLen = shoreToShoreDist + 130;
@@ -40119,7 +41488,7 @@
         bridgesGroup.add(deckQC);
 
         const deckPL = new THREE.Mesh(
-          new THREE.BoxGeometry(totalDeckLen + 20, 4.4, 11.5),
+          new THREE.BoxGeometry(totalDeckLen + 20, 4.2, 12.2),
           plBridgeMat
         );
         deckPL.position.set(0, 46, -42);
@@ -40851,6 +42220,12 @@
         });
 
         // CHÂTEAU FRONTENAC & ÉDIFICE PRICE 3D (Azimut réel WGS84 6.1°, dist 895m — 3,4 km NNE!)
+        qcRoofCopper.map = copperPatinaTex;
+        qcRoofCopper.bumpMap = copperPatinaTex;
+        qcRoofCopper.bumpScale = 0.05;
+        qcRoofCopper.needsUpdate = true;
+
+        const heritageLitMats3D = [];
         const chateauGroup = new THREE.Group();
         const chateauPos = azDistToVec3(6.1, getNorthShoreDist(6.1) + 44, getNorthCliffHeight(6.1));
         chateauGroup.position.copy(chateauPos);
@@ -40858,12 +42233,57 @@
         chateauGroup.scale.set(1.65, 1.65, 1.65);
         scene.add(chateauGroup);
 
-        const brickMat = new THREE.MeshLambertMaterial({ color: 0x9a3412 });
+        const brickMat = new THREE.MeshPhongMaterial({
+          color: 0xa8431e,
+          map: heritageFacadeTexPack.dayTex,
+          bumpMap: heritageFacadeTexPack.dayTex,
+          bumpScale: 0.06,
+          emissive: 0xffffff,
+          emissiveMap: heritageFacadeTexPack.emTex,
+          emissiveIntensity: 0.0,
+          shininess: 14,
+        });
+        const priceStoneMat = new THREE.MeshPhongMaterial({
+          color: 0x7c8594,
+          map: heritageFacadeTexPack.dayTex,
+          bumpMap: heritageFacadeTexPack.dayTex,
+          bumpScale: 0.05,
+          emissive: 0xffffff,
+          emissiveMap: heritageFacadeTexPack.emTex,
+          emissiveIntensity: 0.0,
+          shininess: 18,
+        });
+        const parliamentLitMat = new THREE.MeshPhongMaterial({
+          color: 0xa8a29e,
+          map: heritageFacadeTexPack.dayTex,
+          bumpMap: heritageFacadeTexPack.dayTex,
+          bumpScale: 0.05,
+          emissive: 0xffffff,
+          emissiveMap: heritageFacadeTexPack.emTex,
+          emissiveIntensity: 0.0,
+          shininess: 16,
+        });
+        const vieuxQcLitMat = new THREE.MeshPhongMaterial({
+          color: 0x94a3b8,
+          map: heritageFacadeTexPack.dayTex,
+          bumpMap: heritageFacadeTexPack.dayTex,
+          bumpScale: 0.045,
+          emissive: 0xffffff,
+          emissiveMap: heritageFacadeTexPack.emTex,
+          emissiveIntensity: 0.0,
+          shininess: 12,
+        });
+        heritageLitMats3D.push(brickMat, priceStoneMat, parliamentLitMat, vieuxQcLitMat);
+
         const copperRoofMat = new THREE.MeshPhongMaterial({
-          color: 0x0d9488,
-          shininess: 55,
+          color: 0x14b8a6,
+          map: copperPatinaTex,
+          bumpMap: copperPatinaTex,
+          bumpScale: 0.055,
+          shininess: 58,
         });
 
+        // Tour Champlain centrale du Château Frontenac + lanterneau en cuivre et lucarnes
         const mainTower = new THREE.Mesh(
           new THREE.BoxGeometry(18, 46, 16),
           brickMat
@@ -40872,12 +42292,37 @@
         chateauGroup.add(mainTower);
 
         const mainRoof = new THREE.Mesh(
-          new THREE.ConeGeometry(14, 24, 4),
+          new THREE.ConeGeometry(14.2, 22, 4),
           copperRoofMat
         );
         mainRoof.rotation.y = Math.PI / 4;
-        mainRoof.position.set(0, 58, 0);
+        mainRoof.position.set(0, 57, 0);
         chateauGroup.add(mainRoof);
+
+        const cupolaLantern = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.8, 5.5, 8), copperRoofMat);
+        cupolaLantern.position.set(0, 68.5, 0);
+        chateauGroup.add(cupolaLantern);
+
+        const cupolaSpire = new THREE.Mesh(new THREE.ConeGeometry(2.6, 7.5, 8), copperRoofMat);
+        cupolaSpire.position.set(0, 74.5, 0);
+        chateauGroup.add(cupolaSpire);
+
+        // Lucarnes de toit (Dormers) et hautes cheminées de brique style Château
+        [-5.5, 5.5].forEach((dx) => {
+          const dormer = new THREE.Mesh(new THREE.BoxGeometry(2.8, 4.4, 3.6), brickMat);
+          dormer.position.set(dx, 49.5, 6.8);
+          chateauGroup.add(dormer);
+          const dCap = new THREE.Mesh(new THREE.ConeGeometry(2.4, 3.2, 4), copperRoofMat);
+          dCap.rotation.y = Math.PI / 4;
+          dCap.position.set(dx, 53.2, 6.8);
+          chateauGroup.add(dCap);
+        });
+
+        [-8.2, 8.2].forEach((cx) => {
+          const chimney = new THREE.Mesh(new THREE.BoxGeometry(1.8, 13, 1.8), brickMat);
+          chimney.position.set(cx, 53, -4.5);
+          chateauGroup.add(chimney);
+        });
 
         [-22, 22].forEach((wx) => {
           const wing = new THREE.Mesh(
@@ -40887,38 +42332,62 @@
           wing.position.set(wx, 14, 2);
           chateauGroup.add(wing);
 
+          // Toitures pentues en cuivre patiné sur les ailes Saint-Louis et Mont-Carmel
+          const wingRoof = new THREE.Mesh(
+            new THREE.ConeGeometry(14.5, 11.5, 4),
+            copperRoofMat
+          );
+          wingRoof.rotation.y = Math.PI / 4;
+          wingRoof.scale.set(1.35, 1.0, 0.72);
+          wingRoof.position.set(wx, 33.5, 2);
+          chateauGroup.add(wingRoof);
+
           const turret = new THREE.Mesh(
-            new THREE.CylinderGeometry(5.5, 5.5, 34, 12),
+            new THREE.CylinderGeometry(5.5, 5.5, 34, 14),
             brickMat
           );
           turret.position.set(wx * 1.45, 17, 5);
           chateauGroup.add(turret);
 
           const tRoof = new THREE.Mesh(
-            new THREE.ConeGeometry(6.8, 16, 12),
+            new THREE.ConeGeometry(6.8, 16, 14),
             copperRoofMat
           );
-          turret.updateMatrix();
           tRoof.position.set(wx * 1.45, 42, 5);
           chateauGroup.add(tRoof);
         });
 
+        // Édifice Price Art-Déco à gradins successifs (18 étages en calcaire gris + flèche de cuivre)
         const priceTower = new THREE.Mesh(
-          new THREE.BoxGeometry(13, 38, 13),
-          new THREE.MeshLambertMaterial({ color: 0x64748b })
+          new THREE.BoxGeometry(13.4, 26, 13.4),
+          priceStoneMat
         );
-        priceTower.position.set(48, 19, -8);
+        priceTower.position.set(48, 13, -8);
         chateauGroup.add(priceTower);
 
+        const priceTierMid = new THREE.Mesh(
+          new THREE.BoxGeometry(10.6, 11, 10.6),
+          priceStoneMat
+        );
+        priceTierMid.position.set(48, 31.5, -8);
+        chateauGroup.add(priceTierMid);
+
+        const priceTierTop = new THREE.Mesh(
+          new THREE.BoxGeometry(8.0, 6.5, 8.0),
+          priceStoneMat
+        );
+        priceTierTop.position.set(48, 40.2, -8);
+        chateauGroup.add(priceTierTop);
+
         const priceRoof = new THREE.Mesh(
-          new THREE.ConeGeometry(8.5, 12, 4),
+          new THREE.ConeGeometry(6.4, 11.5, 4),
           copperRoofMat
         );
         priceRoof.rotation.y = Math.PI / 4;
-        priceRoof.position.set(48, 44, -8);
+        priceRoof.position.set(48, 49.0, -8);
         chateauGroup.add(priceRoof);
 
-        // Hôtel du Parlement du Québec (Azimut réel 1.5°, Colline Parlementaire)
+        // Hôtel du Parlement du Québec (Style Second Empire, pavillons d'angle & Tour Jacques-Cartier)
         const parliamentGroup = new THREE.Group();
         const parliamentPos = azDistToVec3(1.5, getNorthShoreDist(1.5) + 115, 78);
         parliamentGroup.position.copy(parliamentPos);
@@ -40928,14 +42397,24 @@
 
         const parliamentMain = new THREE.Mesh(
           new THREE.BoxGeometry(38, 22, 18),
-          qcStoneMat
+          parliamentLitMat
         );
         parliamentMain.position.set(0, 11, 0);
         parliamentGroup.add(parliamentMain);
 
+        [-18.5, 18.5].forEach((px) => {
+          const cornerPav = new THREE.Mesh(new THREE.BoxGeometry(9.5, 25, 20), parliamentLitMat);
+          cornerPav.position.set(px, 12.5, 0.5);
+          parliamentGroup.add(cornerPav);
+          const mansard = new THREE.Mesh(new THREE.ConeGeometry(8.2, 7.5, 4), copperRoofMat);
+          mansard.rotation.y = Math.PI / 4;
+          mansard.position.set(px, 28.5, 0.5);
+          parliamentGroup.add(mansard);
+        });
+
         const parliamentTower = new THREE.Mesh(
           new THREE.BoxGeometry(11, 38, 11),
-          qcStoneMat
+          parliamentLitMat
         );
         parliamentTower.position.set(0, 24, 0);
         parliamentGroup.add(parliamentTower);
@@ -40966,7 +42445,7 @@
 
           const qHouse = new THREE.Mesh(
             new THREE.BoxGeometry(14 + (h % 4) * 2, 11, 12 + (h % 3) * 2),
-            qcStoneMat
+            vieuxQcLitMat
           );
           qHouse.position.copy(hPos);
           qHouse.rotation.y = (normHAz * Math.PI) / 180;
@@ -40993,7 +42472,7 @@
         vpConcreteSlab.position.set(0, 0.8, 0);
         vieuxPortQuayGroup.add(vpConcreteSlab);
 
-        // Silos à grains Bunge du Port de Québec (Bassin Louise, Azimut réel 10.2° à 11.8° — péninsule basse y = 7.8m)
+        // Silos à grains Bunge du Port de Québec + galerie de convoyage maritime et goulottes de chargement
         const siloMat = new THREE.MeshLambertMaterial({ color: 0xe2e8f0 });
         const siloCapMat = new THREE.MeshLambertMaterial({ color: 0x64748b });
         for (let s = 0; s < 14; s++) {
@@ -41001,7 +42480,7 @@
           const sDist = getNorthShoreDist(sAz) + 12 + (s % 2) * 22;
           const sPos = azDistToVec3(sAz, sDist, 30.5);
           const silo = new THREE.Mesh(
-            new THREE.CylinderGeometry(7.8, 7.8, 46, 12),
+            new THREE.CylinderGeometry(7.8, 7.8, 46, 14),
             siloMat
           );
           silo.position.copy(sPos);
@@ -41014,6 +42493,18 @@
         bungeHeadhouse.position.copy(azDistToVec3(11.0, getNorthShoreDist(11.0) + 22, 56.5));
         bungeHeadhouse.rotation.y = ((11.0 - 90) * Math.PI) / 180;
         northShoreGroup.add(bungeHeadhouse);
+
+        // Galerie aérienne inclinée de convoyage à grains vers les navires céréaliers
+        const bungeConveyor = new THREE.Mesh(new THREE.BoxGeometry(6.5, 5.2, 42), siloCapMat);
+        bungeConveyor.position.set(0, -8.5, -24);
+        bungeConveyor.rotation.x = 0.28;
+        bungeHeadhouse.add(bungeConveyor);
+        [-22, 22].forEach((gx) => {
+          const grainSpout = new THREE.Mesh(new THREE.CylinderGeometry(0.65, 0.45, 22, 8), siloMat);
+          grainSpout.position.set(gx, -18, -16);
+          grainSpout.rotation.x = 0.35;
+          bungeHeadhouse.add(grainSpout);
+        });
 
         // --- TERMINAUX DE BEAUPORT (QUAIS 50-53, Azimut réel 14.0°, dist 1340m) ---
         const beauportPortGroup = new THREE.Group();
@@ -42223,10 +43714,23 @@
         cruiseShipGroup.scale.set(1.45, 1.45, 1.45);
         scene.add(cruiseShipGroup);
 
-        const cruiseHullWhite = new THREE.MeshLambertMaterial({ color: 0xf8fafc });
-        const cruiseHullBlue = new THREE.MeshLambertMaterial({ color: 0x1e3a8a });
-        const cruiseGlassMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
-        const cruiseFunnelRed = new THREE.MeshLambertMaterial({ color: 0xdc2626 });
+        const cruiseHullWhite = new THREE.MeshPhongMaterial({
+          color: 0xf8fafc,
+          bumpMap: hullPlatingTex,
+          bumpScale: 0.03,
+          shininess: 32,
+        });
+        const cruiseHullBlue = new THREE.MeshPhongMaterial({ color: 0x1e3a8a, shininess: 28 });
+        const cruiseGlassMat = new THREE.MeshPhongMaterial({
+          color: 0x93c5fd,
+          map: portholeTexPack.dayTex,
+          emissive: 0xffffff,
+          emissiveMap: portholeTexPack.emTex,
+          emissiveIntensity: 0.0,
+          shininess: 55,
+        });
+        heritageLitMats3D.push(cruiseGlassMat);
+        const cruiseFunnelRed = new THREE.MeshPhongMaterial({ color: 0xdc2626, shininess: 30 });
         const portCraneMat = new THREE.MeshLambertMaterial({ color: 0xeab308 });
 
         const cCoque = new THREE.Mesh(new THREE.BoxGeometry(96, 7.5, 16.5), cruiseHullWhite);
@@ -42250,9 +43754,18 @@
           dTier.position.set(-2, 7.5 + (deck - 0.5) * 3.4, 0);
           cruiseShipGroup.add(dTier);
 
-          const dWindows = new THREE.Mesh(new THREE.BoxGeometry(dW + 0.2, 1.4, 15.4 - deck * 0.7), cruiseGlassMat);
+          const dWindows = new THREE.Mesh(new THREE.BoxGeometry(dW + 0.2, 1.5, 15.4 - deck * 0.7), cruiseGlassMat);
           dWindows.position.set(-2, 7.5 + (deck - 0.5) * 3.4 + 0.3, 0);
           cruiseShipGroup.add(dWindows);
+        }
+
+        // Chaloupes de sauvetage SOLAS orange suspendues aux bossoirs sur chaque flanc
+        for (let lb = -26; lb <= 18; lb += 14.5) {
+          [-8.2, 8.2].forEach((lz) => {
+            const boat = new THREE.Mesh(new THREE.BoxGeometry(7.6, 1.6, 1.8), solasOrangeMat);
+            boat.position.set(lb, 9.2, lz);
+            cruiseShipGroup.add(boat);
+          });
         }
 
         const cPool = new THREE.Mesh(new THREE.BoxGeometry(16, 0.4, 8), new THREE.MeshBasicMaterial({ color: 0x06b6d4 }));
@@ -42263,9 +43776,19 @@
         cFunnel.position.set(-16, 25.5, 0);
         cruiseShipGroup.add(cFunnel);
 
+        const cFunnelWing = new THREE.Mesh(new THREE.BoxGeometry(6.5, 1.1, 11.5), cruiseFunnelRed);
+        cFunnelWing.position.set(-17, 29.5, 0);
+        cruiseShipGroup.add(cFunnelWing);
+
         const cRadar = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.5, 12, 6), cruiseHullWhite);
         cRadar.position.set(28, 26, 0);
         cruiseShipGroup.add(cRadar);
+
+        [-4.2, 4.2].forEach((rz) => {
+          const satDome = new THREE.Mesh(new THREE.SphereGeometry(1.9, 10, 10), cruiseHullWhite);
+          satDome.position.set(18, 23.0, rz);
+          cruiseShipGroup.add(satDome);
+        });
 
         const craneQuayPos = azDistToVec3(8.6, 1034, 12);
         [-22, 22].forEach((gx) => {
@@ -42277,11 +43800,11 @@
           scene.add(gBoom);
         });
 
-        // --- 11. PONT SUSPENDU DE L'ÎLE D'ORLÉANS (RELIANT BEAUPORT 20.8° À 1960m À SAINTE-PÉTRONILLE 26.2° À 2085m — 10,2 KM RÉEL!) ---
+        // --- 11. PONT SUSPENDU DE L'ÎLE D'ORLÉANS (CÂBLES PORTEURS PARABOLIQUES CONTINUS, BEAUPORT 20.8° -> SAINTE-PÉTRONILLE 26.2°) ---
         const orleansBridgeGroup = new THREE.Group();
         scene.add(orleansBridgeGroup);
 
-        const orleansGreenMat = new THREE.MeshLambertMaterial({ color: 0x166534 });
+        const orleansGreenMat = new THREE.MeshPhongMaterial({ color: 0x166534, shininess: 24 });
         const orleansPierMat = new THREE.MeshLambertMaterial({ color: 0x94a3b8 });
         const orleansCableMat = new THREE.MeshBasicMaterial({ color: 0x22c55e });
 
@@ -42317,49 +43840,83 @@
 
         const totalOrlDeckLen = orlSpanDist + 110;
         const orlDeck = new THREE.Mesh(
-          new THREE.BoxGeometry(totalOrlDeckLen, 4.2, 8.5),
+          new THREE.BoxGeometry(totalOrlDeckLen, 4.0, 8.8),
           orleansGreenMat
         );
         orlDeck.position.set(0, 32, 0);
         orleansBridgeGroup.add(orlDeck);
 
-        [-halfOrlSpan * 0.48, halfOrlSpan * 0.48].forEach((px) => {
+        const orlTowerX = halfOrlSpan * 0.48;
+        [-orlTowerX, orlTowerX].forEach((px) => {
           const pier = new THREE.Mesh(new THREE.BoxGeometry(12, 30, 14), orleansPierMat);
           pier.position.set(px, 12, 0);
           orleansBridgeGroup.add(pier);
 
-          const pylon = new THREE.Mesh(new THREE.BoxGeometry(7.2, 78, 7.2), orleansGreenMat);
-          pylon.position.set(px, 60, 0);
-          orleansBridgeGroup.add(pylon);
+          [-3.8, 3.8].forEach((lz) => {
+            const pylonLeg = new THREE.Mesh(new THREE.BoxGeometry(3.6, 78, 2.4), orleansGreenMat);
+            pylonLeg.position.set(px, 60, lz);
+            orleansBridgeGroup.add(pylonLeg);
+          });
 
-          const crossBar = new THREE.Mesh(new THREE.BoxGeometry(11.5, 3.4, 7.6), orleansGreenMat);
-          crossBar.position.set(px, 96, 0);
-          orleansBridgeGroup.add(crossBar);
+          [44, 70, 96].forEach((cy) => {
+            const crossBar = new THREE.Mesh(new THREE.BoxGeometry(3.8, 2.4, 9.4), orleansGreenMat);
+            crossBar.position.set(px, cy, 0);
+            orleansBridgeGroup.add(crossBar);
+          });
 
-          const capBeacon = new THREE.Mesh(new THREE.SphereGeometry(2.0, 6, 6), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
+          const capBeacon = new THREE.Mesh(new THREE.SphereGeometry(1.9, 6, 6), beaconRedMat);
           capBeacon.position.set(px, 100.5, 0);
           orleansBridgeGroup.add(capBeacon);
+          bridgeAviationBeacons3D.push(capBeacon);
         });
 
-        const orlTowerX = halfOrlSpan * 0.48;
-        for (let cx = -halfOrlSpan - 16; cx <= halfOrlSpan + 16; cx += 14) {
-          let cableY = 34;
+        function evalOrleansCableY(cx) {
           if (Math.abs(cx) <= orlTowerX) {
             const normX = cx / orlTowerX;
-            cableY = 35 + normX * normX * 60;
-          } else {
-            const sideNorm = (Math.abs(cx) - orlTowerX) / (halfOrlSpan + 18 - orlTowerX);
-            cableY = 95 - sideNorm * 62;
+            return 35.2 + normX * normX * 60.8;
           }
+          const sideNorm = Math.min(1, (Math.abs(cx) - orlTowerX) / (halfOrlSpan + 18 - orlTowerX));
+          return 96.0 - sideNorm * 62.5;
+        }
 
-          const cSeg = new THREE.Mesh(new THREE.BoxGeometry(14.5, 1.4, 1.4), orleansGreenMat);
-          cSeg.position.set(cx, cableY, 0);
-          orleansBridgeGroup.add(cSeg);
+        [-3.8, 3.8].forEach((czOff) => {
+          const ptsLeft = [];
+          const ptsMid = [];
+          const ptsRight = [];
+          for (let cx = -halfOrlSpan - 16; cx <= -orlTowerX; cx += 8) {
+            ptsLeft.push(new THREE.Vector3(cx, evalOrleansCableY(cx), czOff));
+          }
+          ptsLeft.push(new THREE.Vector3(-orlTowerX, 96.2, czOff));
 
-          const sH = Math.max(1, cableY - 32);
-          const susp = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, sH, 4), orleansCableMat);
-          susp.position.set(cx, 32 + sH * 0.5, 0);
-          orleansBridgeGroup.add(susp);
+          for (let cx = -orlTowerX; cx <= orlTowerX; cx += 8) {
+            ptsMid.push(new THREE.Vector3(cx, evalOrleansCableY(cx), czOff));
+          }
+          ptsMid.push(new THREE.Vector3(orlTowerX, 96.2, czOff));
+
+          for (let cx = orlTowerX; cx <= halfOrlSpan + 16; cx += 8) {
+            ptsRight.push(new THREE.Vector3(cx, evalOrleansCableY(cx), czOff));
+          }
+          ptsRight.push(new THREE.Vector3(halfOrlSpan + 16, evalOrleansCableY(halfOrlSpan + 16), czOff));
+
+          [ptsLeft, ptsMid, ptsRight].forEach((seg) => {
+            const oCurve = new THREE.CatmullRomCurve3(seg);
+            const oTube = new THREE.Mesh(
+              new THREE.TubeGeometry(oCurve, 20, 0.58, 7, false),
+              orleansGreenMat
+            );
+            orleansBridgeGroup.add(oTube);
+          });
+        });
+
+        for (let cx = -halfOrlSpan - 12; cx <= halfOrlSpan + 12; cx += 12) {
+          if (Math.abs(Math.abs(cx) - orlTowerX) < 3.5) continue;
+          const cableY = evalOrleansCableY(cx);
+          const sH = Math.max(1.2, cableY - 32.2);
+          [-3.8, 3.8].forEach((czOff) => {
+            const susp = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, sH, 5), orleansCableMat);
+            susp.position.set(cx, 32.2 + sH * 0.5, czOff);
+            orleansBridgeGroup.add(susp);
+          });
         }
 
         const orleansCars = [];
@@ -42387,7 +43944,7 @@
           return 1235 + u * 845 + Math.sin(u * Math.PI) * 45;
         }
 
-        // --- 13. CHANTIER MARITIME DAVIE & GRUE PORTIQUE GÉANTE (LAUZON, AZIMUT RÉEL WGS84 31.8° — 6,6 KM NNE EN AVAL DE LÉVIS!) ---
+        // --- 13. CHANTIER MARITIME DAVIE & GRUE PORTIQUE GÉANTE (CHARIOT DE LEVAGE & ARCS DE SOUDURE EN CALE SÈCHE) ---
         const davieGroup = new THREE.Group();
         const daviePos = azDistToVec3(31.8, getLauzonShoreDist(31.8) - 18, 11.5);
         davieGroup.position.copy(daviePos);
@@ -42395,7 +43952,7 @@
         davieGroup.scale.set(1.55, 1.55, 1.55);
         southShoreGroup.add(davieGroup);
 
-        // Grue Portique Géante "Goliath" Davie (54m de hauteur, 44m d'envergure)
+        // Grue Portique Géante "Goliath" Davie (54m de hauteur, 44m d'envergure + chariot & moufle)
         const goliathGroup = new THREE.Group();
         davieGroup.add(goliathGroup);
 
@@ -42406,6 +43963,19 @@
         const beamWhiteStripe = new THREE.Mesh(new THREE.BoxGeometry(18, 5.6, 6.3), davieWhiteMat);
         beamWhiteStripe.position.set(0, 52, 0);
         goliathGroup.add(beamWhiteStripe);
+
+        const hoistTrolley = new THREE.Mesh(new THREE.BoxGeometry(6.5, 2.8, 6.8), davieSteelMat);
+        hoistTrolley.position.set(4.0, 48.2, 0);
+        goliathGroup.add(hoistTrolley);
+
+        [-1.4, 1.4].forEach((hx) => {
+          const hoistWire = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 28, 6), davieWhiteMat);
+          hoistWire.position.set(4.0 + hx, 33.5, 0);
+          goliathGroup.add(hoistWire);
+        });
+        const hoistHookBlock = new THREE.Mesh(new THREE.BoxGeometry(3.4, 2.4, 2.2), safetyYellowMat);
+        hoistHookBlock.position.set(4.0, 19.2, 0);
+        goliathGroup.add(hoistHookBlock);
 
         [-20, 20].forEach((jx) => {
           const leg1 = new THREE.Mesh(new THREE.BoxGeometry(2.8, 52, 2.8), davieRedMat);
@@ -42422,9 +43992,10 @@
           band.position.set(jx, 26, 0);
           goliathGroup.add(band);
 
-          const topLight = new THREE.Mesh(new THREE.SphereGeometry(1.2, 6, 6), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
+          const topLight = new THREE.Mesh(new THREE.SphereGeometry(1.2, 6, 6), beaconRedMat);
           topLight.position.set(jx, 55.5, 0);
           goliathGroup.add(topLight);
+          bridgeAviationBeacons3D.push(topLight);
         });
 
         // Cale sèche Champlain (Champlain Dry Dock)
@@ -42432,14 +44003,36 @@
         dryDockPit.position.set(0, -2, 0);
         davieGroup.add(dryDockPit);
 
-        // Navire patrouilleur en construction dans la cale
-        const newShipHull = new THREE.Mesh(new THREE.BoxGeometry(16, 8, 52), new THREE.MeshLambertMaterial({ color: 0x991b1b }));
+        // Navire brise-glace polaire en construction dans la cale sèche
+        const newShipHull = new THREE.Mesh(
+          new THREE.BoxGeometry(16, 8, 52),
+          new THREE.MeshPhongMaterial({ color: 0x991b1b, map: hullPlatingTex, bumpMap: hullPlatingTex, bumpScale: 0.05 })
+        );
         newShipHull.position.set(0, 2, 0);
         davieGroup.add(newShipHull);
 
         const newShipBridge = new THREE.Mesh(new THREE.BoxGeometry(12, 7, 18), new THREE.MeshLambertMaterial({ color: 0x94a3b8 }));
         newShipBridge.position.set(0, 8, 8);
         davieGroup.add(newShipBridge);
+
+        // Éclairs intermittents de soudure à l'arc électrique sur le chantier naval (davieWeldSprite + davieWeldLight)
+        const davieWeldSprite = new THREE.Sprite(
+          new THREE.SpriteMaterial({
+            map: createBatLensGlowTexture(),
+            color: 0xbae6fd,
+            transparent: true,
+            opacity: 0.0,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+          })
+        );
+        davieWeldSprite.scale.set(9.5, 9.5, 1);
+        davieWeldSprite.position.set(-7.5, 6.8, -6.0);
+        davieGroup.add(davieWeldSprite);
+
+        const davieWeldLight = new THREE.PointLight(0x7dd3fc, 0.0, 95);
+        davieWeldLight.position.set(-7.5, 7.5, -6.0);
+        davieGroup.add(davieWeldLight);
 
         // Grue d'armement navale
         const towerCraneBase = new THREE.Mesh(new THREE.BoxGeometry(3, 40, 3), davieSteelMat);
@@ -42450,7 +44043,7 @@
         davieGroup.add(towerCraneJib);
 
         // Hangar industriel
-        const hangar = new THREE.Mesh(new THREE.BoxGeometry(42, 18, 32), new THREE.MeshLambertMaterial({ color: 0x64748b }));
+        const hangar = new THREE.Mesh(new THREE.BoxGeometry(42, 18, 32), corrugatedCabinMat);
         hangar.position.set(38, 9, -24);
         davieGroup.add(hangar);
         const hangarRoof = new THREE.Mesh(new THREE.ConeGeometry(28, 9, 4), new THREE.MeshLambertMaterial({ color: 0x334155 }));
@@ -42462,10 +44055,17 @@
         const ferryGroup = new THREE.Group();
         scene.add(ferryGroup);
 
-        const ferryHullBlue = new THREE.MeshLambertMaterial({ color: 0x1e3a8a }); // Bleu STQ
-        const ferryWhiteMat = new THREE.MeshLambertMaterial({ color: 0xf8fafc });
+        const ferryHullBlue = new THREE.MeshPhongMaterial({
+          color: 0x1e3a8a,
+          map: hullPlatingTex,
+          bumpMap: hullPlatingTex,
+          bumpScale: 0.04,
+          shininess: 30,
+        }); // Bleu STQ
+        const ferryWhiteMat = new THREE.MeshPhongMaterial({ color: 0xf8fafc, shininess: 28 });
         const ferryDarkDeck = new THREE.MeshLambertMaterial({ color: 0x334155 });
         const ferryGoldBand = new THREE.MeshLambertMaterial({ color: 0xfbbf24 });
+        const ferryCabinGlassMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
 
         const fHull = new THREE.Mesh(new THREE.BoxGeometry(38, 4.2, 12.8), ferryHullBlue);
         fHull.position.set(0, 1.8, 0);
@@ -42485,22 +44085,35 @@
         fCarDeck.position.set(0, 4.0, 0);
         ferryGroup.add(fCarDeck);
 
+        // Véhicules visibles sur les tabliers ouverts avant/arrière du traversier STQ
+        [[-16.5, -2.6, 0xef4444], [-16.0, 2.4, 0xf8fafc], [16.2, -2.5, 0x38bdf8], [16.8, 2.5, 0xf59e0b]].forEach(([vx, vz, vCol]) => {
+          const fCar = new THREE.Mesh(new THREE.BoxGeometry(3.6, 1.35, 1.75), new THREE.MeshLambertMaterial({ color: vCol }));
+          fCar.position.set(vx, 4.9, vz);
+          ferryGroup.add(fCar);
+        });
+
         const fCabin = new THREE.Mesh(new THREE.BoxGeometry(24, 3.8, 10.2), ferryWhiteMat);
         fCabin.position.set(0, 6.0, 0);
         ferryGroup.add(fCabin);
 
-        const fGlass = new THREE.Mesh(new THREE.BoxGeometry(24.2, 1.4, 10.4), new THREE.MeshBasicMaterial({ color: 0x38bdf8 }));
+        const fGlass = new THREE.Mesh(new THREE.BoxGeometry(24.2, 1.4, 10.4), ferryCabinGlassMat);
         fGlass.position.set(0, 6.2, 0);
         ferryGroup.add(fGlass);
 
+        const ferryRadars3D = [];
         [-10, 10].forEach((bx) => {
           const fBridge = new THREE.Mesh(new THREE.BoxGeometry(4.5, 2.4, 9.2), ferryWhiteMat);
           fBridge.position.set(bx, 8.8, 0);
           ferryGroup.add(fBridge);
 
-          const fWin = new THREE.Mesh(new THREE.BoxGeometry(4.6, 1.0, 9.3), new THREE.MeshBasicMaterial({ color: 0x0f172a }));
+          const fWin = new THREE.Mesh(new THREE.BoxGeometry(4.6, 1.0, 9.3), bridgeWinMat);
           fWin.position.set(bx, 9.0, 0);
           ferryGroup.add(fWin);
+
+          const rBar = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.22, 2.4), ferryWhiteMat);
+          rBar.position.set(bx, 10.55, 0);
+          ferryGroup.add(rBar);
+          ferryRadars3D.push(rBar);
         });
 
         [-4, 4].forEach((fx) => {
@@ -42529,44 +44142,78 @@
         ferryLightStbd.position.set(0, 8.5, 5.6);
         ferryGroup.add(ferryLightStbd);
 
-        const ferryWakeGeo = new THREE.RingGeometry(4, 28, 24);
+        // Sillage hydrodynamique en V de Kelvin sous le traversier STQ
+        const ferryWakeGeo = new THREE.PlaneGeometry(58, 28);
         ferryWakeGeo.rotateX(-Math.PI / 2);
-        ferryWakeGeo.scale(1.8, 1, 0.4);
-        const ferryWakeMesh = new THREE.Mesh(ferryWakeGeo, new THREE.MeshBasicMaterial({ color: 0xe0f2fe, transparent: true, opacity: 0.45, side: THREE.DoubleSide }));
-        ferryWakeMesh.position.set(0, 0.15, 0);
+        ferryWakeGeo.rotateY(Math.PI / 2);
+        const ferryWakeMesh = new THREE.Mesh(
+          ferryWakeGeo,
+          new THREE.MeshBasicMaterial({
+            map: kelvinWakeTex,
+            color: 0xe0f2fe,
+            transparent: true,
+            opacity: 0.58,
+            depthWrite: false,
+            side: THREE.DoubleSide,
+          })
+        );
+        ferryWakeMesh.position.set(0, 0.16, 0);
         ferryGroup.add(ferryWakeMesh);
 
-        // --- 15. SIMULATEUR DE MANŒUVRES DE REMORQUAGE 3D (GROUPE OCÉAN) ---
-        const oceanBlueMat = new THREE.MeshLambertMaterial({ color: 0x0f2b5c }); // Bleu Marine Groupe Océan
-        const oceanOrangeMat = new THREE.MeshLambertMaterial({ color: 0xea580c }); // Orange Océan
-        const rubberFenderMat = new THREE.MeshLambertMaterial({ color: 0x09090b });
+        // --- 15. SIMULATEUR DE MANŒUVRES DE REMORQUAGE 3D (GROUPE OCÉAN — PNEUS DE BORDÉ, CANONS INCENDIE & REMORQUES EN CHAÎNETTE) ---
+        const oceanBlueMat = new THREE.MeshPhongMaterial({ color: 0x0f2b5c, shininess: 28 }); // Bleu Marine Groupe Océan
+        const oceanOrangeMat = new THREE.MeshPhongMaterial({ color: 0xea580c, shininess: 32 }); // Orange Océan
+        const rubberFenderMat = new THREE.MeshPhongMaterial({ color: 0x09090b, shininess: 14 });
         const towLineMat = new THREE.LineBasicMaterial({ color: 0xfacc15, linewidth: 2 });
-        const foamWashMat = new THREE.MeshBasicMaterial({ color: 0xe0f2fe, transparent: true, opacity: 0.65, side: THREE.DoubleSide });
+        const foamWashMat = new THREE.MeshBasicMaterial({
+          map: kelvinWakeTex,
+          color: 0xe0f2fe,
+          transparent: true,
+          opacity: 0.72,
+          depthWrite: false,
+          side: THREE.DoubleSide,
+        });
+        const tugRadars3D = [];
 
         function createOceanTugboat(name, baseColor = 0x0f2b5c) {
           const grp = new THREE.Group();
-          const hullMat = new THREE.MeshLambertMaterial({ color: baseColor });
+          const hullMat = new THREE.MeshPhongMaterial({
+            color: baseColor,
+            map: hullPlatingTex,
+            bumpMap: hullPlatingTex,
+            bumpScale: 0.05,
+            shininess: 28,
+          });
 
-          // Coque principale
+          // Coque principale soudée + pavois
           const hull = new THREE.Mesh(new THREE.BoxGeometry(20, 3.2, 8.2), hullMat);
           hull.position.set(0, 1.4, 0);
           grp.add(hull);
 
-          // Étrave arrondie
-          const bow = new THREE.Mesh(new THREE.CylinderGeometry(4.1, 4.1, 3.4, 12), hullMat);
+          // Étrave arrondie renforcée glace
+          const bow = new THREE.Mesh(new THREE.CylinderGeometry(4.1, 4.1, 3.4, 14), hullMat);
           bow.position.set(9.5, 1.4, 0);
           grp.add(bow);
 
-          // Dents de poussée (push knees en caoutchouc noir)
-          const pk1 = new THREE.Mesh(new THREE.BoxGeometry(1.6, 3.8, 2.2), rubberFenderMat);
+          // Défenses latérales en pneus de génie civil (5 pneus par bordé)
+          for (let tx = -7.5; tx <= 6.5; tx += 3.5) {
+            [-4.18, 4.18].forEach((tz) => {
+              const tireFender = new THREE.Mesh(new THREE.TorusGeometry(0.58, 0.22, 6, 12), rubberFenderMat);
+              tireFender.position.set(tx, 2.15, tz);
+              grp.add(tireFender);
+            });
+          }
+
+          // Dents de poussée (push knees en caoutchouc noir rainuré)
+          const pk1 = new THREE.Mesh(new THREE.BoxGeometry(1.7, 3.9, 2.2), rubberFenderMat);
           pk1.position.set(13.2, 2.0, -2.0);
           grp.add(pk1);
-          const pk2 = new THREE.Mesh(new THREE.BoxGeometry(1.6, 3.8, 2.2), rubberFenderMat);
+          const pk2 = new THREE.Mesh(new THREE.BoxGeometry(1.7, 3.9, 2.2), rubberFenderMat);
           pk2.position.set(13.2, 2.0, 2.0);
           grp.add(pk2);
 
-          // Superstructure & Passerelle blanche
-          const house = new THREE.Mesh(new THREE.BoxGeometry(8.5, 3.8, 5.8), bridgeWhiteMat);
+          // Superstructure & Passerelle panoramique ASD
+          const house = new THREE.Mesh(new THREE.BoxGeometry(8.5, 3.8, 5.8), sharedAccommodationMat);
           house.position.set(0, 4.2, 0);
           grp.add(house);
 
@@ -42574,35 +44221,57 @@
           wheelhouse.position.set(0.5, 7.0, 0);
           grp.add(wheelhouse);
 
-          const windows = new THREE.Mesh(new THREE.BoxGeometry(6.4, 1.1, 5.4), new THREE.MeshBasicMaterial({ color: 0x0284c7 }));
+          const windows = new THREE.Mesh(new THREE.BoxGeometry(6.4, 1.15, 5.4), bridgeWinMat);
           windows.position.set(0.5, 7.2, 0);
           grp.add(windows);
 
-          // Cheminée orange Groupe Océan
-          const funnel = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 1.1, 3.6, 8), oceanOrangeMat);
-          funnel.position.set(-3.2, 6.2, 0);
-          grp.add(funnel);
+          // Canon à eau incendie FiFi-1 rouge en toiture de timonerie
+          const fifiMonitor = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.24, 1.5, 8), loadingArmMat);
+          fifiMonitor.rotation.z = -Math.PI / 3;
+          fifiMonitor.position.set(3.2, 8.75, 0);
+          grp.add(fifiMonitor);
 
-          // Mât et feux
-          const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.3, 5.5, 6), bridgeWhiteMat);
+          // Cheminées jumelées orange Groupe Océan
+          [-1.4, 1.4].forEach((fz) => {
+            const funnel = new THREE.Mesh(new THREE.CylinderGeometry(0.68, 0.88, 3.6, 10), oceanOrangeMat);
+            funnel.position.set(-3.2, 6.2, fz);
+            grp.add(funnel);
+            const fCap = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 0.45, 10), rubberFenderMat);
+            fCap.position.set(-3.2, 8.15, fz);
+            grp.add(fCap);
+          });
+
+          // Mât, scanner radar rotatif et feux COLREG de remorquage
+          const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.28, 5.5, 8), bridgeWhiteMat);
           mast.position.set(1.5, 10.5, 0);
           grp.add(mast);
 
-          const towLight = new THREE.Mesh(new THREE.SphereGeometry(0.4, 6, 6), new THREE.MeshBasicMaterial({ color: 0xfacc15 }));
+          const tugRadar = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.2, 1.9), bridgeWhiteMat);
+          tugRadar.position.set(1.5, 11.4, 0);
+          grp.add(tugRadar);
+          tugRadars3D.push(tugRadar);
+
+          const towLight = new THREE.Mesh(new THREE.SphereGeometry(0.38, 6, 6), new THREE.MeshBasicMaterial({ color: 0xfacc15 }));
           towLight.position.set(1.5, 13.0, 0);
           grp.add(towLight);
 
-          // Treuil de remorquage sur le pont arrière
-          const winch = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.1, 2.2, 8), rubberFenderMat);
+          // Treuil hydraulique de remorquage & arche de remorque arrière
+          const winch = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.1, 2.2, 10), rubberFenderMat);
           winch.rotation.z = Math.PI / 2;
           winch.position.set(-5.5, 3.2, 0);
           grp.add(winch);
 
-          // Écume d'hélice / remous des propulseurs azimutaux
-          const washGeo = new THREE.PlaneGeometry(16, 7);
+          const towStaple = new THREE.Mesh(new THREE.TorusGeometry(1.15, 0.16, 6, 12, Math.PI), oceanOrangeMat);
+          towStaple.rotation.y = Math.PI / 2;
+          towStaple.position.set(-7.6, 3.0, 0);
+          grp.add(towStaple);
+
+          // Écume d'hélice / remous des propulseurs azimutaux Z-Drive
+          const washGeo = new THREE.PlaneGeometry(20, 9.5);
           washGeo.rotateX(-Math.PI / 2);
+          washGeo.rotateY(-Math.PI / 2);
           const washMesh = new THREE.Mesh(washGeo, foamWashMat.clone());
-          washMesh.position.set(-14.0, 0.15, 0);
+          washMesh.position.set(-14.5, 0.16, 0);
           grp.add(washMesh);
 
           return { group: grp, wash: washMesh, name: name };
@@ -42615,14 +44284,18 @@
         scene.add(tugBow.group);
         scene.add(tugStern.group);
 
-        // Lignes de remorquage 3D dynamiques (Aussières haute résistance)
-        const towLineBowGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+        // Lignes de remorquage 3D dynamiques en chaînette 11 points (Aussières Spectra haute résistance)
+        const towLineBowGeo = new THREE.BufferGeometry();
+        towLineBowGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(11 * 3), 3));
         const towLineBow = new THREE.Line(towLineBowGeo, towLineMat);
+        towLineBow.frustumCulled = false;
         towLineBow.visible = false;
         scene.add(towLineBow);
 
-        const towLineSternGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+        const towLineSternGeo = new THREE.BufferGeometry();
+        towLineSternGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(11 * 3), 3));
         const towLineStern = new THREE.Line(towLineSternGeo, towLineMat);
+        towLineStern.frustumCulled = false;
         towLineStern.visible = false;
         scene.add(towLineStern);
 
@@ -42962,39 +44635,112 @@
           funicCabins.push({ mesh: cab, dir, offset: idx * Math.PI });
         });
 
-        // --- 18. ESCADRON DE MOUETTES 3D PLANANT AU-DESSUS DU SAINT-LAURENT ---
+        // --- 18. ESCADRON DE 18 GOÉLANDS ARGENTÉS ARTICULÉS (2 ARTICULATIONS D'AILE + RÉMIGES NOIRES) PLANANT SUR LE SAINT-LAURENT ---
         const seagulls3D = [];
-        const seagullMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-        const seagullWingMat = new THREE.MeshBasicMaterial({ color: 0x334155 });
+        const gullBodyMat = new THREE.MeshLambertMaterial({ color: 0xf8fafc });
+        const gullMantleMat = new THREE.MeshLambertMaterial({ color: 0xcbd5e1 });
+        const gullWingTipMat = new THREE.MeshLambertMaterial({ color: 0x1e293b });
+        const gullBeakMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
 
-        for (let g = 0; g < 8; g++) {
+        const gullTorsoGeo = new THREE.ConeGeometry(0.18, 1.05, 7);
+        gullTorsoGeo.rotateZ(-Math.PI / 2); // Pointe vers +X (avant)
+        const gullHeadGeo = new THREE.SphereGeometry(0.145, 7, 6);
+        const gullBeakGeo = new THREE.ConeGeometry(0.045, 0.24, 5);
+        gullBeakGeo.rotateZ(-Math.PI / 2);
+        const gullTailGeo = new THREE.BoxGeometry(0.36, 0.025, 0.34);
+
+        const gullInnerWingGeo = new THREE.BoxGeometry(0.36, 0.038, 0.64);
+        const gullOuterWingGeo = new THREE.BoxGeometry(0.28, 0.028, 0.56);
+        const gullTipGeo = new THREE.BoxGeometry(0.20, 0.024, 0.28);
+
+        for (let g = 0; g < 18; g++) {
           const gGroup = new THREE.Group();
-          const gBody = new THREE.Mesh(new THREE.ConeGeometry(0.35, 1.4, 4), seagullMat);
-          gBody.rotateZ(Math.PI / 2);
+          const scG = 0.88 + (g % 5) * 0.08;
+          gGroup.scale.set(scG, scG, scG);
+
+          const gBody = new THREE.Mesh(gullTorsoGeo, gullBodyMat);
+          gBody.scale.set(1.0, 0.78, 0.88);
           gGroup.add(gBody);
 
-          const leftWing = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.1, 0.45), seagullWingMat);
-          leftWing.position.set(0, 0, -0.9);
-          gGroup.add(leftWing);
+          const gHead = new THREE.Mesh(gullHeadGeo, gullBodyMat);
+          gHead.position.set(0.48, 0.07, 0);
+          gGroup.add(gHead);
 
-          const rightWing = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.1, 0.45), seagullWingMat);
-          rightWing.position.set(0, 0, 0.9);
-          gGroup.add(rightWing);
+          const gBeak = new THREE.Mesh(gullBeakGeo, gullBeakMat);
+          gBeak.position.set(0.66, 0.05, 0);
+          gGroup.add(gBeak);
+
+          const gTail = new THREE.Mesh(gullTailGeo, gullBodyMat);
+          gTail.position.set(-0.56, 0.03, 0);
+          gGroup.add(gTail);
+
+          // Aile bâbord (-Z) : épaule -> coude/poignet -> rémiges primaires noires
+          const leftInnerPivot = new THREE.Group();
+          leftInnerPivot.position.set(0.06, 0.05, -0.09);
+          gGroup.add(leftInnerPivot);
+
+          const leftInnerMesh = new THREE.Mesh(gullInnerWingGeo, gullMantleMat);
+          leftInnerMesh.position.set(-0.02, 0, -0.32);
+          leftInnerMesh.rotation.y = 0.08;
+          leftInnerPivot.add(leftInnerMesh);
+
+          const leftOuterPivot = new THREE.Group();
+          leftOuterPivot.position.set(-0.04, 0, -0.62);
+          leftInnerPivot.add(leftOuterPivot);
+
+          const leftOuterMesh = new THREE.Mesh(gullOuterWingGeo, gullMantleMat);
+          leftOuterMesh.position.set(-0.06, 0, -0.26);
+          leftOuterMesh.rotation.y = 0.22;
+          leftOuterPivot.add(leftOuterMesh);
+
+          const leftTipMesh = new THREE.Mesh(gullTipGeo, gullWingTipMat);
+          leftTipMesh.position.set(-0.15, 0.002, -0.58);
+          leftTipMesh.rotation.y = 0.34;
+          leftOuterPivot.add(leftTipMesh);
+
+          // Aile tribord (+Z) : symétrique
+          const rightInnerPivot = new THREE.Group();
+          rightInnerPivot.position.set(0.06, 0.05, 0.09);
+          gGroup.add(rightInnerPivot);
+
+          const rightInnerMesh = new THREE.Mesh(gullInnerWingGeo, gullMantleMat);
+          rightInnerMesh.position.set(-0.02, 0, 0.32);
+          rightInnerMesh.rotation.y = -0.08;
+          rightInnerPivot.add(rightInnerMesh);
+
+          const rightOuterPivot = new THREE.Group();
+          rightOuterPivot.position.set(-0.04, 0, 0.62);
+          rightInnerPivot.add(rightOuterPivot);
+
+          const rightOuterMesh = new THREE.Mesh(gullOuterWingGeo, gullMantleMat);
+          rightOuterMesh.position.set(-0.06, 0, 0.26);
+          rightOuterMesh.rotation.y = -0.22;
+          rightOuterPivot.add(rightOuterMesh);
+
+          const rightTipMesh = new THREE.Mesh(gullTipGeo, gullWingTipMat);
+          rightTipMesh.position.set(-0.15, 0.002, 0.58);
+          rightTipMesh.rotation.y = -0.34;
+          rightOuterPivot.add(rightTipMesh);
 
           scene.add(gGroup);
+          const nearDock = g < 7;
           seagulls3D.push({
             group: gGroup,
-            leftWing,
-            rightWing,
-            centerAz: 120 + g * 30,
-            radius: 80 + g * 18,
-            baseHeight: 26 + (g % 4) * 6,
-            speed: 0.008 + (g % 3) * 0.004,
-            phase: g * 0.8,
+            leftInner: leftInnerPivot,
+            leftOuter: leftOuterPivot,
+            rightInner: rightInnerPivot,
+            rightOuter: rightOuterPivot,
+            centerAz: nearDock ? (15 + g * 50) % 360 : (35 + g * 21) % 360,
+            radius: nearDock ? (44 + (g % 4) * 14) : (105 + ((g * 29) % 165)),
+            baseHeight: nearDock ? (17 + (g % 4) * 4.2) : (28 + (g % 5) * 6.5),
+            speed: nearDock ? (0.0065 + (g % 3) * 0.0022) : (0.0048 + (g % 4) * 0.0018),
+            phase: g * 1.17,
+            flapFreq: 6.4 + (g % 5) * 0.65,
+            glideBias: 0.18 + (g % 4) * 0.14,
           });
         }
 
-        // --- 19. VRACQUIER DE LA VOIE MARITIME DU SAINT-LAURENT ("CSL SAINT-LAURENT") EN TRANSIT SUR LE COUDE DE QUÉBEC ---
+        // --- 19. VRACQUIER AUTO-DÉCHARGEUR DE LA VOIE MARITIME ("CSL SAINT-LAURENT") EN TRANSIT SUR LE COUDE DE QUÉBEC ---
         const seawayCargoGroup = new THREE.Group();
         scene.add(seawayCargoGroup);
 
@@ -43009,16 +44755,30 @@
           azDistToVec3(237.1, 1365, 0),
         ]);
 
+        const cargoHullMat = new THREE.MeshPhongMaterial({
+          color: 0x7f1d1d,
+          map: hullPlatingTex,
+          bumpMap: hullPlatingTex,
+          bumpScale: 0.12,
+          shininess: 38,
+        });
         const cargoHull = new THREE.Mesh(
           new THREE.BoxGeometry(64, 5.2, 11.5),
-          new THREE.MeshPhongMaterial({ color: 0x7f1d1d, shininess: 35 })
+          cargoHullMat
         );
         cargoHull.position.set(0, 2.4, 0);
         seawayCargoGroup.add(cargoHull);
 
+        const cargoBootTop = new THREE.Mesh(
+          new THREE.BoxGeometry(64.2, 0.9, 11.62),
+          new THREE.MeshLambertMaterial({ color: 0x1e293b })
+        );
+        cargoBootTop.position.set(0, 0.55, 0);
+        seawayCargoGroup.add(cargoBootTop);
+
         const cargoBow = new THREE.Mesh(
           new THREE.ConeGeometry(8.1, 14, 4),
-          new THREE.MeshPhongMaterial({ color: 0x7f1d1d, shininess: 35 })
+          cargoHullMat
         );
         cargoBow.rotation.z = -Math.PI / 2;
         cargoBow.rotation.x = Math.PI / 4;
@@ -43026,12 +44786,88 @@
         cargoBow.position.set(38, 2.4, 0);
         seawayCargoGroup.add(cargoBow);
 
-        const cargoBridge = new THREE.Mesh(
-          new THREE.BoxGeometry(10, 9.5, 10.2),
+        const cargoForecastle = new THREE.Mesh(
+          new THREE.BoxGeometry(8.5, 1.3, 9.2),
           bridgeWhiteMat
         );
-        cargoBridge.position.set(-24, 9.2, 0);
+        cargoForecastle.position.set(31.5, 5.5, 0);
+        seawayCargoGroup.add(cargoForecastle);
+
+        const cargoBridge = new THREE.Mesh(
+          new THREE.BoxGeometry(10, 8.2, 10.2),
+          sharedAccommodationMat
+        );
+        cargoBridge.position.set(-24, 8.6, 0);
         seawayCargoGroup.add(cargoBridge);
+
+        const cargoWheelhouse = new THREE.Mesh(
+          new THREE.BoxGeometry(6.8, 2.2, 11.2),
+          bridgeWinMat
+        );
+        cargoWheelhouse.position.set(-22.2, 13.5, 0);
+        seawayCargoGroup.add(cargoWheelhouse);
+
+        const cargoWheelRoof = new THREE.Mesh(
+          new THREE.BoxGeometry(7.4, 0.35, 11.6),
+          bridgeWhiteMat
+        );
+        cargoWheelRoof.position.set(-22.2, 14.75, 0);
+        seawayCargoGroup.add(cargoWheelRoof);
+
+        // Cheminée CSL rouge/blanche/noire + mât radar rotatif
+        const cargoFunnel = new THREE.Mesh(
+          new THREE.CylinderGeometry(1.45, 1.75, 5.2, 10),
+          new THREE.MeshLambertMaterial({ color: 0xb91c1c })
+        );
+        cargoFunnel.position.set(-28.2, 14.8, 0);
+        seawayCargoGroup.add(cargoFunnel);
+
+        const cargoFunnelBand = new THREE.Mesh(
+          new THREE.CylinderGeometry(1.56, 1.62, 1.1, 10),
+          bridgeWhiteMat
+        );
+        cargoFunnelBand.position.set(-28.2, 15.2, 0);
+        seawayCargoGroup.add(cargoFunnelBand);
+
+        const cargoFunnelCap = new THREE.Mesh(
+          new THREE.CylinderGeometry(1.42, 1.48, 0.9, 10),
+          new THREE.MeshLambertMaterial({ color: 0x0f172a })
+        );
+        cargoFunnelCap.position.set(-28.2, 17.1, 0);
+        seawayCargoGroup.add(cargoFunnelCap);
+
+        const cargoRadarMast = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.16, 0.28, 4.2, 6),
+          bridgeWhiteMat
+        );
+        cargoRadarMast.position.set(-21.8, 16.9, 0);
+        seawayCargoGroup.add(cargoRadarMast);
+
+        const cargoRadar3D = new THREE.Mesh(
+          new THREE.BoxGeometry(0.38, 0.24, 2.6),
+          bridgeWhiteMat
+        );
+        cargoRadar3D.position.set(-21.8, 18.8, 0);
+        seawayCargoGroup.add(cargoRadar3D);
+
+        // Portique A-Frame et flèche auto-déchargeuse (Self-Unloading Boom de 42m typique des laquiers CSL)
+        const cslAFramePort = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.36, 11.5, 6), new THREE.MeshLambertMaterial({ color: 0xe2e8f0 }));
+        cslAFramePort.position.set(-16.5, 10.2, -3.6);
+        cslAFramePort.rotation.x = 0.26;
+        seawayCargoGroup.add(cslAFramePort);
+
+        const cslAFrameStbd = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.36, 11.5, 6), new THREE.MeshLambertMaterial({ color: 0xe2e8f0 }));
+        cslAFrameStbd.position.set(-16.5, 10.2, 3.6);
+        cslAFrameStbd.rotation.x = -0.26;
+        seawayCargoGroup.add(cslAFrameStbd);
+
+        const cslUnloaderBoom = new THREE.Mesh(
+          new THREE.BoxGeometry(40.0, 1.15, 1.45),
+          new THREE.MeshLambertMaterial({ color: 0xf59e0b, wireframe: false })
+        );
+        cslUnloaderBoom.position.set(3.5, 8.6, 0);
+        cslUnloaderBoom.rotation.z = -0.045;
+        seawayCargoGroup.add(cslUnloaderBoom);
 
         for (let cx = -8; cx <= 20; cx += 9.5) {
           const hatch = new THREE.Mesh(
@@ -43040,23 +44876,70 @@
           );
           hatch.position.set(cx, 5.4, 0);
           seawayCargoGroup.add(hatch);
-
-          const crane = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.28, 0.35, 8.5, 6),
-            new THREE.MeshLambertMaterial({ color: 0xf59e0b })
-          );
-          crane.position.set(cx + 3.2, 9.0, 0);
-          seawayCargoGroup.add(crane);
         }
 
+        const cargoWakeGeo = new THREE.PlaneGeometry(82, 34);
+        cargoWakeGeo.rotateX(-Math.PI / 2);
+        cargoWakeGeo.rotateY(-Math.PI / 2);
         const cargoWake = new THREE.Mesh(
-          new THREE.RingGeometry(7, 34, 32),
-          wakeMat
+          cargoWakeGeo,
+          new THREE.MeshBasicMaterial({
+            map: kelvinWakeTex,
+            color: 0xe0f2fe,
+            transparent: true,
+            opacity: 0.48,
+            depthWrite: false,
+            side: THREE.DoubleSide,
+          })
         );
-        cargoWake.rotation.x = -Math.PI / 2;
-        cargoWake.scale.set(1.85, 1, 0.32);
-        cargoWake.position.set(0, 0.2, 0);
+        cargoWake.position.set(-16, 0.22, 0);
         seawayCargoGroup.add(cargoWake);
+
+        // --- 19B. FAISCEAUX CRÉPUSCULAIRES VOLUMÉTRIQUES 3D (RAYONS DE TYNDALL / GOD-RAYS À TRAVERS LES TROUÉES NUAGEUSES) ---
+        const godRays3DGroup = new THREE.Group();
+        godRays3DGroup.visible = false;
+        scene.add(godRays3DGroup);
+
+        const godRayShafts3D = [];
+        const godRayMatBase = new THREE.MeshBasicMaterial({
+          map: godRayShaftTex,
+          color: 0xfef08a,
+          transparent: true,
+          opacity: 0.16,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false,
+          side: THREE.DoubleSide,
+          fog: false,
+        });
+        const godRayPlaneGeo = new THREE.PlaneGeometry(1, 1);
+
+        for (let gr = 0; gr < 7; gr++) {
+          const shaftPivot = new THREE.Group();
+          const shaftMat = godRayMatBase.clone();
+          const widthM = 58 + (gr % 3) * 26;
+          const lengthM = 460 + (gr % 4) * 55;
+
+          const pA = new THREE.Mesh(godRayPlaneGeo, shaftMat);
+          pA.scale.set(widthM, lengthM, 1);
+          shaftPivot.add(pA);
+
+          const pB = new THREE.Mesh(godRayPlaneGeo, shaftMat);
+          pB.scale.set(widthM, lengthM, 1);
+          pB.rotation.y = Math.PI / 2;
+          shaftPivot.add(pB);
+
+          godRays3DGroup.add(shaftPivot);
+          godRayShafts3D.push({
+            pivot: shaftPivot,
+            mat: shaftMat,
+            lateralOffset: (gr - 3) * 145 + ((gr % 2 === 0 ? 1 : -1) * 28),
+            depthOffset: (gr % 3 - 1) * 120,
+            phase: gr * 1.37,
+            baseWidth: widthM,
+            baseLen: lengthM,
+          });
+        }
+
 
         // --- 20. DÉTAILS DU PAYSAGE RÉEL : FORÊTS DENSES GPU-INSTANCIÉES (~1 720 ARBRES), TRAIN CN, HYDRO-QUÉBEC 735kV, GARDE CÔTIÈRE & GARES STQ ---
         // A. Forêts laurentiennes & appalachiennes mixtes haute densité par GPU Instancing (THREE.InstancedMesh — 3 draw calls!)
@@ -45906,6 +47789,31 @@
           }
         }
 
+        // Mise à jour zéro-GC d'une aussière/remorque en chaînette parabolique 11 points + garde-rats conique (ratGuard)
+        function updateCatenaryHawser(geo, pStart, pEnd, sagMeters, ratGuardMesh) {
+          const attr = geo && geo.attributes && geo.attributes.position;
+          if (!attr) return;
+          const arr = attr.array;
+          const x0 = pStart.x, y0 = pStart.y, z0 = pStart.z;
+          const dx = pEnd.x - x0, dy = pEnd.y - y0, dz = pEnd.z - z0;
+          for (let k = 0; k <= 10; k++) {
+            const u = k * 0.1;
+            const sag = 4.0 * sagMeters * u * (1.0 - u);
+            const idx = k * 3;
+            arr[idx] = x0 + dx * u;
+            arr[idx + 1] = y0 + dy * u - sag;
+            arr[idx + 2] = z0 + dz * u;
+          }
+          attr.needsUpdate = true;
+          if (ratGuardMesh) {
+            const uRg = 0.76;
+            const sagRg = 4.0 * sagMeters * uRg * (1.0 - uRg);
+            ratGuardMesh.visible = true;
+            ratGuardMesh.position.set(x0 + dx * uRg, y0 + dy * uRg - sagRg, z0 + dz * uRg);
+            ratGuardMesh.lookAt(pEnd.x, pEnd.y, pEnd.z);
+          }
+        }
+
         // Évaluateur de Bézier quadratique XZ sans allocation GC pour le transit fluvial des remorqueurs dans le Goulet Québec–Lévis
         function evalQuadBezierXZ(p0, p1, p2, t, outVec, outTan) {
           const om = 1 - t;
@@ -46903,6 +48811,10 @@
             wake86RingMesh.scale.x = 1.62 + Math.sin(t * 2.85 + 0.7) * 0.06;
             wake86RingMesh.scale.z = 0.30 + Math.cos(t * 2.85 + 0.7) * 0.025;
             radar86Scanner.rotation.y = -t * 3.1;
+            if (radar86ScannerX) radar86ScannerX.rotation.y = t * 4.4;
+            if (isgottRedMastLight86) {
+              isgottRedMastLight86.visible = isNight || isGolden || isStormNow || Math.sin(t * 3.2) > -0.65;
+            }
             if (ship86Flag && ship86Flag.mesh) {
               ship86Flag.mesh.rotation.y = Math.sin(t * (2.8 + windKnots * 0.15) + 1.1) * 0.15;
             }
@@ -46921,6 +48833,10 @@
           tugStern.group.rotation.z = Math.sin(t * 2.0 + 1.2) * 0.035;
           tugStern.group.rotation.x = Math.cos(t * 1.6 + 0.8) * 0.02;
 
+          for (let tr = 0; tr < tugRadars3D.length; tr++) {
+            tugRadars3D[tr].rotation.y = t * (3.6 + tr * 0.4);
+          }
+
           // Mettre à jour l'écume des propulseurs Z-Drive
           const washPulse = 0.8 + Math.sin(t * 12) * 0.25;
           tugBow.wash.scale.set(washPulse * thrustIntensity * 2.0, 1, washPulse * thrustIntensity * 1.5);
@@ -46928,7 +48844,7 @@
           tugStern.wash.scale.set(washPulse * thrustIntensity * 2.0, 1, washPulse * thrustIntensity * 1.5);
           tugStern.wash.material.opacity = Math.min(0.85, thrustIntensity * 0.9);
 
-          // Mettre à jour les lignes de remorquage 3D sans réallocation de BufferAttribute
+          // Mettre à jour les lignes de remorquage 3D en chaînette 11 points (flèche inversement proportionnelle à la traction!)
           towLineBow.visible = linesActive && showShip87;
           towLineStern.visible = linesActive && showShip87;
           if (linesActive && showShip87) {
@@ -46941,8 +48857,9 @@
             scratchAttachStern.set(-8.5, 3.2, 0);
             tugStern.group.localToWorld(scratchAttachStern);
 
-            updateLineEndpoints(towLineBowGeo, scratchAttachBow, scratchBittBow);
-            updateLineEndpoints(towLineSternGeo, scratchAttachStern, scratchBittStern);
+            const towSag = Math.max(0.18, 0.96 - thrustIntensity * 0.72) + Math.sin(t * 3.4) * 0.04;
+            updateCatenaryHawser(towLineBowGeo, scratchAttachBow, scratchBittBow, towSag, null);
+            updateCatenaryHawser(towLineSternGeo, scratchAttachStern, scratchBittStern, towSag * 1.05, null);
           }
 
           // Suivi automatique caméra 3D si activé (indépendant du framerate)
@@ -46959,6 +48876,21 @@
           wakeRingMesh.scale.x = 1.92 + Math.sin(t * 2.6) * 0.06;
           wakeRingMesh.scale.z = 0.35 + Math.cos(t * 2.6) * 0.03;
           radarScanner.rotation.y = t * 2.8;
+          if (radarScannerX87) radarScannerX87.rotation.y = -t * 4.3;
+          if (isgottRedMastLight87) {
+            isgottRedMastLight87.visible = isNight || isGolden || isStormNow || Math.sin(t * 3.0) > -0.65;
+          }
+          if (tankerKelvinWakeMesh && tankerKelvinWakeMat) {
+            const shipSpd = tm && typeof tm.speedKnots === "number" ? tm.speedKnots : 0.0;
+            const showWake87 = showShip87 && shipSpd > 0.30;
+            tankerKelvinWakeMesh.visible = showWake87;
+            if (showWake87) {
+              const spdNorm = Math.min(1.0, shipSpd / 7.5);
+              tankerKelvinWakeMat.opacity = 0.14 + spdNorm * 0.44;
+              const wScaleX = 0.55 + spdNorm * 0.65 + Math.sin(t * 2.9) * 0.03;
+              tankerKelvinWakeMesh.scale.set(wScaleX, 1, 0.72 + spdNorm * 0.34);
+            }
+          }
 
           // Fumée & panache de condensation thermique 3D des cheminées (Postes 87 & 86) orientés selon le vecteur vent 360° réel!
           const exhaustColdCondense = Math.max(0, Math.min(1, (14.0 - effectiveAirTemp) / 28.0));
@@ -47667,6 +49599,52 @@
             }
           }
 
+          // 6B) Faisceaux Crépusculaires Volumétriques 3D (Rayons de Tyndall / God-Rays percant les trouées nuageuses au-dessus du Saint-Laurent)
+          if (godRays3DGroup && godRayShafts3D.length > 0) {
+            const canShowGodRays = !starsModeActive &&
+              !isNight &&
+              sunAltDeg3D > 2.5 &&
+              sunAltDeg3D < 44.0 &&
+              cloudPctNow >= 18 &&
+              cloudPctNow <= 88 &&
+              localRainRateMm < 2.5 &&
+              !hasSnow3D;
+            godRays3DGroup.visible = canShowGodRays;
+            if (canShowGodRays) {
+              const sAzR = (sunAzDeg3D * Math.PI) / 180;
+              const sAltR = (sunAltDeg3D * Math.PI) / 180;
+              // Vecteur unitaire pointant vers le soleil (pour orienter l'axe +Y des colonnes de lumière)
+              const sunUx = Math.sin(sAzR) * Math.cos(sAltR);
+              const sunUy = Math.sin(sAltR);
+              const sunUz = -Math.cos(sAzR) * Math.cos(sAltR);
+              scratchBatDir.set(sunUx, sunUy, sunUz);
+
+              const perpGx = Math.cos(sAzR);
+              const perpGz = Math.sin(sAzR);
+              const brokenCloudWindow = 1.0 - Math.abs(cloudPctNow - 52) / 42;
+              const lowSunFactor = Math.max(0.25, Math.min(1.0, (44.0 - sunAltDeg3D) / 34.0));
+              const rayTintHex = isGolden ? 0xfdba74 : 0xfef08a;
+              const baseAnchorDist = 920;
+              const anchorX = camera3D.position.x + Math.sin(sAzR) * baseAnchorDist;
+              const anchorZ = camera3D.position.z - Math.cos(sAzR) * baseAnchorDist;
+
+              for (let gr = 0; gr < godRayShafts3D.length; gr++) {
+                const sh = godRayShafts3D[gr];
+                const driftLat = sh.lateralOffset + Math.sin(t * 0.08 + sh.phase) * 32;
+                const posY = waterLevelY + 185 + (gr % 3) * 22;
+                sh.pivot.position.set(
+                  anchorX + perpGx * driftLat + Math.sin(sAzR) * sh.depthOffset,
+                  posY,
+                  anchorZ + perpGz * driftLat - Math.cos(sAzR) * sh.depthOffset
+                );
+                sh.pivot.quaternion.setFromUnitVectors(UP_VEC_3D, scratchBatDir);
+                const gapPulse = 0.55 + 0.45 * Math.sin(t * 0.34 + sh.phase * 1.7);
+                sh.mat.color.setHex(rayTintHex);
+                sh.mat.opacity = Math.max(0.0, Math.min(0.24, (isGolden ? 0.21 : 0.14) * Math.max(0.22, brokenCloudWindow) * lowSunFactor * gapPulse));
+              }
+            }
+          }
+
           // 7) Humidité & Flaques Réfléchissantes sur le Béton/Acier du Quai en T Valero + Glace Vive (Verglas)
           let targetWetness = 0.0;
           if (isFreezingPrecip3D || localRainRateMm >= 0.30) {
@@ -47729,12 +49707,52 @@
             caissonCapMat.normalScale.set(rippleNormScale * 0.8, rippleNormScale * 0.8);
           }
 
-          // 7. Animation des torchères de la raffinerie, de la Grande Roue et des ponts
+          // 7. Animation des torchères, panaches de vapeur Jean-Gaulin, soudure à l'arc Davie, balises aériennes et ponts
           flares3D.forEach((fl, idx) => {
             const flicker = 0.85 + Math.sin(t * 14 + idx * 2) * 0.22;
             fl.flame.scale.set(flicker, flicker * 1.15, flicker);
             fl.flareLight.intensity = isNight ? 1.8 * flicker : 0.7 * flicker;
           });
+
+          if (refinerySteamPuffs3D && refinerySteamPuffs3D.length > 0) {
+            const steamDrift = 14.0 + windKnots * 1.65;
+            const steamRise = Math.max(18.0, (34.0 + condenseFactor * 16.0) - windKnots * 0.35);
+            refinerySteamMat.opacity = (isNight ? 0.16 : 0.24) + condenseFactor * 0.26;
+            refinerySteamMat.color.setHex(isNight ? 0x94a3b8 : (isGolden ? 0xfed7aa : 0xf8fafc));
+            for (let rp = 0; rp < refinerySteamPuffs3D.length; rp++) {
+              const sp = refinerySteamPuffs3D[rp];
+              const age = (t * sp.speed + sp.phase) % 1.0;
+              sp.mesh.position.set(
+                sp.originX + windDirX * steamDrift * age,
+                sp.originY + steamRise * age,
+                sp.originZ + windDirZ * steamDrift * age
+              );
+              const scS = (0.75 + condenseFactor * 0.35) + age * (2.6 + condenseFactor * 1.6);
+              sp.mesh.scale.set(scS, scS * 0.82, scS);
+            }
+          }
+
+          if (davieWeldSprite && davieWeldLight) {
+            // Salves intermittentes réalistes de soudage à l'arc électrique en cale sèche Champlain
+            const weldWindow = Math.sin(t * 0.62) > 0.18 && Math.cos(t * 1.45) > -0.25;
+            if (weldWindow) {
+              const arcSpark = Math.max(0, Math.sin(t * 37.0) * 0.6 + Math.cos(t * 53.0) * 0.4);
+              davieWeldSprite.material.opacity = arcSpark * (isNight ? 0.95 : 0.62);
+              const wSc = 5.5 + arcSpark * 7.5;
+              davieWeldSprite.scale.set(wSc, wSc, 1);
+              davieWeldLight.intensity = arcSpark * (isNight ? 2.4 : 0.8);
+            } else {
+              davieWeldSprite.material.opacity = 0.0;
+              davieWeldLight.intensity = 0.0;
+            }
+          }
+
+          if (bridgeAviationBeacons3D && bridgeAviationBeacons3D.length > 0) {
+            const avFlash = Math.sin(t * 3.3) > -0.15;
+            for (let ab = 0; ab < bridgeAviationBeacons3D.length; ab++) {
+              bridgeAviationBeacons3D[ab].visible = avFlash;
+            }
+          }
 
           wheelRim.rotation.z = t * 0.25;
           ferrisWheelGroup.children.forEach((ch) => {
@@ -47780,7 +49798,7 @@
               car.progress += car.speed * dt60;
               if (car.progress > 1.0) car.progress -= 1.0;
               if (car.progress < 0.0) car.progress += 1.0;
-              const pt = window.route132Curve.getPointAt(car.progress);
+              const pt = window.route132Curve.getPointAt(ri === 0 ? car.progress : car.progress);
               const tan = window.route132Curve.getTangentAt(car.progress);
               const sign = car.speed >= 0 ? 1 : -1;
               const dx = tan.x * sign;
@@ -47814,6 +49832,9 @@
           ferryWakeMesh.material.opacity = 0.12 + fSpeedNorm * 0.36;
           const fWakePulse = 0.72 + fSpeedNorm * 0.32 + Math.sin(t * 3.2) * 0.04;
           ferryWakeMesh.scale.set(fWakePulse, 1, 0.85 + fSpeedNorm * 0.25);
+          for (let fr = 0; fr < ferryRadars3D.length; fr++) {
+            ferryRadars3D[fr].rotation.y = t * (3.3 - fr * 6.4);
+          }
 
           // B. Remorqueurs Groupe Océan déjà animés dynamiquement dans la boucle de manœuvre
 
@@ -47828,22 +49849,59 @@
             cb.mesh.position.z = travel * 0.707;
           });
 
-          // F. Vol des mouettes au-dessus du fleuve et du quai
-          seagulls3D.forEach((sg) => {
-            const ang = t * sg.speed * 60 + sg.phase;
-            const curAz = sg.centerAz + Math.sin(ang) * 45;
-            const r = sg.radius + Math.cos(ang * 0.8) * 22;
-            const gPos = azDistToVec3(curAz % 360, r, sg.baseHeight + Math.sin(ang * 2.2) * 3.5);
-            sg.group.position.copy(gPos);
-            sg.group.rotation.y = ang + Math.PI / 2;
-            const wingFlap = Math.sin(t * 8.5 + sg.phase) * 0.38;
-            sg.leftWing.rotation.x = wingFlap;
-            sg.rightWing.rotation.x = -wingFlap;
-          });
+          // F. Vol articulé (2 articulations d'aile + vol plané thermique) des 18 Goélands argentés (zéro allocation GC)
+          const gullsActive = !isStormNow && !hasSnow3D && windKnots < 30;
+          for (let gi = 0; gi < seagulls3D.length; gi++) {
+            const sg = seagulls3D[gi];
+            sg.group.visible = gullsActive;
+            if (!gullsActive) continue;
 
-          // 8. Éclairage Jour / Heure Dorée / Nuit, Visibilité Réelle, Point de Rosée & Colorimétrie Thermique
-          bridgeWinMat.color.setHex(isNight ? 0xfef08a : 0x0f172a);
-          bridge86WinMat.color.setHex(isNight ? 0xfef08a : 0x0f172a);
+            const ang = t * sg.speed * 60 + sg.phase;
+            const dAng = 0.04;
+            const az0 = ((sg.centerAz + Math.sin(ang) * 42) * Math.PI) / 180;
+            const r0 = sg.radius + Math.cos(ang * 0.8) * 18;
+            const gx0 = Math.sin(az0) * r0;
+            const gz0 = -Math.cos(az0) * r0;
+            const gy0 = waterLevelY + sg.baseHeight + Math.sin(ang * 1.8) * 3.2;
+
+            const az1 = ((sg.centerAz + Math.sin(ang + dAng) * 42) * Math.PI) / 180;
+            const r1 = sg.radius + Math.cos((ang + dAng) * 0.8) * 18;
+            const vx = Math.sin(az1) * r1 - gx0;
+            const vz = -Math.cos(az1) * r1 - gz0;
+
+            sg.group.position.set(gx0, gy0, gz0);
+            sg.group.rotation.y = Math.atan2(-vz, vx);
+            // Inclinaison en virage (roulis autour de +X avant) et léger tangage
+            sg.group.rotation.x = Math.cos(ang) * 0.28;
+            sg.group.rotation.z = Math.cos(ang * 1.8) * 0.08;
+
+            // Alternance réaliste entre séquences de battements souples et plané ailes étendues dans les courants thermiques
+            const soarWave = Math.sin(t * 0.52 + sg.phase * 1.9);
+            const flapEnv = soarWave > sg.glideBias ? 0.06 : 1.0;
+            const flapPhase = t * sg.flapFreq + sg.phase;
+            const innerFlap = Math.sin(flapPhase) * 0.36 * flapEnv + (1.0 - flapEnv) * 0.08;
+            const outerFlap = Math.sin(flapPhase - 0.58) * 0.42 * flapEnv - (1.0 - flapEnv) * 0.11;
+
+            sg.leftInner.rotation.x = innerFlap;
+            sg.leftOuter.rotation.x = outerFlap;
+            sg.rightInner.rotation.x = -innerFlap;
+            sg.rightOuter.rotation.x = -outerFlap;
+          }
+
+          // 8. Éclairage Jour / Heure Dorée / Nuit, Fenêtres Architecturales Émissives, Visibilité Réelle & Colorimétrie Thermique
+          const bridgeEmissiveInt = isNight ? 1.18 : (isGolden ? 0.58 : (isStormNow ? 0.35 : 0.0));
+          bridgeWinMat.color.setHex(0xffffff);
+          bridgeWinMat.emissiveIntensity = bridgeEmissiveInt;
+          bridge86WinMat.color.setHex(0xffffff);
+          bridge86WinMat.emissiveIntensity = bridgeEmissiveInt;
+          sharedAccommodationMat.emissiveIntensity = isNight ? 0.96 : (isGolden ? 0.46 : (isStormNow ? 0.28 : 0.0));
+          const heritageEmissiveInt = isNight ? 1.12 : (isGolden ? 0.54 : (isStormNow ? 0.30 : 0.0));
+          for (let hm = 0; hm < heritageLitMats3D.length; hm++) {
+            heritageLitMats3D[hm].emissiveIntensity = heritageEmissiveInt;
+          }
+          dockCabinWinMat.color.setHex(isNight ? 0xfde68a : (isGolden ? 0xfef08a : 0x38bdf8));
+          ferryCabinGlassMat.color.setHex(isNight ? 0xfde68a : (isGolden ? 0xfef08a : 0x38bdf8));
+
           shipNightLight.intensity = (isNight && showShip87) ? 1.4 : 0.0;
           ship86NightLight.intensity = (isNight && vessel86Group.visible) ? 1.15 : 0.0;
           dockPointLight.intensity = isNight ? 1.6 : (isStormNow ? 0.65 : 0.2);
@@ -48068,7 +50126,11 @@
               scratchMoorShip.copy(ml.shipLocal);
               dockGroup.localToWorld(scratchMoorDock);
               tankerGroup.localToWorld(scratchMoorShip);
-              updateLineEndpoints(ml.geo, scratchMoorDock, scratchMoorShip);
+              const span87 = scratchMoorDock.distanceTo(scratchMoorShip);
+              const sag87 = Math.min(1.45, 0.36 + span87 * 0.014) + Math.sin(t * 1.45 + m * 0.8) * 0.05;
+              updateCatenaryHawser(ml.geo, scratchMoorDock, scratchMoorShip, sag87, ml.ratGuard);
+            } else if (ml.ratGuard) {
+              ml.ratGuard.visible = false;
             }
           }
           for (let m6 = 0; m6 < mooringLines86_3D.length; m6++) {
@@ -48079,7 +50141,11 @@
               scratchMoorShip.copy(ml6.shipLocal);
               dockGroup.localToWorld(scratchMoorDock);
               vessel86Group.localToWorld(scratchMoorShip);
-              updateLineEndpoints(ml6.geo, scratchMoorDock, scratchMoorShip);
+              const span86 = scratchMoorDock.distanceTo(scratchMoorShip);
+              const sag86 = Math.min(1.28, 0.32 + span86 * 0.013) + Math.sin(t * 1.62 + m6 * 0.9) * 0.045;
+              updateCatenaryHawser(ml6.geo, scratchMoorDock, scratchMoorShip, sag86, ml6.ratGuard);
+            } else if (ml6.ratGuard) {
+              ml6.ratGuard.visible = false;
             }
           }
           const chiksanEase = 1 - Math.pow(1 - 0.08, dt60);
@@ -48167,6 +50233,7 @@
           seawayCargoGroup.position.set(cPt.x, waterLevelY + cargoWave * 0.35, cPt.z);
           seawayCargoGroup.rotation.y = Math.atan2(-cTan.z, cTan.x);
           seawayCargoGroup.rotation.z = Math.sin(t * 1.3) * 0.018;
+          if (cargoRadar3D) cargoRadar3D.rotation.y = t * 3.2;
 
           // J. Auto-Orbite cinématique 360° indépendante du framerate si activée
           if (autoOrbit3D && !isDraggingSky && camTargetAz === null) {
