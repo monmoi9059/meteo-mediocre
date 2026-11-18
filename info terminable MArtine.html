@@ -3273,9 +3273,27 @@
         }
       }
 
-      /* Android / smartphones (≤ 900px) */
+      /* Boutons exclusifs Android HUD (masqués sur grand écran PC) */
+      .s24-timelapse-btn,
+      .hud-android-expand-btn,
+      .android-gyro-hud-bar {
+        display: none;
+      }
+
+      /* Android / smartphones (≤ 900px) & Édition APK Native */
       @media (max-width: 900px) {
-        /* En-tête : le titre se tronque proprement et le bouton « Outils » reste toujours visible */
+        body {
+          padding-top: env(safe-area-inset-top, 0px) !important;
+          padding-bottom: calc(62px + env(safe-area-inset-bottom, 10px)) !important;
+        }
+
+        /* En-tête Android 1 ligne ultra-propre + actions rapides (Temps, Univers, Outils) */
+        .header {
+          padding: calc(0.24rem + env(safe-area-inset-top, 0px)) 0.45rem 0.24rem 0.45rem !important;
+          position: sticky;
+          top: 0;
+          z-index: 940;
+        }
         .header-brand {
           flex-wrap: nowrap !important;
           min-width: 0;
@@ -3288,68 +3306,225 @@
           flex: 1 1 auto;
           min-width: 0;
         }
-        .header-title-block h1 {
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
+        .header-title-block h1,
         .header-title-block h1 > span {
           overflow: hidden;
           text-overflow: ellipsis;
+          white-space: nowrap;
         }
-        .header.s24-tools-open .controls .theme-toggle,
-        .header.s24-tools-open .controls .live-clock-pill {
-          flex: 1 1 auto;
+        .s24-timelapse-btn {
+          display: inline-flex !important;
+          align-items: center;
           justify-content: center;
-          min-height: 36px;
+          gap: 0.18rem;
+          background: rgba(15, 23, 42, 0.88);
+          color: #cbd5e1;
+          border: 1px solid rgba(148, 163, 184, 0.38);
+          border-radius: 18px;
+          padding: 0.22rem 0.48rem;
+          font-size: 0.65rem;
+          font-weight: 800;
+          cursor: pointer;
+          white-space: nowrap;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+        }
+        .s24-timelapse-btn.active,
+        .s24-timelapse-btn.proj-active {
+          background: rgba(245, 158, 11, 0.22);
+          color: #fbbf24;
+          border-color: rgba(251, 191, 36, 0.65);
+        }
+        .header.s24-tools-open .controls {
+          max-height: 68dvh;
+          overflow-y: auto;
+          display: grid !important;
+          grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          gap: 0.32rem !important;
+          padding: 0.42rem 0.15rem 0.25rem !important;
+        }
+        .header.s24-tools-open .controls .live-clock-pill,
+        .header.s24-tools-open .controls .universe-switcher-group {
+          grid-column: 1 / -1;
+          justify-content: center;
+        }
+        .header.s24-tools-open .controls .theme-toggle {
+          width: 100%;
+          justify-content: center;
+          min-height: 38px;
+          font-size: 0.68rem !important;
         }
 
-        /* En-tête de la carte 3D : titre + boutons sur une ligne */
+        /* Ruban Time-Lapse repliable sur Android (libère +76px pour le fleuve 3D par défaut, 1 clic pour ouvrir) */
+        .scrubber-ribbon:not(.s24-scrubber-open) {
+          display: none !important;
+        }
+        .scrubber-ribbon.s24-scrubber-open {
+          display: flex !important;
+          flex-direction: column !important;
+          padding: 0.32rem 0.5rem !important;
+          gap: 0.26rem !important;
+          border-bottom: 1px solid rgba(56, 189, 248, 0.32);
+          animation: fadeInInspect3D 0.16s ease-out;
+        }
+        .scrubber-ribbon.s24-scrubber-open .scrubber-quick-btns {
+          display: flex !important;
+          overflow-x: auto;
+          width: 100%;
+          gap: 0.22rem;
+          scrollbar-width: none;
+        }
+
+        /* Fenêtre 3D 360° Plein Écran Android (82%+ de l'écran libre !) */
         #anim-card .card-header {
           flex-wrap: nowrap !important;
-          gap: 0.3rem;
+          padding: 0.2rem 0.42rem !important;
+          gap: 0.24rem;
         }
         #anim-card .card-header h2 {
           min-width: 0;
           flex: 1 1 auto;
+          font-size: 0.7rem !important;
         }
         #anim-card .card-header .theme-toggle {
-          min-height: 30px;
-          padding: 0.16rem 0.42rem !important;
-          font-size: 0.64rem !important;
+          min-height: 28px;
+          padding: 0.14rem 0.38rem !important;
+          font-size: 0.62rem !important;
+        }
+        #animation-window {
+          height: calc(100dvh - 134px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) !important;
+          min-height: 410px !important;
+        }
+        body:has(.scrubber-ribbon.s24-scrubber-open) #animation-window {
+          height: calc(100dvh - 224px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) !important;
         }
 
-        /* Dock caméra 3D : grille 4 × 3 (tous les boutons visibles sans défilement caché) */
-        .viewport-QuickActions {
-          display: grid !important;
-          grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-          overflow: visible !important;
-          gap: 4px !important;
-          padding-bottom: 0;
-        }
-        .hud-pill-btn {
-          flex: initial !important;
-          min-height: 32px !important;
-          padding: 0.18rem 0.24rem !important;
-          font-size: 0.62rem !important;
-          border-radius: 8px !important;
+        /* HUD Supérieur 3D Android : 1 ligne télémétrie + 1 ruban tactile glissant (ou tiroir 3x6 sur demande) */
+        .viewport-hud-top {
+          padding: 0.2rem 0.28rem !important;
+          gap: 0.2rem !important;
+          background: linear-gradient(180deg, rgba(4, 10, 22, 0.86) 0%, rgba(4, 10, 22, 0.38) 72%, rgba(4, 10, 22, 0) 100%) !important;
         }
         .viewport-telemetry {
           align-self: stretch;
-          justify-content: center;
+          justify-content: space-between;
           border-radius: 8px !important;
+          font-size: 0.56rem !important;
+          padding: 0.12rem 0.36rem !important;
+          white-space: nowrap;
+          overflow-x: auto;
+          scrollbar-width: none;
+        }
+        .viewport-telemetry::-webkit-scrollbar {
+          display: none;
+        }
+
+        /* Par défaut : Ruban horizontal fluide sur 1 seule ligne avec Gyro 360° & HUD+ en tête ! */
+        .viewport-QuickActions {
+          display: flex !important;
+          flex-wrap: nowrap !important;
+          overflow-x: auto !important;
+          overflow-y: hidden !important;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: none;
+          gap: 5px !important;
+          padding: 1px 2px 3px 2px !important;
+          -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 16px), transparent 100%);
+          mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 16px), transparent 100%);
+        }
+        .viewport-QuickActions::-webkit-scrollbar {
+          display: none;
+        }
+        /* Mode Tiroir HUD+ déplié sur demande (affiche les 17 boutons d'un coup en grille 3 colonnes) */
+        .viewport-QuickActions.android-hud-expanded {
+          display: grid !important;
+          grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+          overflow: visible !important;
+          -webkit-mask-image: none !important;
+          mask-image: none !important;
+          background: rgba(5, 13, 26, 0.94);
+          border: 1px solid rgba(56, 189, 248, 0.36);
+          border-radius: 10px;
+          padding: 6px !important;
+          box-shadow: 0 12px 28px rgba(0, 0, 0, 0.65);
+        }
+        .hud-pill-btn {
+          flex: 0 0 auto !important;
+          min-height: 31px !important;
+          padding: 0.18rem 0.46rem !important;
+          font-size: 0.62rem !important;
+          border-radius: 16px !important;
+          white-space: nowrap !important;
+        }
+        .viewport-QuickActions.android-hud-expanded .hud-pill-btn {
+          flex: initial !important;
+          border-radius: 8px !important;
+          padding: 0.2rem 0.24rem !important;
+          font-size: 0.59rem !important;
+          justify-content: center;
+          text-align: center;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        /* Placer Gyro 360° et HUD+ tout à gauche du ruban Android */
+        #hud-gyro-btn {
+          order: -3 !important;
+          border-color: rgba(16, 185, 129, 0.62) !important;
+          font-weight: 800 !important;
+        }
+        #hud-gyro-btn.active-cam {
+          background: linear-gradient(135deg, rgba(16, 185, 129, 0.38), rgba(2, 132, 199, 0.52)) !important;
+          border-color: #10b981 !important;
+          color: #ecfdf5 !important;
+          box-shadow: 0 0 12px rgba(16, 185, 129, 0.45) !important;
+        }
+        .hud-android-expand-btn {
+          display: inline-flex !important;
+          order: -2 !important;
+          border-color: rgba(56, 189, 248, 0.5) !important;
+          color: #7dd3fc !important;
+          font-weight: 800 !important;
+        }
+        .hud-android-expand-btn.active-cam {
+          background: rgba(2, 132, 199, 0.45) !important;
+          color: #ffffff !important;
+        }
+
+        /* Barre flottante de télémétrie & calibration Gyroscope 360° */
+        .android-gyro-hud-bar.visible {
+          display: flex !important;
+          align-items: center;
+          justify-content: space-between;
+          gap: 0.3rem;
+          position: absolute;
+          top: calc(var(--hud-dock-h, 66px) + 4px);
+          left: 6px;
+          right: 6px;
+          z-index: 36;
+          padding: 0.24rem 0.44rem;
+          border-radius: 10px;
+          background: rgba(4, 14, 26, 0.88);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+          border: 1px solid rgba(16, 185, 129, 0.55);
+          box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+          color: #f8fafc;
+          font-size: 0.6rem;
         }
 
         /* Panneaux flottants adaptés à la largeur du téléphone */
         .weather-minimap-hud {
-          top: calc(var(--hud-dock-h) + 8px) !important;
+          top: calc(var(--hud-dock-h, 66px) + 6px) !important;
+        }
+        #animation-window:has(.android-gyro-hud-bar.visible) .weather-minimap-hud {
+          top: calc(var(--hud-dock-h, 66px) + 40px) !important;
         }
         .temp-simulation-hud {
-          top: calc(var(--hud-dock-h) + 8px) !important;
+          top: calc(var(--hud-dock-h, 66px) + 6px) !important;
           left: 6px !important;
           right: 6px !important;
           width: auto !important;
           max-width: none !important;
-          max-height: calc(100% - var(--hud-dock-h) - 60px) !important;
+          max-height: calc(100% - var(--hud-dock-h, 66px) - 56px) !important;
         }
         .ts-body {
           max-height: none !important;
@@ -3357,10 +3532,10 @@
 
         /* Repères azimut : fondu sur les bords pour indiquer le défilement horizontal */
         .viewport-landmarks-bar {
-          -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
-          mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
-          padding-left: 0.6rem !important;
-          padding-right: 0.6rem !important;
+          -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 12px, #000 calc(100% - 12px), transparent 100%);
+          mask-image: linear-gradient(90deg, transparent 0, #000 12px, #000 calc(100% - 12px), transparent 100%);
+          padding-left: 0.5rem !important;
+          padding-right: 0.5rem !important;
         }
         .landmark-jump-btn {
           min-height: 30px;
@@ -3378,32 +3553,79 @@
         }
       }
 
-      /* Petits Android (≤ 380px : Galaxy A, Pixel compact) */
+      /* Barre Gyro 360° également visible sur grand écran / tablette lorsque Gyro est activé */
+      .android-gyro-hud-bar.visible {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.35rem;
+        position: absolute;
+        top: calc(var(--hud-dock-h, 66px) + 6px);
+        left: 10px;
+        z-index: 36;
+        padding: 0.26rem 0.52rem;
+        border-radius: 10px;
+        background: rgba(4, 14, 26, 0.88);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(16, 185, 129, 0.55);
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+        color: #f8fafc;
+        font-size: 0.62rem;
+      }
+      .gyro-hud-pill-btn {
+        background: rgba(15, 23, 42, 0.9);
+        color: #e2e8f0;
+        border: 1px solid rgba(56, 189, 248, 0.45);
+        border-radius: 6px;
+        padding: 0.16rem 0.42rem;
+        font-size: 0.58rem;
+        font-weight: 800;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      .gyro-hud-pill-btn.compass-on {
+        background: rgba(16, 185, 129, 0.24);
+        border-color: #10b981;
+        color: #6ee7b7;
+      }
+
+      /* Smartphones portrait (≤ 600px) : Section 86 & Section 87 en pleine largeur 100% lisible sans troncature */
+      @media (max-width: 600px) {
+        #ops-card .ops-sections-grid {
+          grid-template-columns: 1fr !important;
+          gap: 0.45rem !important;
+        }
+        #ops-card .river-state-banner {
+          grid-template-columns: 1fr 1fr !important;
+        }
+      }
+
+      /* Petits Android (≤ 380px : Galaxy S24 portrait 360dp, Galaxy A, Pixel compact) */
       @media (max-width: 380px) {
         .brand-logos svg:last-child,
         .brand-logos > div {
           display: none !important;
         }
-        .hud-pill-btn {
-          font-size: 0.57rem !important;
-          padding: 0.16rem 0.14rem !important;
-        }
         #anim-card .card-header .theme-toggle {
-          padding: 0.14rem 0.32rem !important;
-          font-size: 0.6rem !important;
+          padding: 0.12rem 0.3rem !important;
+          font-size: 0.58rem !important;
         }
         .mobile-tab-btn {
           font-size: 0.52rem !important;
         }
       }
 
-      /* Android en paysage : dock caméra sur 1 ligne de 6 + 6 compacte */
+      /* Android en paysage : Cockpit Panoramique Plein Écran 360° */
       @media (max-width: 960px) and (orientation: landscape) {
-        .viewport-QuickActions {
-          grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+        #anim-card .card-header {
+          display: none !important;
+        }
+        #animation-window {
+          height: calc(100dvh - 52px - env(safe-area-inset-bottom, 0px)) !important;
+          min-height: 240px !important;
         }
         .hud-pill-btn {
-          min-height: 26px !important;
+          min-height: 27px !important;
         }
       }
 
@@ -4684,6 +4906,9 @@
           </div>
         </div>
         <div class="s24-header-actions">
+          <button type="button" id="s24-timelapse-btn" class="s24-timelapse-btn" title="Afficher/Masquer le curseur temporel (-6h à +24h) et lecteur Time-Lapse">
+            &#x23F1;&#xFE0F; Temps
+          </button>
           <button type="button" id="s24-universe-btn" class="s24-universe-btn" title="Changer d'univers visuel et d'agencement">
             &#x1F3A8; Univers
           </button>
@@ -4930,9 +5155,25 @@
                 <button type="button" class="hud-pill-btn" id="hud-reset-cam" title="Recentrer sur le p&eacute;trolier au Quai Sec. 87">
                   &#x1F3AF; Centrer
                 </button>
+                <button type="button" class="hud-pill-btn hud-android-expand-btn" id="hud-android-expand-btn" title="Déplier / Replier tous les contrôles caméra et météo 3D">
+                  &#x1F39B;&#xFE0F; HUD+
+                </button>
                 <button type="button" class="hud-pill-btn" id="hud-toggle-3d" title="Basculer entre le Monde 3D WebGL et le Panorama 2D Classique">
                   &#x1F310; 3D: ON
                 </button>
+              </div>
+            </div>
+
+            <!-- BARRE FLOTTANTE GYROSCOPE 360° ANDROID (CALIBRATION & BOUSSOLE / RELATIF) -->
+            <div id="android-gyro-hud-bar" class="android-gyro-hud-bar" role="region" aria-label="Contrôles Gyroscope 360">
+              <div style="display:inline-flex;align-items:center;gap:0.3rem;min-width:0;overflow:hidden;">
+                <span id="gyro-live-dot" style="width:7px;height:7px;border-radius:50%;background:#10b981;box-shadow:0 0 8px #10b981;flex-shrink:0;"></span>
+                <span id="gyro-live-readout" class="mono" style="font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">GYRO 360&deg; &bull; AZ 135&deg;</span>
+              </div>
+              <div style="display:inline-flex;align-items:center;gap:0.22rem;flex-shrink:0;">
+                <button type="button" id="gyro-recenter-btn" class="gyro-hud-pill-btn" title="Aligner l'orientation actuelle du téléphone sur la cible courante">&#x1F3AF; Calibrer</button>
+                <button type="button" id="gyro-mode-btn" class="gyro-hud-pill-btn" title="Basculer entre Gyro Relatif (sans interférence acier) et Boussole Magnétique Nord Réel">&#x1F9ED; Relatif</button>
+                <button type="button" id="gyro-close-btn" class="gyro-hud-pill-btn" style="padding:0.16rem 0.34rem;" title="Désactiver le mode Gyroscope 360°">&#x2715;</button>
               </div>
             </div>
 
@@ -50436,8 +50677,8 @@
           seawayCargoGroup.rotation.z = Math.sin(t * 1.3) * 0.018;
           if (cargoRadar3D) cargoRadar3D.rotation.y = t * 3.2;
 
-          // J. Auto-Orbite cinématique 360° indépendante du framerate si activée
-          if (autoOrbit3D && !isDraggingSky && camTargetAz === null) {
+          // J. Auto-Orbite cinématique 360° indépendante du framerate si activée (en pause si Gyro 360° actif)
+          if (autoOrbit3D && !window.gyro360Active && !isDraggingSky && camTargetAz === null) {
             viewAzimuth = (viewAzimuth + 0.14 * dt60) % 360;
           }
 
@@ -51989,11 +52230,21 @@
         return Promise.any(tasks);
       }
 
-      // Canal 2 : Course par vagues contrôlées directement sur portquebec.ca (évite de saturer les connexions proxy/mobiles)
+      // Canal 2 : Course par vagues contrôlées directement sur portquebec.ca (et pont HTTPS natif sans CORS dans l'APK Android)
       async function fetchDirectPortQcLive(timeoutMs = 8000) {
         const bust = Math.floor(Date.now() / 60000);
         const frBust = `${PORTQC_SCHEDULE_URL}?_t=${bust}`;
         const enBust = `${PORTQC_EN_SCHEDULE_URL}?_t=${bust}`;
+
+        if (window.__IS_ANDROID_APK || window.AndroidGyroBridge) {
+          try {
+            const apkTxt = await fetchCorsSafeText(`https://appassets.androidplatform.net/api/portqc-live?_t=${bust}`, timeoutMs);
+            const apkParsed = parsePortQuebecSchedule(apkTxt, "apk_direct_portqc");
+            if (apkParsed && apkParsed.berth86 && apkParsed.berth87) {
+              return apkParsed;
+            }
+          } catch (e) {}
+        }
 
         const tryGatewayWave = (urls, waveTimeout) =>
           Promise.any(
@@ -52122,12 +52373,16 @@
 
       pwaBtn?.addEventListener("click", async () => {
         if (!deferredInstallPrompt) {
-          alert(
-            "Pour installer cette application sur Android :\n\n" +
-            "1. Ouvrez le menu de Chrome / navigateur (⋮ en haut à droite).\n" +
-            "2. Appuyez sur 'Installer l'application' ou 'Ajouter à l'écran d'accueil'.\n" +
-            "3. L'application native WebAPK s'installera avec son icône, splash screen et support hors-ligne !"
-          );
+          const apkUrl = "https://github.com/monmoi9059/meteo-mediocre/releases/latest/download/StRomuald-Terminal-Android.apk";
+          if (confirm(
+            "Télécharger directement l'application native Android (.APK) Terminal St-Romuald 360° ?\n\n" +
+            "• HUD tactile adapté Android & plein écran\n" +
+            "• Gyroscope 360° matériel haute précision (60Hz)\n" +
+            "• Moteur 3D embarqué hors-ligne + Navires 86/87 en direct\n\n" +
+            "Appuyez sur OK pour lancer le téléchargement de l'APK."
+          )) {
+            window.open(apkUrl, "_blank", "noopener,noreferrer");
+          }
           return;
         }
         deferredInstallPrompt.prompt();
@@ -52138,30 +52393,51 @@
         deferredInstallPrompt = null;
       });
 
-            window.addEventListener("appinstalled", () => {
+      window.addEventListener("appinstalled", () => {
         if (pwaBtn) pwaBtn.style.display = "none";
         deferredInstallPrompt = null;
       });
 
-      // --- LOGIQUE DE NAVIGATION ULTIME SAMSUNG GALAXY S24 (ONE UI DOCK, HAPTICS, GYRO 360) ---
+      // --- LOGIQUE ANDROID & SAMSUNG GALAXY (HUD ADAPTÉ, QUATERNION GYRO 360° ZÉRO BLOCAGE CARDAN, PONT APK NATIF) ---
       function initMobileTabNavigation() {
+        const isNativeApk = Boolean(window.AndroidGyroBridge || window.__FORCE_ANDROID_HUD);
+        if (isNativeApk) {
+          document.body.classList.add("is-android-apk");
+          if (pwaBtn) pwaBtn.style.display = "none";
+        }
+
         const tabNav = document.getElementById("mobile-tab-nav");
         const headerEl = document.querySelector(".header");
         const toolsDrawerBtn = document.getElementById("s24-tools-drawer-btn");
+        const timelapseDrawerBtn = document.getElementById("s24-timelapse-btn");
+        const scrubberRibbonEl = document.querySelector(".scrubber-ribbon");
+        const timeScrubberInput = document.getElementById("time-scrubber");
+        const hudQuickActions = document.querySelector(".viewport-QuickActions");
+        const hudExpandBtn = document.getElementById("hud-android-expand-btn");
         const wmmHud = document.getElementById("weather-minimap-hud");
         const wmmCollapseBtn = document.getElementById("minimap-collapse-btn");
         const landmarksBar = document.querySelector(".viewport-landmarks-bar");
         const tugHud = document.getElementById("tug-maneuver-hud");
         const tugToggleBtn = document.getElementById("tug-sim-toggle-btn");
         const gyroBtn = document.getElementById("hud-gyro-btn");
+        const gyroHudBar = document.getElementById("android-gyro-hud-bar");
+        const gyroReadoutEl = document.getElementById("gyro-live-readout");
+        const gyroDotEl = document.getElementById("gyro-live-dot");
+        const gyroRecenterBtn = document.getElementById("gyro-recenter-btn");
+        const gyroModeBtn = document.getElementById("gyro-mode-btn");
+        const gyroCloseBtn = document.getElementById("gyro-close-btn");
 
-        const hapticTap = (ms = 10) => {
+        const hapticTap = (ms = 12) => {
           try {
+            if (window.AndroidGyroBridge && typeof window.AndroidGyroBridge.vibrate === "function") {
+              window.AndroidGyroBridge.vibrate(ms);
+              return;
+            }
             if (navigator.vibrate) navigator.vibrate(ms);
           } catch (e) {}
         };
 
-        // 1. Tiroir d'outils superieur S24
+        // 1. Tiroir d'outils supérieur Android + Bouton rapide Time-Lapse (-6h à +24h)
         if (toolsDrawerBtn && headerEl) {
           toolsDrawerBtn.addEventListener("click", () => {
             hapticTap(10);
@@ -52169,13 +52445,58 @@
             toolsDrawerBtn.classList.toggle("active", open);
             toolsDrawerBtn.innerHTML = open ? "&#x2715; Fermer" : "&#x26A1; Outils";
           });
-          // Refermer automatiquement le tiroir quand on clique sur un outil
           headerEl.querySelectorAll(".controls .theme-toggle").forEach((b) => {
             b.addEventListener("click", () => {
               if (window.innerWidth <= 900) {
                 headerEl.classList.remove("s24-tools-open");
                 toolsDrawerBtn.classList.remove("active");
                 toolsDrawerBtn.innerHTML = "&#x26A1; Outils";
+              }
+            });
+          });
+        }
+
+        if (timelapseDrawerBtn && scrubberRibbonEl) {
+          const syncScrubberBtnBadge = () => {
+            const mins = parseInt(timeScrubberInput?.value || "0", 10) || 0;
+            timelapseDrawerBtn.classList.toggle("proj-active", mins !== 0);
+            if (mins === 0) {
+              timelapseDrawerBtn.innerHTML = "&#x23F1;&#xFE0F; Temps";
+            } else {
+              const sign = mins > 0 ? "+" : "";
+              const hrs = Math.round((mins / 60) * 10) / 10;
+              timelapseDrawerBtn.innerHTML = `&#x23E9; ${sign}${hrs}h`;
+            }
+          };
+          timelapseDrawerBtn.addEventListener("click", () => {
+            hapticTap(10);
+            const open = scrubberRibbonEl.classList.toggle("s24-scrubber-open");
+            timelapseDrawerBtn.classList.toggle("active", open);
+            setTimeout(() => window.dispatchEvent(new Event("resize")), 50);
+          });
+          timeScrubberInput?.addEventListener("input", syncScrubberBtnBadge);
+          document.getElementById("scrubber-reset-btn")?.addEventListener("click", () => setTimeout(syncScrubberBtnBadge, 30));
+          document.getElementById("projection-reset-top")?.addEventListener("click", () => setTimeout(syncScrubberBtnBadge, 30));
+          syncScrubberBtnBadge();
+        }
+
+        // Bouton HUD+ pour déplier/replier tous les 17 boutons 3D sur Android
+        if (hudExpandBtn && hudQuickActions) {
+          hudExpandBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            hapticTap(10);
+            const exp = hudQuickActions.classList.toggle("android-hud-expanded");
+            hudExpandBtn.classList.toggle("active-cam", exp);
+            hudExpandBtn.innerHTML = exp ? "&#x2715; Réduire" : "&#x1F39B;&#xFE0F; HUD+";
+            setTimeout(() => window.dispatchEvent(new Event("resize")), 40);
+          });
+          hudQuickActions.querySelectorAll(".hud-pill-btn:not(#hud-android-expand-btn)").forEach((btn) => {
+            btn.addEventListener("click", () => {
+              if (hudQuickActions.classList.contains("android-hud-expanded")) {
+                hudQuickActions.classList.remove("android-hud-expanded");
+                hudExpandBtn.classList.remove("active-cam");
+                hudExpandBtn.innerHTML = "&#x1F39B;&#xFE0F; HUD+";
+                setTimeout(() => window.dispatchEvent(new Event("resize")), 40);
               }
             });
           });
@@ -52195,7 +52516,14 @@
           }
         }
 
-        // 3. Synchroniser la position du carrousel Landmarks quand le panneau Tugs est masque/affiche
+        // Replier automatiquement la minimap sur smartphone quand on ouvre le Simulateur Thermique (évite le chevauchement)
+        document.getElementById("hud-toggle-temp-sim")?.addEventListener("click", () => {
+          if (window.innerWidth <= 900 && wmmHud && !wmmHud.classList.contains("collapsed-minimap")) {
+            wmmCollapseBtn?.click();
+          }
+        });
+
+        // 3. Synchroniser la position du carrousel Landmarks quand le panneau Tugs est masqué/affiché
         function syncLandmarksBarOffset() {
           if (!landmarksBar || !tugHud) return;
           const isTugMin = tugHud.classList.contains("minimized") || tugHud.style.display === "none";
@@ -52208,48 +52536,435 @@
         document.getElementById("btn-maneuver-close")?.addEventListener("click", () => setTimeout(syncLandmarksBarOffset, 40));
         syncLandmarksBarOffset();
 
-        // 4. Mode Gyroscope 360 deg Samsung S24 (DeviceOrientation API)
+        // =========================================================================
+        // 4. MOTEUR GYROSCOPE 360° QUATERNION SANS BLOCAGE DE CARDAN (WEB + APK NATIF)
+        // =========================================================================
         let gyroActive = false;
-        let gyroBaseAlpha = null;
-        let gyroBaseAz = 130;
-        function handleDeviceOrientationS24(e) {
-          if (!gyroActive || isDraggingSky) return;
-          if (typeof e.alpha === "number") {
-            if (gyroBaseAlpha === null) {
-              gyroBaseAlpha = e.alpha;
-              gyroBaseAz = viewAzimuth;
-            }
-            const deltaAlpha = e.alpha - gyroBaseAlpha;
-            viewAzimuth = (gyroBaseAz - deltaAlpha + 720) % 360;
+        let gyroCompassMode = false; // false = Relatif (zéro interférence magnétique acier), true = Boussole Nord Réel
+        let gyroSourceLabel = "Attente capteur...";
+        let gyroSensorReceived = false;
+        let gyroRawSensorAz = null;
+        let gyroRawSensorAlt = null;
+        let gyroSensorOriginAz = null;
+        let gyroAnchorViewAz = 135;
+        let gyroTouchPitchOffset = 0;
+        let w3cOrientationSensor = null;
+        let gyroWatchdogTimer = null;
+        let prevGyroRafMs = performance.now();
+        window.gyro360Active = false;
+
+        function shortestAngleDeg(fromDeg, toDeg) {
+          return ((((toDeg - fromDeg) % 360) + 540) % 360) - 180;
+        }
+
+        function getScreenOrientationRad() {
+          let angle = 0;
+          if (window.screen && window.screen.orientation && typeof window.screen.orientation.angle === "number") {
+            angle = window.screen.orientation.angle;
+          } else if (typeof window.orientation === "number") {
+            angle = window.orientation;
           }
-          if (typeof e.beta === "number") {
-            // telephone tenu verticalement (~65 degres) -> horizon 0 deg
-            const targetAlt = Math.max(-28, Math.min(45, (e.beta - 62) * 0.65));
-            viewAltitude += (targetAlt - viewAltitude) * 0.18;
+          return (angle * Math.PI) / 180;
+        }
+
+        // Conversion exacte W3C Euler Z-X'-Y'' -> Quaternion 3D -> Rayon optique arrière (-Z)
+        // Élimine à 100% le retournement de ±180° (gimbal lock) quand le téléphone est tenu verticalement (beta ≈ 90°) !
+        function w3cEulerToAzAlt(alphaDeg, betaDeg, gammaDeg) {
+          const deg2rad = Math.PI / 180;
+          const alpha = (alphaDeg || 0) * deg2rad;
+          const beta = (betaDeg || 0) * deg2rad;
+          const gamma = -(gammaDeg || 0) * deg2rad;
+          const orient = getScreenOrientationRad();
+
+          // Quaternion intrinsèque YXZ(beta, alpha, gamma) identique à THREE.DeviceOrientationControls
+          const c1 = Math.cos(beta / 2), s1 = Math.sin(beta / 2);
+          const c2 = Math.cos(alpha / 2), s2 = Math.sin(alpha / 2);
+          const c3 = Math.cos(gamma / 2), s3 = Math.sin(gamma / 2);
+
+          let qx = s1 * c2 * c3 + c1 * s2 * s3;
+          let qy = c1 * s2 * c3 - s1 * c2 * s3;
+          let qz = c1 * c2 * s3 - s1 * s2 * c3;
+          let qw = c1 * c2 * c3 + s1 * s2 * s3;
+
+          // Multiplier par q1 = rotX(-90°) : (-sqrt(0.5), 0, 0, sqrt(0.5))
+          const sq = Math.SQRT1_2;
+          const m1x = qx * sq + qw * (-sq);
+          const m1y = qy * sq + qz * (-sq);
+          const m1z = qz * sq - qy * (-sq);
+          const m1w = qw * sq - qx * (-sq);
+
+          // Multiplier par q0 = rotZ(-orient) : (0, 0, -sin(orient/2), cos(orient/2))
+          const co = Math.cos(-orient / 2), so = Math.sin(-orient / 2);
+          const fxQ = m1x * co + m1y * so;
+          const fyQ = m1y * co - m1x * so;
+          const fzQ = m1z * co + m1w * so;
+          const fwQ = m1w * co - m1z * so;
+
+          // Projeter le vecteur avant caméra v = (0, 0, -1) par le quaternion final q * (0,0,-1) * q^-1
+          const vx = -2 * (fxQ * fzQ + fwQ * fyQ);
+          const vy = -2 * (fyQ * fzQ - fwQ * fxQ);
+          const vz = -(1 - 2 * (fxQ * fxQ + fyQ * fyQ));
+
+          const az = ((Math.atan2(vx, -vz) * 180) / Math.PI + 360) % 360;
+          const alt = (Math.asin(Math.max(-1, Math.min(1, vy))) * 180) / Math.PI;
+          return { az, alt };
+        }
+
+        // Conversion Quaternion matériel [qx, qy, qz, qw] (W3C RelativeOrientationSensor / AbsoluteOrientationSensor)
+        function hardwareQuatToAzAlt(qArr) {
+          if (!qArr || qArr.length < 4) return null;
+          // Repère Android ENU (X=Est, Y=Nord, Z=Haut) -> Repère 3D (X=Est, Y=Haut, -Z=Nord)
+          // Changement de base : x3d = qx, y3d = qz, z3d = -qy, w3d = qw, suivi de rotZ(-orient)
+          const orient = getScreenOrientationRad();
+          const co = Math.cos(-orient / 2), so = Math.sin(-orient / 2);
+          const bx = qArr[0], by = qArr[2], bz = -qArr[1], bw = qArr[3];
+          // Multiplier par rotX(-90°) pour aligner la normale arrière du téléphone avec l'horizon
+          const sq = Math.SQRT1_2;
+          const m1x = bx * sq + bw * (-sq);
+          const m1y = by * sq + bz * (-sq);
+          const m1z = bz * sq - by * (-sq);
+          const m1w = bw * sq - bx * (-sq);
+
+          const fxQ = m1x * co + m1y * so;
+          const fyQ = m1y * co - m1x * so;
+          const fzQ = m1z * co + m1w * so;
+          const fwQ = m1w * co - m1z * so;
+
+          const vx = -2 * (fxQ * fzQ + fwQ * fyQ);
+          const vy = -2 * (fyQ * fzQ - fwQ * fxQ);
+          const vz = -(1 - 2 * (fxQ * fxQ + fyQ * fyQ));
+
+          const az = ((Math.atan2(vx, -vz) * 180) / Math.PI + 360) % 360;
+          const alt = (Math.asin(Math.max(-1, Math.min(1, vy))) * 180) / Math.PI;
+          return { az, alt };
+        }
+
+        function updateGyroHudUI() {
+          if (!gyroHudBar) return;
+          gyroHudBar.classList.toggle("visible", gyroActive);
+          if (!gyroActive) return;
+          if (gyroModeBtn) {
+            gyroModeBtn.classList.toggle("compass-on", gyroCompassMode);
+            gyroModeBtn.innerHTML = gyroCompassMode ? "&#x1F9ED; Boussole" : "&#x1F9ED; Relatif";
+          }
+          if (gyroDotEl) {
+            gyroDotEl.style.background = gyroSensorReceived ? "#10b981" : "#f59e0b";
+            gyroDotEl.style.boxShadow = gyroSensorReceived ? "0 0 8px #10b981" : "0 0 8px #f59e0b";
+          }
+          if (gyroReadoutEl) {
+            if (gyroSensorReceived) {
+              const azRound = Math.round(((viewAzimuth % 360) + 360) % 360);
+              const altRound = Math.round(viewAltitude);
+              const altSign = altRound >= 0 ? "+" : "";
+              gyroReadoutEl.textContent = `AZ ${azRound}° • ${altSign}${altRound}° (${gyroSourceLabel})`;
+            } else {
+              gyroReadoutEl.textContent = gyroSourceLabel;
+            }
+          }
+          window.dispatchEvent(new Event("resize"));
+        }
+
+        function ingestGyroAzAlt(azDeg, altDeg, srcName) {
+          if (!gyroActive || typeof azDeg !== "number" || isNaN(azDeg)) return;
+          const firstSample = !gyroSensorReceived;
+          if (firstSample) {
+            gyroSensorReceived = true;
+            if (gyroWatchdogTimer) {
+              clearTimeout(gyroWatchdogTimer);
+              gyroWatchdogTimer = null;
+            }
+          }
+          gyroSourceLabel = srcName;
+          gyroRawSensorAz = ((azDeg % 360) + 360) % 360;
+          gyroRawSensorAlt = Math.max(-68, Math.min(82, Number(altDeg) || 0));
+
+          if (gyroSensorOriginAz === null) {
+            gyroSensorOriginAz = gyroRawSensorAz;
+            gyroAnchorViewAz = viewAzimuth;
+            gyroTouchPitchOffset = 0;
+          }
+          if (firstSample) {
+            updateGyroHudUI();
           }
         }
+
+        // Réception directe 60Hz depuis le pont matériel Android APK (SensorManager TYPE_GAME_ROTATION_VECTOR / TYPE_ROTATION_VECTOR)
+        window.__onAndroidNativeGyro = function (azDeg, altDeg, rollDeg, isAbsolute) {
+          ingestGyroAzAlt(azDeg, altDeg, isAbsolute ? "APK Nord" : "APK 60Hz");
+        };
+
+        // Hook public de test / simulation DevTools : window.__injectGyroSample(alpha, beta, gamma, isAbsolute)
+        window.__injectGyroSample = function (alpha, beta, gamma, isAbsolute = false) {
+          const r = w3cEulerToAzAlt(alpha, beta, gamma);
+          ingestGyroAzAlt(r.az, r.alt, isAbsolute ? "Nord" : "360°");
+        };
+
+        function handleW3CDeviceOrientation(e) {
+          if (!gyroActive) return;
+          // Si le pont APK natif ou Generic Sensor API pilote déjà le gyro, ignorer le doublon W3C
+          if (window.AndroidGyroBridge && gyroSensorReceived && gyroSourceLabel.startsWith("APK")) return;
+          if (w3cOrientationSensor && gyroSensorReceived && gyroSourceLabel.includes("60Hz")) return;
+          if (e.alpha === null && e.beta === null) return;
+
+          if (gyroCompassMode && e.type === "deviceorientation" && !e.absolute && typeof e.webkitCompassHeading !== "number") {
+            // En mode boussole, privilégier deviceorientationabsolute si disponible
+            if (window.__hasAbsoluteOrientationEvent) return;
+          }
+          if (e.type === "deviceorientationabsolute") {
+            window.__hasAbsoluteOrientationEvent = true;
+          }
+
+          const conv = w3cEulerToAzAlt(e.alpha || 0, e.beta || 0, e.gamma || 0);
+          let finalAz = conv.az;
+          if (gyroCompassMode && typeof e.webkitCompassHeading === "number" && !isNaN(e.webkitCompassHeading)) {
+            finalAz = ((e.webkitCompassHeading % 360) + 360) % 360;
+          }
+          ingestGyroAzAlt(finalAz, conv.alt, (e.absolute || gyroCompassMode) ? "Nord" : "360°");
+        }
+
+        // Boucle haute fréquence 60/120Hz de fusion Gyroscope + Glissement Tactile + Repères Landmarks
+        function updateGyro360Frame() {
+          requestAnimationFrame(updateGyro360Frame);
+          const nowMs = performance.now();
+          const dt = Math.min(0.25, Math.max(0.002, (nowMs - prevGyroRafMs) * 0.001));
+          prevGyroRafMs = nowMs;
+
+          if (!gyroActive || !gyroSensorReceived || gyroRawSensorAz === null) return;
+
+          // Si l'utilisateur glisse le doigt ou laisse filer l'inertie tactile, recaler l'ancre du gyro en continu (zéro rebond au lâcher !)
+          if (isDraggingSky || Math.abs(touchVelAz) > 0.02 || Math.abs(touchVelAlt) > 0.02) {
+            gyroSensorOriginAz = gyroRawSensorAz;
+            gyroAnchorViewAz = viewAzimuth;
+            gyroTouchPitchOffset = viewAltitude - gyroRawSensorAlt;
+            return;
+          }
+
+          // Si l'utilisateur vient de toucher un repère (ex: Frontenac 6°, Quai 87 130°), laisser le vol caméra s'aligner puis ancrer le gyro dessus !
+          if (camTargetAz !== null) {
+            gyroSensorOriginAz = gyroRawSensorAz;
+            gyroAnchorViewAz = ((camTargetAz % 360) + 360) % 360;
+            return;
+          }
+
+          const desiredAz = gyroCompassMode
+            ? gyroRawSensorAz
+            : ((gyroAnchorViewAz + shortestAngleDeg(gyroSensorOriginAz, gyroRawSensorAz) + 360) % 360);
+          const desiredAlt = Math.max(-35, Math.min(82, gyroRawSensorAlt + gyroTouchPitchOffset));
+
+          const smoothFactor = 1 - Math.pow(0.00004, dt);
+          const dAz = shortestAngleDeg(viewAzimuth, desiredAz);
+          viewAzimuth = ((viewAzimuth + dAz * smoothFactor) % 360 + 360) % 360;
+          viewAltitude += (desiredAlt - viewAltitude) * smoothFactor;
+
+          if (gyroReadoutEl && Math.floor(nowMs / 120) !== Math.floor((nowMs - dt * 1000) / 120)) {
+            const azRound = Math.round(viewAzimuth);
+            const altRound = Math.round(viewAltitude);
+            gyroReadoutEl.textContent = `AZ ${azRound}° • ${altRound >= 0 ? "+" : ""}${altRound}° (${gyroSourceLabel})`;
+          }
+        }
+        requestAnimationFrame(updateGyro360Frame);
+
+        window.__get3DCameraState = () => ({
+          az: viewAzimuth,
+          alt: viewAltitude,
+          fov: viewFOV,
+          gyroActive,
+          gyroCompassMode,
+          gyroSourceLabel,
+          gyroSensorReceived
+        });
+
+        function stopAllGyroSensors() {
+          gyroActive = false;
+          window.gyro360Active = false;
+          gyroSensorReceived = false;
+          gyroRawSensorAz = null;
+          gyroSensorOriginAz = null;
+          if (gyroWatchdogTimer) {
+            clearTimeout(gyroWatchdogTimer);
+            gyroWatchdogTimer = null;
+          }
+          try {
+            if (window.AndroidGyroBridge && typeof window.AndroidGyroBridge.stopGyro === "function") {
+              window.AndroidGyroBridge.stopGyro();
+            }
+          } catch (e) {}
+          try {
+            if (w3cOrientationSensor) {
+              w3cOrientationSensor.stop();
+              w3cOrientationSensor = null;
+            }
+          } catch (e) {}
+          window.removeEventListener("deviceorientationabsolute", handleW3CDeviceOrientation, true);
+          window.removeEventListener("deviceorientation", handleW3CDeviceOrientation, true);
+          gyroBtn?.classList.remove("active-cam");
+          if (gyroBtn) gyroBtn.innerHTML = "&#x1F9ED; Gyro";
+          updateGyroHudUI();
+        }
+
+        async function startAllGyroSensors() {
+          if (typeof DeviceOrientationEvent !== "undefined" && typeof DeviceOrientationEvent.requestPermission === "function") {
+            try {
+              const perm = await DeviceOrientationEvent.requestPermission();
+              if (perm !== "granted") {
+                alert("Permission d'orientation refusée par le navigateur.");
+                return;
+              }
+            } catch (err) {}
+          }
+
+          // Couper l'auto-orbite si elle était activée afin de donner 100% du contrôle au Gyro 360°
+          const orbBtn = document.getElementById("hud-cam-orbit");
+          if (orbBtn && orbBtn.classList.contains("active-cam")) {
+            orbBtn.click();
+          }
+
+          gyroSensorOriginAz = null;
+          gyroAnchorViewAz = viewAzimuth;
+          gyroTouchPitchOffset = 0;
+          gyroSensorReceived = false;
+          gyroSourceLabel = "Initialisation Gyro 360°...";
+          gyroActive = true;
+          window.gyro360Active = true;
+          camTargetAz = null;
+          touchVelAz = 0;
+          touchVelAlt = 0;
+
+          gyroBtn?.classList.add("active-cam");
+          if (gyroBtn) gyroBtn.innerHTML = "&#x1F7E2; Gyro 360&deg;";
+          updateGyroHudUI();
+
+          // Niveau 1 : Pont Matériel Android Natif (APK SensorManager 60Hz)
+          if (window.AndroidGyroBridge && typeof window.AndroidGyroBridge.startGyro === "function") {
+            try {
+              window.AndroidGyroBridge.startGyro(gyroCompassMode ? "compass" : "game");
+            } catch (e) {}
+          }
+
+          // Niveau 2 : W3C Generic Sensor API (Android Chrome HTTPS/WebAPK)
+          try {
+            const SensorCtor = gyroCompassMode ? window.AbsoluteOrientationSensor : (window.RelativeOrientationSensor || window.AbsoluteOrientationSensor);
+            if (typeof SensorCtor === "function") {
+              w3cOrientationSensor = new SensorCtor({ frequency: 60, referenceFrame: "screen" });
+              w3cOrientationSensor.addEventListener("reading", () => {
+                if (!gyroActive || !w3cOrientationSensor || !w3cOrientationSensor.quaternion) return;
+                if (window.AndroidGyroBridge && gyroSourceLabel.startsWith("APK")) return;
+                const q = w3cOrientationSensor.quaternion;
+                // Avec referenceFrame: "screen", l'orientation écran est déjà compensée par Android Chrome !
+                const sq = Math.SQRT1_2;
+                const bx = q[0], by = q[2], bz = -q[1], bw = q[3];
+                const fxQ = bx * sq + bw * (-sq);
+                const fyQ = by * sq + bz * (-sq);
+                const fzQ = bz * sq - by * (-sq);
+                const fwQ = bw * sq - bx * (-sq);
+                const vx = -2 * (fxQ * fzQ + fwQ * fyQ);
+                const vy = -2 * (fyQ * fzQ - fwQ * fxQ);
+                const vz = -(1 - 2 * (fxQ * fxQ + fyQ * fyQ));
+                const az = ((Math.atan2(vx, -vz) * 180) / Math.PI + 360) % 360;
+                const alt = (Math.asin(Math.max(-1, Math.min(1, vy))) * 180) / Math.PI;
+                ingestGyroAzAlt(az, alt, gyroCompassMode ? "Boussole Fusion" : "Gyro Fusion 60Hz");
+              });
+              w3cOrientationSensor.addEventListener("error", () => {
+                w3cOrientationSensor = null;
+              });
+              w3cOrientationSensor.start();
+            }
+          } catch (e) {
+            w3cOrientationSensor = null;
+          }
+
+          // Niveau 3 : Événements W3C deviceorientationabsolute & deviceorientation (Quaternion anti-gimbal-lock)
+          window.addEventListener("deviceorientationabsolute", handleW3CDeviceOrientation, true);
+          window.addEventListener("deviceorientation", handleW3CDeviceOrientation, true);
+
+          gyroWatchdogTimer = setTimeout(() => {
+            if (gyroActive && !gyroSensorReceived) {
+              const isInsec = window.location.protocol === "file:" || (window.location.protocol === "http:" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1");
+              gyroSourceLabel = isInsec
+                ? "Capteur bloqué en file:// — Utilisez l'APK Android"
+                : "Aucun gyroscope détecté (glissez au doigt)";
+              updateGyroHudUI();
+            }
+          }, 1100);
+        }
+
+        function recalibrateGyroHere() {
+          hapticTap(16);
+          if (gyroCompassMode) {
+            gyroCompassMode = false;
+            if (window.AndroidGyroBridge && typeof window.AndroidGyroBridge.startGyro === "function") {
+              try { window.AndroidGyroBridge.startGyro("game"); } catch (e) {}
+            }
+          }
+          gyroSensorOriginAz = gyroRawSensorAz;
+          gyroAnchorViewAz = viewAzimuth;
+          gyroTouchPitchOffset = 0;
+          viewAltitude = 0;
+          updateGyroHudUI();
+        }
+
         if (gyroBtn) {
-          gyroBtn.addEventListener("click", async (e) => {
+          gyroBtn.addEventListener("click", (e) => {
             e.stopPropagation();
             hapticTap(14);
-            if (!gyroActive) {
-              if (typeof DeviceOrientationEvent !== "undefined" && typeof DeviceOrientationEvent.requestPermission === "function") {
-                try {
-                  const perm = await DeviceOrientationEvent.requestPermission();
-                  if (perm !== "granted") return;
-                } catch (err) {}
-              }
-              gyroBaseAlpha = null;
-              gyroActive = true;
-              window.addEventListener("deviceorientation", handleDeviceOrientationS24, true);
-              gyroBtn.classList.add("active-cam");
-            } else {
-              gyroActive = false;
-              window.removeEventListener("deviceorientation", handleDeviceOrientationS24, true);
-              gyroBtn.classList.remove("active-cam");
-            }
+            if (!gyroActive) startAllGyroSensors();
+            else stopAllGyroSensors();
           });
         }
+        gyroRecenterBtn?.addEventListener("click", (e) => {
+          e.stopPropagation();
+          recalibrateGyroHere();
+        });
+        gyroModeBtn?.addEventListener("click", (e) => {
+          e.stopPropagation();
+          hapticTap(12);
+          gyroCompassMode = !gyroCompassMode;
+          if (gyroActive) {
+            stopAllGyroSensors();
+            startAllGyroSensors();
+          }
+        });
+        gyroCloseBtn?.addEventListener("click", (e) => {
+          e.stopPropagation();
+          hapticTap(10);
+          stopAllGyroSensors();
+        });
+
+        // 5. Gestion du bouton Retour physique / gestuel Android (ferme modales/tiroirs avant de quitter l'APK)
+        window.__handleAndroidBack = function () {
+          const portQcModal = document.getElementById("portqc-vessels-modal");
+          if (portQcModal && portQcModal.style.display === "flex") {
+            portQcModal.style.display = "none";
+            return true;
+          }
+          const openModal = Array.from(document.querySelectorAll(".modal-overlay, #universe-modal")).find(
+            (m) => m.classList.contains("active") || m.classList.contains("open") || getComputedStyle(m).display === "flex"
+          );
+          if (openModal) {
+            const closeBtn = openModal.querySelector(".close-modal, [data-close-modal], button");
+            if (closeBtn && closeBtn.id !== "copy-template-btn") closeBtn.click();
+            else openModal.style.display = "none";
+            return true;
+          }
+          if (headerEl && headerEl.classList.contains("s24-tools-open")) {
+            toolsDrawerBtn?.click();
+            return true;
+          }
+          if (hudQuickActions && hudQuickActions.classList.contains("android-hud-expanded")) {
+            hudExpandBtn?.click();
+            return true;
+          }
+          const insp = document.getElementById("inspect-3d-popup");
+          if (insp && insp.classList.contains("visible")) {
+            document.getElementById("inspect-3d-close")?.click();
+            return true;
+          }
+          if (document.body.classList.contains("hide-ui")) {
+            document.getElementById("clean-ui-toggle")?.click();
+            return true;
+          }
+          return false;
+        };
 
         if (!tabNav) return;
 
@@ -52283,7 +52998,7 @@
               }
             });
 
-            // Gerer la visibilite des colonnes conteneurs sur mobile (<= 900px)
+            // Gérer la visibilité des colonnes conteneurs sur mobile (<= 900px)
             document.querySelectorAll(".col-left, .col-mid, .col-right").forEach((col) => {
               if (window.innerWidth <= 900) {
                 const hasActive = col.querySelector(".mobile-active-card") !== null;
@@ -52298,7 +53013,6 @@
             window.scrollTo({ top: 0, behavior: "smooth" });
           }
 
-          // Declencher un recalcul de dimensionnement pour Three.js et la carte Leaflet/AIS
           setTimeout(() => {
             window.dispatchEvent(new Event("resize"));
           }, 60);
@@ -52322,7 +53036,7 @@
           }
         });
 
-        // Activer la vue 3D par defaut au chargement
+        // Activer la vue 3D par défaut au chargement
         activateTab("anim-card");
       }
 

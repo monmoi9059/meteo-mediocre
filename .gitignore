@@ -8,3 +8,13 @@ test.html
 test_lightning.py
 test_rest.py
 get_env.js
+
+# Android Gradle build & generated assets
+android-app/.gradle/
+android-app/build/
+android-app/app/build/
+android-app/local.properties
+android-app/app/src/main/assets/
+*.jks
+*.keystore
+

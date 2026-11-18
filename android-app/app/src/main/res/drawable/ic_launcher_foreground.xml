@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Anneau Gyroscope 360° Or Valero -->
+    <path
+        android:strokeColor="#FDB913"
+        android:strokeWidth="2.8"
+        android:fillColor="#00000000"
+        android:pathData="M54,24 A30,30 0 1,1 53.9,24 Z" />
+    <!-- Repères cardinaux Nord / Est / Sud / Ouest -->
+    <path
+        android:fillColor="#38BDF8"
+        android:pathData="M54,19 L57,26 L51,26 Z" />
+    <!-- Quai en T Valero & Navire Pétrolier stylisé -->
+    <path
+        android:fillColor="#E2E8F0"
+        android:pathData="M33,61 L75,61 L71,69 L37,69 Z" />
+    <path
+        android:fillColor="#EF4444"
+        android:pathData="M36,67 L72,67 L70,71 L38,71 Z" />
+    <path
+        android:fillColor="#00809D"
+        android:pathData="M44,53 L62,53 L64,61 L42,61 Z" />
+    <path
+        android:fillColor="#FDB913"
+        android:pathData="M56,45 L61,45 L61,53 L56,53 Z" />
+</vector>
