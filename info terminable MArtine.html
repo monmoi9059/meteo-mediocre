@@ -36393,6 +36393,7 @@
             ]
           }
         };
+        window.DEFAULT_PORTQC_SNAPSHOT = DEFAULT_PORTQC_SNAPSHOT;
 
         if (!window.livePortVessels) {
           let cachedSnap = null;
@@ -51446,7 +51447,8 @@
       }
 
       function reconcilePortQcTimeline(rawSnap, nowMs = Date.now()) {
-        const base = rawSnap ? JSON.parse(JSON.stringify(rawSnap)) : JSON.parse(JSON.stringify(DEFAULT_PORTQC_SNAPSHOT));
+        const fallbackSnap = window.DEFAULT_PORTQC_SNAPSHOT || { version: 3, source: "seed_portqc", berth86: { berth: "86", occupied: false, upcoming: [] }, berth87: { berth: "87", occupied: false, upcoming: [] } };
+        const base = rawSnap ? JSON.parse(JSON.stringify(rawSnap)) : JSON.parse(JSON.stringify(fallbackSnap));
         const snapAgeMs = Math.max(0, nowMs - (base.fetchedAt || 0));
         const isFreshLive = base.source === "live_portqc" && snapAgeMs < 3.5 * 3600 * 1000;
 
@@ -51526,7 +51528,7 @@
         return base;
       }
 
-      window.rawPortVesselsSnapshot = JSON.parse(JSON.stringify(window.livePortVessels));
+      window.rawPortVesselsSnapshot = JSON.parse(JSON.stringify(window.livePortVessels || window.DEFAULT_PORTQC_SNAPSHOT || { berth86: {}, berth87: {} }));
       window.livePortVessels = reconcilePortQcTimeline(window.rawPortVesselsSnapshot);
 
       let portQcFetchInFlight = false;
@@ -51563,7 +51565,7 @@
         if (!modal || modal.style.display !== "flex") return;
         const body = document.getElementById("portqc-modal-content");
         if (!body) return;
-        const pv = window.livePortVessels || DEFAULT_PORTQC_SNAPSHOT;
+        const pv = window.livePortVessels || window.DEFAULT_PORTQC_SNAPSHOT || { berth86: {}, berth87: {} };
         const b86 = pv.berth86 || {};
         const b87 = pv.berth87 || {};
         const isLive = pv.source === "live_portqc";
@@ -51830,12 +51832,13 @@
             : (isLive ? `Port QC \u2022 ${timeLbl}` : "Horaire Port QC");
 
           const renderBerthPill = (blockEl, pillId, berthNum, bState) => {
+            blockEl.style.minWidth = "0";
             let pill = document.getElementById(pillId);
             if (!pill) {
               pill = document.createElement("div");
               pill.id = pillId;
               pill.style.cssText =
-                "display:flex;flex-direction:column;gap:0.12rem;padding:0.24rem 0.36rem;margin-bottom:0.26rem;border-radius:4px;background:var(--surface-subtle);border:1px solid var(--border);cursor:pointer;transition:border-color 0.2s ease;";
+                "display:flex;flex-direction:column;gap:0.12rem;min-width:0;max-width:100%;overflow:hidden;padding:0.24rem 0.34rem;margin-bottom:0.26rem;border-radius:4px;background:var(--surface-subtle);border:1px solid var(--border);cursor:pointer;transition:border-color 0.2s ease;";
               pill.title = `Cliquer pour centrer l'aper\u00e7u 3D sur le Poste ${berthNum}`;
               pill.addEventListener("click", (ev) => {
                 if (ev.target && ev.target.closest("button")) return;
@@ -51860,8 +51863,8 @@
             const shipHeadline = occ
               ? `${flagEmo} ${bState.name}`
               : (isSimOn && previewSpec
-                ? `\uD83D\uDC41\uFE0F 3D: ${flagEmo} ${previewSpec.name}`
-                : (bState.expected ? `Libre \u2022 \u23F3 ${flagEmo} ${bState.expected.name}` : "Poste libre (aucun navire)"));
+                ? `3D: ${flagEmo} ${previewSpec.name}`
+                : (bState.expected ? `\u23F3 ${flagEmo} ${bState.expected.name}` : "Poste libre (aucun navire)"));
 
             const nextNote = (occ && bState.expected && bState.expected.name)
               ? ` \u2022 Suiv: ${bState.expected.name}`
@@ -51869,29 +51872,29 @@
             const metaLine = occ
               ? `LOA ${Math.round(bState.loa || (berthNum === "87" ? 274 : 149))}m \u2022 ${bState.etd ? `D\u00e9p: ${bState.etd}` : (bState.typeLabel || "\u00C0 quai")}${nextNote}`
               : (bState.expected
-                ? `Attendu: ${bState.expected.eta || "Sous peu"} \u2022 ${Math.round(bState.expected.loa || 149)}m`
+                ? `Libre \u2022 Arr: ${bState.expected.eta || "Sous peu"} (${Math.round(bState.expected.loa || 149)}m)`
                 : `${srcTag}`);
 
             const previewBtnHtml = !occ
-              ? `<button type="button" data-act="sim-berth" data-berth="${berthNum}" class="theme-toggle" style="padding:0.02rem 0.24rem;font-size:0.54rem;line-height:1.2;${isSimOn ? "border-color:#38bdf8;color:#38bdf8;" : ""}" title="Afficher/masquer le prochain navire attendu en 3D au Poste ${berthNum}">\uD83D\uDC41\uFE0F 3D</button>`
+              ? `<button type="button" data-act="sim-berth" data-berth="${berthNum}" class="theme-toggle" style="padding:0.02rem 0.18rem;font-size:0.51rem;line-height:1.2;${isSimOn ? "border-color:#38bdf8;color:#38bdf8;" : ""}" title="Afficher/masquer le prochain navire attendu en 3D au Poste ${berthNum}">3D</button>`
               : "";
 
             const badgeLabel = bState.isManual ? "MANUEL" : (isLive ? "LIVE" : "HORAIRE");
             const badgeColor = bState.isManual ? "#38bdf8" : (isLive ? "#10b981" : "#f59e0b");
 
             pill.innerHTML =
-              `<div style="display:flex;justify-content:space-between;align-items:center;gap:0.2rem;">` +
-                `<span class="mono" style="font-size:0.61rem;font-weight:800;color:${occ || isSimOn ? "var(--text)" : "var(--text-muted)"};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escapeHtmlSimple(shipHeadline + " — " + srcTag)}">` +
+              `<div style="display:flex;justify-content:space-between;align-items:center;gap:0.18rem;min-width:0;">` +
+                `<span class="mono" style="flex:1;min-width:0;font-size:0.59rem;font-weight:800;color:${occ || isSimOn ? "var(--text)" : "var(--text-muted)"};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escapeHtmlSimple(shipHeadline + " — " + srcTag)}">` +
                   `<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${dotCol};margin-right:4px;vertical-align:middle;"></span>${escapeHtmlSimple(shipHeadline)}` +
                 `</span>` +
-                `<span style="display:inline-flex;gap:0.14rem;align-items:center;flex-shrink:0;">` +
+                `<span style="display:inline-flex;gap:0.12rem;align-items:center;flex-shrink:0;">` +
                   previewBtnHtml +
-                  `<button type="button" data-act="open-portqc-modal" class="theme-toggle" style="padding:0.02rem 0.2rem;font-size:0.54rem;line-height:1.2;" title="Voir l'horaire complet des Postes 86 &amp; 87 et options manuelles">\uD83D\uDCCB</button>` +
-                  `<button type="button" data-act="refresh-portqc" class="theme-toggle" style="padding:0.02rem 0.22rem;font-size:0.55rem;line-height:1.2;${portQcFetchInFlight ? "opacity:0.6;" : ""}" title="Actualiser en direct (${escapeHtmlSimple(srcTag)})">\u27F3</button>` +
+                  `<button type="button" data-act="open-portqc-modal" class="theme-toggle" style="padding:0.02rem 0.18rem;font-size:0.53rem;line-height:1.2;" title="Voir l'horaire complet des Postes 86 &amp; 87 et options manuelles">\uD83D\uDCCB</button>` +
+                  `<button type="button" data-act="refresh-portqc" class="theme-toggle" style="padding:0.02rem 0.2rem;font-size:0.54rem;line-height:1.2;${portQcFetchInFlight ? "opacity:0.6;" : ""}" title="Actualiser en direct (${escapeHtmlSimple(srcTag)})">\u27F3</button>` +
                 `</span>` +
               `</div>` +
-              `<div class="mono" style="font-size:0.54rem;color:var(--text-light);display:flex;justify-content:space-between;gap:0.2rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">` +
-                `<span style="overflow:hidden;text-overflow:ellipsis;" title="${escapeHtmlSimple(metaLine)}">${escapeHtmlSimple(metaLine)}</span>` +
+              `<div class="mono" style="font-size:0.53rem;color:var(--text-light);display:flex;justify-content:space-between;gap:0.18rem;min-width:0;white-space:nowrap;overflow:hidden;">` +
+                `<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;" title="${escapeHtmlSimple(metaLine)}">${escapeHtmlSimple(metaLine)}</span>` +
                 `<span style="color:${badgeColor};font-weight:800;flex-shrink:0;">${badgeLabel}</span>` +
               `</div>`;
 
@@ -51948,7 +51951,7 @@
       }
 
       // Canal 1 : Relais Cloud GitHub (instantané, Access-Control-Allow-Origin: * partout y compris depuis file:// !)
-      async function fetchGithubRelaySnapshot(timeoutMs = 5000) {
+      async function fetchGithubRelaySnapshot(timeoutMs = 9000) {
         const bust = Math.floor(Date.now() / 30000);
         const tasks = [
           // 1A. API GitHub Contents (zéro délai de cache CDN)
@@ -51974,7 +51977,7 @@
         // 1C. Lecture locale même-origine (si servi via HTTP/HTTPS/GitHub Pages)
         if (window.location.protocol === "http:" || window.location.protocol === "https:") {
           tasks.unshift(
-            fetchCorsSafeText(`./live-vessels-86-87.json?_t=${bust}`, 2500).then((raw) => {
+            fetchCorsSafeText(`./live-vessels-86-87.json?_t=${bust}`, 3500).then((raw) => {
               const snap = JSON.parse(raw);
               if (!snap || !snap.berth86 || !snap.berth87) throw new Error("Invalid local JSON");
               snap.source = "live_portqc";
@@ -51986,53 +51989,63 @@
         return Promise.any(tasks);
       }
 
-      // Canal 2 : Course parallèle multi-passerelles directement sur portquebec.ca (FR + EN)
-      async function fetchDirectPortQcLive(timeoutMs = 7000) {
+      // Canal 2 : Course par vagues contrôlées directement sur portquebec.ca (évite de saturer les connexions proxy/mobiles)
+      async function fetchDirectPortQcLive(timeoutMs = 8000) {
         const bust = Math.floor(Date.now() / 60000);
         const frBust = `${PORTQC_SCHEDULE_URL}?_t=${bust}`;
         const enBust = `${PORTQC_EN_SCHEDULE_URL}?_t=${bust}`;
 
-        const directGateways = [
-          `https://api.allorigins.win/get?url=${encodeURIComponent(frBust)}`,
-          `https://api.allorigins.win/get?url=${encodeURIComponent(enBust)}`,
-          `https://r.jina.ai/${PORTQC_SCHEDULE_URL}`,
-          `https://r.jina.ai/${PORTQC_EN_SCHEDULE_URL}`,
-          `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(PORTQC_SCHEDULE_URL)}`,
-          `https://corsproxy.io/?url=${encodeURIComponent(PORTQC_SCHEDULE_URL)}`
-        ];
+        const tryGatewayWave = (urls, waveTimeout) =>
+          Promise.any(
+            urls.map(async (gwUrl) => {
+              const txt = await fetchCorsSafeText(gwUrl, waveTimeout);
+              const parsed = parsePortQuebecSchedule(txt, "direct_portqc");
+              if (!parsed || !parsed.berth86 || !parsed.berth87) {
+                throw new Error("Unparseable gateway response");
+              }
+              return parsed;
+            })
+          );
 
-        return Promise.any(
-          directGateways.map(async (gwUrl) => {
-            const txt = await fetchCorsSafeText(gwUrl, timeoutMs);
-            const parsed = parsePortQuebecSchedule(txt, "direct_portqc");
-            if (!parsed || !parsed.berth86 || !parsed.berth87) {
-              throw new Error("Unparseable gateway response");
-            }
-            return parsed;
-          })
-        );
+        try {
+          return await tryGatewayWave(
+            [
+              `https://api.allorigins.win/get?url=${encodeURIComponent(frBust)}`,
+              `https://r.jina.ai/${PORTQC_SCHEDULE_URL}`,
+              `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(PORTQC_SCHEDULE_URL)}`
+            ],
+            timeoutMs
+          );
+        } catch (e) {
+          return await tryGatewayWave(
+            [
+              `https://api.allorigins.win/get?url=${encodeURIComponent(enBust)}`,
+              `https://r.jina.ai/${PORTQC_EN_SCHEDULE_URL}`,
+              `https://corsproxy.io/?url=${encodeURIComponent(PORTQC_SCHEDULE_URL)}`
+            ],
+            timeoutMs
+          );
+        }
       }
 
       async function fetchLiveBerthVessels(manualTrigger = false) {
-        if (portQcFetchInFlight) return;
+        if (portQcFetchInFlight && !manualTrigger) return;
         portQcFetchInFlight = true;
         updateLiveVesselDOMBadges();
         renderPortQcModalBodyIfOpen();
 
         let appliedDirect = false;
         try {
-          const timeoutRelay = manualTrigger ? 6000 : 4800;
-          const timeoutDirect = manualTrigger ? 8500 : 6800;
+          const timeoutRelay = manualTrigger ? 10000 : 9000;
+          const timeoutDirect = manualTrigger ? 8500 : 7000;
 
-          const relayPromise = fetchGithubRelaySnapshot(timeoutRelay)
-            .then((relaySnap) => {
-              if (!appliedDirect && relaySnap) {
-                applyIncomingPortQcSnapshot(relaySnap, true);
-              }
-              return relaySnap;
-            })
-            .catch(() => null);
+          // Priorité immédiate au Canal 1 (Relais Cloud GitHub / JSON local : léger, fiable à 100%, < 300 ms)
+          const relaySnap = await fetchGithubRelaySnapshot(timeoutRelay).catch(() => null);
+          if (relaySnap && !appliedDirect) {
+            applyIncomingPortQcSnapshot(relaySnap, true);
+          }
 
+          // Canal 2 en arrière-plan (ou immédiat si le relais a échoué) pour capter une mise à jour minute par minute directe
           const directPromise = fetchDirectPortQcLive(timeoutDirect)
             .then((directSnap) => {
               if (directSnap) {
@@ -52043,7 +52056,9 @@
             })
             .catch(() => null);
 
-          await Promise.allSettled([relayPromise, directPromise]);
+          if (!relaySnap || manualTrigger) {
+            await directPromise;
+          }
         } finally {
           portQcFetchInFlight = false;
           window.livePortVessels = reconcilePortQcTimeline(window.rawPortVesselsSnapshot || window.livePortVessels);
