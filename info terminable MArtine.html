@@ -11972,8 +11972,8 @@
                   cx="0"
                   cy="50"
                   r="3"
-                  fill="#8b5cf6"
-                  filter="drop-shadow(0 0 4px #8b5cf6)"
+                  fill="#38bdf8"
+                  filter="drop-shadow(0 0 4px #38bdf8)"
                 />
                 <circle
                   cx="-35.35"
@@ -17777,8 +17777,87 @@
     <script>
       const KNOWN_FULL_MOON = new Date("2024-01-25T17:54:00Z").getTime();
 
-      // --- GESTIONNAIRE DE TEMPS EFFECTIF (TEMPS RÉEL OU PROJECTION SCRUBBER) ---
+      // --- GESTIONNAIRE DE TEMPS EFFECTIF & FUSEAU HORAIRE MÉTÉO RÉEL (ST-ROMUALD / VILLE SÉLECTIONNÉE) ---
       window.scrubberOffsetMins = 0;
+      function getIanaUtcOffsetSec(timeZone, refUtcMs) {
+        try {
+          const d = new Date(typeof refUtcMs === "number" ? refUtcMs : Date.now());
+          const parts = new Intl.DateTimeFormat("en-US", {
+            timeZone: timeZone || "America/Toronto",
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+            hourCycle: "h23",
+          }).formatToParts(d);
+          const map = {};
+          for (let i = 0; i < parts.length; i++) map[parts[i].type] = parts[i].value;
+          const asUtc = Date.UTC(
+            Number(map.year),
+            Number(map.month) - 1,
+            Number(map.day),
+            Number(map.hour) % 24,
+            Number(map.minute),
+            Number(map.second)
+          );
+          const dFloorSec = Math.floor(d.getTime() / 1000) * 1000;
+          return Math.round((asUtc - dFloorSec) / 1000);
+        } catch (e) {
+          return -18000;
+        }
+      }
+      window.currentLocationTimeZone = "America/Toronto";
+      window.currentUtcOffsetSec = getIanaUtcOffsetSec("America/Toronto", Date.now());
+
+      function parseWeatherIsoMs(isoStr, utcOffsetSec) {
+        if (typeof isoStr === "number") return isoStr;
+        if (!isoStr || typeof isoStr !== "string") return NaN;
+        const s = isoStr.trim();
+        if (/[zZ]$|[+-]\d{2}:?\d{2}$/.test(s)) {
+          return Date.parse(s);
+        }
+        const m = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2}))?)?/.exec(s);
+        if (m) {
+          const offSec = typeof utcOffsetSec === "number" && !isNaN(utcOffsetSec)
+            ? utcOffsetSec
+            : window.currentUtcOffsetSec;
+          const wallUtcMs = Date.UTC(
+            Number(m[1]),
+            Number(m[2]) - 1,
+            Number(m[3]),
+            m[4] ? Number(m[4]) : 0,
+            m[5] ? Number(m[5]) : 0,
+            m[6] ? Number(m[6]) : 0
+          );
+          return wallUtcMs - offSec * 1000;
+        }
+        return Date.parse(s);
+      }
+      window.parseWeatherIsoMs = parseWeatherIsoMs;
+
+      function getLocationLocalParts(utcMs, utcOffsetSec) {
+        const ms = typeof utcMs === "number" && !isNaN(utcMs) ? utcMs : Date.now();
+        const offSec = typeof utcOffsetSec === "number" && !isNaN(utcOffsetSec)
+          ? utcOffsetSec
+          : window.currentUtcOffsetSec;
+        const loc = new Date(ms + offSec * 1000);
+        const hours = loc.getUTCHours();
+        const minutes = loc.getUTCMinutes();
+        const seconds = loc.getUTCSeconds();
+        return {
+          year: loc.getUTCFullYear(),
+          month: loc.getUTCMonth(),
+          day: loc.getUTCDate(),
+          hours,
+          minutes,
+          seconds,
+          daySec: hours * 3600 + minutes * 60 + seconds,
+        };
+      }
+      window.getLocationLocalParts = getLocationLocalParts;
+
       function getEffectiveTimeMs() {
         return Date.now() + (window.scrubberOffsetMins || 0) * 60000;
       }
@@ -17788,12 +17867,12 @@
       // --- PLANIFICATION & ÉTAT DU BAT-SIGNAL (17h00 à 05h30 chaque jour avec option ON / OFF) ---
       window.batSignalMode = "auto"; // "auto" (17h00 à 05h30), "on" (forcé), "off" (éteint)
       function getEffectiveHourFraction() {
-        const d = typeof getEffectiveDate === "function" ? getEffectiveDate() : new Date();
-        return d.getHours() + d.getMinutes() / 60 + d.getSeconds() / 3600;
+        const lp = getLocationLocalParts(getEffectiveTimeMs());
+        return lp.daySec / 3600;
       }
       function isBatSignalScheduledTime() {
         const h = getEffectiveHourFraction();
-        // Actif de 17h00 (17.0) jusqu'à 05h30 (5.5) à chaque jour
+        // Actif de 17h00 (17.0) jusqu'à 05h30 (5.5) à chaque jour (heure locale réelle du terminal)
         return (h >= 17.0 || h < 5.5);
       }
       function isBatSignalActive() {
@@ -26738,41 +26817,153 @@
         return parseFloat(Math.max(-0.4, Math.min(23.5, climWater)).toFixed(1));
       }
 
-      // Séparation physique pluie / neige / pluie verglaçante selon les mesures API et la température réelle
+      // Séparation physique pluie / bruine / neige / pluie verglaçante / grésil selon les mesures API, le code OMM (WMO) et la température réelle
+      function getWmoMinPrecipEq(wCode) {
+        if (wCode === 51) return 0.22;
+        if (wCode === 53 || wCode === 56) return 0.52;
+        if (wCode === 55 || wCode === 57) return 1.05;
+        if (wCode === 61 || wCode === 80) return 0.48;
+        if (wCode === 63 || wCode === 66 || wCode === 81) return 2.10;
+        if (wCode === 65 || wCode === 67 || wCode === 82) return 6.20;
+        if (wCode === 71 || wCode === 77 || wCode === 85) return 0.34;
+        if (wCode === 73) return 1.25;
+        if (wCode === 75 || wCode === 86) return 2.95;
+        if (wCode === 95) return 2.40;
+        if (wCode >= 96 && wCode <= 99) return 5.80;
+        return 0;
+      }
+
       function splitRainAndSnowRates(precipMm, rawRainMm, rawSnowCm, weatherCode, tempC) {
-        const p = Math.max(0, Number(precipMm) || 0);
+        const wCode = Number(weatherCode) || 0;
+        const wmoFloor = getWmoMinPrecipEq(wCode);
+        const p = Math.max(0, Number(precipMm) || 0, wmoFloor);
         const rRaw = Math.max(0, Number(rawRainMm) || 0);
         const sRaw = Math.max(0, Number(rawSnowCm) || 0); // Open-Meteo snowfall en cm/h (1 cm ~ 1 mm eq. eau)
-        const wCode = Number(weatherCode) || 0;
         const t = typeof tempC === "number" && !isNaN(tempC) ? tempC : 10;
 
+        const isDrizzleCode = wCode >= 51 && wCode <= 57;
         const isFreezingCode = wCode === 56 || wCode === 57 || wCode === 66 || wCode === 67;
         const isSnowCode = (wCode >= 71 && wCode <= 77) || wCode === 85 || wCode === 86;
 
         if (isFreezingCode || (t <= 0.1 && rRaw > 0.04 && sRaw <= 0.02 && !isSnowCode)) {
           const liq = Math.max(rRaw, p);
-          return { rain: liq, snow: 0, isFreezingRain: liq > 0.01 };
+          return { rain: liq, snow: 0, isFreezingRain: liq > 0.01, isDrizzle: isDrizzleCode };
         }
         if (rRaw > 0.01 || sRaw > 0.01) {
           // Préserver les taux réels mesurés par le modèle météo (ex: neige fondante à +1.0°C ou mélange pluie-neige à 0°C)
+          const rainOut = isSnowCode && rRaw <= 0.02 ? 0 : Math.max(rRaw, (!isSnowCode && sRaw <= 0.01) ? wmoFloor : 0);
+          const snowOut = sRaw > 0.01 ? Math.max(sRaw, isSnowCode ? p : 0) : (isSnowCode ? p : 0);
           return {
-            rain: rRaw,
-            snow: sRaw > 0.01 ? Math.max(sRaw, isSnowCode ? p : 0) : 0,
-            isFreezingRain: isFreezingCode || (!isSnowCode && sRaw <= 0.02 && t <= 0.0 && rRaw > 0.04),
+            rain: rainOut,
+            snow: snowOut,
+            isFreezingRain: isFreezingCode || (!isSnowCode && sRaw <= 0.02 && t <= 0.0 && rainOut > 0.04),
+            isDrizzle: isDrizzleCode,
           };
         }
         if (p <= 0.005) {
-          return { rain: 0, snow: 0, isFreezingRain: false };
+          return { rain: 0, snow: 0, isFreezingRain: false, isDrizzle: false };
         }
-        if (isSnowCode || t <= -0.4) {
-          return { rain: 0, snow: p, isFreezingRain: false };
+        if (isSnowCode || (t <= -0.4 && !isDrizzleCode)) {
+          return { rain: 0, snow: p, isFreezingRain: false, isDrizzle: false };
         }
-        if (t < 1.1) {
-          // Zone de transition pluie-neige fondante (-0.4°C .. +1.1°C)
-          const snowFrac = (1.1 - t) / 1.5;
-          return { rain: p * (1 - snowFrac), snow: p * snowFrac, isFreezingRain: false };
+        if (isDrizzleCode && t <= -0.2) {
+          // Bruine verglaçante lorsque la bruine tombe sous le point de congélation
+          return { rain: p, snow: 0, isFreezingRain: true, isDrizzle: true };
         }
-        return { rain: p, snow: 0, isFreezingRain: false };
+        if (t < 1.2 && !isDrizzleCode) {
+          // Zone physique de transition pluie-neige fondante / grésil (-0.4°C .. +1.2°C)
+          const snowFrac = Math.max(0, Math.min(1, (1.2 - t) / 1.6));
+          return { rain: p * (1 - snowFrac), snow: p * snowFrac, isFreezingRain: false, isDrizzle: false };
+        }
+        return { rain: p, snow: 0, isFreezingRain: false, isDrizzle: isDrizzleCode };
+      }
+
+      // Cohérence physique entre le code OMM (WMO), la nébulosité multi-couches, l'humidité et la visibilité météorologique
+      function reconcileWmoAtmosphere(cond) {
+        if (!cond) return;
+        const wCode = Number(cond.weatherCode) || 0;
+        let cc = typeof cond.cloudCover === "number" ? cond.cloudCover : 30;
+        let ccLow = typeof cond.cloudCoverLow === "number" ? cond.cloudCoverLow : cc * 0.7;
+        let ccMid = typeof cond.cloudCoverMid === "number" ? cond.cloudCoverMid : cc * 0.5;
+        let ccHigh = typeof cond.cloudCoverHigh === "number" ? cond.cloudCoverHigh : cc * 0.4;
+        let vis = typeof cond.visibility === "number" && cond.visibility > 40 ? cond.visibility : 18000;
+        let rh = typeof cond.humidity === "number" ? cond.humidity : 68;
+
+        if (wCode === 3) {
+          cc = Math.max(cc, 88);
+          if (ccLow < 15 && ccMid < 15 && ccHigh < 50) ccMid = Math.max(ccMid, 82);
+        } else if (wCode === 2) {
+          cc = Math.max(25, Math.min(86, cc));
+        } else if (wCode === 1) {
+          cc = Math.max(8, Math.min(52, cc));
+        } else if (wCode === 45 || wCode === 48) {
+          // Brouillard / Brouillard givrant OMM 45 & 48
+          cc = Math.max(cc, 96);
+          ccLow = Math.max(ccLow, 96);
+          rh = Math.max(rh, 94);
+          vis = Math.min(vis, wCode === 48 ? 650 : 900);
+        } else if (wCode >= 51 && wCode <= 57) {
+          // Bruine / Bruine verglaçante (stratus bas marin)
+          cc = Math.max(cc, wCode >= 53 ? 95 : 88);
+          ccLow = Math.max(ccLow, wCode >= 53 ? 88 : 78);
+          rh = Math.max(rh, 86);
+          const visCap = (wCode === 55 || wCode === 57) ? 3400 : (wCode === 53 || wCode === 56 ? 5800 : 8800);
+          vis = Math.min(vis, visCap);
+        } else if ((wCode >= 61 && wCode <= 67) || (wCode >= 80 && wCode <= 82)) {
+          // Pluie stratiforme / Pluie verglaçante / Averses
+          const isShower = wCode >= 80;
+          cc = Math.max(cc, isShower ? 72 : 90);
+          ccLow = Math.max(ccLow, isShower ? 62 : 76);
+          ccMid = Math.max(ccMid, 68);
+          const heavy = wCode === 65 || wCode === 67 || wCode === 82;
+          const mod = wCode === 63 || wCode === 66 || wCode === 81;
+          vis = Math.min(vis, heavy ? 2600 : (mod ? 5800 : 10500));
+        } else if ((wCode >= 71 && wCode <= 77) || wCode === 85 || wCode === 86) {
+          // Chute de neige / Grains de neige / Averses de neige (forte extinction optique des flocons!)
+          cc = Math.max(cc, wCode === 85 ? 76 : 92);
+          ccLow = Math.max(ccLow, 72);
+          ccMid = Math.max(ccMid, 78);
+          const heavySnow = wCode === 75 || wCode === 86;
+          const modSnow = wCode === 73;
+          vis = Math.min(vis, heavySnow ? 900 : (modSnow ? 2200 : 5200));
+        } else if (wCode >= 95) {
+          // Orage / Cumulonimbus profond
+          cc = Math.max(cc, 94);
+          ccLow = Math.max(ccLow, 85);
+          ccMid = Math.max(ccMid, 90);
+          ccHigh = Math.max(ccHigh, 88);
+          vis = Math.min(vis, wCode >= 96 ? 2000 : 3800);
+        }
+
+        // Réduction physique supplémentaire par le taux de précipitation instantané (neige / forte pluie) ou saturation rosée
+        const snowRate = cond.snow || 0;
+        const rainRate = cond.rain || 0;
+        if (snowRate > 0.15) {
+          const snowVisLim = Math.max(450, 6200 / (1.0 + snowRate * 1.45));
+          vis = Math.min(vis, snowVisLim);
+        }
+        if (rainRate > 0.5) {
+          const rainVisLim = Math.max(1200, 13500 / (1.0 + rainRate * 0.42));
+          vis = Math.min(vis, rainVisLim);
+        }
+        const tVal = typeof cond.temp === "number" ? cond.temp : 10;
+        const tdVal = typeof cond.dewPoint === "number" ? cond.dewPoint : (tVal - 4);
+        const dewSpread = Math.max(0, tVal - tdVal);
+        if (wCode >= 45 || vis >= 19500) {
+          if (dewSpread <= 0.4 && rh >= 97) {
+            vis = Math.min(vis, 1400);
+          } else if (wCode >= 45 && dewSpread <= 1.4 && rh >= 91) {
+            vis = Math.min(vis, 5500);
+          }
+        }
+
+        cond.cloudCover = Math.round(Math.max(0, Math.min(100, cc)));
+        cond.cloudCoverLow = Math.round(Math.max(0, Math.min(100, ccLow)));
+        cond.cloudCoverMid = Math.round(Math.max(0, Math.min(100, ccMid)));
+        cond.cloudCoverHigh = Math.round(Math.max(0, Math.min(100, ccHigh)));
+        cond.visibility = Math.round(Math.max(120, Math.min(40000, vis)));
+        cond.humidity = Math.round(Math.max(5, Math.min(100, rh)));
+        cond.isDrizzle = Boolean(cond.isDrizzle || (wCode >= 51 && wCode <= 57));
       }
 
       function lerpColor(a, b, amount) {
@@ -26815,37 +27006,56 @@
 
       function recomputeSolarStateForDate(dObj) {
         const c = currentConditions;
-        const nowSec =
-          dObj.getHours() * 3600 + dObj.getMinutes() * 60 + dObj.getSeconds();
+        const effUtcMs = dObj instanceof Date && !isNaN(dObj) ? dObj.getTime() : getEffectiveTimeMs();
+        const locParts = getLocationLocalParts(effUtcMs);
+        const nowSec = locParts.daySec;
         c.nowSec = nowSec;
 
-        let sr = c.sunriseTime || 6 * 3600;
-        let ss = c.sunsetTime || 19.5 * 3600;
+        let sr = c.sunriseTime || 6.5 * 3600;
+        let ss = c.sunsetTime || 18.5 * 3600;
+        let exactSunAlt = null;
 
-        // Si Astronomy Engine est chargé, calculer le lever/coucher réel si absent
-        if (typeof Astronomy !== "undefined" && (!c.sunriseTime || !c.sunsetTime)) {
+        if (typeof Astronomy !== "undefined") {
           try {
             const obs = new Astronomy.Observer(currentLat, currentLon, 0);
-            const startOfDay = new Date(dObj);
-            startOfDay.setHours(0, 0, 0, 0);
-            const rise = Astronomy.SearchRiseSet(Astronomy.Body.Sun, obs, +1, startOfDay, 1);
-            const set = Astronomy.SearchRiseSet(Astronomy.Body.Sun, obs, -1, startOfDay, 1);
-            if (rise && rise.date) {
-              sr = rise.date.getHours() * 3600 + rise.date.getMinutes() * 60;
-              c.sunriseTime = sr;
+            const utcDate = new Date(effUtcMs);
+            const sEq = Astronomy.Equator(Astronomy.Body.Sun, utcDate, obs, true, true);
+            const sHor = Astronomy.Horizon(utcDate, obs, sEq.ra, sEq.dec, "normal");
+            if (sHor && typeof sHor.altitude === "number" && !isNaN(sHor.altitude)) {
+              exactSunAlt = sHor.altitude;
+              c.sunAltDeg = exactSunAlt;
+              c.sunAzDeg = sHor.azimuth;
             }
-            if (set && set.date) {
-              ss = set.date.getHours() * 3600 + set.date.getMinutes() * 60;
-              c.sunsetTime = ss;
+            if (!c.sunriseTime || !c.sunsetTime) {
+              const localMidnightUtcMs = Date.UTC(locParts.year, locParts.month, locParts.day, 0, 0, 0) - window.currentUtcOffsetSec * 1000;
+              const startOfLocalDay = new Date(localMidnightUtcMs);
+              const rise = Astronomy.SearchRiseSet(Astronomy.Body.Sun, obs, +1, startOfLocalDay, 1);
+              const set = Astronomy.SearchRiseSet(Astronomy.Body.Sun, obs, -1, startOfLocalDay, 1);
+              if (rise && rise.date) {
+                sr = getLocationLocalParts(rise.date.getTime()).daySec;
+                c.sunriseTime = sr;
+              }
+              if (set && set.date) {
+                ss = getLocationLocalParts(set.date.getTime()).daySec;
+                c.sunsetTime = ss;
+              }
             }
           } catch (e) {}
         }
 
-        const goldenMargin = 3600; // 1h autour du lever/coucher
-        c.isNight = nowSec < sr || nowSec > ss;
-        c.isGoldenHour =
-          Math.abs(nowSec - sr) <= goldenMargin ||
-          Math.abs(nowSec - ss) <= goldenMargin;
+        if (typeof exactSunAlt === "number") {
+          // Définition astronomique exacte : Jour si le bord supérieur réfracté du Soleil est au-dessus de l'horizon (-0.85°)
+          c.isNight = exactSunAlt < -0.85;
+          c.isCivilTwilight = exactSunAlt >= -6.5 && exactSunAlt < -0.85;
+          c.isGoldenHour = exactSunAlt >= -5.5 && exactSunAlt <= 7.8;
+        } else {
+          const goldenMargin = 3600;
+          c.isNight = nowSec < sr || nowSec > ss;
+          c.isCivilTwilight = (nowSec >= sr - 2100 && nowSec < sr) || (nowSec > ss && nowSec <= ss + 2100);
+          c.isGoldenHour =
+            Math.abs(nowSec - sr) <= goldenMargin ||
+            Math.abs(nowSec - ss) <= goldenMargin;
+        }
       }
 
       function updateDynamicBackground() {
@@ -29064,19 +29274,44 @@
           if (sym.includes("cloudy")) return 3;
           if (sym.includes("fog")) return 45;
           if (sym.includes("thunder")) return 95;
+          if (sym.includes("freezingrain") || sym.includes("sleet")) return cur.air_temperature <= 0 ? 66 : 61;
+          if (sym.includes("heavysnow")) return 75;
+          if (sym.includes("snowshowers")) return 85;
           if (sym.includes("snow")) return 71;
-          if (sym.includes("rain") || sym.includes("sleet")) return 61;
+          if (sym.includes("drizzle")) return 51;
+          if (sym.includes("heavyrain")) return 65;
+          if (sym.includes("rainshowers")) return 80;
+          if (sym.includes("rain")) return 61;
           return 0;
+        }
+
+        function estimateMetNoVis(details, code, pMm) {
+          const fogFrac = details.fog_area_fraction || 0;
+          const rh = details.relative_humidity ?? 68;
+          let v = 24000;
+          if (code === 45 || fogFrac >= 50) v = Math.max(350, 2200 - fogFrac * 18);
+          else if (rh >= 94) v = 4800;
+          else if (rh >= 86) v = 11500;
+          else if (rh >= 75) v = 17500;
+          if (code >= 71 && code <= 86) v = Math.min(v, Math.max(700, 4800 / (1 + pMm * 1.3)));
+          else if (pMm > 0.2) v = Math.min(v, Math.max(1800, 13000 / (1 + pMm * 0.45)));
+          return Math.round(v);
         }
 
         const wCode = mapSymbol(next1h?.summary?.symbol_code);
         const precip = next1h?.details?.precipitation_amount || 0;
-        const isSnow = wCode === 71;
+        const isSnow = (wCode >= 71 && wCode <= 77) || wCode === 85 || wCode === 86;
+        const curVis = estimateMetNoVis(cur, wCode, precip);
 
         const data = {
+          utc_offset_seconds: window.currentUtcOffsetSec,
+          timezone: window.currentLocationTimeZone || "America/Toronto",
           current: {
             temperature_2m: cur.air_temperature,
             apparent_temperature: calculateFeelsLike(cur.air_temperature, cur.wind_speed * 3.6, cur.relative_humidity ?? 65),
+            dew_point_2m: typeof cur.dew_point_temperature === "number"
+              ? cur.dew_point_temperature
+              : calculateDewPoint(cur.air_temperature, cur.relative_humidity ?? 65),
             wind_speed_10m: cur.wind_speed * 3.6,
             wind_gusts_10m: (cur.wind_speed_of_gust || cur.wind_speed * 1.3) * 3.6,
             wind_direction_10m: cur.wind_from_direction,
@@ -29090,11 +29325,13 @@
             cloud_cover_high: cur.cloud_area_fraction_high ?? cur.cloud_area_fraction * 0.4,
             surface_pressure: cur.air_pressure_at_sea_level,
             relative_humidity_2m: cur.relative_humidity,
+            visibility: curVis,
             weather_code: wCode,
           },
           hourly: {
             time: [],
             temperature_2m: [],
+            dew_point_2m: [],
             precipitation: [],
             rain: [],
             snowfall: [],
@@ -29133,12 +29370,17 @@
           const p = n1?.details?.precipitation_amount || 0;
           const c = mapSymbol(n1?.summary?.symbol_code);
           const cc = typeof d.cloud_area_fraction === "number" ? d.cloud_area_fraction : (c >= 3 ? 85 : c === 2 ? 50 : 15);
-          const hIsSnow = c === 71 || (d.air_temperature <= -0.2 && p > 0);
+          const hIsSnow = (c >= 71 && c <= 86) || (d.air_temperature <= -0.2 && p > 0);
           if (hIsSnow && d.air_temperature <= 0.5) runningSnowM = Math.min(0.8, runningSnowM + p * 0.008);
           else if (d.air_temperature > 2.0) runningSnowM = Math.max(0, runningSnowM - (d.air_temperature - 2.0) * 0.003);
 
           data.hourly.time.push(t);
           data.hourly.temperature_2m.push(d.air_temperature);
+          data.hourly.dew_point_2m.push(
+            typeof d.dew_point_temperature === "number"
+              ? d.dew_point_temperature
+              : calculateDewPoint(d.air_temperature, d.relative_humidity ?? 65)
+          );
           data.hourly.precipitation.push(p);
           data.hourly.rain.push(hIsSnow ? 0 : p);
           data.hourly.snowfall.push(hIsSnow ? p : 0);
@@ -29148,7 +29390,7 @@
             (d.wind_speed_of_gust || d.wind_speed * 1.3) * 3.6
           );
           data.hourly.wind_direction_10m.push(d.wind_from_direction);
-          data.hourly.visibility.push(20000);
+          data.hourly.visibility.push(estimateMetNoVis(d, c, p));
           data.hourly.cape.push(c === 95 ? 1200 : 0);
           data.hourly.weather_code.push(c);
           data.hourly.cloud_cover.push(cc);
@@ -29181,8 +29423,8 @@
           .forEach((dayStr) => {
             const dm = dailyMap[dayStr];
             data.daily.time.push(dayStr + "T00:00");
-            data.daily.sunrise.push(dayStr + "T06:00");
-            data.daily.sunset.push(dayStr + "T19:30");
+            data.daily.sunrise.push(dayStr + "T06:30");
+            data.daily.sunset.push(dayStr + "T18:30");
             data.daily.temperature_2m_max.push(Math.max(...dm.temps));
             data.daily.temperature_2m_min.push(Math.min(...dm.temps));
             data.daily.precipitation_sum.push(dm.precip);
@@ -29206,6 +29448,8 @@
           if (c === 116) return 2;
           if (c === 119 || c === 122) return 3;
           if (c === 143 || c === 248 || c === 260) return 45;
+          if (c === 263 || c === 266) return 51;
+          if (c === 281 || c === 284 || c === 311 || c === 314) return 66;
           if (c >= 386) return 95;
           if (c >= 323 && c <= 371) return 71;
           if (c >= 176) return 61;
@@ -29219,9 +29463,12 @@
         const day0SnowCm = raw.weather && raw.weather[0] ? parseFloat(raw.weather[0].totalSnow_cm || 0) : 0;
 
         const data = {
+          utc_offset_seconds: window.currentUtcOffsetSec,
+          timezone: window.currentLocationTimeZone || "America/Toronto",
           current: {
             temperature_2m: parseFloat(cur.temp_C),
             apparent_temperature: parseFloat(cur.FeelsLikeC),
+            dew_point_2m: cur.DewPointC !== undefined ? parseFloat(cur.DewPointC) : calculateDewPoint(parseFloat(cur.temp_C), parseFloat(cur.humidity)),
             wind_speed_10m: parseFloat(cur.windspeedKmph),
             wind_gusts_10m: parseFloat(cur.windspeedKmph) * 1.3,
             wind_direction_10m: parseFloat(cur.winddirDegree),
@@ -29235,6 +29482,7 @@
             cloud_cover_high: curCloud * 0.45,
             surface_pressure: parseFloat(cur.pressure),
             relative_humidity_2m: parseFloat(cur.humidity),
+            visibility: cur.visibility !== undefined ? parseFloat(cur.visibility) * 1000 : 15000,
             weather_code: wCode,
           },
           hourly: {
@@ -29273,8 +29521,8 @@
           const dStr = day.date;
           const daySnowM = parseFloat(day.totalSnow_cm || 0) / 100;
           data.daily.time.push(dStr + "T00:00");
-          data.daily.sunrise.push(dStr + "T06:00");
-          data.daily.sunset.push(dStr + "T19:30");
+          data.daily.sunrise.push(dStr + "T06:30");
+          data.daily.sunset.push(dStr + "T18:30");
           data.daily.temperature_2m_max.push(parseFloat(day.maxtempC));
           data.daily.temperature_2m_min.push(parseFloat(day.mintempC));
 
@@ -29385,37 +29633,48 @@
         const c = data.current || {};
         const h = data.hourly || {};
         const m15 = data.minutely_15 || {};
+        const dataOffSec = typeof data.utc_offset_seconds === "number" ? data.utc_offset_seconds : window.currentUtcOffsetSec;
         const sim = window.tempSimState || {};
         const isSimAtmo = Boolean(sim.active && !sim.linkAtmoLive);
+        const isLiveNow = !window.scrubberOffsetMins && !isSimAtmo;
 
-        // 1. Interpolation à une heure cible (en ms) dans minutely_15 ou hourly
+        // 1. Interpolation exacte (UTC epoch ms via parseWeatherIsoMs) dans minutely_15 ou hourly
         const samplePrecipAt = (targetMs) => {
           if (m15.time && m15.time.length > 1 && m15.precipitation) {
             for (let i = 0; i < m15.time.length - 1; i++) {
-              const t0 = new Date(m15.time[i]).getTime();
-              const t1 = new Date(m15.time[i + 1]).getTime();
+              const t0 = parseWeatherIsoMs(m15.time[i], dataOffSec);
+              const t1 = parseWeatherIsoMs(m15.time[i + 1], dataOffSec);
               if (targetMs >= t0 && targetMs <= t1) {
                 const a = t1 > t0 ? (targetMs - t0) / (t1 - t0) : 0;
                 const p0 = m15.precipitation[i] || 0;
                 const p1 = m15.precipitation[i + 1] ?? p0;
-                // minutely_15 precipitation est en mm sur 15 min -> convertir en taux horaire équivalent mm/h (x4) mais plafonné raisonnablement
-                return Math.max(0, (p0 + (p1 - p0) * a) * 2.5);
+                const wc0 = m15.weather_code ? (m15.weather_code[i] || 0) : 0;
+                const wc1 = m15.weather_code ? (m15.weather_code[i + 1] ?? wc0) : wc0;
+                const wmoFloor = getWmoMinPrecipEq(a < 0.5 ? wc0 : wc1);
+                // minutely_15 precipitation est en mm sur 15 min -> taux horaire équivalent mm/h (x4)
+                return Math.max(0, (p0 + (p1 - p0) * a) * 3.6, wmoFloor);
               }
             }
           }
           if (h.time && h.time.length > 1 && h.precipitation) {
             for (let i = 0; i < h.time.length - 1; i++) {
-              const t0 = new Date(h.time[i]).getTime();
-              const t1 = new Date(h.time[i + 1]).getTime();
+              const t0 = parseWeatherIsoMs(h.time[i], dataOffSec);
+              const t1 = parseWeatherIsoMs(h.time[i + 1], dataOffSec);
               if (targetMs >= t0 && targetMs <= t1) {
                 const a = t1 > t0 ? (targetMs - t0) / (t1 - t0) : 0;
                 const p0 = h.precipitation[i] || 0;
                 const p1 = h.precipitation[i + 1] ?? p0;
-                return Math.max(0, p0 + (p1 - p0) * a);
+                const wc0 = h.weather_code ? (h.weather_code[i] || 0) : 0;
+                const wc1 = h.weather_code ? (h.weather_code[i + 1] ?? wc0) : wc0;
+                const wmoFloor = getWmoMinPrecipEq(a < 0.5 ? wc0 : wc1);
+                return Math.max(0, p0 + (p1 - p0) * a, wmoFloor);
               }
             }
           }
-          return typeof c.precipitation === "number" ? c.precipitation : 0;
+          return Math.max(
+            typeof c.precipitation === "number" ? c.precipitation : 0,
+            getWmoMinPrecipEq(c.weather_code || 0)
+          );
         };
 
         const isValidNum = (v) => typeof v === "number" && !isNaN(v);
@@ -29423,8 +29682,8 @@
         const sampleHourlyAt = (arr, targetMs, fallback) => {
           if (!arr || !h.time || h.time.length < 2) return fallback;
           for (let i = 0; i < h.time.length - 1; i++) {
-            const t0 = new Date(h.time[i]).getTime();
-            const t1 = new Date(h.time[i + 1]).getTime();
+            const t0 = parseWeatherIsoMs(h.time[i], dataOffSec);
+            const t1 = parseWeatherIsoMs(h.time[i + 1], dataOffSec);
             if (targetMs >= t0 && targetMs <= t1) {
               const a = t1 > t0 ? (targetMs - t0) / (t1 - t0) : 0;
               const v0 = isValidNum(arr[i]) ? arr[i] : null;
@@ -29439,8 +29698,8 @@
         const sampleHourlyAngleAt = (arr, targetMs, fallback) => {
           if (!arr || !h.time || h.time.length < 2) return fallback;
           for (let i = 0; i < h.time.length - 1; i++) {
-            const t0 = new Date(h.time[i]).getTime();
-            const t1 = new Date(h.time[i + 1]).getTime();
+            const t0 = parseWeatherIsoMs(h.time[i], dataOffSec);
+            const t1 = parseWeatherIsoMs(h.time[i + 1], dataOffSec);
             if (targetMs >= t0 && targetMs <= t1) {
               const a = t1 > t0 ? (targetMs - t0) / (t1 - t0) : 0;
               const a0 = isValidNum(arr[i]) ? arr[i] : null;
@@ -29455,9 +29714,15 @@
 
         // 2. Couverture nuageuse réelle multi-étages (Bas: Stratus/Cumulus, Moyen: Altocumulus, Haut: Cirrus)
         let cloudTotal = typeof currentConditions.cloudCover === "number" ? currentConditions.cloudCover : (c.cloud_cover ?? 30);
-        let cloudLow = sampleHourlyAt(h.cloud_cover_low, effMs, c.cloud_cover_low ?? cloudTotal * 0.8);
-        let cloudMid = sampleHourlyAt(h.cloud_cover_mid, effMs, c.cloud_cover_mid ?? cloudTotal * 0.6);
-        let cloudHigh = sampleHourlyAt(h.cloud_cover_high, effMs, c.cloud_cover_high ?? cloudTotal * 0.45);
+        let cloudLow = isLiveNow && isValidNum(c.cloud_cover_low)
+          ? c.cloud_cover_low
+          : sampleHourlyAt(h.cloud_cover_low, effMs, c.cloud_cover_low ?? cloudTotal * 0.75);
+        let cloudMid = isLiveNow && isValidNum(c.cloud_cover_mid)
+          ? c.cloud_cover_mid
+          : sampleHourlyAt(h.cloud_cover_mid, effMs, c.cloud_cover_mid ?? cloudTotal * 0.55);
+        let cloudHigh = isLiveNow && isValidNum(c.cloud_cover_high)
+          ? c.cloud_cover_high
+          : sampleHourlyAt(h.cloud_cover_high, effMs, c.cloud_cover_high ?? cloudTotal * 0.45);
 
         if (isSimAtmo && typeof sim.cloudCover === "number") {
           cloudTotal = sim.cloudCover;
@@ -29470,14 +29735,17 @@
         currentConditions.cloudCoverLow = Math.round(Math.max(0, Math.min(100, cloudLow)));
         currentConditions.cloudCoverMid = Math.round(Math.max(0, Math.min(100, cloudMid)));
         currentConditions.cloudCoverHigh = Math.round(Math.max(0, Math.min(100, cloudHigh)));
+        reconcileWmoAtmosphere(currentConditions);
 
-        // 3. Échantillonnage temporel de la pluie (-60m, -30m, -15m, 0m, +15m, +30m, +60m, +90m)
+        // 3. Échantillonnage temporel des précipitations (-60m, -30m, -15m, 0m, +15m, +30m, +60m, +90m)
+        const wCodeNow = currentConditions.weatherCode || 0;
+        const wmoFloorNow = getWmoMinPrecipEq(wCodeNow);
         let pPast60 = samplePrecipAt(effMs - 60 * 60000);
         let pPast30 = samplePrecipAt(effMs - 30 * 60000);
         let pPast15 = samplePrecipAt(effMs - 15 * 60000);
         let pNow = !window.scrubberOffsetMins && typeof c.precipitation === "number"
-          ? Math.max(c.precipitation, samplePrecipAt(effMs))
-          : samplePrecipAt(effMs);
+          ? Math.max(c.precipitation, samplePrecipAt(effMs), wmoFloorNow)
+          : Math.max(samplePrecipAt(effMs), wmoFloorNow);
         let pNext15 = samplePrecipAt(effMs + 15 * 60000);
         let pNext30 = samplePrecipAt(effMs + 30 * 60000);
         let pNext60 = samplePrecipAt(effMs + 60 * 60000);
@@ -29518,13 +29786,11 @@
           apiCloudKmh = isValidNum(spd80) ? Math.max(spd80, surfWindKmh * 1.18) : surfWindKmh * 1.25;
         }
 
-        // Si l'API ne fournit que le vent à 10m (ou en mode simulation manuelle avec "Auto Ciel") :
-        // Légère rotation d'Ekman réaliste (+10° dans l'hémisphère Nord) sans jamais inverser artificiellement le flux!
         const ekmanAutoDir = (surfWindDir + 10) % 360;
         const ekmanAutoKmh = Math.max(12, surfWindKmh * 1.28);
 
-        let autoCloudWindDir = (sim.linkAtmoLive && isValidNum(apiCloudDir)) ? apiCloudDir : ekmanAutoDir;
-        let autoCloudWindKmh = (sim.linkAtmoLive && isValidNum(apiCloudKmh)) ? apiCloudKmh : ekmanAutoKmh;
+        let autoCloudWindDir = ((!sim.active || sim.linkAtmoLive) && isValidNum(apiCloudDir)) ? apiCloudDir : ekmanAutoDir;
+        let autoCloudWindKmh = ((!sim.active || sim.linkAtmoLive) && isValidNum(apiCloudKmh)) ? apiCloudKmh : ekmanAutoKmh;
 
         let cloudWindDir = autoCloudWindDir;
         let cloudWindKmh = autoCloudWindKmh;
@@ -29547,10 +29813,10 @@
         }
 
         // Vent haute altitude (Cirrus ~500 hPa)
-        let highCloudWindDir = (sim.linkAtmoLive && isValidNum(dir500))
+        let highCloudWindDir = ((!sim.active || sim.linkAtmoLive) && isValidNum(dir500))
           ? dir500
           : (cloudWindDir + 12) % 360;
-        let highCloudWindKmh = (sim.linkAtmoLive && isValidNum(spd500))
+        let highCloudWindKmh = ((!sim.active || sim.linkAtmoLive) && isValidNum(spd500))
           ? Math.max(spd500, cloudWindKmh * 1.15)
           : Math.max(24, cloudWindKmh * 1.28);
 
@@ -29582,7 +29848,7 @@
         const manualPhase = isSimAtmo ? (sim.rainPhase || "auto") : "auto";
         const simPrecipVal = isSimAtmo && typeof sim.precipMm === "number" ? sim.precipMm : pNow;
         const effTempForFront = typeof currentConditions.temp === "number" ? currentConditions.temp : 12;
-        const wCodeNow = currentConditions.weatherCode || 0;
+        const isDrizzleFront = Boolean(currentConditions.isDrizzle || (wCodeNow >= 51 && wCodeNow <= 57));
         const isFreezingFront =
           !!currentConditions.isFreezingRain ||
           wCodeNow === 56 ||
@@ -29595,12 +29861,20 @@
             (wCodeNow >= 71 && wCodeNow <= 77) ||
             wCodeNow === 85 ||
             wCodeNow === 86 ||
-            effTempForFront <= 0.2);
+            (effTempForFront <= 0.2 && !isDrizzleFront));
 
         const pIconMain = isSnowFront ? "❄️" : isFreezingFront ? "🧊" : "🌧️";
         const pIconPass = isSnowFront ? "🌨️" : isFreezingFront ? "🧊" : "🌦️";
-        const pNounCap = isSnowFront ? "Neige" : isFreezingFront ? "Verglas" : "Pluie";
-        const pShowerCap = isSnowFront ? "Averse de neige" : isFreezingFront ? "Pluie verglaçante" : "Averse";
+        const pNounCap = isSnowFront
+          ? "Neige"
+          : isFreezingFront
+            ? (isDrizzleFront ? "Bruine verglaçante" : "Verglas")
+            : (isDrizzleFront ? "Bruine" : "Pluie");
+        const pShowerCap = isSnowFront
+          ? "Averse de neige"
+          : isFreezingFront
+            ? "Pluie verglaçante"
+            : (isDrizzleFront ? "Bruine" : "Averse");
         const pUnitStr = isSnowFront ? "cm/h" : "mm/h";
 
         if (isSimAtmo && manualPhase !== "auto") {
@@ -29650,13 +29924,11 @@
           if (pNow >= 0.08) {
             rainFrontIntensity = Math.max(pNow, maxFuture, maxPast);
             if (maxFuture > pNow * 1.35) {
-              // Le cœur du front arrive
               rainPhase = "overhead";
               rainFrontProgress = -0.22;
               rainTargetAz = upwindAz;
               rainStatusText = `${pIconMain} ${pNounCap} en renforcement (${pNow.toFixed(1)}→${maxFuture.toFixed(1)} ${pUnitStr})`;
             } else if (pNext30 < 0.08 && pNow >= 0.08) {
-              // Fin d'averse sur le quai, dégagement visible
               rainPhase = "overhead";
               rainFrontProgress = 0.25;
               rainTargetAz = downwindAz;
@@ -29700,9 +29972,16 @@
               rainFrontProgress = 0.86;
             }
             rainStatusText = `${pIconPass} ${pShowerCap} s'éloigne vers ${downwindCard}`;
-          } else if (currentConditions.cloudCover >= 78 && (currentConditions.weatherCode >= 51 || (currentConditions.humidity || 65) >= 84)) {
+          } else if (
+            currentConditions.weatherCode >= 51 ||
+            (
+              (sampleHourlyAt(h.precipitation_probability, effMs, 0) || 0) >= 45 &&
+              currentConditions.cloudCover >= 82 &&
+              Math.max(currentConditions.cloudCoverLow || 0, currentConditions.cloudCoverMid || 0) >= 60
+            )
+          ) {
             rainPhase = "vicinity";
-            rainFrontIntensity = 0.6;
+            rainFrontIntensity = 0.45;
             rainFrontProgress = -0.68;
             rainTargetAz = upwindAz;
             rainStatusText = `☁️ Rideau de ${isSnowFront ? "neige" : "virga"} au loin (${upwindCard})`;
@@ -29711,7 +29990,9 @@
             rainFrontIntensity = 0;
             rainFrontProgress = 0;
             rainTargetAz = upwindAz;
-            rainStatusText = "Sec";
+            rainStatusText = (wCodeNow === 45 || wCodeNow === 48 || (currentConditions.visibility || 15000) <= 1200)
+              ? "🌫️ Brouillard sur le fleuve"
+              : "Sec";
           }
         }
 
@@ -29727,17 +30008,19 @@
         currentConditions.rainStatusText = rainStatusText;
         currentConditions.isSnowFront = isSnowFront;
 
-        // Mettre à jour le badge HUD 360° en haut de l'aperçu (Température réelle + Ressenti + Ciel + Cisaillement!)
+        // Mettre à jour le badge HUD 360° en haut de l'aperçu (Température réelle + Ressenti + Visibilité/Brouillard + Ciel + Cisaillement!)
         const skyPill = document.getElementById("hud-sky-weather-pill");
         if (skyPill) {
           const cc = currentConditions.cloudCover;
           const wCodePill = currentConditions.weatherCode || 0;
+          const visNowM = typeof currentConditions.visibility === "number" ? currentConditions.visibility : 15000;
           let skyIcon = "☀️";
           if (wCodePill >= 95) skyIcon = "⛈️";
-          else if (currentConditions.isFreezingRain || wCodePill === 66 || wCodePill === 67) skyIcon = "🧊";
-          else if ((currentConditions.snowNow ?? currentConditions.snow ?? 0) > 0.08 || (wCodePill >= 71 && wCodePill <= 77)) skyIcon = "🌨️";
+          else if (currentConditions.isFreezingRain || wCodePill === 56 || wCodePill === 57 || wCodePill === 66 || wCodePill === 67) skyIcon = "🧊";
+          else if ((currentConditions.snowNow ?? currentConditions.snow ?? 0) > 0.08 || (wCodePill >= 71 && wCodePill <= 77) || wCodePill === 85 || wCodePill === 86) skyIcon = "🌨️";
+          else if (wCodePill === 45 || wCodePill === 48 || visNowM <= 1200) skyIcon = "🌫️";
           else if (rainPhase === "passing" && !currentConditions.isNight && cc < 78 && rainFrontIntensity > 0.12) skyIcon = "🌦️";
-          else if ((currentConditions.precipNow ?? currentConditions.rain ?? 0) > 0.15) skyIcon = "🌧️";
+          else if ((currentConditions.precipNow ?? currentConditions.rain ?? 0) > 0.12 || (wCodePill >= 51 && wCodePill <= 67)) skyIcon = "🌧️";
           else if (currentConditions.isNight) skyIcon = cc >= 65 ? "☁️" : "🌙";
           else if (cc >= 85) skyIcon = "☁️";
           else if (cc >= 45) skyIcon = "⛅";
@@ -29771,7 +30054,8 @@
             : ` • <span style="opacity:0.78;">Vent ${surfCard} ${surfKts}kt</span>`;
 
           const snowGroundInfo = snowCmGround > 0 ? ` | Neige au sol: ${snowCmGround} cm` : "";
-          skyPill.title = `Air réel : ${signAir}${airTVal.toFixed(1)}°C (Ressenti ${signFeels}${feelsTVal.toFixed(1)}°C) | Eau St-Laurent : ${waterTVal.toFixed(1)}°C${snowGroundInfo} | Nuages : ${cc}% (Bas:${currentConditions.cloudCoverLow}% Moy:${currentConditions.cloudCoverMid}% Haut:${currentConditions.cloudCoverHigh}%) | Vent Sol: ${surfCard} ${surfKts}kt vs Ciel: ${upwindCard} ${cloudKts}kt`;
+          const visKmPill = (visNowM / 1000).toFixed(1);
+          skyPill.title = `Air réel : ${signAir}${airTVal.toFixed(1)}°C (Ressenti ${signFeels}${feelsTVal.toFixed(1)}°C) | Eau St-Laurent : ${waterTVal.toFixed(1)}°C | Visibilité : ${visKmPill} km${snowGroundInfo} | Nuages : ${cc}% (Bas:${currentConditions.cloudCoverLow}% Moy:${currentConditions.cloudCoverMid}% Haut:${currentConditions.cloudCoverHigh}%) | Vent Sol: ${surfCard} ${surfKts}kt vs Ciel: ${upwindCard} ${cloudKts}kt`;
 
           let pillHtml = `${skyIcon} <strong style="color:${tempHex};">${signAir}${airTVal.toFixed(1)}°C</strong>${feelsSpan} • <strong>${cc}%</strong>${shearBadge}`;
           if (rainPhase === "incoming") {
@@ -29784,8 +30068,11 @@
             pillHtml += ` • <span style="color:#a7f3d0;font-weight:800;">${pIconPass} Passe → ${downwindCard}</span>`;
             skyPill.style.borderColor = "rgba(52, 211, 153, 0.65)";
           } else if (rainPhase === "vicinity") {
-            pillHtml += ` • <span style="color:#93c5fd;">${pIconPass} ${pNounCap} (${upwindCard})</span>`;
+            pillHtml += ` • <span style="color:#93c5fd;">☁️ Virga (${upwindCard})</span>`;
             skyPill.style.borderColor = "rgba(147, 197, 253, 0.45)";
+          } else if (wCodePill === 45 || wCodePill === 48 || visNowM <= 3500) {
+            pillHtml += ` • <span style="color:#cbd5e1;font-weight:700;">🌫️ Vis ${visKmPill}km</span>`;
+            skyPill.style.borderColor = "rgba(203, 213, 225, 0.65)";
           } else {
             const dryLbl = snowCmGround > 0 ? `Sec • ❄️${snowCmGround}cm` : "Sec";
             pillHtml += ` • <span style="opacity:0.78;">${dryLbl}</span>`;
@@ -29824,13 +30111,13 @@
         return { force: 12, name: "Ouragan", seaDesc: "Mer entièrement blanche, déferlantes", waveMin: ">14.0", waveMax: "20.0" };
       }
 
-      function getBaroTrend(hTimes, hPressures, curPress) {
+      function getBaroTrend(hTimes, hPressures, curPress, utcOffsetSec) {
         if (!hTimes || !hPressures || hTimes.length < 4) return "→ Stable (0.0)";
         const nowMs = Date.now();
         const targetMs = nowMs - 3 * 3600000;
         let pastIdx = 0, minDiff = Infinity;
         hTimes.forEach((t, i) => {
-          const diff = Math.abs(new Date(t).getTime() - targetMs);
+          const diff = Math.abs(parseWeatherIsoMs(t, utcOffsetSec) - targetMs);
           if (diff < minDiff) { minDiff = diff; pastIdx = i; }
         });
         const pastPress = hPressures[pastIdx] !== undefined ? hPressures[pastIdx] : curPress;
@@ -29896,10 +30183,10 @@
             document.getElementById("weather-api-select")?.value || "openmeteo";
 
           const fetchOpenMeteo = async () => {
-            const upperUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,dew_point_2m,precipitation,rain,showers,snowfall,snow_depth,weather_code,cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high,wind_speed_10m,wind_direction_10m,wind_gusts_10m,surface_pressure,relative_humidity_2m&minutely_15=precipitation,rain,snowfall,weather_code,wind_speed_10m,wind_direction_10m&past_minutely_15=12&forecast_minutely_15=24&hourly=temperature_2m,apparent_temperature,dew_point_2m,relative_humidity_2m,precipitation,rain,showers,snowfall,snow_depth,precipitation_probability,cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high,wind_speed_10m,wind_direction_10m,wind_speed_80m,wind_direction_80m,wind_speed_180m,wind_direction_180m,wind_speed_850hPa,wind_direction_850hPa,wind_speed_500hPa,wind_direction_500hPa,wind_gusts_10m,surface_pressure,visibility,uv_index,cape,weather_code&past_hours=6&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_sum,uv_index_max,wind_speed_10m_max,wind_gusts_10m_max&timezone=America%2FToronto`;
+            const upperUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,dew_point_2m,precipitation,rain,showers,snowfall,snow_depth,weather_code,cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high,wind_speed_10m,wind_direction_10m,wind_gusts_10m,surface_pressure,relative_humidity_2m,visibility,is_day&minutely_15=precipitation,rain,snowfall,weather_code,wind_speed_10m,wind_direction_10m,visibility&past_minutely_15=12&forecast_minutely_15=24&hourly=temperature_2m,apparent_temperature,dew_point_2m,relative_humidity_2m,precipitation,rain,showers,snowfall,snow_depth,precipitation_probability,cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high,wind_speed_10m,wind_direction_10m,wind_speed_80m,wind_direction_80m,wind_speed_180m,wind_direction_180m,wind_speed_850hPa,wind_direction_850hPa,wind_speed_500hPa,wind_direction_500hPa,wind_gusts_10m,surface_pressure,visibility,uv_index,cape,weather_code,is_day&past_hours=6&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_sum,uv_index_max,wind_speed_10m_max,wind_gusts_10m_max&timezone=auto`;
             const res = await fetch(upperUrl);
             if (res.ok) return await res.json();
-            const baseUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,dew_point_2m,precipitation,rain,showers,snowfall,snow_depth,weather_code,cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high,wind_speed_10m,wind_direction_10m,wind_gusts_10m,surface_pressure,relative_humidity_2m&minutely_15=precipitation,rain,snowfall,weather_code,wind_speed_10m,wind_direction_10m&past_minutely_15=12&forecast_minutely_15=24&hourly=temperature_2m,apparent_temperature,dew_point_2m,relative_humidity_2m,precipitation,rain,showers,snowfall,snow_depth,precipitation_probability,cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high,wind_speed_10m,wind_direction_10m,wind_gusts_10m,surface_pressure,visibility,uv_index,cape,weather_code&past_hours=6&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_sum,uv_index_max,wind_speed_10m_max,wind_gusts_10m_max&timezone=America%2FToronto`;
+            const baseUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,dew_point_2m,precipitation,rain,showers,snowfall,snow_depth,weather_code,cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high,wind_speed_10m,wind_direction_10m,wind_gusts_10m,surface_pressure,relative_humidity_2m,visibility,is_day&minutely_15=precipitation,rain,snowfall,weather_code,wind_speed_10m,wind_direction_10m&past_minutely_15=12&forecast_minutely_15=24&hourly=temperature_2m,apparent_temperature,dew_point_2m,relative_humidity_2m,precipitation,rain,showers,snowfall,snow_depth,precipitation_probability,cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high,wind_speed_10m,wind_direction_10m,wind_gusts_10m,surface_pressure,visibility,uv_index,cape,weather_code,is_day&past_hours=6&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_sum,uv_index_max,wind_speed_10m_max,wind_gusts_10m_max&timezone=auto`;
             const resFallback = await fetch(baseUrl);
             if (!resFallback.ok) throw new Error("Open-Meteo HTTP error");
             return await resFallback.json();
@@ -29940,6 +30227,18 @@
 
           if (!data) throw new Error("Toutes les sources météo ont échoué.");
 
+          if (data.timezone && typeof data.timezone === "string") {
+            window.currentLocationTimeZone = data.timezone;
+            timeOptions.timeZone = data.timezone;
+            dateOptions.timeZone = data.timezone;
+          }
+          if (typeof data.utc_offset_seconds === "number" && !isNaN(data.utc_offset_seconds)) {
+            window.currentUtcOffsetSec = data.utc_offset_seconds;
+          } else {
+            window.currentUtcOffsetSec = getIanaUtcOffsetSec(window.currentLocationTimeZone, Date.now());
+          }
+          window.lastWeatherFetchMs = Date.now();
+
           localStorage.setItem("terminal_weather_cache", JSON.stringify(data));
           updateTelemetryStatus(true);
           weatherDataCache = data;
@@ -29964,6 +30263,9 @@
             : calculateDewPoint(c.temperature_2m, c.relative_humidity_2m);
           currentConditions.precipitation = c.precipitation || 0;
           currentConditions.snowDepth = typeof c.snow_depth === "number" ? Math.max(0, c.snow_depth) : 0;
+          if (typeof c.visibility === "number" && c.visibility > 40) {
+            currentConditions.visibility = c.visibility;
+          }
           if (!(window.tempSimState && window.tempSimState.active)) {
             currentConditions.waterTemp = typeof currentConditions.realWaterTemp === "number"
               ? currentConditions.realWaterTemp
@@ -29977,6 +30279,7 @@
           currentConditions.rain = phaseInit.rain;
           currentConditions.snow = phaseInit.snow;
           currentConditions.isFreezingRain = phaseInit.isFreezingRain;
+          currentConditions.isDrizzle = phaseInit.isDrizzle;
           currentConditions.cloudCover = c.cloud_cover;
           currentConditions.cloudCoverLow = c.cloud_cover_low ?? c.cloud_cover;
           currentConditions.cloudCoverMid = c.cloud_cover_mid ?? c.cloud_cover * 0.7;
@@ -29984,21 +30287,22 @@
           currentConditions.pressure = c.surface_pressure;
           currentConditions.humidity = c.relative_humidity_2m;
           currentConditions.weatherCode = c.weather_code;
+          reconcileWmoAtmosphere(currentConditions);
 
-          // Utilisation des VRAIES heures de lever et coucher du soleil (corrigé!)
+          // Utilisation des VRAIES heures de lever et coucher du soleil dans le fuseau horaire réel du terminal!
           const d = data.daily;
           if (d && d.sunrise && d.sunrise[0] && d.sunset && d.sunset[0]) {
-            const srDate = new Date(d.sunrise[0]);
-            const ssDate = new Date(d.sunset[0]);
-            currentConditions.sunriseTime =
-              srDate.getHours() * 3600 + srDate.getMinutes() * 60;
-            currentConditions.sunsetTime =
-              ssDate.getHours() * 3600 + ssDate.getMinutes() * 60;
+            const srMs = parseWeatherIsoMs(d.sunrise[0], window.currentUtcOffsetSec);
+            const ssMs = parseWeatherIsoMs(d.sunset[0], window.currentUtcOffsetSec);
+            const srParts = getLocationLocalParts(srMs, window.currentUtcOffsetSec);
+            const ssParts = getLocationLocalParts(ssMs, window.currentUtcOffsetSec);
+            currentConditions.sunriseTime = srParts.daySec;
+            currentConditions.sunsetTime = ssParts.daySec;
 
-            const srStr = srDate.toLocaleTimeString("fr-CA", timeOptions);
-            const ssStr = ssDate.toLocaleTimeString("fr-CA", timeOptions);
-            document.getElementById("cw-sun").textContent =
-              `🌅 ${srStr} | 🌇 ${ssStr}`;
+            const srStr = new Date(srMs).toLocaleTimeString("fr-CA", timeOptions);
+            const ssStr = new Date(ssMs).toLocaleTimeString("fr-CA", timeOptions);
+            const sunDom = document.getElementById("cw-sun");
+            if (sunDom) sunDom.textContent = `🌅 ${srStr} | 🌇 ${ssStr}`;
           }
 
           recomputeSolarStateForDate(getEffectiveDate());
@@ -30013,6 +30317,9 @@
           if (cached) {
             updateTelemetryStatus(false);
             const data = JSON.parse(cached);
+            if (typeof data.utc_offset_seconds === "number") {
+              window.currentUtcOffsetSec = data.utc_offset_seconds;
+            }
             weatherDataCache = data;
             updateWeatherBarForEffectiveTime();
             updateWeatherUI(data);
@@ -30029,7 +30336,9 @@
         const data = weatherDataCache;
         const c = data.current || {};
         const h = data.hourly || {};
+        const m15 = data.minutely_15 || {};
         const d = data.daily || {};
+        const dataOffSec = typeof data.utc_offset_seconds === "number" ? data.utc_offset_seconds : window.currentUtcOffsetSec;
         const effMs = getEffectiveTimeMs();
         const effDate = new Date(effMs);
 
@@ -30069,11 +30378,13 @@
           feels = calculateFeelsLike(temp, windKmh, rhPct);
           pressHpa = typeof c.surface_pressure === "number" ? c.surface_pressure : 1013;
           dewPoint = calculateDewPoint(temp, rhPct);
+          const spreadSim = Math.max(0, temp - dewPoint);
 
           if (precipMm >= 0.1) {
-            // Scénario Orage convectif vs Verglas explicite (-1.8°C .. -0.8°C) vs Neige franche vs Pluie
             const isExplicitVerglas = temp >= -1.8 && temp <= -0.8 && sim.cloudWindMode === "opposite";
-            code = isConvectiveStormSim ? 95 : (isExplicitVerglas ? 66 : (temp <= 0.2 ? 71 : (precipMm >= 4 ? 65 : 61)));
+            code = isConvectiveStormSim ? 95 : (isExplicitVerglas ? 66 : (temp <= 0.2 ? 71 : (precipMm >= 4 ? 65 : (precipMm < 0.45 && rhPct >= 88 ? 51 : 61))));
+          } else if (spreadSim <= 0.9 && rhPct >= 95) {
+            code = temp <= -0.5 ? 48 : 45;
           } else if (cloudCover >= 85) {
             code = 3;
           } else if (cloudCover >= 45) {
@@ -30084,8 +30395,7 @@
             code = 0;
           }
 
-          const spreadSim = Math.max(0, temp - dewPoint);
-          visMeters = spreadSim <= 1.2 && rhPct >= 92 ? 1200 : (precipMm > 4 ? 4500 : (precipMm > 0.2 ? 9000 : 15000));
+          visMeters = spreadSim <= 0.9 && rhPct >= 95 ? 700 : (spreadSim <= 1.5 && rhPct >= 91 ? 2200 : (precipMm > 4 ? 3200 : (precipMm > 0.2 ? 8500 : 18000)));
           precipProb = precipMm > 0 ? Math.min(100, Math.round(50 + precipMm * 10)) : (cloudCover >= 80 ? 35 : 5);
           uvIndex = Math.max(0, Math.round((1 - cloudCover / 120) * 5));
 
@@ -30113,13 +30423,14 @@
           currentConditions.rain = simSplit.rain;
           currentConditions.snow = simSplit.snow;
           currentConditions.isFreezingRain = simSplit.isFreezingRain;
+          currentConditions.isDrizzle = simSplit.isDrizzle;
         } else if (!window.scrubberOffsetMins) {
           temp = typeof c.temperature_2m === "number" ? c.temperature_2m : 15;
           feels = typeof c.apparent_temperature === "number" ? c.apparent_temperature : calculateFeelsLike(temp, c.wind_speed_10m, c.relative_humidity_2m);
           windKmh = typeof c.wind_speed_10m === "number" ? c.wind_speed_10m : 10;
           gustKmh = typeof c.wind_gusts_10m === "number" ? c.wind_gusts_10m : windKmh;
           windDir = typeof c.wind_direction_10m === "number" ? c.wind_direction_10m : 220;
-          code = c.weather_code || 0;
+          code = c.weather_code ?? 0;
           pressHpa = typeof c.surface_pressure === "number" ? c.surface_pressure : 1013;
           rhPct = typeof c.relative_humidity_2m === "number" ? c.relative_humidity_2m : 65;
           dewPoint = typeof c.dew_point_2m === "number" ? c.dew_point_2m : calculateDewPoint(temp, rhPct);
@@ -30128,10 +30439,19 @@
 
           let nowIdx = 0;
           if (h.time && h.time.length) {
-            nowIdx = h.time.findIndex((t) => new Date(t).getTime() >= Date.now() - 3600000);
-            if (nowIdx === -1) nowIdx = 0;
+            let minD = Infinity;
+            const nowUtc = Date.now();
+            for (let hi = 0; hi < h.time.length; hi++) {
+              const dMs = Math.abs(parseWeatherIsoMs(h.time[hi], dataOffSec) - nowUtc);
+              if (dMs < minD) {
+                minD = dMs;
+                nowIdx = hi;
+              }
+            }
           }
-          visMeters = h.visibility && h.visibility[nowIdx] !== undefined ? h.visibility[nowIdx] : 15000;
+          visMeters = typeof c.visibility === "number" && c.visibility > 40
+            ? c.visibility
+            : (h.visibility && h.visibility[nowIdx] !== undefined ? h.visibility[nowIdx] : 15000);
           precipProb = h.precipitation_probability && h.precipitation_probability[nowIdx] !== undefined ? h.precipitation_probability[nowIdx] : (precipMm > 0 ? 80 : 0);
           uvIndex = h.uv_index && h.uv_index[nowIdx] !== undefined ? h.uv_index[nowIdx] : (d.uv_index_max && d.uv_index_max[0] ? d.uv_index_max[0] : 0);
 
@@ -30160,14 +30480,15 @@
           currentConditions.rain = liveSplit.rain;
           currentConditions.snow = liveSplit.snow;
           currentConditions.isFreezingRain = liveSplit.isFreezingRain;
+          currentConditions.isDrizzle = liveSplit.isDrizzle;
         } else {
-          // Interpolation horaire continue (style site meteo) entre deux heures consecutives
+          // Interpolation horaire continue exacte (via parseWeatherIsoMs) entre deux heures consécutives
           let idx0 = 0, idx1 = 0, alpha = 0;
           if (h.time && h.time.length > 1) {
             let found = false;
             for (let i = 0; i < h.time.length - 1; i++) {
-              const t0 = new Date(h.time[i]).getTime();
-              const t1 = new Date(h.time[i + 1]).getTime();
+              const t0 = parseWeatherIsoMs(h.time[i], dataOffSec);
+              const t1 = parseWeatherIsoMs(h.time[i + 1], dataOffSec);
               if (effMs >= t0 && effMs <= t1) {
                 idx0 = i;
                 idx1 = i + 1;
@@ -30179,7 +30500,7 @@
             if (!found) {
               let minDiff = Infinity;
               h.time.forEach((tStr, idx) => {
-                const diff = Math.abs(new Date(tStr).getTime() - effMs);
+                const diff = Math.abs(parseWeatherIsoMs(tStr, dataOffSec) - effMs);
                 if (diff < minDiff) {
                   minDiff = diff;
                   idx0 = idx;
@@ -30214,6 +30535,18 @@
           dewPoint = lerpVal(h.dew_point_2m, calculateDewPoint(temp, rhPct));
           precipMm = Math.max(0, lerpVal(h.precipitation, 0));
           visMeters = lerpVal(h.visibility, 15000);
+          if (m15.time && m15.visibility && m15.time.length > 1) {
+            for (let mi = 0; mi < m15.time.length - 1; mi++) {
+              const mt0 = parseWeatherIsoMs(m15.time[mi], dataOffSec);
+              const mt1 = parseWeatherIsoMs(m15.time[mi + 1], dataOffSec);
+              if (effMs >= mt0 && effMs <= mt1 && typeof m15.visibility[mi] === "number") {
+                const ma = mt1 > mt0 ? (effMs - mt0) / (mt1 - mt0) : 0;
+                const mv1 = typeof m15.visibility[mi + 1] === "number" ? m15.visibility[mi + 1] : m15.visibility[mi];
+                visMeters = m15.visibility[mi] + (mv1 - m15.visibility[mi]) * ma;
+                break;
+              }
+            }
+          }
           precipProb = Math.round(lerpVal(h.precipitation_probability, precipMm > 0.05 ? 75 : 5));
           uvIndex = Math.max(0, lerpVal(h.uv_index, 0));
           cloudCover = Math.round(lerpVal(h.cloud_cover, code >= 51 ? 92 : code >= 3 ? 85 : code === 2 ? 55 : code === 1 ? 25 : (c.cloud_cover || 30)));
@@ -30242,11 +30575,14 @@
           currentConditions.rain = scrubSplit.rain;
           currentConditions.snow = scrubSplit.snow;
           currentConditions.isFreezingRain = scrubSplit.isFreezingRain;
+          currentConditions.isDrizzle = scrubSplit.isDrizzle;
         }
 
-        // Calculer la couverture nuageuse multi-couches et la trajectoire de pluie (approche / sur quai / passe)
+        // Recalculer l'état solaire exact à l'heure effective puis la couverture multi-couches + cohérence OMM
+        recomputeSolarStateForDate(effDate);
         computeRealSkyAndRainState(effMs);
         cloudCover = currentConditions.cloudCover;
+        visMeters = currentConditions.visibility;
 
         const windKnots = Math.round(windKmh / 1.852);
         const gustKnots = Math.round(gustKmh / 1.852);
@@ -30257,7 +30593,7 @@
         const visNm = (visMeters / 1852).toFixed(1);
         const density = getAirDensity(temp, pressHpa, rhPct);
         const chop = getRiverChopEstimate(windKmh, windDir);
-        const trend = getBaroTrend(h.time, h.surface_pressure, pressHpa);
+        const trend = getBaroTrend(h.time, h.surface_pressure, pressHpa, dataOffSec);
         const moon = getMoonPhaseDetails(effDate);
 
         const tMin = d.temperature_2m_min && d.temperature_2m_min[0] !== undefined ? Math.round(d.temperature_2m_min[0]) : Math.round(temp - 3);
@@ -30266,17 +30602,17 @@
 
         let srStr = "--:--", ssStr = "--:--", dayDurStr = "--";
         if (d.sunrise && d.sunrise[0] && d.sunset && d.sunset[0]) {
-          const sr = new Date(d.sunrise[0]);
-          const ss = new Date(d.sunset[0]);
-          srStr = sr.toLocaleTimeString("fr-CA", { hour: "2-digit", minute: "2-digit" });
-          ssStr = ss.toLocaleTimeString("fr-CA", { hour: "2-digit", minute: "2-digit" });
-          const diffMins = Math.round((ss.getTime() - sr.getTime()) / 60000);
+          const srMs = parseWeatherIsoMs(d.sunrise[0], dataOffSec);
+          const ssMs = parseWeatherIsoMs(d.sunset[0], dataOffSec);
+          srStr = new Date(srMs).toLocaleTimeString("fr-CA", timeOptions);
+          ssStr = new Date(ssMs).toLocaleTimeString("fr-CA", timeOptions);
+          const diffMins = Math.round((ssMs - srMs) / 60000);
           dayDurStr = `${Math.floor(diffMins / 60)}h${String(diffMins % 60).padStart(2, "0")}`;
         }
 
         const spread = Math.max(0, temp - dewPoint);
         const ceilingM = Math.round(spread * 125);
-        const ceilingStr = spread <= 1.0 ? "Brouillard (≤ 100m)" : (ceilingM < 1000 ? `${ceilingM}m (Bas)` : `${ceilingM}m`);
+        const ceilingStr = (code === 45 || code === 48 || spread <= 0.8) ? "Brouillard (≤ 100m)" : (ceilingM < 1000 ? `${ceilingM}m (Bas)` : `${ceilingM}m`);
 
         let cloudDesc = "Dégagé";
         if (cloudCover >= 85) cloudDesc = "Couvert (OVC)";
@@ -30297,7 +30633,7 @@
           const cWindCard = getWindDir(currentConditions.cloudWindDir ?? windDir);
           const shearVal = currentConditions.windShearDeg || 0;
           const skyWindLine = Math.abs(shearVal) >= 8
-            ? `<br><span style="font-size:0.64rem; color:#c084fc; font-weight:700;" title="Vent en altitude (850 hPa) dirigeant les nuages">☁️ Ciel: ${cWindKts} nds ${cWindCard} (Δ${shearVal > 0 ? "+" : ""}${shearVal}°)</span>`
+            ? `<br><span style="font-size:0.64rem; color:#38bdf8; font-weight:700;" title="Vent en altitude (850 hPa) dirigeant les nuages">☁️ Ciel: ${cWindKts} nds ${cWindCard} (Δ${shearVal > 0 ? "+" : ""}${shearVal}°)</span>`
             : `<br><span style="font-size:0.64rem; color:var(--text-light);">☁️ Ciel: ${cWindKts} nds ${cWindCard}</span>`;
           windEl.innerHTML = `${Math.round(windKmh)} <small>(${Math.round(gustKmh)})</small> km/h<br><span style="font-size:0.75rem; color:var(--accent); font-weight:700">Sol: ${windKnots} (${gustKnots}) nds ${dirStr}</span>${skyWindLine}`;
         }
@@ -30381,6 +30717,7 @@
         const tbody = document.getElementById("weather-body");
         const thead = document.getElementById("weather-table-head");
         tbody.innerHTML = "";
+        const dataOffSec = typeof data.utc_offset_seconds === "number" ? data.utc_offset_seconds : window.currentUtcOffsetSec;
 
         const labels = [],
           temps = [],
@@ -30392,13 +30729,13 @@
         if (currentWeatherView === "24h") {
           thead.innerHTML = `<th>Heure</th><th>Temp. (Rosée)</th><th>Précip. (% prob.)</th><th>Vent &amp; Beaufort</th><th>Dir.</th><th>Visibilité</th>`;
           const h = data.hourly;
-          const now = new Date();
-          now.setMinutes(0, 0, 0);
-          let startIndex = h.time.findIndex((t) => new Date(t) >= now);
+          const nowFloorHourMs = Date.now() - 3599000;
+          let startIndex = h.time.findIndex((t) => parseWeatherIsoMs(t, dataOffSec) >= nowFloorHourMs);
           if (startIndex === -1) startIndex = 0;
 
           for (let i = startIndex; i < startIndex + 24 && i < h.time.length; i++) {
-            const t = new Date(h.time[i]);
+            const rowMs = parseWeatherIsoMs(h.time[i], dataOffSec);
+            const t = new Date(rowMs);
             const timeStr = t.toLocaleTimeString("fr-CA", timeOptions);
             const temp = Math.round(h.temperature_2m[i]);
             const precip = h.precipitation[i];
@@ -30414,8 +30751,8 @@
             const cape = h.cape ? h.cape[i] : 0;
             const wCode = h.weather_code ? h.weather_code[i] : 0;
 
-            const hourOfDay = t.getHours();
-            const isRowNight = hourOfDay < 6 || hourOfDay >= 20;
+            const locHour = getLocationLocalParts(rowMs, dataOffSec).hours;
+            const isRowNight = h.is_day && h.is_day[i] !== undefined ? h.is_day[i] === 0 : (locHour < 6 || locHour >= 20);
             const emoji = getWeatherEmoji(wCode, isRowNight);
 
             labels.push(timeStr);
@@ -32547,9 +32884,11 @@
         const absMins = Math.abs(rounded);
         const h = Math.floor(absMins / 60);
         const m = absMins % 60;
+        const tz = window.currentLocationTimeZone || "America/Toronto";
         const timeStr = projDate.toLocaleTimeString("fr-CA", {
           hour: "2-digit",
           minute: "2-digit",
+          timeZone: tz,
         });
         return `${sign}${h}h${String(m).padStart(2, "0")} (${timeStr})`;
       }
@@ -32568,9 +32907,11 @@
         });
 
         const projDate = getEffectiveDate();
+        const tz = window.currentLocationTimeZone || "America/Toronto";
         const timeStrShort = projDate.toLocaleTimeString("fr-CA", {
           hour: "2-digit",
           minute: "2-digit",
+          timeZone: tz,
         });
 
         const wmmTimePill = document.getElementById("minimap-time-lbl");
@@ -32617,6 +32958,8 @@
             hour: "2-digit",
             minute: "2-digit",
             second: "2-digit",
+            hour12: false,
+            timeZone: tz,
           }) + " (SIM)";
         }
 
@@ -35931,21 +36274,25 @@
       // HORLOGE EN DIRECT & INITIALISATION
       // =========================================================================
       function updateLiveClock() {
-        const now = new Date();
-        const timeStr = now.toLocaleTimeString("fr-CA", {
+        const isSimProj = Math.abs(window.scrubberOffsetMins || 0) >= 0.5;
+        const effNow = isSimProj ? getEffectiveDate() : new Date();
+        const tz = window.currentLocationTimeZone || "America/Toronto";
+        const timeStr = effNow.toLocaleTimeString("fr-CA", {
           hour: "2-digit",
           minute: "2-digit",
           second: "2-digit",
           hour12: false,
+          timeZone: tz,
         });
-        const dateStr = now.toLocaleDateString("fr-CA", {
+        const dateStr = effNow.toLocaleDateString("fr-CA", {
           weekday: "short",
           day: "numeric",
           month: "short",
+          timeZone: tz,
         });
         const clockEl = document.getElementById("live-clock");
         if (clockEl) {
-          clockEl.textContent = `${dateStr} • ${timeStr}`;
+          clockEl.textContent = isSimProj ? `${timeStr} (SIM)` : `${dateStr} • ${timeStr}`;
         }
         if (typeof updateLoadingArmsUI === "function") { updateLoadingArmsUI(); }
       }
@@ -36274,29 +36621,70 @@
         moon3DGroup.renderOrder = -6;
         scene.add(moon3DGroup);
 
+        let moon3DCnv = null;
+        let moon3DCtx = null;
+        let moon3DTex = null;
+        let lastMoonPhaseBucket3D = -1;
+
         function createMoon3DTexture() {
-          const cnv = document.createElement("canvas");
-          cnv.width = 128;
-          cnv.height = 128;
-          const ctx = cnv.getContext("2d");
-          const g = ctx.createRadialGradient(56, 54, 6, 64, 64, 56);
+          moon3DCnv = document.createElement("canvas");
+          moon3DCnv.width = 128;
+          moon3DCnv.height = 128;
+          moon3DCtx = moon3DCnv.getContext("2d");
+          moon3DTex = new THREE.CanvasTexture(moon3DCnv);
+          updateMoon3DPhaseTexture(0.5);
+          return moon3DTex;
+        }
+
+        function updateMoon3DPhaseTexture(phaseRaw) {
+          if (!moon3DCtx || !moon3DTex) return;
+          const phase = ((Number(phaseRaw) || 0) % 1 + 1) % 1;
+          const bucket = Math.round(phase * 72);
+          if (bucket === lastMoonPhaseBucket3D) return;
+          lastMoonPhaseBucket3D = bucket;
+
+          const ctx = moon3DCtx;
+          const cx = 64, cy = 64, r = 54;
+          ctx.clearRect(0, 0, 128, 128);
+
+          // Lumière cendrée (Earthshine) subtile sur le disque ombragé
+          ctx.fillStyle = "rgba(30, 41, 59, 0.88)";
+          ctx.beginPath();
+          ctx.arc(cx, cy, r, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Fraction illuminée réelle selon l'éphéméride lunaire (0 = Nouvelle Lune, 0.5 = Pleine Lune)
+          ctx.save();
+          ctx.beginPath();
+          if (phase <= 0.5) {
+            ctx.arc(cx, cy, r, -Math.PI / 2, Math.PI / 2, false);
+            const termW = r * Math.cos(phase * 2 * Math.PI);
+            ctx.ellipse(cx, cy, Math.abs(termW), r, 0, Math.PI / 2, -Math.PI / 2, termW > 0);
+          } else {
+            ctx.arc(cx, cy, r, Math.PI / 2, -Math.PI / 2, false);
+            const termW = r * Math.cos((phase - 0.5) * 2 * Math.PI);
+            ctx.ellipse(cx, cy, Math.abs(termW), r, 0, -Math.PI / 2, Math.PI / 2, termW < 0);
+          }
+          ctx.closePath();
+          ctx.clip();
+
+          const g = ctx.createRadialGradient(56, 54, 6, cx, cy, r);
           g.addColorStop(0.0, "rgba(248, 250, 252, 1.0)");
           g.addColorStop(0.76, "rgba(226, 232, 240, 0.96)");
-          g.addColorStop(0.92, "rgba(148, 163, 184, 0.82)");
-          g.addColorStop(1.0, "rgba(148, 163, 184, 0.0)");
+          g.addColorStop(0.95, "rgba(148, 163, 184, 0.86)");
+          g.addColorStop(1.0, "rgba(148, 163, 184, 0.65)");
           ctx.fillStyle = g;
-          ctx.beginPath();
-          ctx.arc(64, 64, 56, 0, Math.PI * 2);
-          ctx.fill();
+          ctx.fillRect(0, 0, 128, 128);
+
           ctx.fillStyle = "rgba(100, 116, 139, 0.24)";
           [[48, 46, 14], [76, 52, 11], [58, 74, 15], [82, 76, 8], [42, 68, 9]].forEach((m) => {
             ctx.beginPath();
             ctx.arc(m[0], m[1], m[2], 0, Math.PI * 2);
             ctx.fill();
           });
-          const tex = new THREE.CanvasTexture(cnv);
-          tex.needsUpdate = true;
-          return tex;
+          ctx.restore();
+
+          moon3DTex.needsUpdate = true;
         }
         const moonDiscMat = new THREE.SpriteMaterial({
           map: createMoon3DTexture(),
@@ -36556,6 +36944,8 @@
         const overcastDomeGeo = new THREE.SphereGeometry(3200, 32, 16, 0, Math.PI * 2, 0, Math.PI * 0.48);
         const overcastDomeMesh = new THREE.Mesh(overcastDomeGeo, overcastDomeMat);
         overcastDomeMesh.position.set(0, -40, 0);
+        overcastDomeMesh.renderOrder = -5;
+        overcastDomeMesh.frustumCulled = false;
         overcastDomeMesh.visible = false;
         clouds3DGroup.add(overcastDomeMesh);
 
@@ -37320,10 +37710,13 @@
           tex.minFilter = THREE.LinearFilter;
           const mat = new THREE.MeshBasicMaterial({
             map: tex,
-            side: THREE.DoubleSide
+            side: THREE.DoubleSide,
+            fog: true
           });
-          const mesh = new THREE.Mesh(new THREE.PlaneGeometry(width, height, 6, 2), mat);
-          return { canvas, ctx, tex, mat, mesh };
+          const geo = new THREE.PlaneGeometry(width, height, 6, 2);
+          geo.translate(width * 0.5, 0, 0);
+          const mesh = new THREE.Mesh(geo, mat);
+          return { canvas, ctx, tex, mat, mesh, width, height };
         }
 
         function paintMaritimeFlag(flagObj, codeRaw) {
@@ -38234,7 +38627,7 @@
         tankerGroup.add(ship87FlagStaff);
 
         const ship87Flag = createDynamicFlagMesh(3.4, 2.2);
-        ship87Flag.mesh.position.set(-43.1, 12.2, 0);
+        ship87Flag.mesh.position.set(-41.7, 12.2, 0);
         tankerGroup.add(ship87Flag.mesh);
 
         // Pont principal rouge-brun, lisses de pavois et tuyauteries de cargaison
@@ -38708,7 +39101,7 @@
         vessel86Group.add(ship86FlagStaff);
 
         const ship86Flag = createDynamicFlagMesh(2.9, 1.85);
-        ship86Flag.mesh.position.set(-26.6, 10.4, 0);
+        ship86Flag.mesh.position.set(-25.45, 10.4, 0);
         vessel86Group.add(ship86Flag.mesh);
 
         const deck86Mat = new THREE.MeshLambertMaterial({ color: 0x7f1d1d });
@@ -39769,6 +40162,74 @@
           vhfWhip.position.set(ax, 12.8 + aIdx * 0.45, (aIdx === 0 ? -0.9 : 0.9));
           dockGroup.add(vhfWhip);
         });
+
+        // Mât météo maritime ISGOTT sur le toit de la cabine (Manche à air 5 bandes 3-15 nds + Anémomètre à coupelles, 100% hors passerelle!)
+        const dockWeatherMast = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.055, 0.085, 4.4, 8),
+          steelGalvMat
+        );
+        dockWeatherMast.position.set(-6.8, 13.25, 0.0);
+        dockGroup.add(dockWeatherMast);
+
+        const dockAnemoCrossbar = new THREE.Mesh(
+          new THREE.BoxGeometry(0.95, 0.05, 0.05),
+          steelGalvMat
+        );
+        dockAnemoCrossbar.position.set(-6.8, 15.15, 0.0);
+        dockGroup.add(dockAnemoCrossbar);
+
+        const dockAnemoRotor3D = new THREE.Group();
+        dockAnemoRotor3D.position.set(-6.35, 15.24, 0.0);
+        for (let ci = 0; ci < 3; ci++) {
+          const armAng = (ci * Math.PI * 2) / 3;
+          const cArm = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.02, 0.02), steelGalvMat);
+          cArm.position.set(Math.cos(armAng) * 0.16, 0, Math.sin(armAng) * 0.16);
+          cArm.rotation.y = -armAng;
+          const cup = new THREE.Mesh(
+            new THREE.SphereGeometry(0.065, 8, 6, 0, Math.PI),
+            new THREE.MeshLambertMaterial({ color: 0x1e293b, side: THREE.DoubleSide })
+          );
+          cup.position.set(Math.cos(armAng) * 0.32, 0, Math.sin(armAng) * 0.32);
+          cup.rotation.y = -armAng;
+          dockAnemoRotor3D.add(cArm, cup);
+        }
+        dockGroup.add(dockAnemoRotor3D);
+
+        const dockWindsockSwivel3D = new THREE.Group();
+        dockWindsockSwivel3D.position.set(-6.8, 15.48, 0.0);
+        const wsHoop = new THREE.Mesh(
+          new THREE.TorusGeometry(0.28, 0.026, 6, 14),
+          steelGalvMat
+        );
+        wsHoop.rotation.y = Math.PI / 2;
+        wsHoop.position.set(0.22, 0, 0);
+        dockWindsockSwivel3D.add(wsHoop);
+
+        const dockWindsockPivot3D = new THREE.Group();
+        dockWindsockPivot3D.position.set(0.22, 0, 0);
+        const wsOrangeMat = new THREE.MeshLambertMaterial({ color: 0xf97316, side: THREE.DoubleSide });
+        const wsWhiteMat = new THREE.MeshLambertMaterial({ color: 0xf8fafc, side: THREE.DoubleSide });
+        const dockWindsockSegments3D = [];
+        for (let si = 0; si < 5; si++) {
+          const r0 = 0.27 - si * 0.034;
+          const r1 = 0.27 - (si + 1) * 0.034;
+          const segLen = 0.42;
+          const segGeo = new THREE.CylinderGeometry(r1, r0, segLen, 12, 1, true);
+          segGeo.rotateZ(-Math.PI / 2);
+          segGeo.translate(segLen * 0.5, 0, 0);
+          const segPivot = new THREE.Group();
+          const segMesh = new THREE.Mesh(segGeo, si % 2 === 0 ? wsOrangeMat : wsWhiteMat);
+          segPivot.add(segMesh);
+          if (si === 0) {
+            dockWindsockPivot3D.add(segPivot);
+          } else {
+            segPivot.position.set(segLen * 0.96, 0, 0);
+            dockWindsockSegments3D[si - 1].add(segPivot);
+          }
+          dockWindsockSegments3D.push(segPivot);
+        }
+        dockWindsockSwivel3D.add(dockWindsockPivot3D);
+        dockGroup.add(dockWindsockSwivel3D);
 
         const fireHoseCabinet = new THREE.Mesh(new THREE.BoxGeometry(0.36, 1.35, 0.95), loadingArmMat);
         fireHoseCabinet.position.set(-3.05, 8.65, 0.0);
@@ -48493,10 +48954,14 @@
               const frontDistPx = rProg * 68;
               const fcx = qx + cvx * frontDistPx;
               const fcy = qy + cvy * frontDistPx;
-              const bandRx = 46;
-              const bandRy = 22;
+              const bandRx = rPhase === "vicinity" ? 36 : 46;
+              const bandRy = rPhase === "vicinity" ? 16 : 22;
               const fG = wmmCtx.createRadialGradient(fcx, fcy, 3, fcx, fcy, bandRx);
-              if (isFreezingRain) {
+              if (rPhase === "vicinity") {
+                fG.addColorStop(0, "rgba(56, 189, 248, 0.34)");
+                fG.addColorStop(0.6, "rgba(148, 163, 184, 0.18)");
+                fG.addColorStop(1, "rgba(148, 163, 184, 0)");
+              } else if (isFreezingRain) {
                 fG.addColorStop(0, "rgba(251, 113, 133, 0.78)");
                 fG.addColorStop(0.55, "rgba(56, 189, 248, 0.48)");
                 fG.addColorStop(1, "rgba(56, 189, 248, 0)");
@@ -48519,7 +48984,7 @@
               wmmCtx.ellipse(fcx, fcy, bandRx, bandRy, cloudMoveToRad + Math.PI / 2, 0, Math.PI * 2);
               wmmCtx.fill();
 
-              wmmCtx.strokeStyle = "rgba(251, 191, 36, 0.9)";
+              wmmCtx.strokeStyle = rPhase === "vicinity" ? "rgba(125, 211, 252, 0.65)" : "rgba(251, 191, 36, 0.9)";
               wmmCtx.lineWidth = 1.2;
               wmmCtx.setLineDash([2, 2]);
               wmmCtx.beginPath();
@@ -48529,12 +48994,16 @@
               wmmCtx.setLineDash([]);
 
               wmmCtx.font = "800 7px 'JetBrains Mono', monospace";
-              wmmCtx.fillStyle = isFreezingRain ? "#fda4af" : (isSnow ? "#e0f2fe" : "#fef08a");
+              wmmCtx.fillStyle = isFreezingRain ? "#fda4af" : (isSnow ? "#e0f2fe" : (rPhase === "vicinity" ? "#bae6fd" : "#fef08a"));
               const leadIcon = isFreezingRain ? "\uD83E\uDDCA" : (isSnow ? "\u2744\uFE0F" : "\uD83C\uDF27\uFE0F");
               const tailIcon = isFreezingRain ? "\uD83E\uDDCA" : (isSnow ? "\uD83C\uDF28\uFE0F" : "\uD83C\uDF26\uFE0F");
               const tagTxt = rPhase === "incoming"
                 ? `${leadIcon} APPROCHE`
-                : (rPhase === "overhead" ? `${leadIcon} SUR QUAI` : `${tailIcon} S'\u00C9LOIGNE`);
+                : rPhase === "overhead"
+                  ? `${leadIcon} SUR QUAI`
+                  : rPhase === "vicinity"
+                    ? "\u2601\uFE0F VIRGA"
+                    : `${tailIcon} S'\u00C9LOIGNE`;
               const tagOffY = rPhase === "overhead" ? -22 : -8;
               wmmCtx.fillText(tagTxt, Math.max(4, Math.min(W - 64, fcx - 26)), Math.max(30, Math.min(H - 16, fcy + tagOffY)));
             }
@@ -48958,6 +49427,10 @@
         let thunderDelayTimer3D = -1.0;
         let thunderRumbleTimer3D = 0.0;
         let thunderRumbleAmp3D = 0.0;
+        let moonPhase3D = 0.5;
+        let moonIllum3D = 1.0;
+        const lastDiag3D = {};
+        window.__get3DWeatherDiagnostics = () => lastDiag3D;
 
         function render3DLoop(nowMs) {
           requestAnimationFrame(render3DLoop);
@@ -49067,16 +49540,19 @@
             steelGalvMat.needsUpdate = true;
           }
 
-          // Éphémérides astronomiques réelles 3D (Soleil & Lune) mises en cache (zéro allocation GC à 60 FPS)
+          // Éphémérides astronomiques réelles 3D (Soleil, Lune & Phase Lunaire) mises en cache (zéro allocation GC à 60 FPS)
           const effMsNow3D = effDateNow.getTime();
           if (Math.abs(effMsNow3D - lastAstroCalcEffMs3D) > 45000 || curTimeMs - lastAstroCalcRealMs3D > 400) {
             lastAstroCalcEffMs3D = effMsNow3D;
             lastAstroCalcRealMs3D = curTimeMs;
-            const dayFrac3D = (effDateNow.getHours() * 60 + effDateNow.getMinutes()) / 1440;
-            sunAzDeg3D = 85 + dayFrac3D * 195;
-            sunAltDeg3D = Math.sin(Math.max(0.0, Math.min(1.0, (dayFrac3D - 0.22) / 0.56)) * Math.PI) * 58;
+            const locDayFrac = getLocationLocalParts(effMsNow3D).daySec / 86400;
+            sunAzDeg3D = 85 + locDayFrac * 195;
+            sunAltDeg3D = Math.sin(Math.max(0.0, Math.min(1.0, (locDayFrac - 0.22) / 0.56)) * Math.PI) * 58;
             moonAzDeg3D = (sunAzDeg3D + 175) % 360;
             moonAltDeg3D = isNight ? 28 : -12;
+            moonPhase3D = getMoonPhase(effDateNow);
+            moonIllum3D = (1.0 - Math.cos(moonPhase3D * 2.0 * Math.PI)) * 0.5;
+            updateMoon3DPhaseTexture(moonPhase3D);
             if (typeof Astronomy !== "undefined") {
               try {
                 if (!cachedAstroObs3D || cachedAstroLat3D !== currentLat || cachedAstroLon3D !== currentLon) {
@@ -49161,28 +49637,53 @@
           // Vitesse de bourgeonnement interne modérée pour ne jamais masquer la trajectoire réelle du vent
           cloudBillowPhase += dt3D * (0.14 + cloudKnots3D * 0.035);
 
+          const wCodeEarly3D = c.weatherCode || 0;
+          const visEarly3D = typeof c.visibility === "number" && c.visibility > 40 ? c.visibility : 18000;
           const cloudPctNow = typeof c.cloudCover === "number" ? c.cloudCover : 35;
-          const cloudLowNow = typeof c.cloudCoverLow === "number" ? c.cloudCoverLow : cloudPctNow;
-          const cloudMidNow = typeof c.cloudCoverMid === "number" ? c.cloudCoverMid : cloudPctNow;
-          const cloudHighNow = typeof c.cloudCoverHigh === "number" ? c.cloudCoverHigh : cloudPctNow;
+          const hasSubLayers3D = typeof c.cloudCoverLow === "number" || typeof c.cloudCoverMid === "number" || typeof c.cloudCoverHigh === "number";
+          const cloudLowNow = typeof c.cloudCoverLow === "number" ? c.cloudCoverLow : cloudPctNow * 0.75;
+          const cloudMidNow = typeof c.cloudCoverMid === "number" ? c.cloudCoverMid : cloudPctNow * 0.6;
+          const cloudHighNow = typeof c.cloudCoverHigh === "number" ? c.cloudCoverHigh : cloudPctNow * 0.45;
 
           const rainPhaseNow = c.rainPhase || "dry";
-          const isStormNow = (c.weatherCode || 0) >= 51 || (c.rain || 0) > 0.1 || (c.snow || 0) > 0.1 || rainPhaseNow === "overhead" || rainPhaseNow === "incoming";
-          const isDeepThunderNow = (c.weatherCode || 0) >= 95 || Boolean(simActive3D && window.tempSimState.stormMode);
+          const isFogWmoNow = wCodeEarly3D === 45 || wCodeEarly3D === 48 || visEarly3D <= 1200;
+          const isStormNow = wCodeEarly3D >= 51 || (c.rain || 0) > 0.1 || (c.snow || 0) > 0.1 || rainPhaseNow === "overhead" || rainPhaseNow === "incoming";
+          const isDeepThunderNow = wCodeEarly3D >= 95 || Boolean(simActive3D && window.tempSimState.stormMode);
           const coverNorm = Math.max(0.0, Math.min(1.0, cloudPctNow / 100));
+
+          // Transmittance optique réelle du faisceau solaire/lunaire direct à travers les étages nuageux, la précipitation et le brouillard!
+          // À 100% Couvert (OMM 3) ou dans le brouillard (OMM 45/48), directBeamTransmittance = 0.0 -> aucun faux rayon ni reflet doré sur l'eau!
+          const opaqueCloudEq = Math.max(
+            cloudPctNow * (wCodeEarly3D >= 3 ? 0.98 : 0.72),
+            cloudLowNow * 1.06,
+            cloudMidNow * 0.94,
+            cloudHighNow * (wCodeEarly3D >= 3 ? 0.92 : 0.46)
+          );
+          const precipFogBeamExt = Math.min(
+            1.0,
+            (isFogWmoNow ? 0.96 : 0) +
+            (visEarly3D < 5500 ? ((5500 - visEarly3D) / 5500) * 0.92 : 0) +
+            Math.min(0.88, (c.rain || 0) * 0.22 + (c.snow || 0) * 0.48)
+          );
+          const directBeamTransmittance = Math.max(
+            0.0,
+            Math.min(1.0, (1.0 - Math.pow(Math.min(1.0, opaqueCloudEq / 90.0), 1.6)) * (1.0 - precipFogBeamExt))
+          );
 
           // Plafond nuageux physique (Niveau de Condensation par Ascendance — LCL : ~125m * (T - Td), mis à l'échelle de la perspective 3D)
           const dewSpreadEarly = Math.max(0, effectiveAirTemp - effectiveDewPoint);
           const lclNorm = Math.min(1.0, dewSpreadEarly / 9.5);
-          const lclCeilingScale = (isStormNow ? 0.72 : 0.78) + lclNorm * 0.36;
+          const lclCeilingScale = (isFogWmoNow ? 0.58 : (isStormNow ? 0.72 : 0.78)) + lclNorm * (isFogWmoNow ? 0.14 : 0.36);
 
-          // 1) Dôme d'ambiance grise uniforme (sans aucune rotation artificielle!) quand la couverture dépasse 48%
-          if (cloudPctNow >= 48) {
+          // 1) Dôme d'ambiance grise uniforme centré sur la caméra (renderOrder -5, derrière les nuages 3D mais devant Soleil/Lune/Étoiles!)
+          if (cloudPctNow >= 42 || isFogWmoNow) {
             overcastDomeMesh.visible = true;
-            const ovcFactor = Math.min(1, (cloudPctNow - 48) / 50);
-            overcastDomeMat.opacity = ovcFactor * (isNight ? 0.80 : (isDeepThunderNow ? 0.95 : (isStormNow ? 0.90 : 0.82)));
+            overcastDomeMesh.position.set(camera3D.position.x, -40, camera3D.position.z);
+            const ovcFactor = isFogWmoNow ? 1.0 : Math.min(1, (cloudPctNow - 42) / 52);
+            overcastDomeMat.opacity = ovcFactor * (isNight ? 0.84 : (isDeepThunderNow ? 0.96 : (isStormNow || isFogWmoNow ? 0.92 : 0.85)));
             if (isNight) overcastDomeMat.color.setHex(0x1e293b);
-            else if (isGolden) overcastDomeMat.color.setHex(isStormNow ? 0x9a5b3c : 0xd97746);
+            else if (isFogWmoNow) overcastDomeMat.color.setHex(0xdbe4ee);
+            else if (isGolden) overcastDomeMat.color.setHex(isStormNow ? 0x8b6b58 : (cloudPctNow >= 88 ? 0x94a3b8 : 0xd97746));
             else if (isDeepThunderNow) overcastDomeMat.color.setHex(0x3b4959);
             else if (isStormNow) overcastDomeMat.color.setHex(0x64748b);
             else overcastDomeMat.color.setHex(0xcbd5e1);
@@ -49194,24 +49695,30 @@
             overcastDomeMat.opacity = 0.0;
           }
 
-          // 2) Plafond de stratus bas/moyens en translation linéaire stricte selon le vecteur vent (cloudDirX, cloudDirZ) + plafond LCL dynamique
-          if (cloudPctNow >= 38) {
+          // 2) Plafond de stratus / altostratus en translation linéaire stricte selon le vecteur vent + altitude réelle (bas vs élevé)
+          if (cloudPctNow >= 36 || isFogWmoNow) {
             overcastCanopyMesh.visible = true;
-            overcastCanopyMesh.position.y = 195 + lclNorm * 115;
-            const canopyFactor = Math.min(1, (cloudPctNow - 38) / 52);
-            overcastCanopyMat.opacity = canopyFactor * (isNight ? 0.58 : (isStormNow ? 0.80 : 0.68));
+            const isHighDominantDeck = cloudHighNow >= 70 && cloudLowNow < 30 && !isFogWmoNow && !isStormNow;
+            const canopyBaseY = isFogWmoNow
+              ? (128 + lclNorm * 35)
+              : (isHighDominantDeck ? (288 + lclNorm * 72) : (185 + lclNorm * 110));
+            overcastCanopyMesh.position.set(camera3D.position.x, canopyBaseY, camera3D.position.z);
+            const canopyFactor = isFogWmoNow ? 1.0 : Math.min(1, (cloudPctNow - 36) / 52);
+            overcastCanopyMat.opacity = canopyFactor * (isNight ? 0.62 : (isStormNow ? 0.84 : 0.72));
             if (isNight) overcastCanopyMat.color.setHex(0x334155);
-            else if (isGolden) overcastCanopyMat.color.setHex(0xfdba74);
+            else if (isFogWmoNow) overcastCanopyMat.color.setHex(0xe2e8f0);
+            else if (isGolden) overcastCanopyMat.color.setHex(cloudPctNow >= 88 ? 0x94a3b8 : 0xfdba74);
             else if (isDeepThunderNow) overcastCanopyMat.color.setHex(0x334155);
             else if (isStormNow) overcastCanopyMat.color.setHex(0x475569);
             else overcastCanopyMat.color.setHex(0xe2e8f0);
             if (lightningFlash3D > 0.02) {
               overcastCanopyMat.color.lerp(scratchCloudTintA.setHex(0xdbeafe), lightningFlash3D * 0.55);
             }
-            // Sur un PlaneGeometry(7600, 7600) avec repeat(7,7) et rotateX(-PI/2) :
-            // +X monde (Est) correspond à -offset.x et +Z monde (Sud) correspond à +offset.y (1 tuile = 1085.7m)
-            overcastCanopyTex.offset.x = (overcastCanopyTex.offset.x - (cloudDirX * totalCloudStep) / 1085.7) % 1;
-            overcastCanopyTex.offset.y = (overcastCanopyTex.offset.y + (cloudDirZ * totalCloudStep) / 1085.7) % 1;
+            const canopyDirX = isHighDominantDeck ? highDirX : cloudDirX;
+            const canopyDirZ = isHighDominantDeck ? highDirZ : cloudDirZ;
+            const canopyStep = isHighDominantDeck ? totalHighStep : totalCloudStep;
+            overcastCanopyTex.offset.x = (overcastCanopyTex.offset.x - (canopyDirX * canopyStep) / 1085.7) % 1;
+            overcastCanopyTex.offset.y = (overcastCanopyTex.offset.y + (canopyDirZ * canopyStep) / 1085.7) % 1;
           } else {
             overcastCanopyMesh.visible = false;
             overcastCanopyMat.opacity = 0.0;
@@ -49227,10 +49734,10 @@
             silverRimHex = 0x93c5fd;
             cloudCirrusMat.color.setHex(0x334155);
           } else if (isGolden) {
-            baseCrownHex = 0xfed7aa;
-            baseBottomHex = isStormNow ? 0x431407 : 0xea580c;
+            baseCrownHex = cloudPctNow >= 90 ? 0xcbd5e1 : 0xfed7aa;
+            baseBottomHex = isStormNow ? 0x431407 : (cloudPctNow >= 90 ? 0x64748b : 0xea580c);
             silverRimHex = 0xfef08a;
-            cloudCirrusMat.color.setHex(0xfde047);
+            cloudCirrusMat.color.setHex(cloudPctNow >= 90 ? 0xfed7aa : 0xfde047);
           } else if (isDeepThunderNow) {
             baseCrownHex = 0x64748b;
             baseBottomHex = 0x1e293b;
@@ -49252,9 +49759,12 @@
           const globalBaseOp = cloudPctNow <= 2 ? 0 : (isNight ? 0.56 : 0.88) * Math.min(1, 0.40 + coverNorm * 0.68);
           cloudCrownMat.opacity = globalCrownOp;
           cloudBaseMat.opacity = globalBaseOp;
-          // Les Cirrus de haute altitude (500 hPa) sont masqués par-dessous lorsque la couche basse/moyenne est très épaisse
-          const lowMidOcclusion = Math.max(0, Math.min(1, (Math.max(cloudLowNow, cloudMidNow, cloudPctNow * 0.88) - 55) / 38));
-          cloudCirrusMat.opacity = cloudPctNow <= 2 ? 0 : (isNight ? 0.26 : 0.54) * Math.min(1, 0.28 + coverNorm * 0.72) * (1 - lowMidOcclusion * 0.88);
+          // Les Cirrus de haute altitude (500 hPa) ne sont occultés que lorsque les couches BASSE ou MOYENNE sont épaisses!
+          const lowMidOcclusion = Math.max(0, Math.min(1, (Math.max(cloudLowNow, cloudMidNow) - 52) / 40));
+          const highCoverNorm = Math.max(0, Math.min(1, Math.max(cloudHighNow, cloudPctNow * 0.35) / 100));
+          cloudCirrusMat.opacity = (cloudPctNow <= 2 || highCoverNorm <= 0.03)
+            ? 0
+            : (isNight ? 0.30 : 0.62) * Math.min(1, 0.30 + highCoverNorm * 0.75) * (1 - lowMidOcclusion * 0.88);
 
           // Direction horizontale de l'astre pour le liséré argenté (Mie forward-scattering sur le bord des cumulus!)
           const sunLightAzRad = (lightAz * Math.PI) / 180;
@@ -49268,8 +49778,12 @@
           for (let ci = 0; ci < cloudClusters3D.length; ci++) {
             const cl = cloudClusters3D[ci];
             const layerCover = cl.layer === 1
-              ? Math.max(cloudPctNow * 0.92, cloudLowNow)
-              : Math.max(cloudPctNow * 0.82, cloudMidNow);
+              ? (hasSubLayers3D
+                  ? Math.max(cloudLowNow, isStormNow ? cloudPctNow * 0.78 : cloudPctNow * 0.16)
+                  : cloudPctNow * 0.90)
+              : (hasSubLayers3D
+                  ? Math.max(cloudMidNow, wCodeEarly3D === 3 ? cloudPctNow * 0.58 : cloudPctNow * 0.22)
+                  : cloudPctNow * 0.82);
             const isVisibleCloud = cloudPctNow > 2 && layerCover >= cl.thresholdPct;
             cl.group.visible = isVisibleCloud;
             if (!isVisibleCloud) continue;
@@ -49283,11 +49797,9 @@
             const nDirZ = rawDirZ / dirLen;
             const layerStep = cl.layer === 1 ? (totalWindStep * 0.15 + totalCloudStep * 0.85) : totalCloudStep;
 
-            // Projection dans le repère du couloir de vent (alongD = dans le sens du vent, crossD = perpendiculaire)
             let alongD = cl.group.position.x * nDirX + cl.group.position.z * nDirZ + layerStep * cl.speedFactor;
             let crossD = -cl.group.position.x * nDirZ + cl.group.position.z * nDirX;
 
-            // Bouclage strict amont/aval le long de l'axe du vent (les nuages reviennent toujours du côté d'où souffle le vent)
             if (alongD > CLOUD_FIELD_HALF) alongD -= wrapSpan;
             else if (alongD < -CLOUD_FIELD_HALF) alongD += wrapSpan;
             if (crossD > CLOUD_FIELD_HALF) crossD -= wrapSpan;
@@ -49299,16 +49811,14 @@
             cl.group.position.z = cWorldZ;
             const effLayerScaleY = cl.layer === 1 ? lclCeilingScale : (0.86 + lclNorm * 0.22);
             cl.group.position.y = cl.baseY * effLayerScaleY + Math.sin(cloudBillowPhase * 0.45 + cl.seed) * 1.4;
-            // Aligner l'axe local +X du groupe de nuages sur la direction d'écoulement du vent (nDirX, nDirZ)
             cl.group.rotation.y = Math.atan2(-nDirZ, nDirX);
 
-            // Diffusion avant solaire (Silver-Lining) + Assombrissement du coeur d'orage + Illumination interne par la foudre 3D!
             if (cl.crownMat && cl.baseMat) {
               const dxCam = cWorldX - camera3D.position.x;
               const dzCam = cWorldZ - camera3D.position.z;
               const invD = 1.0 / (Math.hypot(dxCam, dzCam) || 1.0);
               const sunDot = Math.max(0, (dxCam * invD) * sunHorizX + (dzCam * invD) * sunHorizZ);
-              const silverScatter = Math.pow(sunDot, 3.0) * (isNight ? 0.35 : 0.78) * (1.0 - coverNorm * 0.42);
+              const silverScatter = Math.pow(sunDot, 3.0) * (isNight ? 0.30 : 0.78) * directBeamTransmittance;
 
               scratchCloudTintA.setHex(baseCrownHex).lerp(scratchCloudTintB.setHex(silverRimHex), silverScatter);
               cl.crownMat.color.copy(scratchCloudTintA);
@@ -49332,7 +49842,6 @@
               cl.baseMat.opacity = globalBaseOp;
             }
 
-            // Bourgeonnement interne subtil et cisaillement vertical des sommets vers l'aval (+X local)
             const puffs = cl.puffs;
             const verticalTowerMod = isDeepThunderNow ? 1.32 : (isStormNow ? 1.16 : 1.0);
             for (let p = 0; p < puffs.length; p++) {
@@ -49349,7 +49858,7 @@
 
           // Animation et alignement directionnel des bancs de Cirrus en haute altitude (500 hPa)
           const cirrusRotY = Math.atan2(-highDirZ, highDirX);
-          const effCirrusCover = Math.max(cloudPctNow * 0.65, cloudHighNow);
+          const effCirrusCover = hasSubLayers3D ? Math.max(cloudHighNow, cloudPctNow * 0.22) : cloudPctNow * 0.65;
           const cirrusHalf = 2500;
           const cirrusSpan = cirrusHalf * 2;
           for (let k = 0; k < cirrusBands3D.length; k++) {
@@ -49369,32 +49878,30 @@
           }
 
           // Animation 3D des Rideaux de Pluie / Verglas / Neige :
-          // La cellule se déplace avec les nuages en altitude (cloudDirX, cloudDirZ),
-          // tandis que sa phase (neige sèche/mouillée, verglas, pluie) obéit exactement à la température réelle!
           const showRainCells = rainPhaseNow !== "dry" || (c.rain || 0) > 0.05 || (c.snow || 0) > 0.05;
           rainCells3DGroup.visible = showRainCells;
           if (showRainCells) {
             const isFreezingCurtain = !!c.isFreezingRain;
+            const isDrizzleCurtain = Boolean(c.isDrizzle || (wCodeEarly3D >= 51 && wCodeEarly3D <= 57));
             const isSnowCurtain = !isFreezingCurtain && (
               !!c.isSnowFront ||
               (c.snow || 0) > (c.rain || 0) ||
-              (effectiveAirTemp <= 0.3 && (c.rain || 0) === 0)
+              (effectiveAirTemp <= 0.3 && (c.rain || 0) === 0 && !isDrizzleCurtain)
             );
             const activeCurtainTex = isSnowCurtain ? snowCurtainTex : rainCurtainTex;
             if (rainCurtainMat.map !== activeCurtainTex) {
               rainCurtainMat.map = activeCurtainTex;
               rainCurtainMat.needsUpdate = true;
             }
-            // Défilement vertical des gouttes/flocons dans le rideau 3D (plus lent et floconneux en neige)
             const fallRate = isSnowCurtain
               ? (effectiveAirTemp <= -8 ? 0.36 : 0.48)
-              : (isFreezingCurtain ? 1.45 : 1.35);
+              : (isDrizzleCurtain ? 0.68 : (isFreezingCurtain ? 1.45 : 1.35));
             activeCurtainTex.offset.y = (activeCurtainTex.offset.y + dt3D * fallRate) % 1.0;
             activeCurtainTex.offset.x = (activeCurtainTex.offset.x + dt3D * (windKnots * 0.008)) % 1.0;
 
-            const rIntensity = Math.max(0.4, c.rainFrontIntensity || (c.rain || 0) + (c.snow || 0) || 1.2);
+            const rIntensity = Math.max(0.25, c.rainFrontIntensity || (c.rain || 0) + (c.snow || 0) || 1.0);
             const intensityNorm = Math.min(1, rIntensity / 6.0);
-            rainCurtainMat.opacity = (isNight ? 0.50 : 0.74) * (0.45 + intensityNorm * 0.55);
+            rainCurtainMat.opacity = (isNight ? 0.46 : 0.72) * (isDrizzleCurtain ? 0.55 : 1.0) * (0.42 + intensityNorm * 0.58);
             if (isSnowCurtain) {
               rainCurtainMat.color.setHex(isNight ? 0xcbd5e1 : 0xf8fafc);
             } else if (isFreezingCurtain) {
@@ -49404,9 +49911,8 @@
             }
             rainCellCapMat.color.setHex(isNight ? 0x0f172a : (isSnowCurtain ? 0x475569 : 0x334155));
             rainCellCapMat.opacity = isNight ? 0.72 : 0.90;
-            rainSplashMat.opacity = (0.18 + intensityNorm * 0.28) * (isSnowCurtain ? 0.25 : 1.0);
+            rainSplashMat.opacity = (0.14 + intensityNorm * 0.30) * (isSnowCurtain ? 0.22 : (isDrizzleCurtain ? 0.45 : 1.0));
 
-            // Progression le long de l'axe du vent en altitude (cloudDirX, cloudDirZ) :
             const baseProg = typeof c.rainFrontProgress === "number" ? c.rainFrontProgress : 0;
             rainCellDriftPhase = (rainCellDriftPhase + dt3D * Math.max(4, cloudKnots3D * 0.85)) % 360;
             const driftOsc = (rainPhaseNow === "incoming" || rainPhaseNow === "passing" || rainPhaseNow === "vicinity")
@@ -49428,7 +49934,6 @@
               const cz = cloudDirZ * alongD + perpZ * crossD;
               cell.group.position.set(cx, waterLevelY, cz);
 
-              // Inclinaison réaliste du rideau de pluie sous l'effet combiné du vent au sol et en altitude
               cell.curtainPivot.rotation.z = -effTiltDirX * tiltAngle;
               cell.curtainPivot.rotation.x = effTiltDirZ * tiltAngle;
 
@@ -49462,7 +49967,7 @@
 
           // 2. Mise à jour des vagues 3D, de la normal-map micro-clapotis et de la teinte réelle de l'eau du Saint-Laurent
           const overcastWaterFrac = Math.max(0, Math.min(1, (cloudPctNow - 25) / 72));
-          const stormWaterDark = Math.min(1, overcastWaterFrac * 0.65 + (c.weatherCode >= 95 ? 0.35 : 0) + Math.min(0.28, (c.precipNow || 0) * 0.035));
+          const stormWaterDark = Math.min(1, overcastWaterFrac * 0.72 + (wCodeEarly3D >= 95 ? 0.35 : 0) + Math.min(0.28, (c.precipNow || 0) * 0.035));
           if (waterNormalTex) {
             const nSpeed = (0.022 + Math.min(0.075, windKnots * 0.0022)) * dt3D;
             waterNormalTex.offset.x = (waterNormalTex.offset.x - windDirX * nSpeed - flowSign * 0.005 * dt3D) % 1;
@@ -49473,16 +49978,17 @@
           if (lightningFlash3D > 0.05) {
             waterMat.specular.setHex(0xf8fafc);
             waterMat.shininess = 140;
-          } else if (stormWaterDark > 0.55) {
-            waterMat.specular.setHex(isNight ? 0x475569 : 0x94a3b8);
-            waterMat.shininess = 115;
+          } else if (directBeamTransmittance < 0.22 || stormWaterDark > 0.55) {
+            // Sous ciel couvert (OVC) ou brouillard, l'eau ne produit aucun éclat spéculaire solaire dur : reflet diffus gris-ardoise doux!
+            waterMat.specular.setHex(isNight ? 0x334155 : 0x64748b);
+            waterMat.shininess = 78;
           } else {
             waterMat.specular.setHex(isGolden ? 0xfde047 : isNight ? 0x7dd3fc : 0xe0f2fe);
             waterMat.shininess = isGolden ? 245 : isNight ? 210 : 195;
           }
           waterMat.reflectivity = isNight
-            ? 0.24
-            : Math.max(0.11, 0.34 * (1.0 - stormWaterDark * 0.68) + lightningFlash3D * 0.18);
+            ? 0.22
+            : Math.max(0.09, 0.34 * (0.28 + directBeamTransmittance * 0.72) * (1.0 - stormWaterDark * 0.55) + lightningFlash3D * 0.18);
 
           const waterWarmth = Math.max(0, Math.min(1, (effectiveWaterTemp + 1.0) / 22.0));
           const coldWaterTint = 1.0 - waterWarmth;
@@ -49513,7 +50019,6 @@
 
           const posArr = posAttr.array;
           const colArr = waterGeo.attributes.color.array;
-          // Les moutons d'écume ne coiffent que les vraies crêtes par vent soutenu (>= 16 nds / Beaufort 4-5), sans taches rondes à basse vitesse
           const foamBaseThresh = windKnots >= 16 ? Math.max(0.75, 0.91 - (windKnots - 16) * 0.0065) : 1.15;
 
           for (let i = 0; i < vertexCount; i++) {
@@ -49545,7 +50050,7 @@
             waterGeo.computeVertexNormals();
           }
 
-          // 3. Tra\u00een\u00e9es d'\u00e9cume et courant de surface 3D (axe Coude de Qu\u00e9bec ~44\u00b0 / 224\u00b0)
+          // 3. Traînées d'écume et courant de surface 3D (axe Coude de Québec ~44° / 224°)
           const dirX = Math.sin((44 * Math.PI) / 180);
           const dirZ = -Math.cos((44 * Math.PI) / 180);
           for (let i = 0; i < currentStreaks.length; i++) {
@@ -49565,7 +50070,7 @@
               ) + 0.16;
           }
 
-          // 4. Positionnement astronomique réel du Soleil / de la Lune 3D et de son reflet sur le fleuve (zéro allocation GC)
+          // 4. Positionnement astronomique réel du Soleil / de la Lune 3D et de son reflet sur le fleuve (occulté à 100% sous ciel couvert!)
           const lightDist = 340;
           const lightAzR = (lightAz * Math.PI) / 180;
           const lightAltR = (lightAltDeg * Math.PI) / 180;
@@ -49576,12 +50081,18 @@
           shimmerMat.color.setHex(
             isNight ? 0xbae6fd : isGolden ? 0xfb923c : 0xfef08a
           );
-          const shimmerCloudAtten = Math.max(0.08, 1.0 - Math.max(0, cloudPctNow - 35) / 68);
-          shimmerMat.opacity = (isNight ? 0.28 : isGolden ? 0.58 : 0.40) * shimmerCloudAtten;
-          for (let i = 0; i < sunShimmerBars.length; i++) {
-            const sb = sunShimmerBars[i];
-            sb.mesh.scale.x = 0.8 + Math.sin(t * 3.5 + sb.idx * 0.6) * 0.35;
-            sb.mesh.position.x = Math.cos(t * 2.2 + sb.idx) * 2.5;
+          const bodyAboveHorizonFactor = isNight
+            ? (moonAltDeg3D > 1.2 ? Math.min(1.0, (moonAltDeg3D - 1.2) / 6.0) * Math.max(0.06, moonIllum3D) : 0.0)
+            : (sunAltDeg3D > -0.8 ? Math.min(1.0, (sunAltDeg3D + 0.8) / 4.5) : 0.0);
+          const targetShimmerOpacity = (isNight ? 0.28 : isGolden ? 0.56 : 0.40) * directBeamTransmittance * bodyAboveHorizonFactor;
+          shimmerMat.opacity = targetShimmerOpacity;
+          sunPathGroup.visible = targetShimmerOpacity > 0.012;
+          if (sunPathGroup.visible) {
+            for (let i = 0; i < sunShimmerBars.length; i++) {
+              const sb = sunShimmerBars[i];
+              sb.mesh.scale.x = 0.8 + Math.sin(t * 3.5 + sb.idx * 0.6) * 0.35;
+              sb.mesh.position.x = Math.cos(t * 2.2 + sb.idx) * 2.5;
+            }
           }
 
           // 5. Mouvement hydrodynamique 3D temps réel des navires aux Postes 87 & 86 (tangage, roulis, pilonnement, pavillons)
@@ -49837,7 +50348,13 @@
           tankerGroup.rotation.x = Math.sin(t * 1.45) * rollAmp;
           tankerGroup.rotation.z = Math.cos(t * 1.1) * pitchAmp;
           if (showShip87 && ship87Flag && ship87Flag.mesh) {
-            ship87Flag.mesh.rotation.y = Math.sin(t * (2.6 + windKnots * 0.14)) * 0.14;
+            const cF87 = Math.cos(tankerGroup.rotation.y);
+            const sF87 = Math.sin(tankerGroup.rotation.y);
+            const lWx87 = windDirX * cF87 - windDirZ * sF87;
+            const lWz87 = windDirX * sF87 + windDirZ * cF87;
+            const flutter87 = Math.sin(t * (2.6 + instWindKnots3D * 0.18)) * (0.05 + Math.min(0.14, instWindKnots3D * 0.005));
+            ship87Flag.mesh.rotation.y = Math.atan2(-lWz87, lWx87) + flutter87;
+            ship87Flag.mesh.rotation.z = -Math.max(0, 1.0 - instWindKnots3D / 9.0) * 0.42;
           }
           if (tm) {
             tm.currentShipPos.copy(sP);
@@ -49866,7 +50383,36 @@
               isgottRedMastLight86.visible = isNight || isGolden || isStormNow || Math.sin(t * 3.2) > -0.65;
             }
             if (ship86Flag && ship86Flag.mesh) {
-              ship86Flag.mesh.rotation.y = Math.sin(t * (2.8 + windKnots * 0.15) + 1.1) * 0.15;
+              const cF86 = Math.cos(vessel86Group.rotation.y);
+              const sF86 = Math.sin(vessel86Group.rotation.y);
+              const lWx86 = windDirX * cF86 - windDirZ * sF86;
+              const lWz86 = windDirX * sF86 + windDirZ * cF86;
+              const flutter86 = Math.sin(t * (2.8 + instWindKnots3D * 0.18) + 1.1) * (0.05 + Math.min(0.14, instWindKnots3D * 0.005));
+              ship86Flag.mesh.rotation.y = Math.atan2(-lWz86, lWx86) + flutter86;
+              ship86Flag.mesh.rotation.z = -Math.max(0, 1.0 - instWindKnots3D / 9.0) * 0.42;
+            }
+          }
+
+          // Manche à air maritime ISGOTT (5 bandes : 3 nds/bande -> 15 nds horizontale) & Anémomètre sur le toit de la cabine du quai
+          if (dockAnemoRotor3D) {
+            dockAnemoRotor3D.rotation.y = (dockAnemoRotor3D.rotation.y + dt3D * (0.25 + instWindKnots3D * 0.88)) % (Math.PI * 2);
+          }
+          if (dockWindsockSwivel3D && dockWindsockSegments3D.length === 5) {
+            const cFDk = Math.cos(DOCK_ROT_Y);
+            const sFDk = Math.sin(DOCK_ROT_Y);
+            const lWxDk = windDirX * cFDk - windDirZ * sFDk;
+            const lWzDk = windDirX * sFDk + windDirZ * cFDk;
+            const gustYaw = Math.sin(t * 3.4) * Math.min(0.09, instWindKnots3D * 0.003);
+            dockWindsockSwivel3D.rotation.y = Math.atan2(-lWzDk, lWxDk) + gustYaw;
+            // Étalonnage Transports Canada / OACI : 0 nd = tombante (-1.18 rad), 7.5 nds = mi-gonflée, >=15 nds = pleine extension horizontale!
+            const inflateNorm = Math.max(0, Math.min(1, instWindKnots3D / 15.0));
+            for (let wsi = 0; wsi < 5; wsi++) {
+              const bandThresh = wsi * 0.2;
+              const segLift = Math.max(0, Math.min(1, (inflateNorm - bandThresh * 0.65) / (1.0 - bandThresh * 0.5)));
+              const droopZ = -(1.0 - segLift) * (wsi === 0 ? 0.58 : 0.19);
+              const whipWave = Math.sin(t * (4.5 + instWindKnots3D * 0.36) - wsi * 0.75) * (0.015 + inflateNorm * 0.045) * (1 + wsi * 0.22);
+              dockWindsockSegments3D[wsi].rotation.z = droopZ + whipWave;
+              dockWindsockSegments3D[wsi].rotation.y = Math.cos(t * (3.8 + instWindKnots3D * 0.30) - wsi * 0.65) * (0.01 + inflateNorm * 0.035);
             }
           }
 
@@ -50004,7 +50550,7 @@
             }
           }
 
-          // 6. Bouées du chenal (avec halos lumineux IALA-B), voiliers et glaces/débris dérivants sur l'eau
+          // 6. Bouées du chenal (avec halos lumineux IALA-B), voiliers de plaisance (uniquement par météo clémente hors hiver!) et glaces
           const buoyHaloOp = isNight ? 0.88 : (isGolden ? 0.56 : 0.24);
           buoys3D.forEach((b) => {
             const wy = sampleWaveHeight(b.x, b.z, t, windKnots, flowSign);
@@ -50018,10 +50564,13 @@
             }
           });
 
+          const showPleasureSailboats = !forceWinter && effectiveAirTemp >= 6.0 && effectiveWaterTemp >= 5.0 && windKnots < 25 && !isStormNow && !isFogWmoNow;
           sailboats3D.forEach((sb) => {
+            sb.group.visible = showPleasureSailboats;
+            if (!showPleasureSailboats) return;
             const wy = sampleWaveHeight(sb.x, sb.z, t, windKnots, flowSign);
             sb.group.position.y = waterLevelY + wy;
-            sb.group.rotation.z = Math.sin(t * 1.7 + sb.phase) * 0.1;
+            sb.group.rotation.z = Math.sin(t * 1.7 + sb.phase) * (0.06 + Math.min(0.14, windKnots * 0.006));
           });
 
           // =========================================================================
@@ -50081,7 +50630,11 @@
           const targetFrostFactor = Math.max(freezingRainGlaze, rawFrost * rhFrostScale) * (1.0 - targetSnowpackFactor * 0.85);
           const targetWaterColdFactor = Math.max(0, Math.min(1, (14.0 - effectiveWaterTemp) / 14.0));
 
-          const envLerp = 1 - Math.pow(1 - 0.06, dt60);
+          const snowDepthJump = Math.abs(liveSnowDepthCm - (lastDiag3D._prevSnowDepthCm ?? -999)) > 1.0;
+          lastDiag3D._prevSnowDepthCm = liveSnowDepthCm;
+          const envLerp = (snowDepthJump || simActive3D || Math.abs(deltaSimMins) > 2)
+            ? 1.0
+            : (1 - Math.pow(1 - 0.08, dt60));
           currentSnowpackFactor += (targetSnowpackFactor - currentSnowpackFactor) * envLerp;
           currentFrostFactor += (targetFrostFactor - currentFrostFactor) * envLerp;
           currentAutumnFactor += (targetAutumnFactor - currentAutumnFactor) * envLerp;
@@ -50277,7 +50830,7 @@
           }
 
           // Fumée de mer arctique (ΔT Air-Eau <= -9.5°C) ET brume d'advection marine (air doux et humide sur fleuve froid)
-          const visMeters3D = (!simActive3D && typeof c.visibility === "number" && c.visibility > 50) ? c.visibility : 24000;
+          const visMeters3D = (typeof c.visibility === "number" && c.visibility > 40) ? c.visibility : 20000;
           const dewSpread3D = Math.max(0, effectiveAirTemp - effectiveDewPoint);
           if (seaSmoke3DGroup) {
             const hasArcticSeaSmoke = (forceWinter && effectiveAirTemp <= -2.0) ||
@@ -50326,55 +50879,70 @@
           }
 
           // =========================================================================
-          // 6B. PRÉCIPITATIONS VOLUMÉTRIQUES 3D (PLUIE, BRUINE, VERGLAS), IMPACTS SUR L'EAU, EMBRUNS, FOUDRE 3D, ARC-EN-CIEL & QUAI MOUILLÉ
+          // 6B. PRÉCIPITATIONS VOLUMÉTRIQUES 3D (PLUIE, BRUINE, VERGLAS, NEIGE FONDANTE), IMPACTS SUR L'EAU, EMBRUNS, FOUDRE 3D, ARC-EN-CIEL & QUAI MOUILLÉ
           // =========================================================================
+          const isDrizzle3D = Boolean(c.isDrizzle || (wCode3D >= 51 && wCode3D <= 57));
           const isFreezingPrecip3D = Boolean(c.isFreezingRain) || (!isSnowingNow3D && effectiveAirTemp <= 0.6 && (c.rain || 0) > 0.03);
           let localRainRateMm = 0.0;
-          if (!isSnowingNow3D || isFreezingPrecip3D) {
+          // Autorise la coexistence pluie + neige mouillée (pluie-neige mêlée autour de 0°C) si c.rain > 0.03
+          if (!isSnowingNow3D || isFreezingPrecip3D || (c.rain || 0) > 0.03) {
             if (rainPhaseNow === "overhead") {
-              localRainRateMm = Math.max(c.rain || 0, c.precipNow || 0, isFreezingPrecip3D ? (c.precipitation || 1.8) : 0);
+              localRainRateMm = Math.max(
+                c.rain || 0,
+                isSnowingNow3D ? 0 : (c.precipNow || 0),
+                isFreezingPrecip3D ? (c.precipitation || 1.2) : 0,
+                isDrizzle3D ? 0.22 : 0
+              );
             } else if (rainPhaseNow === "incoming" || rainPhaseNow === "passing") {
-              localRainRateMm = Math.max(0, typeof c.precipNow === "number" ? c.precipNow : (c.rain || 0) * 0.18);
+              localRainRateMm = Math.max(0, typeof c.precipNow === "number" && !isSnowingNow3D ? c.precipNow : (c.rain || 0) * 0.18);
             } else {
-              localRainRateMm = Math.max(0, c.rain || 0);
+              localRainRateMm = Math.max(0, c.rain || 0, (!isSnowingNow3D && isDrizzle3D) ? 0.20 : 0);
             }
           }
 
-          // 1) Filets de pluie / bruine / pluie verglaçante volumétriques 3D autour de la caméra (étirés selon le vecteur vitesse 3D réel)
+          // 1) Filets de pluie / bruine fine / pluie verglaçante volumétriques 3D autour de la caméra (étirés selon le vecteur vitesse 3D réel)
           if (rainParticles3DGroup && rainGeo3D) {
             const hasRain3D = localRainRateMm > 0.025;
             rainParticles3DGroup.visible = hasRain3D;
             if (hasRain3D) {
               const camP = camera3D.position;
+              const isFineDrizzleMode = isDrizzle3D && localRainRateMm < 1.6;
               const rainIntensityNorm = Math.min(1.0, Math.pow(localRainRateMm / 14.0, 0.68));
+              const minStreakFloor = isFineDrizzleMode ? 440 : 150;
               const activeStreaks = Math.min(
                 RAIN_STREAK_MAX,
-                Math.max(150, Math.round(160 + rainIntensityNorm * (RAIN_STREAK_MAX - 160)))
+                Math.max(minStreakFloor, Math.round(160 + rainIntensityNorm * (RAIN_STREAK_MAX - 160)))
               );
               rainGeo3D.setDrawRange(0, activeStreaks * 2);
 
-              // Conversion exacte noeuds -> m/s (1 kt = 0.5144 m/s) avec enveloppe de rafales turbulentes
+              // Conversion exacte noeuds -> m/s (1 kt = 0.5144 m/s) avec dérive éolienne accrue pour les micro-gouttelettes de bruine
               const windMps = instWindKnots3D * 0.5144;
-              const rainVx = (windDirX * 0.85 + cloudDirX * 0.15) * windMps;
-              const rainVz = (windDirZ * 0.85 + cloudDirZ * 0.15) * windMps;
-              const fallVel = isFreezingPrecip3D
-                ? 19.5
-                : (18.0 + Math.min(15.0, localRainRateMm * 1.15));
-              const shutterSec = isFreezingPrecip3D
-                ? 0.036
-                : (0.040 + Math.min(0.032, localRainRateMm * 0.0022));
+              const driftMult = isFineDrizzleMode ? 1.25 : 1.0;
+              const rainVx = (windDirX * 0.85 + cloudDirX * 0.15) * windMps * driftMult;
+              const rainVz = (windDirZ * 0.85 + cloudDirZ * 0.15) * windMps * driftMult;
+              const fallVel = isFineDrizzleMode
+                ? (8.8 + localRainRateMm * 2.2)
+                : isFreezingPrecip3D
+                  ? 19.5
+                  : (18.0 + Math.min(15.0, localRainRateMm * 1.15));
+              const shutterSec = isFineDrizzleMode
+                ? 0.024
+                : isFreezingPrecip3D
+                  ? 0.036
+                  : (0.040 + Math.min(0.032, localRainRateMm * 0.0022));
 
               rainMat3D.opacity = Math.min(
                 0.86,
-                (isNight ? 0.36 : 0.48) + rainIntensityNorm * 0.34 + lightningFlash3D * 0.22
+                ((isNight ? 0.36 : 0.48) + rainIntensityNorm * 0.34) * (isFineDrizzleMode ? 0.78 : 1.0) + lightningFlash3D * 0.22
               );
 
               // Mise à jour paresseuse de la teinte vertex des gouttes (uniquement si l'ambiance lumineuse ou la phase change)
-              const nextRainColSig = `${isNight ? 1 : 0}_${isGolden ? 1 : 0}_${isFreezingPrecip3D ? 1 : 0}_${Math.round(lightningFlash3D * 8)}`;
+              const nextRainColSig = `${isNight ? 1 : 0}_${isGolden ? 1 : 0}_${isFreezingPrecip3D ? 1 : 0}_${isFineDrizzleMode ? 1 : 0}_${Math.round(lightningFlash3D * 8)}`;
               if (nextRainColSig !== lastRainColorSig3D) {
                 lastRainColorSig3D = nextRainColSig;
                 let hr = 0.78, hg = 0.90, hb = 0.99;
                 if (isFreezingPrecip3D) { hr = 0.86; hg = 0.96; hb = 1.0; }
+                else if (isFineDrizzleMode) { hr = 0.84; hg = 0.91; hb = 0.97; }
                 else if (isGolden) { hr = 0.98; hg = 0.84; hb = 0.68; }
                 else if (isNight) { hr = 0.52; hg = 0.66; hb = 0.82; }
                 const lBoost = lightningFlash3D * 0.35;
@@ -50434,14 +51002,15 @@
             }
           }
 
-          // 2) Impacts concentriques des gouttes de pluie à la surface du fleuve Saint-Laurent (84 anneaux d'onde)
+          // 2) Impacts concentriques des gouttes de pluie / bruine à la surface du fleuve Saint-Laurent (84 anneaux d'onde)
           if (rainRipples3DGroup) {
-            const showRipples = localRainRateMm > 0.08 && effIceTenths < 7;
+            const showRipples = localRainRateMm > (isDrizzle3D ? 0.04 : 0.08) && effIceTenths < 7;
             rainRipples3DGroup.visible = showRipples;
             if (showRipples) {
+              const isDrizzleRip = isDrizzle3D && localRainRateMm < 1.2;
               const ripStrength = Math.min(1.0, localRainRateMm / 7.5);
-              const activeRipCount = Math.min(RAIN_RIPPLE_COUNT, Math.round(20 + ripStrength * (RAIN_RIPPLE_COUNT - 20)));
-              const baseRipOp = (isNight ? 0.24 : 0.42) * (0.35 + ripStrength * 0.65) + lightningFlash3D * 0.20;
+              const activeRipCount = Math.min(RAIN_RIPPLE_COUNT, Math.round((isDrizzleRip ? 34 : 20) + ripStrength * (RAIN_RIPPLE_COUNT - 20)));
+              const baseRipOp = (isNight ? 0.24 : 0.42) * (isDrizzleRip ? 0.42 : (0.35 + ripStrength * 0.65)) + lightningFlash3D * 0.20;
               for (let mg = 0; mg < rainRippleMats.length; mg++) {
                 const cyc = ((t * 1.85 + mg / rainRippleMats.length) % 1.0);
                 rainRippleMats[mg].opacity = Math.max(0, (1.0 - cyc) * baseRipOp);
@@ -50449,6 +51018,7 @@
               }
               const anchorX = Math.abs(camera3D.position.x) < 260 ? camera3D.position.x : 0;
               const anchorZ = Math.abs(camera3D.position.z) < 260 ? camera3D.position.z : 0;
+              const ripSizeFactor = isDrizzleRip ? 0.58 : (0.75 + ripStrength * 0.45);
               for (let rp = 0; rp < RAIN_RIPPLE_COUNT; rp++) {
                 const item = rainRipples3D[rp];
                 if (rp >= activeRipCount) {
@@ -50461,18 +51031,20 @@
                 const wz = anchorZ + item.rz;
                 const wy = sampleWaveHeight(wx, wz, t, windKnots, flowSign);
                 item.mesh.position.set(wx, waterLevelY + wy + 0.08, wz);
-                const sc = (0.18 + cyc * item.maxScale) * (0.75 + ripStrength * 0.45);
+                const sc = (0.18 + cyc * item.maxScale) * ripSizeFactor;
                 item.mesh.scale.set(sc, sc, 1);
               }
             }
           }
 
-          // 3) Brume d'éclaboussure basse (Rain Splash Mist) sur le tablier du quai en T et le fleuve lors de fortes averses
+          // 3) Brume d'éclaboussure basse & voile de bruine (Rain/Drizzle Mist) sur le tablier du quai en T et le fleuve
           if (rainMist3DGroup) {
-            const showRainMist = localRainRateMm >= 1.8;
+            const showRainMist = localRainRateMm >= 1.8 || (isDrizzle3D && localRainRateMm >= 0.16);
             rainMist3DGroup.visible = showRainMist;
             if (showRainMist) {
-              const mistInt = Math.min(1.0, (localRainRateMm - 1.5) / 8.5);
+              const mistInt = (isDrizzle3D && localRainRateMm < 1.8)
+                ? Math.min(0.55, 0.22 + localRainRateMm * 0.45)
+                : Math.min(1.0, (localRainRateMm - 1.5) / 8.5);
               const mistTint = isNight ? 0x64748b : (isGolden ? 0xfed7aa : 0xdbeafe);
               for (let rm = 0; rm < rainMistSprites3D.length; rm++) {
                 const ms = rainMistSprites3D[rm];
@@ -50617,9 +51189,11 @@
             if (lightningPointLight) lightningPointLight.intensity = 0.0;
           }
 
-          // 6) Arc-en-ciel Double 3D Physiquement Exact à 42° autour du point antisolaire (lors d'une averse qui s'éloigne avec percée du soleil!)
+          // 6) Arc-en-ciel Double 3D Physiquement Exact à 42° autour du point antisolaire (exige un faisceau solaire direct non occulté!)
           if (rainbow3DGroup && rainbowPrimaryMat) {
             const canShowRainbow = !isNight &&
+              directBeamTransmittance > 0.18 &&
+              visMeters3D > 3500 &&
               effectiveAirTemp > 1.2 &&
               sunAltDeg3D > 1.5 &&
               sunAltDeg3D < 43.0 &&
@@ -50641,7 +51215,7 @@
                 camera3D.position.z - Math.cos(antiRad) * rbDist
               );
               rainbow3DGroup.lookAt(camera3D.position.x, rbCenterY, camera3D.position.z);
-              const sunClearFactor = Math.max(0.28, 1.0 - Math.max(0, cloudPctNow - 42) / 55);
+              const sunClearFactor = Math.max(0.28, directBeamTransmittance);
               const dropFactor = rainPhaseNow === "passing"
                 ? Math.min(1.0, Math.max(0.58, (c.rainFrontIntensity || 1.5) / 2.6))
                 : Math.min(0.88, localRainRateMm / 2.0);
@@ -50649,10 +51223,12 @@
             }
           }
 
-          // 6B) Faisceaux Crépusculaires Volumétriques 3D (Rayons de Tyndall / God-Rays percant les trouées nuageuses au-dessus du Saint-Laurent)
+          // 6B) Faisceaux Crépusculaires Volumétriques 3D (Rayons de Tyndall / God-Rays : impossibles sous 100% OVC ou brouillard!)
           if (godRays3DGroup && godRayShafts3D.length > 0) {
             const canShowGodRays = !starsModeActive &&
               !isNight &&
+              directBeamTransmittance > 0.08 &&
+              visMeters3D > 2500 &&
               sunAltDeg3D > 2.5 &&
               sunAltDeg3D < 44.0 &&
               cloudPctNow >= 18 &&
@@ -50673,6 +51249,7 @@
               const perpGz = Math.sin(sAzR);
               const brokenCloudWindow = 1.0 - Math.abs(cloudPctNow - 52) / 42;
               const lowSunFactor = Math.max(0.25, Math.min(1.0, (44.0 - sunAltDeg3D) / 34.0));
+              const transRayFactor = Math.min(1.0, directBeamTransmittance * 1.35);
               const rayTintHex = isGolden ? 0xfdba74 : 0xfef08a;
               const baseAnchorDist = 920;
               const anchorX = camera3D.position.x + Math.sin(sAzR) * baseAnchorDist;
@@ -50690,15 +51267,17 @@
                 sh.pivot.quaternion.setFromUnitVectors(UP_VEC_3D, scratchBatDir);
                 const gapPulse = 0.55 + 0.45 * Math.sin(t * 0.34 + sh.phase * 1.7);
                 sh.mat.color.setHex(rayTintHex);
-                sh.mat.opacity = Math.max(0.0, Math.min(0.24, (isGolden ? 0.21 : 0.14) * Math.max(0.22, brokenCloudWindow) * lowSunFactor * gapPulse));
+                sh.mat.opacity = Math.max(0.0, Math.min(0.24, (isGolden ? 0.21 : 0.14) * Math.max(0.22, brokenCloudWindow) * lowSunFactor * transRayFactor * gapPulse));
               }
             }
           }
 
-          // 7) Humidité & Flaques Réfléchissantes sur le Béton/Acier du Quai en T Valero + Glace Vive (Verglas)
+          // 7) Humidité & Flaques Réfléchissantes sur le Béton/Acier du Quai en T Valero + Glace Vive (Verglas) + Bruine
           let targetWetness = 0.0;
           if (isFreezingPrecip3D || localRainRateMm >= 0.30) {
             targetWetness = Math.min(1.0, 0.55 + localRainRateMm * 0.16 + (isFreezingPrecip3D ? 0.45 : 0));
+          } else if (isDrizzle3D && localRainRateMm > 0.04) {
+            targetWetness = Math.min(0.82, 0.50 + localRainRateMm * 0.25);
           } else if (rainPhaseNow === "passing" && (c.rainFrontIntensity || 0) >= 0.4) {
             // Quai fraîchement détrempé et miroitant au soleil juste après le passage d'une averse!
             targetWetness = Math.max(0.76, 1.0 - Math.max(0, (c.rainFrontProgress || 0.5) - 0.35) * 0.45);
@@ -50707,12 +51286,10 @@
           }
           targetWetness *= (1.0 - currentSnowpackFactor * 0.90);
 
-          const simSnapKey = `${simActive3D ? 1 : 0}_${rainPhaseNow}_${Math.round(localRainRateMm)}_${isFreezingPrecip3D ? 1 : 0}`;
+          const simSnapKey = `${simActive3D ? 1 : 0}_${wCode3D}_${rainPhaseNow}_${Math.round(localRainRateMm * 4)}_${isFreezingPrecip3D ? 1 : 0}_${isDrizzle3D ? 1 : 0}`;
           if (simSnapKey !== lastWetSnapKey3D) {
             lastWetSnapKey3D = simSnapKey;
-            if (simActive3D || Math.abs(deltaSimMins) > 2) {
-              surfaceWetness3D = targetWetness;
-            }
+            surfaceWetness3D = targetWetness;
           } else {
             const wetRate = targetWetness > surfaceWetness3D
               ? Math.min(1.0, dt3D * 0.85)
@@ -50961,22 +51538,27 @@
           });
 
           const overcastDim = 1.0 - Math.max(0, (cloudPctNow - 40) / 60) * 0.48;
-          const visFogAdd = visMeters3D < 16000
-            ? Math.min(0.00078, Math.pow((16000 - visMeters3D) / 16000, 1.65) * 0.00075)
-            : 0.0;
-          const dewFogAdd = (dewSpread3D < 2.2 && effHumidity >= 86)
-            ? ((2.2 - dewSpread3D) / 2.2) * 0.00014
-            : 0.0;
-          const snowFogAdd = hasSnow3D
-            ? Math.min(0.00028, 0.00007 + activeSnowRateCm * 0.00009 + (isBlowingGroundSnow3D ? 0.00010 : 0))
+          // Loi d'extinction de Koschmieder étalonnée sur la géométrie 3D réelle des repères du fleuve :
+          // Lévis (1.0 km -> d=380), Château Frontenac (3.4 km -> d=895), Pont de Québec (7.2 km -> d=1550), Île d'Orléans (10.8 km -> d=2085)
+          const effVisKm3D = Math.max(0.12, Math.min(40.0, visMeters3D / 1000.0));
+          const vis3DDist = 390.0 * Math.pow(effVisKm3D, 0.71);
+          const koschCoeff = effVisKm3D <= 11.0
+            ? 1.731
+            : Math.max(0.85, 1.731 - ((effVisKm3D - 11.0) / 25.0) * 0.85);
+          const dewFogAdd = (visMeters3D > 12000 && dewSpread3D < 2.2 && effHumidity >= 86)
+            ? ((2.2 - dewSpread3D) / 2.2) * 0.00009
             : 0.0;
           const crispArcticClear = (effectiveAirTemp <= -8.0 && cloudPctNow < 45 && !hasSnow3D && visMeters3D >= 18000)
-            ? Math.min(0.00005, ((-effectiveAirTemp - 8.0) / 20.0) * 0.00005)
+            ? Math.min(0.00006, ((-effectiveAirTemp - 8.0) / 20.0) * 0.00006)
             : 0.0;
           scene.fog.density = Math.max(
-            0.00008,
-            0.000135 + (cloudPctNow / 100) * 0.00011 + (rainPhaseNow === "overhead" ? 0.00018 : 0) + visFogAdd + dewFogAdd + snowFogAdd - crispArcticClear
+            0.00010,
+            Math.min(0.0145, koschCoeff / vis3DDist + dewFogAdd - crispArcticClear)
           );
+
+          const fogVeilNorm = Math.max(0, Math.min(1, (9000 - visMeters3D) / 8200));
+          const deepFogNorm = Math.max(0, Math.min(1, (2600 - visMeters3D) / 2200));
+          const directLightScale = 0.16 + directBeamTransmittance * 0.84;
 
           const coldLightNorm = Math.max(0, Math.min(1, (-effectiveAirTemp - 4.0) / 20.0));
           const heatLightNorm = Math.max(0, Math.min(1, (effectiveAirTemp - 23.0) / 12.0));
@@ -50986,32 +51568,42 @@
             hemiLight.groundColor.setHex(0x020617).lerp(scratchThermalColor.setHex(0x1e293b), currentSnowpackFactor * 0.35);
             hemiLight.intensity = 0.55 + currentSnowpackFactor * 0.08 + lightningFlash3D * 1.45;
             dirLight.color.setHex(0x93c5fd).lerp(scratchThermalColor.setHex(0xbfdbfe), coldLightNorm * 0.4);
-            dirLight.intensity = 0.55 * overcastDim;
+            const lunarFactor = moonAltDeg3D > 0 ? Math.max(0.16, moonIllum3D) : 0.12;
+            dirLight.intensity = 0.58 * lunarFactor * (0.20 + directBeamTransmittance * 0.80);
             scene.fog.color.setHex(0x061326).lerp(scratchThermalColor.setHex(0x0b1d36), Math.max(coldLightNorm * 0.35, hasSnow3D ? 0.4 : 0));
+            if (fogVeilNorm > 0) {
+              scene.fog.color.lerp(scratchThermalColor.setHex(0x1e293b), fogVeilNorm * 0.72);
+            }
           } else if (isGolden) {
             hemiLight.color.setHex(0xfed7aa).lerp(scratchThermalColor.setHex(0xfecdd3), coldLightNorm * 0.35);
+            if (coverNorm > 0.75) {
+              hemiLight.color.lerp(scratchThermalColor.setHex(0x94a3b8), (coverNorm - 0.75) * 2.6);
+            }
             hemiLight.groundColor.setHex(0x1e3a5f).lerp(scratchThermalColor.setHex(0x94a3b8), currentSnowpackFactor * 0.45);
-            hemiLight.intensity = (0.85 + currentSnowpackFactor * 0.08) * overcastDim + lightningFlash3D * 1.15;
+            hemiLight.intensity = (0.85 + currentSnowpackFactor * 0.08) * (0.68 + overcastDim * 0.32) + lightningFlash3D * 1.15;
             dirLight.color.setHex(0xfb923c).lerp(scratchThermalColor.setHex(0xfdba74), heatLightNorm * 0.35);
-            dirLight.intensity = 1.25 * overcastDim;
-            scene.fog.color.setHex(isStormNow ? 0x64748b : 0xd97746).lerp(scratchThermalColor.setHex(0xcbd5e1), hasSnow3D ? 0.45 : 0);
+            dirLight.intensity = 1.25 * directLightScale;
+            scene.fog.color.setHex((isStormNow || coverNorm >= 0.88) ? 0x64748b : 0xd97746).lerp(scratchThermalColor.setHex(0xcbd5e1), hasSnow3D ? 0.45 : 0);
+            if (fogVeilNorm > 0) {
+              scene.fog.color.lerp(scratchThermalColor.setHex(0x94a3b8), fogVeilNorm * 0.82);
+            }
           } else {
-            hemiLight.color.setHex(isStormNow ? 0x94a3b8 : 0xe0f2fe);
-            if (!isStormNow && coldLightNorm > 0) {
+            hemiLight.color.setHex((isStormNow || coverNorm >= 0.88) ? 0x94a3b8 : 0xe0f2fe);
+            if (!isStormNow && coverNorm < 0.88 && coldLightNorm > 0) {
               hemiLight.color.lerp(scratchThermalColor.setHex(0xdbeafe), coldLightNorm * 0.55);
-            } else if (!isStormNow && heatLightNorm > 0) {
+            } else if (!isStormNow && coverNorm < 0.88 && heatLightNorm > 0) {
               hemiLight.color.lerp(scratchThermalColor.setHex(0xfef3c7), heatLightNorm * 0.30);
             }
             hemiLight.groundColor.setHex(0x0c4a6e).lerp(scratchThermalColor.setHex(0xcbd5e1), currentSnowpackFactor * 0.55);
-            hemiLight.intensity = (0.95 + currentSnowpackFactor * 0.10) * (0.7 + overcastDim * 0.3) + lightningFlash3D * 1.25;
+            hemiLight.intensity = (0.95 + currentSnowpackFactor * 0.10) * (0.72 + overcastDim * 0.28) + lightningFlash3D * 1.25;
             dirLight.color.setHex(0xffffff);
             if (coldLightNorm > 0) {
               dirLight.color.lerp(scratchThermalColor.setHex(0xeff6ff), coldLightNorm * 0.45);
             } else if (heatLightNorm > 0) {
               dirLight.color.lerp(scratchThermalColor.setHex(0xfffbeb), heatLightNorm * 0.55);
             }
-            dirLight.intensity = (1.22 + coldLightNorm * 0.06) * overcastDim;
-            scene.fog.color.setHex(cloudPctNow >= 75 ? 0x6e859e : 0x8bb8d6);
+            dirLight.intensity = (1.22 + coldLightNorm * 0.06) * directLightScale;
+            scene.fog.color.setHex(cloudPctNow >= 75 ? 0x7b8ea3 : 0x8bb8d6);
             if (hasSnow3D) {
               scene.fog.color.lerp(scratchThermalColor.setHex(0xdbeafe), 0.55);
             } else if (coldLightNorm > 0) {
@@ -51019,36 +51611,47 @@
             } else if (heatLightNorm > 0) {
               scene.fog.color.lerp(scratchThermalColor.setHex(0x9ec0d4), heatLightNorm * 0.35);
             }
+            if (fogVeilNorm > 0) {
+              scene.fog.color.lerp(scratchThermalColor.setHex(0xcbd5e1), fogVeilNorm * 0.85);
+            }
           }
           if (lightningFlash3D > 0.01) {
             scene.fog.color.lerp(scratchThermalColor.setHex(0xdbeafe), lightningFlash3D * 0.42);
           }
 
-          // 8B. Dôme Atmosphérique 3D (Rayleigh + Mie + Mur d'Orage Amont) & Astres 3D (Soleil, Lune, Étoiles) occultés naturellement par les nuages et navires!
+          // 8B. Dôme Atmosphérique 3D (Rayleigh + Mie + Mur d'Orage Amont + Fusion Brume Koschmieder) & Astres 3D occultés physiquement!
           if (skyDomeMesh && skyDomeUniforms) {
             skyDomeMesh.position.set(camera3D.position.x, 0, camera3D.position.z);
             if (isNight) {
-              skyDomeUniforms.uZenithColor.value.setHex(0x020817).lerp(scratchSkyColA.setHex(0x0f172a), coverNorm * 0.55);
-              skyDomeUniforms.uHorizonColor.value.setHex(0x0b1d36).lerp(scratchSkyColA.setHex(0x1e293b), coverNorm * 0.45);
+              skyDomeUniforms.uZenithColor.value.setHex(0x020817).lerp(scratchSkyColA.setHex(0x0f172a), coverNorm * 0.65);
+              skyDomeUniforms.uHorizonColor.value.setHex(0x0b1d36).lerp(scratchSkyColA.setHex(0x1e293b), coverNorm * 0.55);
               skyDomeUniforms.uGroundColor.value.setHex(0x020617);
               skyDomeUniforms.uSunColor.value.setHex(0x93c5fd);
-              skyDomeUniforms.uSunIntensity.value = moonAltDeg3D > 0 ? 0.28 * (1 - coverNorm * 0.85) : 0.05;
+              skyDomeUniforms.uSunIntensity.value = moonAltDeg3D > 0 ? 0.28 * moonIllum3D * directBeamTransmittance : 0.0;
             } else if (isGolden) {
-              skyDomeUniforms.uZenithColor.value.setHex(0x172554).lerp(scratchSkyColA.setHex(0x334155), coverNorm * 0.72);
-              skyDomeUniforms.uHorizonColor.value.setHex(0xea580c).lerp(scratchSkyColA.setHex(0x64748b), coverNorm * 0.65);
+              skyDomeUniforms.uZenithColor.value.setHex(0x172554).lerp(scratchSkyColA.setHex(0x334155), coverNorm * 0.84);
+              skyDomeUniforms.uHorizonColor.value.setHex(0xea580c).lerp(scratchSkyColA.setHex(0x64748b), coverNorm * 0.86);
               skyDomeUniforms.uGroundColor.value.setHex(0x0c2438);
               skyDomeUniforms.uSunColor.value.setHex(0xfde047);
-              skyDomeUniforms.uSunIntensity.value = 1.25 * (1 - coverNorm * 0.78);
+              skyDomeUniforms.uSunIntensity.value = 1.25 * directBeamTransmittance;
             } else {
               skyDomeUniforms.uZenithColor.value.setHex(0x0369a1)
                 .lerp(scratchSkyColA.setHex(0x0284c7), coldLightNorm * 0.35)
-                .lerp(scratchSkyColB.setHex(0x475569), coverNorm * 0.86);
+                .lerp(scratchSkyColB.setHex(0x526275), coverNorm * 0.90);
               skyDomeUniforms.uHorizonColor.value.setHex(0xbae6fd)
                 .lerp(scratchSkyColA.setHex(0xe0f2fe), Math.max(coldLightNorm * 0.3, heatLightNorm * 0.25))
-                .lerp(scratchSkyColB.setHex(0x7c93ab), coverNorm * 0.82);
+                .lerp(scratchSkyColB.setHex(0x7c93ab), coverNorm * 0.88);
               skyDomeUniforms.uGroundColor.value.setHex(0x083344);
               skyDomeUniforms.uSunColor.value.setHex(0xfffbeb);
-              skyDomeUniforms.uSunIntensity.value = 1.05 * (1 - coverNorm * 0.82);
+              skyDomeUniforms.uSunIntensity.value = 1.05 * directBeamTransmittance;
+            }
+
+            // Fusion sans couture Horizon Ciel <-> Brouillard Koschmieder sur le fleuve
+            const horizonFogBlend = Math.max(coverNorm * 0.42, fogVeilNorm * 0.96);
+            skyDomeUniforms.uHorizonColor.value.lerp(scene.fog.color, horizonFogBlend);
+            if (deepFogNorm > 0.01) {
+              skyDomeUniforms.uZenithColor.value.lerp(scene.fog.color, deepFogNorm * 0.88);
+              skyDomeUniforms.uGroundColor.value.lerp(scene.fog.color, deepFogNorm * 0.75);
             }
 
             // Direction du mur d'orage sombre (en amont sur "incoming"/"overhead", en aval sur "passing" pour révéler l'éclaircie à l'opposé!)
@@ -51061,9 +51664,10 @@
             else if (rainPhaseNow === "passing") stormWallStrength = 0.58;
             else if (rainPhaseNow === "vicinity") stormWallStrength = 0.38;
             if (wCode3D >= 95 || (simActive3D && window.tempSimState.stormMode)) stormWallStrength = Math.max(stormWallStrength, 0.95);
+            stormWallStrength *= (1.0 - deepFogNorm * 0.85);
             skyDomeUniforms.uStormDarkness.value = stormWallStrength;
             skyDomeUniforms.uCloudCover.value = coverNorm;
-            skyDomeUniforms.uHaze.value = Math.min(1.0, (effHumidity / 100) * 0.55 + (visMeters3D < 8000 ? 0.45 : 0));
+            skyDomeUniforms.uHaze.value = Math.min(1.0, (effHumidity / 100) * 0.48 + fogVeilNorm * 0.52);
             skyDomeUniforms.uLightningFlash.value = lightningFlash3D;
 
             // Direction de l'astre principal (Soleil le jour, Lune la nuit) dans le shader atmosphérique
@@ -51076,19 +51680,25 @@
             ).normalize();
           }
 
+          let computedStarOpacity3D = 0.0;
           if (skyStarsPoints && skyStarsMat) {
-            const starVis = !starsModeActive && (isNight || (isGolden && coverNorm < 0.55));
+            const baseStarOp = isNight ? 0.94 : 0.30;
+            const starCloudTrans = Math.max(0, 1.0 - Math.pow(coverNorm, 1.35) * 1.08);
+            const starVisTrans = Math.min(1.0, Math.max(0, (visMeters3D - 1200) / 3800));
+            computedStarOpacity3D = (!starsModeActive && (isNight || (isGolden && coverNorm < 0.55)))
+              ? baseStarOp * starCloudTrans * starVisTrans
+              : 0.0;
+            const starVis = computedStarOpacity3D > 0.015;
             skyStarsPoints.visible = starVis;
+            skyStarsMat.opacity = starVis ? computedStarOpacity3D : 0.0;
             if (starVis) {
               skyStarsPoints.position.set(camera3D.position.x, 0, camera3D.position.z);
               skyStarsPoints.rotation.y = (effDateNow.getTime() * 0.0000042) % (Math.PI * 2);
-              const baseStarOp = isNight ? 0.92 : 0.32;
-              skyStarsMat.opacity = Math.max(0, baseStarOp * (1.0 - coverNorm * 0.92));
             }
           }
 
           if (sun3DGroup) {
-            const showSun3D = !starsModeActive && !isNight && sunAltDeg3D > -1.5 && cloudPctNow < 96;
+            const showSun3D = !starsModeActive && !isNight && sunAltDeg3D > -1.5 && directBeamTransmittance > 0.025;
             sun3DGroup.visible = showSun3D;
             if (showSun3D) {
               const sAzR = (sunAzDeg3D * Math.PI) / 180;
@@ -51099,20 +51709,20 @@
                 Math.sin(sAltR) * sDist,
                 camera3D.position.z - Math.cos(sAzR) * Math.cos(sAltR) * sDist
               );
-              const sunTrans = Math.max(0, 1.0 - Math.pow(coverNorm, 1.45) * 0.96);
+              const sunTrans = directBeamTransmittance;
               sunDiscMat.color.setHex(isGolden ? 0xfef08a : 0xffffff);
               sunCoronaMat.color.setHex(isGolden ? 0xf97316 : 0xfde047);
               sunAureoleMat.color.setHex(isGolden ? 0xea580c : 0xbae6fd);
-              sunDiscMat.opacity = Math.min(1.0, sunTrans * 1.1);
+              sunDiscMat.opacity = Math.min(1.0, sunTrans * 1.15);
               sunCoronaMat.opacity = sunTrans * (isGolden ? 0.85 : 0.65);
-              sunAureoleMat.opacity = (0.22 + coverNorm * 0.25) * Math.max(0.15, sunTrans);
+              sunAureoleMat.opacity = (0.18 + coverNorm * 0.24) * sunTrans;
               const sunSizeScale = isGolden ? 1.24 : 1.0;
               sun3DGroup.scale.set(sunSizeScale, sunSizeScale, sunSizeScale);
             }
           }
 
           if (moon3DGroup) {
-            const showMoon3D = !starsModeActive && (isNight || isGolden) && moonAltDeg3D > 0.5 && cloudPctNow < 94;
+            const showMoon3D = !starsModeActive && (isNight || isGolden) && moonAltDeg3D > 0.5 && directBeamTransmittance > 0.03;
             moon3DGroup.visible = showMoon3D;
             if (showMoon3D) {
               const mAzR = (moonAzDeg3D * Math.PI) / 180;
@@ -51123,11 +51733,52 @@
                 Math.sin(mAltR) * mDist,
                 camera3D.position.z - Math.cos(mAzR) * Math.cos(mAltR) * mDist
               );
-              const moonTrans = Math.max(0, 1.0 - coverNorm * 0.92);
+              const moonTrans = directBeamTransmittance;
               moonDiscMat.opacity = moonTrans * (isNight ? 0.96 : 0.48);
-              moonHaloMat.opacity = moonTrans * (isNight ? (0.34 + coverNorm * 0.22) : 0.14);
+              moonHaloMat.opacity = moonTrans * (isNight ? (0.28 + coverNorm * 0.20) * Math.max(0.25, moonIllum3D) : 0.12);
             }
           }
+
+          // Snapshot télémétrique 3D temps réel (vérification physique météo <-> scène WebGL)
+          lastDiag3D.weatherCode = wCode3D;
+          lastDiag3D.directBeamTransmittance = Number(directBeamTransmittance.toFixed(4));
+          lastDiag3D.sunVisible = Boolean(sun3DGroup && sun3DGroup.visible);
+          lastDiag3D.moonVisible = Boolean(moon3DGroup && moon3DGroup.visible);
+          lastDiag3D.moonPhase = Number(moonPhase3D.toFixed(4));
+          lastDiag3D.moonIllum = Number(moonIllum3D.toFixed(4));
+          lastDiag3D.sunPathVisible = Boolean(sunPathGroup && sunPathGroup.visible);
+          lastDiag3D.sunPathOpacity = Number((shimmerMat ? shimmerMat.opacity : 0).toFixed(4));
+          lastDiag3D.godRaysVisible = Boolean(godRays3DGroup && godRays3DGroup.visible);
+          lastDiag3D.starsVisible = Boolean(skyStarsPoints && skyStarsPoints.visible);
+          lastDiag3D.starsOpacity = Number(computedStarOpacity3D.toFixed(4));
+          lastDiag3D.overcastDomeVisible = Boolean(overcastDomeMesh && overcastDomeMesh.visible);
+          lastDiag3D.overcastDomeOpacity = Number((overcastDomeMat ? overcastDomeMat.opacity : 0).toFixed(4));
+          lastDiag3D.fogDensity = Number(scene.fog.density.toFixed(6));
+          lastDiag3D.visMeters3D = Math.round(visMeters3D);
+          lastDiag3D.vis3DDist = Math.round(vis3DDist);
+          lastDiag3D.localRainRateMm = Number(localRainRateMm.toFixed(3));
+          lastDiag3D.rainVisible = Boolean(rainParticles3DGroup && rainParticles3DGroup.visible);
+          lastDiag3D.isDrizzle3D = isDrizzle3D;
+          lastDiag3D.isFreezingPrecip3D = isFreezingPrecip3D;
+          lastDiag3D.hasSnow3D = hasSnow3D;
+          lastDiag3D.activeSnowRateCm = Number(activeSnowRateCm.toFixed(3));
+          lastDiag3D.hasThunderstorm3D = hasThunderstorm3D;
+          lastDiag3D.seaSmokeVisible = Boolean(seaSmoke3DGroup && seaSmoke3DGroup.visible);
+          lastDiag3D.surfaceWetness3D = Number(surfaceWetness3D.toFixed(3));
+          lastDiag3D.snowpackFactor = Number(currentSnowpackFactor.toFixed(3));
+          lastDiag3D.sunAltDeg3D = Number(sunAltDeg3D.toFixed(2));
+          lastDiag3D.sunAzDeg3D = Number(sunAzDeg3D.toFixed(2));
+          lastDiag3D.moonAltDeg3D = Number(moonAltDeg3D.toFixed(2));
+          lastDiag3D.isNight = Boolean(isNight);
+          lastDiag3D.isGolden = Boolean(isGolden);
+          lastDiag3D.cloudPctNow = cloudPctNow;
+          lastDiag3D.cloudLowNow = cloudLowNow;
+          lastDiag3D.cloudMidNow = cloudMidNow;
+          lastDiag3D.cloudHighNow = cloudHighNow;
+          lastDiag3D.windKnots = Number(windKnots.toFixed(2));
+          lastDiag3D.instWindKnots3D = Number(instWindKnots3D.toFixed(2));
+          lastDiag3D.windDirFrom = windDirFrom;
+          lastDiag3D.windsockYawRad = dockWindsockSwivel3D ? Number(dockWindsockSwivel3D.rotation.y.toFixed(3)) : 0;
 
           // 9. Synchronisation fluide de la caméra 3D avec viewAzimuth, viewAltitude et viewFOV
           camHeight3D += (targetCamHeight3D - camHeight3D) * (1 - Math.pow(1 - 0.1, dt60));
@@ -51247,16 +51898,19 @@
               batBeamGroup.quaternion.setFromUnitVectors(UP_VEC_3D, scratchBatDir);
               batBeamGroup.scale.set(1, curBeamLen / beamDist, 1);
 
-              // Scintillement d'arc carbone & reflet doré sur l'eau de l'anse
+              // Scintillement d'arc carbone & diffusion physique Tyndall dans la brume / les nuages réels
               const batFlicker = 0.93 + Math.sin(t * 6.4) * 0.045 + Math.cos(t * 11.2) * 0.025;
-              batBeamMatCore.opacity = 0.26 * batFlicker;
-              batBeamMatMid.opacity = 0.18 * batFlicker;
-              batBeamMatOuter.opacity = 0.10 * batFlicker;
-              batCloudMat.opacity = 0.95 * batFlicker;
+              const isForcedBat = window.batSignalMode === "on";
+              const batScatter = isForcedBat ? 1.0 : Math.min(1.0, 0.35 + Math.max(coverNorm, fogVeilNorm) * 0.75);
+              const batCloudReflect = isForcedBat ? 0.95 : Math.min(0.95, 0.14 + Math.max(coverNorm, fogVeilNorm) * 0.88);
+              batBeamMatCore.opacity = 0.26 * batScatter * batFlicker;
+              batBeamMatMid.opacity = 0.18 * batScatter * batFlicker;
+              batBeamMatOuter.opacity = 0.10 * batScatter * batFlicker;
+              batCloudMat.opacity = batCloudReflect * batFlicker;
               batLensFlareSprite.material.opacity = 0.88 * batFlicker;
 
               batWaterShimmerGroup.position.y = waterLevelY;
-              batWaterShimmerMat.opacity = (isNight ? 0.17 : 0.08) * batFlicker;
+              batWaterShimmerMat.opacity = (isNight ? 0.12 : 0.06) * batScatter * batFlicker;
               for (let bw = 0; bw < batWaterShimmerBars.length; bw++) {
                 const bwb = batWaterShimmerBars[bw];
                 bwb.mesh.scale.x = 0.85 + Math.sin(t * 3.1 + bwb.idx * 0.9) * 0.28;
@@ -52950,8 +53604,20 @@
       fetchTides();
       setInterval(() => {
         fetchWeather();
+      }, 300000);
+      setInterval(() => {
         fetchTides();
       }, 900000);
+      const refreshWeatherOnWake = () => {
+        if (!document.hidden && Date.now() - (window.lastWeatherFetchMs || 0) > 180000) {
+          fetchWeather();
+        }
+      };
+      document.addEventListener("visibilitychange", refreshWeatherOnWake);
+      window.addEventListener("online", () => {
+        fetchWeather();
+        fetchTides();
+      });
       setInterval(updateRealtimeState, 60000);
 
       // --- ENREGISTREMENT DU SERVICE WORKER & INSTALLATION NATIVE ANDROID (WEBAPK) ---

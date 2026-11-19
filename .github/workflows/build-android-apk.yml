@@ -90,13 +90,13 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="v3.0-android"
-          NOTES=$'### 📱 Terminal St-Romuald 360° — Édition Native Android Refondue (v3.1)\n\n- **Nouveau Cockpit Tactile 3D en Bas d\'Écran (Zone Pouce, 1 Main)** : barre à 5 grands boutons (`🧭 Gyro 360`, `🎥 Vues`, `📡 Radar`, `🌡️ Météo 3D`, `🎛️ Plus`) avec tiroirs escamotables mutuellement exclusifs et vue 3D dégagée à plus de 86 %\n- **100 % Accessible à 360 px (Zéro Bouton Coupé à Droite)** : onglets `Quai 86/87`, `Marées`, `Météo`, `Carte AIS` et `🧰 Outils` (en Bottom Sheet bas d\'écran) entièrement accessibles d\'une main, tableaux défilables horizontalement et Simulateur Thermique 100 % scrollable jusqu\'en bas\n- **Gyroscope 360° Matériel 60 Hz Sans Blocage de Cardan** : barre `🎯 Calibrer` et `🧭 Relatif / Boussole` positionnée juste au-dessus du pouce\n- **Clé de signature persistante** : les prochaines mises à jour s\'installeront directement par-dessus cette version v3.1 sans désinstallation préalable'
+          NOTES=$'### 📱 Terminal St-Romuald 360° — Édition Native Android (v3.2 — Météo Réelle 3D Physique)\n\n- **Synchronisation Météo Réelle 100 % Physique dans l\'Aperçu 3D** :\n  - **Fuseau horaire & Éphémérides exacts (`America/Toronto`)** : heure locale du terminal, lever/coucher du soleil, altitude solaire/lunaire et phase réelle de la Lune fidèles quel que soit l\'appareil\n  - **Occultation Optique Multi-Couches (`Bas / Moyen / Haut`)** : un ciel couvert `100 % OVC` (`OMM 3`) ou le brouillard éteint totalement le disque solaire/lunaire, les étoiles, les rayons crépusculaires et le reflet doré spéculaire sur le Saint-Laurent\n  - **Loi de Visibilité de Koschmieder Étalonnée sur les Repères 3D** : extinction physique exacte de Lévis (`1,0 km`), du Château Frontenac (`3,4 km`), du Pont de Québec (`7,2 km`) et de l\'Île d\'Orléans (`10,8 km`) selon la visibilité réelle Open-Meteo\n  - **Microphysique Complète des Précipitations & du Vent** : bruine fine (`OMM 51–57`), verglas (`OMM 66–67`), pluie-neige mêlée autour de `0 °C`, poudrerie, pavillons des navires 86/87 et **manche à air maritime ISGOTT 5 bandes + anémomètre** sur le toit de la cabine du quai\n- **Cockpit Tactile 3D Zone Pouce (`360 px`) & Gyroscope 360° Matériel 60 Hz** + clé de signature persistante (mise à jour directe par-dessus `v3.0`/`v3.1`)'
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" StRomuald-Terminal-Android.apk --clobber
-            gh release edit "$TAG" --title "Terminal St-Romuald 360° — Android APK (v3.1)" --notes "$NOTES" --latest
+            gh release edit "$TAG" --title "Terminal St-Romuald 360° — Android APK (v3.2)" --notes "$NOTES" --latest
           else
             gh release create "$TAG" StRomuald-Terminal-Android.apk \
-              --title "Terminal St-Romuald 360° — Android APK (v3.1)" \
+              --title "Terminal St-Romuald 360° — Android APK (v3.2)" \
               --notes "$NOTES" \
               --latest
           fi
