@@ -51,23 +51,24 @@ jobs:
       - name: Prepare Offline-Ready WebView Assets (3D Engine + Live Vessels)
         run: node scripts/prepare-android-assets.mjs --bundle-vendor
 
-      - name: Generate Release Signing Keystore & Compile APK
+      - name: Sign & Compile Release APK
         env:
-          KEYSTORE_FILE: /tmp/stromuald-release.jks
+          KEYSTORE_FILE: ${{ github.workspace }}/android-app/release-signing.jks
           KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASS || 'stromuald360' }}
           KEY_ALIAS: stromuald
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASS || 'stromuald360' }}
         run: |
-          rm -f "$KEYSTORE_FILE"
-          keytool -genkeypair -v \
-            -keystore "$KEYSTORE_FILE" \
-            -keyalg RSA \
-            -keysize 2048 \
-            -validity 10000 \
-            -alias "$KEY_ALIAS" \
-            -storepass "$KEYSTORE_PASSWORD" \
-            -keypass "$KEY_PASSWORD" \
-            -dname "CN=Terminal St-Romuald 360, OU=Operations Maritimes, O=Valero St-Romuald, L=Levis, ST=QC, C=CA"
+          if [ ! -f "$KEYSTORE_FILE" ]; then
+            keytool -genkeypair -v \
+              -keystore "$KEYSTORE_FILE" \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -alias "$KEY_ALIAS" \
+              -storepass "$KEYSTORE_PASSWORD" \
+              -keypass "$KEY_PASSWORD" \
+              -dname "CN=Terminal St-Romuald 360, OU=Operations Maritimes, O=Valero St-Romuald, L=Levis, ST=QC, C=CA"
+          fi
 
           gradle -p android-app assembleRelease --no-daemon --stacktrace
 
@@ -89,13 +90,13 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="v3.0-android"
-          NOTES=$'### 📱 Terminal St-Romuald 360° — Édition Native Android (.APK)\n\n- **HUD Tactile Adapté Android** (Portrait & Paysage panoramique, ruban caméra 1 ligne + tiroir `🎛️ HUD+`, Time-Lapse `⏱️ Temps` escamotable, Sections 86 & 87 pleine largeur)\n- **Gyroscope 360° Matériel 60Hz Sans Blocage de Cardan** (`SensorManager` + Quaternion 3D, calibration instantanée `🎯 Calibrer`, modes `🧭 Relatif` anti-interférence acier & `🧭 Boussole` Nord réel, fusion fluide avec glissement tactile)\n- **100% des Fonctions & Données Temps Réel** : Navires en direct Postes 86 & 87 (Port de Québec + relais HTTPS natif sans CORS), 6 Univers complets, Marées SHC Lauzon #03250, Météo temps réel, Carte AIS, Calculateurs & Modales\n- **Moteur 3D Hors-Ligne Embarqué** (`Three.js`, `Chart.js`, `Astronomy Engine` inclus dans l\'APK)\n\n📥 **Installation** : Téléchargez **`StRomuald-Terminal-Android.apk`** ci-dessous sur votre téléphone Android et ouvrez le fichier pour l\'installer.'
+          NOTES=$'### 📱 Terminal St-Romuald 360° — Édition Native Android Refondue (v3.1)\n\n- **Nouveau Cockpit Tactile 3D en Bas d\'Écran (Zone Pouce, 1 Main)** : barre à 5 grands boutons (`🧭 Gyro 360`, `🎥 Vues`, `📡 Radar`, `🌡️ Météo 3D`, `🎛️ Plus`) avec tiroirs escamotables mutuellement exclusifs et vue 3D dégagée à plus de 86 %\n- **100 % Accessible à 360 px (Zéro Bouton Coupé à Droite)** : onglets `Quai 86/87`, `Marées`, `Météo`, `Carte AIS` et `🧰 Outils` (en Bottom Sheet bas d\'écran) entièrement accessibles d\'une main, tableaux défilables horizontalement et Simulateur Thermique 100 % scrollable jusqu\'en bas\n- **Gyroscope 360° Matériel 60 Hz Sans Blocage de Cardan** : barre `🎯 Calibrer` et `🧭 Relatif / Boussole` positionnée juste au-dessus du pouce\n- **Clé de signature persistante** : les prochaines mises à jour s\'installeront directement par-dessus cette version v3.1 sans désinstallation préalable'
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" StRomuald-Terminal-Android.apk --clobber
-            gh release edit "$TAG" --title "Terminal St-Romuald 360° — Android APK (v3.0)" --notes "$NOTES" --latest
+            gh release edit "$TAG" --title "Terminal St-Romuald 360° — Android APK (v3.1)" --notes "$NOTES" --latest
           else
             gh release create "$TAG" StRomuald-Terminal-Android.apk \
-              --title "Terminal St-Romuald 360° — Android APK (v3.0)" \
+              --title "Terminal St-Romuald 360° — Android APK (v3.1)" \
               --notes "$NOTES" \
               --latest
           fi
