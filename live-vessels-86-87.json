@@ -2,21 +2,11 @@
   "version": 3,
   "source": "live_portqc",
   "syncChannel": "github_actions_portqc",
-  "portUpdatedLabel": "mercredi 18 novembre 2026 à 14:45",
-  "updatedAtIso": "2026-11-18T19:56:17.126Z",
-  "fetchedAt": 1795031777126,
-  "totalPortRows": 57,
-  "otherValeroTankers": [
-    {
-      "berth": "50",
-      "name": "PAUL A. DESGAGNES",
-      "flag": "CA",
-      "loa": 135,
-      "etd": "18 nov. 16:00",
-      "agent": "PETRO",
-      "cargo": "Vrac liquide"
-    }
-  ],
+  "portUpdatedLabel": "mercredi 18 novembre 2026 à 20:45",
+  "updatedAtIso": "2026-11-19T01:46:15.686Z",
+  "fetchedAt": 1795052775686,
+  "totalPortRows": 55,
+  "otherValeroTankers": [],
   "berth86": {
     "berth": "86",
     "occupied": false,
@@ -124,8 +114,8 @@
         "origin": "CA CMS",
         "dest": "CA RIM",
         "opCode": "",
-        "operation": "Chargement",
-        "cargo": "Chargement"
+        "operation": "Vrac liquide",
+        "cargo": "Vrac liquide"
       }
     ]
   },
@@ -213,28 +203,6 @@
         "agent": "PETRO",
         "origin": "CA MTR",
         "dest": "CA MTR",
-        "opCode": "",
-        "operation": "Vrac liquide",
-        "cargo": "Vrac liquide"
-      },
-      {
-        "berth": "87",
-        "name": "DOLPHIN PEARL",
-        "resNo": "102366",
-        "flag": "PA",
-        "flagName": "Panama",
-        "loa": 246,
-        "gt": 59408,
-        "beam": 43,
-        "dwtApprox": "~112 000 TPL",
-        "typeLabel": "Pétrolier Aframax / LR2",
-        "arrival": "23 nov. 09:15",
-        "eta": "23 nov. 09:15",
-        "etd": "",
-        "timeIso": "2026-11-23T14:15:00.000Z",
-        "agent": "LSL",
-        "origin": "CA MTR",
-        "dest": "OUT",
         "opCode": "",
         "operation": "Vrac liquide",
         "cargo": "Vrac liquide"
