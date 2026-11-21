@@ -3791,10 +3791,18 @@
         .android-gyro-hud-bar.visible.andr-gyro-masked {
           display: none !important;
         }
+        .header.s24-tools-open .controls .live-clock-pill {
+          flex-wrap: wrap !important;
+          gap: 0.22rem 0.35rem !important;
+          padding: 0.28rem 0.45rem !important;
+          font-size: 0.66rem !important;
+          overflow: hidden !important;
+        }
         .header.s24-tools-open .controls .telemetry-badge {
           font-size: 0.54rem !important;
           padding: 0.1rem 0.34rem !important;
           flex-shrink: 0;
+          margin-left: auto;
         }
         .gyro-hud-pill-btn {
           min-height: 30px !important;
@@ -3802,7 +3810,7 @@
           font-size: 0.62rem !important;
         }
 
-        /* Radar 3D Minimap : caché quand fermé, carte pleine largeur propre en bas quand ouvert (zéro bouton coupé !) */
+        /* Radar 3D Minimap : empilement vertical garanti + barre de lecture 100% contenue (zéro bouton coupé !) */
         #animation-window .weather-minimap-hud.collapsed-minimap,
         #animation-window .weather-minimap-hud.hidden-minimap {
           display: none !important;
@@ -3814,17 +3822,30 @@
           left: 6px !important;
           right: 6px !important;
           width: auto !important;
-          max-width: none !important;
+          max-width: calc(100% - 12px) !important;
           z-index: 44 !important;
+          display: flex !important;
+          flex-direction: column !important;
+          overflow: hidden !important;
           border-radius: 14px !important;
           box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.75) !important;
+          box-sizing: border-box !important;
         }
         #minimap-size-btn,
         #minimap-corner-btn {
           display: none !important;
         }
         .weather-minimap-hud .wmm-header {
+          width: 100% !important;
+          box-sizing: border-box !important;
           padding: 0.36rem 0.5rem !important;
+          flex-wrap: wrap !important;
+          gap: 0.25rem !important;
+        }
+        .weather-minimap-hud .wmm-body {
+          width: 100% !important;
+          min-width: 0 !important;
+          box-sizing: border-box !important;
         }
         .weather-minimap-hud .wmm-hdr-tool {
           min-height: 30px !important;
@@ -3846,12 +3867,17 @@
           height: 100% !important;
         }
         .weather-minimap-hud .wmm-controls-bar {
+          display: flex !important;
+          flex-wrap: wrap !important;
+          width: 100% !important;
+          box-sizing: border-box !important;
           padding: 0.32rem 0.45rem !important;
-          gap: 0.3rem !important;
+          gap: 0.28rem !important;
         }
         .weather-minimap-hud .wmm-controls-bar button {
           min-height: 32px !important;
-          font-size: 0.64rem !important;
+          font-size: 0.63rem !important;
+          min-width: 0 !important;
         }
 
         /* Simulateur Thermique & Météo 3D : Vrai Bottom Sheet 100% Scrollable du haut jusqu'en bas ! */
@@ -3900,7 +3926,7 @@
           padding-bottom: 1rem !important;
         }
 
-        /* Panneau Manœuvres Remorqueurs Groupe Océan : propre, sans bouton coupé à droite */
+        /* Panneau Manœuvres Remorqueurs Groupe Océan : empilement vertical garanti + grille tactile propre */
         .tug-maneuver-hud:not(.minimized) {
           position: absolute !important;
           top: auto !important;
@@ -3908,32 +3934,64 @@
           left: 6px !important;
           right: 6px !important;
           width: auto !important;
-          max-width: none !important;
+          max-width: calc(100% - 12px) !important;
           z-index: 44 !important;
+          display: flex !important;
+          flex-direction: column !important;
+          gap: 0.28rem !important;
+          overflow: hidden !important;
           border-radius: 14px !important;
-          padding: 0.45rem 0.5rem !important;
+          padding: 0.48rem 0.55rem !important;
           box-shadow: 0 -8px 26px rgba(0, 0, 0, 0.75) !important;
+          box-sizing: border-box !important;
         }
         .tug-maneuver-hud > div:first-child {
+          width: 100% !important;
           flex-direction: column !important;
           align-items: stretch !important;
-          gap: 0.32rem !important;
+          gap: 0.34rem !important;
           position: relative;
           padding-right: 0 !important;
+          box-sizing: border-box !important;
+        }
+        .tug-maneuver-hud > div:first-child > div:first-child {
+          padding-right: 38px !important;
         }
         .tug-maneuver-hud > div:first-child > div:last-child {
-          display: flex !important;
-          flex-wrap: wrap !important;
-          gap: 0.26rem !important;
+          display: grid !important;
+          grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+          gap: 5px !important;
+          width: 100% !important;
         }
-        .tug-maneuver-hud > div:first-child > div:last-child > button {
-          min-height: 32px !important;
-          font-size: 0.62rem !important;
+        .tug-maneuver-hud > div:first-child > div:last-child > button:not(#btn-maneuver-close) {
+          min-height: 34px !important;
+          font-size: 0.61rem !important;
+          justify-content: center !important;
+          text-align: center !important;
+          padding: 0.2rem 0.25rem !important;
+          width: 100% !important;
+          min-width: 0 !important;
+          white-space: nowrap !important;
+          overflow: hidden !important;
+          text-overflow: ellipsis !important;
         }
         #btn-maneuver-close {
-          margin-left: auto !important;
+          position: absolute !important;
+          top: 0 !important;
+          right: 0 !important;
+          width: 32px !important;
+          height: 32px !important;
           min-width: 32px !important;
           min-height: 32px !important;
+          border-radius: 8px !important;
+          display: inline-flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+        }
+        #tug-narrative-lbl {
+          white-space: normal !important;
+          line-height: 1.28 !important;
+          max-width: 78% !important;
         }
 
         /* Fiche d'inspection 3D : au-dessus du dock pouce */
@@ -3947,13 +4005,24 @@
           border-radius: 14px !important;
         }
 
-        /* 5. Onglet QUAI 86/87 (#ops-card) : 100% lisible à 360px, zéro bouton coupé à droite */
+        /* 5. Onglet QUAI 86/87 (#ops-card) : 100% lisible à 360px, zéro débordement horizontal */
         #ops-card .card-header {
           flex-wrap: wrap !important;
           gap: 0.22rem !important;
         }
         #ops-card .card-body {
           padding: 0.38rem 0.42rem !important;
+        }
+        #ops-card .river-state-bar {
+          grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          gap: 0.28rem !important;
+        }
+        #ops-card .river-state-item {
+          min-width: 0 !important;
+          max-width: 100% !important;
+          overflow: hidden !important;
+          padding: 0.26rem 0.34rem !important;
+          font-size: 0.64rem !important;
         }
         #ops-card .ops-sections-grid {
           grid-template-columns: minmax(0, 1fr) !important;
@@ -4084,22 +4153,444 @@
           min-height: 400px !important;
         }
 
-        /* 9. Toutes les Modales (SAUF #template-modal jamais modifié) en Bottom Sheet ergonomique */
+        /* 9. Toutes les Fenêtres Modales (SAUF #template-modal jamais modifié) :
+              Architecture Mobile Bottom-Sheet Unifiée (En-tête fixe + bouton ✕ toujours visible + 1 seul conteneur de défilement fluide) */
         .modal-overlay:not(#template-modal) {
+          z-index: 10020 !important;
           align-items: flex-end !important;
+          justify-content: center !important;
           padding: 0 !important;
         }
         .modal-overlay:not(#template-modal) > .modal-content {
+          display: flex !important;
+          flex-direction: column !important;
           width: 100% !important;
           max-width: 100% !important;
-          max-height: 88dvh !important;
+          max-height: 92dvh !important;
           margin: 0 !important;
+          padding: 0 !important;
           border-radius: 18px 18px 0 0 !important;
+          overflow: hidden !important;
+          box-sizing: border-box !important;
+        }
+        .modal-overlay:not(#template-modal) .modal-header {
+          flex-shrink: 0 !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: space-between !important;
+          flex-wrap: wrap !important;
+          gap: 0.45rem !important;
+          width: 100% !important;
+          max-width: 100% !important;
+          min-height: 52px !important;
+          margin: 0 !important;
+          padding: 0.65rem 0.78rem !important;
+          border-bottom: 1px solid var(--border) !important;
+          box-sizing: border-box !important;
+          position: relative !important;
+        }
+        .modal-overlay:not(#template-modal) .modal-header h3 {
+          font-size: 0.86rem !important;
+          line-height: 1.25 !important;
+          min-width: 0 !important;
+          flex: 1 1 auto !important;
+          margin: 0 !important;
+          padding-right: 46px !important;
+        }
+        .modal-overlay:not(#template-modal) .modal-header .btn-close,
+        .modal-overlay:not(#template-modal) .modal-header .modal-close {
+          position: absolute !important;
+          top: 0.55rem !important;
+          right: 0.65rem !important;
+          flex-shrink: 0 !important;
+          width: 38px !important;
+          height: 38px !important;
+          min-width: 38px !important;
+          min-height: 38px !important;
+          border-radius: 10px !important;
+          display: inline-flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          font-size: 1rem !important;
+          padding: 0 !important;
+          background: rgba(15, 23, 42, 0.72) !important;
+          color: var(--text-light) !important;
+          border: 1px solid var(--border) !important;
+          cursor: pointer !important;
+        }
+        .modal-overlay:not(#template-modal) .modal-body {
+          flex: 1 1 auto !important;
+          min-height: 0 !important;
+          max-height: none !important;
+          width: 100% !important;
+          max-width: 100% !important;
           overflow-y: auto !important;
+          overflow-x: hidden !important;
           -webkit-overflow-scrolling: touch;
           touch-action: pan-y !important;
-          padding-bottom: calc(1rem + env(safe-area-inset-bottom, 8px)) !important;
+          overscroll-behavior: contain;
+          padding: 0.72rem 0.78rem calc(1.15rem + env(safe-area-inset-bottom, 10px)) !important;
           box-sizing: border-box !important;
+        }
+        /* Empêcher le zoom auto iOS/Android lors du focus clavier + cibles tactiles confortables */
+        .modal-overlay:not(#template-modal) input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+        .modal-overlay:not(#template-modal) select,
+        .modal-overlay:not(#template-modal) textarea {
+          font-size: 16px !important;
+          min-height: 40px !important;
+          max-width: 100% !important;
+          box-sizing: border-box !important;
+        }
+        .modal-overlay:not(#template-modal) .mob-stack-grid {
+          grid-template-columns: minmax(0, 1fr) !important;
+          gap: 0.6rem !important;
+        }
+        .modal-overlay:not(#template-modal) .mob-full-w {
+          width: 100% !important;
+          max-width: 100% !important;
+        }
+        .modal-overlay:not(#template-modal) .res-item {
+          flex-wrap: wrap !important;
+          gap: 0.25rem !important;
+        }
+
+        /* 9A. Fenêtre #calc-modal (Calculateur Rapide ETA) */
+        #btn-open-universal-conv {
+          white-space: normal !important;
+          height: auto !important;
+          line-height: 1.3 !important;
+          text-align: center !important;
+          padding: 0.55rem 0.6rem !important;
+        }
+
+        /* 9B. Fenêtre #image-modal (Le Petit Langlois Illustré — Pleine hauteur + barre de zoom tactile dédiée) */
+        #image-modal > .modal-content {
+          height: 90dvh !important;
+        }
+        #image-modal .modal-header h3 {
+          display: flex !important;
+          align-items: center !important;
+          min-height: 38px !important;
+          padding-right: 46px !important;
+        }
+        #close-image {
+          position: absolute !important;
+          top: 0.55rem !important;
+          right: 0.65rem !important;
+        }
+        #image-modal .image-modal-toolbar {
+          width: 100% !important;
+          display: grid !important;
+          grid-template-columns: 1fr auto 1fr 1fr !important;
+          gap: 0.32rem !important;
+          align-items: center !important;
+          margin-top: 0.2rem !important;
+        }
+        #image-modal .image-modal-toolbar button {
+          min-height: 36px !important;
+          font-size: 0.72rem !important;
+          padding: 0.2rem 0.35rem !important;
+          justify-content: center !important;
+          width: 100% !important;
+        }
+        #image-zoom-viewport.modal-body {
+          overflow: auto !important;
+          touch-action: pan-x pan-y pinch-zoom !important;
+          padding: 0.45rem !important;
+        }
+
+        /* 9C. Fenêtre #langlois-calc-modal (Calculateur Maritime Complet & Convertisseur Universel — 5 onglets) */
+        #langlois-calc-modal .modal-header h3 {
+          padding-right: 46px !important;
+        }
+        #close-langlois-calc {
+          position: absolute !important;
+          top: 0.55rem !important;
+          right: 0.65rem !important;
+        }
+        #langlois-calc-modal .langlois-hdr-main {
+          width: 100% !important;
+          gap: 0.4rem !important;
+        }
+        #langlois-calc-modal .langlois-presets-row {
+          display: grid !important;
+          grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          gap: 0.3rem !important;
+          width: 100% !important;
+        }
+        #langlois-calc-modal .langlois-presets-row > span {
+          grid-column: 1 / -1 !important;
+          font-size: 0.66rem !important;
+        }
+        #langlois-calc-modal .vessel-preset-btn {
+          width: 100% !important;
+          min-height: 34px !important;
+          font-size: 0.67rem !important;
+          padding: 0.2rem 0.35rem !important;
+          justify-content: center !important;
+          white-space: nowrap !important;
+          overflow: hidden !important;
+          text-overflow: ellipsis !important;
+        }
+        #langlois-calc-modal .langlois-tabs-bar > div:first-child {
+          display: grid !important;
+          grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          gap: 0.32rem !important;
+          width: 100% !important;
+        }
+        #langlois-calc-modal .langlois-tab {
+          width: 100% !important;
+          min-height: 36px !important;
+          font-size: 0.69rem !important;
+          padding: 0.25rem 0.35rem !important;
+          justify-content: center !important;
+          text-align: center !important;
+        }
+        #l-tab-btn-converter {
+          grid-column: 1 / -1 !important;
+        }
+        #l-btn-print-plan {
+          width: 100% !important;
+          justify-content: center !important;
+          min-height: 36px !important;
+        }
+        #l-tab-converter .conv-main-grid {
+          grid-template-columns: minmax(0, 1fr) !important;
+          gap: 0.5rem !important;
+        }
+        #l-tab-converter .conv-swap-wrap {
+          padding-top: 0 !important;
+        }
+        #l-tab-converter .conv-wrap-row {
+          flex-wrap: wrap !important;
+          width: 100% !important;
+        }
+        #l-tab-converter .conv-actions-row {
+          display: grid !important;
+          grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          width: 100% !important;
+          gap: 0.35rem !important;
+        }
+        #l-tab-converter .conv-actions-row > button {
+          width: 100% !important;
+          justify-content: center !important;
+          min-height: 38px !important;
+        }
+
+        /* 9D. Fenêtre #loading-arms-modal (Timer Universel, Chrono & Bras Chiksan 12") */
+        #loading-arms-modal .modal-header > div:first-child {
+          flex: 1 1 auto !important;
+          min-width: 0 !important;
+          flex-wrap: wrap !important;
+          gap: 0.25rem !important;
+          padding-right: 46px !important;
+        }
+        #close-loading-arms {
+          position: absolute !important;
+          top: 0.55rem !important;
+          right: 0.65rem !important;
+        }
+        #tab-content-univ-timer,
+        #tab-content-univ-timer > div,
+        #tab-content-arms-timer,
+        #tab-content-arms-timer > div {
+          min-width: 0 !important;
+          max-width: 100% !important;
+          box-sizing: border-box !important;
+        }
+        #loading-arms-modal .arms-tabs-bar {
+          display: grid !important;
+          grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          gap: 0.35rem !important;
+          width: 100% !important;
+        }
+        #loading-arms-modal .arms-tabs-bar > button {
+          min-width: 0 !important;
+          width: 100% !important;
+          min-height: 40px !important;
+          padding: 0.3rem 0.35rem !important;
+          font-size: 0.69rem !important;
+          line-height: 1.2 !important;
+          white-space: normal !important;
+          text-align: center !important;
+        }
+        #loading-arms-modal .arms-hero-banner {
+          flex-direction: column !important;
+          align-items: stretch !important;
+          padding: 0.68rem 0.75rem !important;
+          gap: 0.55rem !important;
+        }
+        #loading-arms-modal .arms-hero-banner > div:last-child {
+          align-items: stretch !important;
+          width: 100% !important;
+        }
+        #loading-arms-modal .arms-hero-btns {
+          display: flex !important;
+          flex-wrap: wrap !important;
+          gap: 0.35rem !important;
+          width: 100% !important;
+        }
+        #loading-arms-modal .arms-hero-btns > button {
+          flex: 1 1 auto !important;
+          justify-content: center !important;
+          min-height: 38px !important;
+          padding: 0.38rem 0.5rem !important;
+          font-size: 0.76rem !important;
+        }
+        #loading-arms-modal .arms-hms-row {
+          display: flex !important;
+          flex-wrap: wrap !important;
+          gap: 0.3rem !important;
+          width: 100% !important;
+          align-items: center !important;
+        }
+        #univ-input-h,
+        #univ-input-m,
+        #univ-input-s {
+          width: 68px !important;
+          min-width: 68px !important;
+        }
+        #modal-univ-set-btn {
+          flex: 1 1 100% !important;
+          min-height: 38px !important;
+          justify-content: center !important;
+          margin-top: 0.15rem !important;
+        }
+        #loading-arms-modal .arms-sound-row {
+          min-width: 0 !important;
+          width: 100% !important;
+          flex-wrap: wrap !important;
+        }
+        #univ-sound-select,
+        #univ-sound-duration {
+          flex: 1 1 100% !important;
+          min-width: 0 !important;
+          width: 100% !important;
+          max-width: 100% !important;
+          overflow: hidden !important;
+          text-overflow: ellipsis !important;
+        }
+        #modal-chrono-toggle-btn,
+        #modal-chrono-lap-btn,
+        #modal-chrono-reset-btn {
+          flex: 1 1 auto !important;
+          padding: 0.32rem 0.5rem !important;
+          font-size: 0.7rem !important;
+          justify-content: center !important;
+        }
+        #loading-arms-modal .arms-thresh-grid {
+          display: grid !important;
+          grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+          gap: 0.3rem !important;
+          width: 100% !important;
+        }
+        #loading-arms-modal .arms-thresh-btn {
+          width: 100% !important;
+          min-height: 36px !important;
+          justify-content: center !important;
+        }
+        #arms-pumping-unit {
+          min-width: 82px !important;
+        }
+        #loading-arms-modal .arms-plan-hdr {
+          flex-wrap: wrap !important;
+          gap: 0.35rem !important;
+        }
+
+        /* 9E. Fenêtre #portqc-vessels-modal (Navires en Direct Port de Québec 86 & 87) */
+        #portqc-vessels-modal {
+          z-index: 10025 !important;
+          align-items: flex-end !important;
+          padding: 0 !important;
+        }
+        #portqc-vessels-modal > .portqc-modal-card {
+          width: 100% !important;
+          max-width: 100% !important;
+          max-height: 92dvh !important;
+          border-radius: 18px 18px 0 0 !important;
+          padding: 0 !important;
+          overflow: hidden !important;
+          display: flex !important;
+          flex-direction: column !important;
+          box-sizing: border-box !important;
+        }
+        #portqc-vessels-modal .portqc-modal-hdr {
+          flex-shrink: 0 !important;
+          padding: 0.65rem 0.78rem !important;
+          margin: 0 !important;
+        }
+        #portqc-modal-close {
+          width: 38px !important;
+          height: 38px !important;
+          min-width: 38px !important;
+          min-height: 38px !important;
+          flex-shrink: 0 !important;
+          border-radius: 10px !important;
+          display: inline-flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          font-size: 0.92rem !important;
+        }
+        #portqc-modal-content {
+          flex: 1 1 auto !important;
+          min-height: 0 !important;
+          overflow-y: auto !important;
+          overflow-x: hidden !important;
+          -webkit-overflow-scrolling: touch;
+          touch-action: pan-y !important;
+          padding: 0.65rem 0.75rem calc(1.1rem + env(safe-area-inset-bottom, 10px)) !important;
+          box-sizing: border-box !important;
+        }
+        #portqc-vessels-modal .portqc-berths-grid {
+          grid-template-columns: minmax(0, 1fr) !important;
+        }
+        #portqc-vessels-modal .portqc-manual-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          gap: 0.38rem !important;
+        }
+        #portqc-vessels-modal .portqc-manual-grid > input:first-child {
+          grid-column: 1 / -1 !important;
+        }
+        #portqc-vessels-modal .portqc-manual-actions {
+          display: grid !important;
+          grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          gap: 0.35rem !important;
+        }
+        #portqc-vessels-modal .portqc-manual-actions > input {
+          grid-column: 1 / -1 !important;
+          width: 100% !important;
+        }
+        #portqc-vessels-modal .portqc-manual-actions > button {
+          min-height: 38px !important;
+          justify-content: center !important;
+          width: 100% !important;
+        }
+        #portqc-vessels-modal input,
+        #portqc-vessels-modal textarea {
+          font-size: 16px !important;
+          min-height: 38px !important;
+          box-sizing: border-box !important;
+        }
+      }
+
+      /* Adaptation Paysage Mobile (<= 960px & hauteur courte <= 520px) pour toutes les modales & HUDs */
+      @media (max-width: 960px) and (max-height: 520px) {
+        .modal-overlay:not(#template-modal) > .modal-content,
+        #portqc-vessels-modal > .portqc-modal-card {
+          max-height: 95dvh !important;
+          border-radius: 14px 14px 0 0 !important;
+        }
+        .modal-overlay:not(#template-modal) .modal-header,
+        #portqc-vessels-modal .portqc-modal-hdr {
+          padding: 0.4rem 0.65rem !important;
+        }
+        #animation-window .weather-minimap-hud:not(.collapsed-minimap):not(.hidden-minimap) .wmm-canvas-wrap {
+          height: 110px !important;
+        }
+        .temp-simulation-hud:not(.hidden-temp-hud),
+        .tug-maneuver-hud:not(.minimized) {
+          max-height: calc(100% - 58px) !important;
+          overflow-y: auto !important;
         }
       }
 
@@ -16863,7 +17354,7 @@
           <button id="close-calc" class="btn-close" title="Fermer (Échap)">✖</button>
         </div>
         <div class="modal-body">
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem">
+          <div class="mob-stack-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem">
             <div class="input-group">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.2rem">
                 <label style="margin: 0">Quantité Totale</label>
@@ -17069,13 +17560,13 @@
       <div class="modal-content" style="max-width: 94vw; width: 1150px">
         <div class="modal-header">
           <h3>🖼️ Le Petit Langlois Illustré</h3>
-          <div style="display: flex; gap: 0.4rem; align-items: center">
+          <div class="image-modal-toolbar" style="display: flex; gap: 0.4rem; align-items: center">
             <button type="button" id="img-zoom-out" class="theme-toggle">➖ Zoom -</button>
             <span id="img-zoom-lbl" class="badge mono">100%</span>
             <button type="button" id="img-zoom-in" class="theme-toggle">➕ Zoom +</button>
             <button type="button" id="img-zoom-reset" class="theme-toggle">🔄 100%</button>
-            <button id="close-image" class="btn-close">✖</button>
           </div>
+          <button id="close-image" class="btn-close">✖</button>
         </div>
         <div
           id="image-zoom-viewport"
@@ -17096,10 +17587,10 @@
     <div id="langlois-calc-modal" class="modal-overlay">
       <div class="modal-content" style="max-width: 860px; width: 96%; max-height: 92vh; display: flex; flex-direction: column">
         <div class="modal-header">
-          <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap">
+          <div class="langlois-hdr-main" style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap">
             <h3>🧮 Calculateur Maritime Complet</h3>
             <!-- Préréglages rapides de navires types -->
-            <div style="display: flex; gap: 0.3rem; align-items: center">
+            <div class="langlois-presets-row" style="display: flex; gap: 0.3rem; align-items: center; flex-wrap: wrap">
               <span style="font-size: 0.72rem; color: var(--text-light); font-weight: 700">Gabarits :</span>
               <button type="button" class="theme-toggle vessel-preset-btn" data-dwt="37000" data-loa="183" data-beam="27.4" data-tanks="12" style="padding: 0.18rem 0.45rem; font-size: 0.7rem">
                 MR1 (37k T)
@@ -17120,7 +17611,7 @@
 
         <div class="modal-body" style="overflow-y: auto; flex: 1; padding-right: 6px">
           <!-- Barre d'onglets -->
-          <div style="display: flex; gap: 0.4rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; flex-wrap: wrap; justify-content: space-between; align-items: center">
+          <div class="langlois-tabs-bar" style="display: flex; gap: 0.4rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; flex-wrap: wrap; justify-content: space-between; align-items: center">
             <div style="display: flex; gap: 0.35rem; flex-wrap: wrap">
               <button class="theme-toggle langlois-tab active" data-target="l-tab-config">
                 1. Configuration Navire
@@ -17146,7 +17637,7 @@
 
           <!-- ONGLET 1 : CONFIGURATION -->
           <div id="l-tab-config" class="langlois-tab-content">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem">
+            <div class="mob-stack-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem">
               <div class="input-group">
                 <label>Port en lourd — DWT (Tonnes métriques)</label>
                 <input type="number" id="l-dwt" value="50000" step="1000" />
@@ -17173,7 +17664,7 @@
               <p style="font-size: 0.8rem; color: var(--text-light); margin-bottom: 0.85rem">
                 Si vous ne connaissez pas la hauteur exacte des réservoirs du navire, entrez sa longueur (LOA) et sa largeur (Beam) pour l'estimer (coeff. bloc 0.85).
               </p>
-              <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; align-items: end">
+              <div class="mob-stack-grid" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; align-items: end">
                 <div class="input-group" style="margin-bottom: 0">
                   <label>Longueur — LOA (m)</label>
                   <input type="number" id="l-loa" placeholder="Ex: 183" step="0.1" />
@@ -17188,7 +17679,7 @@
               </div>
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem">
+            <div class="mob-stack-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem">
               <div class="input-group">
                 <label>Hauteur des réservoirs du navire (m)</label>
                 <input type="number" id="l-tank-height" value="18.2" step="0.1" />
@@ -17229,14 +17720,14 @@
           <!-- ONGLET 3 : CHARGEMENT -->
           <div id="l-tab-load" class="langlois-tab-content" style="display: none">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem">
-              <div class="input-group" style="margin-bottom: 0; width: 270px">
+              <div class="input-group mob-full-w" style="margin-bottom: 0; width: 270px">
                 <label style="display:flex; justify-content:space-between; align-items:center;">
                   <span>Date/heure de début</span>
                   <small style="color:var(--accent); font-weight:normal; font-size:0.75rem;">(vide = maintenant)</small>
                 </label>
                 <input type="datetime-local" id="l-load-start" />
               </div>
-              <button id="l-btn-add-prod" class="theme-toggle" style="background: var(--valero-teal); color: white; border: none; padding: 0.5rem 1rem">
+              <button id="l-btn-add-prod" class="theme-toggle mob-full-w" style="background: var(--valero-teal); color: white; border: none; padding: 0.5rem 1rem">
                 + Ajouter un produit
               </button>
             </div>
@@ -17250,7 +17741,7 @@
 
           <!-- ONGLET 4 : DÉCHARGEMENT -->
           <div id="l-tab-unload" class="langlois-tab-content" style="display: none">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; margin-bottom: 1rem">
+            <div class="mob-stack-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; margin-bottom: 1rem">
               <div class="input-group" style="margin-bottom: 0">
                 <label style="display:flex; justify-content:space-between; align-items:center;">
                   <span>Date/heure de début</span>
@@ -17309,7 +17800,7 @@
 
             <!-- Zone de Conversion Principale -->
             <div style="background: var(--surface-subtle); border: 1px solid var(--border); border-radius: 0.55rem; padding: 1rem; margin-bottom: 1rem">
-              <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 0.75rem; align-items: center">
+              <div class="conv-main-grid" style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 0.75rem; align-items: center">
                 <!-- Entrée -->
                 <div class="input-group" style="margin-bottom: 0">
                   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem">
@@ -17320,7 +17811,7 @@
                 </div>
 
                 <!-- Bouton Échanger (SWAP) -->
-                <div style="display: flex; align-items: center; justify-content: center; padding-top: 1.25rem">
+                <div class="conv-swap-wrap" style="display: flex; align-items: center; justify-content: center; padding-top: 1.25rem">
                   <button type="button" id="conv-btn-swap" class="theme-toggle" style="border-radius: 50%; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; border-color: #38bdf8; color: #38bdf8" title="Inverser les unités d'entrée et de sortie">
                     ⇄
                   </button>
@@ -17344,7 +17835,7 @@
                   <label style="margin: 0; font-size: 0.75rem; font-weight: 700">Densité (SG / kg/L) :</label>
                   <input type="number" id="conv-density-val" value="0.850" step="0.001" min="0.5" max="2.0" style="width: 85px; padding: 0.15rem 0.4rem; font-size: 0.8rem" class="mono" />
                 </div>
-                <div style="display: flex; gap: 0.3rem; align-items: center">
+                <div class="conv-wrap-row" style="display: flex; gap: 0.3rem; align-items: center; flex-wrap: wrap">
                   <span style="font-size: 0.7rem; color: var(--text-light)">Préréglages :</span>
                   <button type="button" class="theme-toggle conv-sg-preset" data-sg="0.740" style="padding: 0.12rem 0.4rem; font-size: 0.68rem">Essence (0.740)</button>
                   <button type="button" class="theme-toggle conv-sg-preset active" data-sg="0.850" style="padding: 0.12rem 0.4rem; font-size: 0.68rem">Diesel (0.850)</button>
@@ -17355,7 +17846,7 @@
 
               <!-- Boutons de pas rapide (+10, +1, -1, -10, etc.) -->
               <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.85rem; padding-top: 0.75rem; border-top: 1px dashed var(--border); flex-wrap: wrap; gap: 0.5rem">
-                <div style="display: flex; gap: 0.25rem; align-items: center">
+                <div class="conv-wrap-row" style="display: flex; gap: 0.25rem; align-items: center; flex-wrap: wrap">
                   <span style="font-size: 0.7rem; color: var(--text-light); font-weight: 700">Ajustement :</span>
                   <button type="button" class="theme-toggle conv-step-btn" data-step="-10" style="padding: 0.15rem 0.4rem; font-size: 0.7rem">-10</button>
                   <button type="button" class="theme-toggle conv-step-btn" data-step="-1" style="padding: 0.15rem 0.4rem; font-size: 0.7rem">-1</button>
@@ -17363,7 +17854,7 @@
                   <button type="button" class="theme-toggle conv-step-btn" data-step="+10" style="padding: 0.15rem 0.4rem; font-size: 0.7rem">+10</button>
                   <button type="button" id="conv-btn-reset-val" class="theme-toggle" style="padding: 0.15rem 0.4rem; font-size: 0.7rem; color: var(--danger)">🔄 Zéro</button>
                 </div>
-                <div style="display: flex; gap: 0.35rem">
+                <div class="conv-actions-row" style="display: flex; gap: 0.35rem; flex-wrap: wrap">
                   <button type="button" id="conv-btn-copy" class="theme-toggle" style="padding: 0.25rem 0.65rem; font-size: 0.75rem" title="Copier le résultat dans le presse-papiers">
                     📋 Copier Résultat
                   </button>
@@ -17404,7 +17895,7 @@
 
         <div class="modal-body" style="overflow-y: auto; flex: 1; padding-right: 4px; display: flex; flex-direction: column; gap: 0.85rem;">
           <!-- Onglets de Navigation : Minuteur Universel vs Bras de Chargement -->
-          <div style="display: flex; gap: 0.35rem; border-bottom: 2px solid var(--border); padding-bottom: 0.4rem;">
+          <div class="arms-tabs-bar" style="display: flex; gap: 0.35rem; border-bottom: 2px solid var(--border); padding-bottom: 0.4rem;">
             <button type="button" id="tab-btn-univ-timer" class="theme-toggle active" style="flex: 1; padding: 0.38rem 0.6rem; font-size: 0.78rem; font-weight: 800; justify-content: center;">
               ⏱️ Minuteur &amp; Chrono Universel
             </button>
@@ -17416,7 +17907,7 @@
           <!-- ONGLET 1 : MINUTEUR & CHRONO UNIVERSEL -->
           <div id="tab-content-univ-timer" style="display: flex; flex-direction: column; gap: 0.85rem;">
             <!-- Bandeau Compte à Rebours Géant Universel -->
-            <div style="background: var(--surface-subtle); border-radius: 6px; padding: 0.85rem 1rem; border: 1px solid var(--border-strong); border-left: 4px solid var(--valero-gold); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.8rem;">
+            <div class="arms-hero-banner" style="background: var(--surface-subtle); border-radius: 6px; padding: 0.85rem 1rem; border: 1px solid var(--border-strong); border-left: 4px solid var(--valero-gold); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.8rem;">
               <div>
                 <div style="font-size: 0.72rem; text-transform: uppercase; font-weight: 800; color: var(--text-light); letter-spacing: 0.04em;">Temps restant :</div>
                 <div id="modal-univ-timer-display" class="mono" style="font-size: 2.1rem; font-weight: 900; color: #00f59b; line-height: 1.15; margin: 0.15rem 0;">30:00</div>
@@ -17425,7 +17916,7 @@
                 </div>
               </div>
               <div style="display: flex; flex-direction: column; gap: 0.45rem; align-items: flex-end;">
-                <div style="display: flex; gap: 0.4rem; align-items: center;">
+                <div class="arms-hero-btns" style="display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap;">
                   <button type="button" id="modal-univ-start-btn" class="btn-calc" style="padding: 0.45rem 0.95rem; font-size: 0.84rem; background: #059669; border-color: #10b981; display: inline-flex; align-items: center; gap: 0.35rem;">
                     ▶️ Démarrer
                   </button>
@@ -17452,7 +17943,7 @@
               <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
                 <span style="font-size: 0.75rem; font-weight: 800; color: var(--text);">⏱️ Réglage personnalisé de la durée :</span>
                 <!-- Inputs H / M / S -->
-                <div style="display: flex; gap: 0.3rem; align-items: center;">
+                <div class="arms-hms-row" style="display: flex; gap: 0.3rem; align-items: center;">
                   <input type="number" id="univ-input-h" min="0" max="99" value="0" class="weather-search-input mono" style="width: 48px; text-align: center; padding: 0.2rem; font-weight: 800;" />
                   <span style="font-size: 0.72rem; font-weight: 700; color: var(--text-light);">h</span>
                   <input type="number" id="univ-input-m" min="0" max="59" value="30" class="weather-search-input mono" style="width: 48px; text-align: center; padding: 0.2rem; font-weight: 800;" />
@@ -17520,7 +18011,7 @@
 
               <!-- Ligne 1 : Choix de la tonalité & Bouton Test/Arrêt -->
               <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
-                <div style="display: flex; gap: 0.4rem; align-items: center; flex: 1; min-width: 250px;">
+                <div class="arms-sound-row" style="display: flex; gap: 0.4rem; align-items: center; flex: 1; min-width: 250px;">
                   <span style="font-size: 0.72rem; font-weight: 700; color: var(--text-light); white-space: nowrap;">Sonnerie :</span>
                   <select id="univ-sound-select" class="weather-select" style="font-size: 0.74rem; padding: 0.28rem 0.5rem; font-weight: 700; flex: 1;">
                     <option value="chime">🔔 Carillon mélodique Westminster (D5 ➔ A5)</option>
@@ -17580,7 +18071,7 @@
           <!-- ONGLET 2 : ESTIMATEUR & MINUTERIE AJUSTEMENT BRAS CHIKSAN (12") -->
           <div id="tab-content-arms-timer" style="display: none; flex-direction: column; gap: 0.85rem;">
           <!-- Bandeau Statut Immédiat & Compte à Rebours Géant -->
-          <div style="background: var(--surface-subtle); border-radius: 6px; padding: 0.85rem 1rem; border: 1px solid var(--border-strong); border-left: 4px solid var(--valero-gold); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.8rem;">
+          <div class="arms-hero-banner" style="background: var(--surface-subtle); border-radius: 6px; padding: 0.85rem 1rem; border: 1px solid var(--border-strong); border-left: 4px solid var(--valero-gold); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.8rem;">
             <div>
               <div style="font-size: 0.72rem; text-transform: uppercase; font-weight: 800; color: var(--text-light); letter-spacing: 0.04em;">Temps restant avant palier de débattement :</div>
               <div id="modal-arms-timer" class="mono" style="font-size: 1.85rem; font-weight: 900; color: #00f59b; line-height: 1.15; margin: 0.15rem 0;">--:--:--</div>
@@ -17604,7 +18095,7 @@
 
           <!-- Jauge Graphique de Course des Bras (0 à 12 pouces) -->
           <div style="background: var(--surface-subtle); border-radius: 6px; padding: 0.75rem 0.9rem; border: 1px solid var(--border);">
-            <div style="display: flex; justify-content: space-between; font-size: 0.74rem; font-weight: 800; margin-bottom: 0.35rem;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.74rem; font-weight: 800; margin-bottom: 0.35rem; flex-wrap: wrap; gap: 0.2rem;">
               <span>Débattement cumulé depuis dernier réglage :</span>
               <span id="modal-arms-disp-readout" class="mono" style="font-size: 0.82rem; color: var(--text);">0.0 po / 12.0 po (0.0 cm)</span>
             </div>
@@ -17626,7 +18117,7 @@
           </div>
 
           <!-- Configuration : Déchargement vs Chargement & Paramètres -->
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+          <div class="mob-stack-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
             <!-- Colonne Gauche : Opération & Section -->
             <div style="display: flex; flex-direction: column; gap: 0.65rem; background: var(--surface-subtle); padding: 0.75rem; border-radius: 5px; border: 1px solid var(--border);">
               <h4 style="margin: 0; font-size: 0.78rem; font-weight: 800; text-transform: uppercase; color: var(--accent); letter-spacing: 0.03em;">
@@ -17652,7 +18143,7 @@
               <!-- Choix Section de Quai -->
               <div style="margin-top: 0.2rem;">
                 <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-light); margin-bottom: 0.2rem; display: block;">Poste à quai :</label>
-                <div style="display: flex; gap: 0.4rem;">
+                <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
                   <button type="button" id="arms-sec87-btn" class="theme-toggle active" style="flex: 1; padding: 0.24rem 0.45rem; font-size: 0.72rem; font-weight: 800; justify-content: center;">
                     Section 87 (Valero)
                   </button>
@@ -17668,7 +18159,7 @@
                   <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-light);">Palier de réajustement :</label>
                   <span id="arms-threshold-val-lbl" class="mono" style="font-size: 0.74rem; font-weight: 900; color: var(--valero-gold);">12.0 po (30.5 cm)</span>
                 </div>
-                <div style="display: flex; gap: 0.25rem;">
+                <div class="arms-thresh-grid" style="display: flex; gap: 0.25rem; flex-wrap: wrap;">
                   <button type="button" class="theme-toggle arms-thresh-btn" data-thresh="6">6 po</button>
                   <button type="button" class="theme-toggle arms-thresh-btn" data-thresh="8">8 po</button>
                   <button type="button" class="theme-toggle arms-thresh-btn" data-thresh="10">10 po</button>
@@ -17734,7 +18225,7 @@
 
           <!-- Tableau Prévisionnel des Ajustements du Quart (Planning 8h - 12h) -->
           <div style="background: var(--surface-subtle); border-radius: 5px; padding: 0.75rem; border: 1px solid var(--border);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+            <div class="arms-plan-hdr" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
               <h4 style="margin: 0; font-size: 0.76rem; font-weight: 800; text-transform: uppercase; color: var(--text);">
                 📅 Planning Prévisionnel des Ajustements sur le Quart
               </h4>
@@ -17763,7 +18254,7 @@
 
           <!-- Historique des Ajustements de Bras effectués pendant le quart -->
           <div style="background: var(--surface-subtle); border-radius: 5px; padding: 0.65rem 0.75rem; border: 1px solid var(--border);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.3rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.3rem; flex-wrap: wrap; gap: 0.25rem;">
               <span style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: var(--text-light);">
                 Historique des Réajustements Effectués (Ce Quart) :
               </span>
@@ -17793,7 +18284,8 @@
           </h3>
           <button type="button" id="universe-modal-close" class="modal-close" aria-label="Fermer">&times;</button>
         </div>
-        <div style="font-size: 0.72rem; color: var(--text-light); margin-bottom: 0.35rem;">
+        <div class="modal-body">
+          <div style="font-size: 0.72rem; color: var(--text-light); margin-bottom: 0.35rem;">
           Chaque univers transforme intégralement la typographie, les matériaux, les cadrans HUD, les graphiques et <strong>le placement spatial complet</strong> des barres et modules sur l'écran (zéro rechargement 3D / AIS).
         </div>
 
@@ -17927,6 +18419,7 @@
             <div class="univ-opt-desc">Muret des stands carbone mat, capsules Bento arrondies, orange Papaya et vert DRS lime.</div>
             <span class="univ-opt-layout-tag">Ops en #1 Haut-Gauche + Tour Aéro Droite</span>
           </button>
+        </div>
         </div>
       </div>
     </div>
@@ -49454,13 +49947,13 @@
               `</div>` +
               `<details style="font-size:0.64rem;color:var(--text-light);">` +
                 `<summary style="cursor:pointer;font-weight:700;user-select:none;">\u270F\uFE0F Saisie manuelle op\u00e9rateur (Poste ${berthNum})</summary>` +
-                `<div style="display:grid;grid-template-columns:1fr 64px 52px;gap:0.28rem;margin-top:0.35rem;">` +
-                  `<input type="text" id="man-name-${berthNum}" placeholder="Nom du navire (ex: ESPADA DESGAGNES)" value="${escapeHtmlSimple(manOverride && manOverride.name ? manOverride.name : (occ ? bState.name : ""))}" style="padding:0.24rem 0.36rem;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.64rem;" />` +
-                  `<input type="number" id="man-loa-${berthNum}" placeholder="LOA m" min="50" max="340" value="${Math.round((manOverride && manOverride.loa) || bState.loa || (berthNum === "87" ? 229 : 149))}" style="padding:0.24rem 0.3rem;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.64rem;" />` +
-                  `<input type="text" id="man-flag-${berthNum}" placeholder="CA" maxlength="3" value="${escapeHtmlSimple((manOverride && manOverride.flag) || bState.flag || "CA")}" style="padding:0.24rem 0.3rem;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.64rem;text-transform:uppercase;" />` +
+                `<div class="portqc-manual-grid" style="display:grid;grid-template-columns:minmax(0,1fr) 78px 66px;gap:0.28rem;margin-top:0.35rem;">` +
+                  `<input type="text" id="man-name-${berthNum}" placeholder="Nom du navire (ex: ESPADA DESGAGNES)" value="${escapeHtmlSimple(manOverride && manOverride.name ? manOverride.name : (occ ? bState.name : ""))}" style="min-width:0;width:100%;padding:0.24rem 0.36rem;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.64rem;" />` +
+                  `<input type="number" id="man-loa-${berthNum}" placeholder="LOA m" min="50" max="340" value="${Math.round((manOverride && manOverride.loa) || bState.loa || (berthNum === "87" ? 229 : 149))}" style="min-width:0;width:100%;padding:0.24rem 0.3rem;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.64rem;" />` +
+                  `<input type="text" id="man-flag-${berthNum}" placeholder="CA" maxlength="3" value="${escapeHtmlSimple((manOverride && manOverride.flag) || bState.flag || "CA")}" style="min-width:0;width:100%;padding:0.24rem 0.3rem;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.64rem;text-transform:uppercase;" />` +
                 `</div>` +
-                `<div style="display:flex;gap:0.28rem;margin-top:0.28rem;">` +
-                  `<input type="text" id="man-etd-${berthNum}" placeholder="D\u00e9part pr\u00e9vu (ex: 19 nov. 18:00)" value="${escapeHtmlSimple((manOverride && manOverride.etd) || bState.etd || "")}" style="flex:1;padding:0.24rem 0.36rem;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.64rem;" />` +
+                `<div class="portqc-manual-actions" style="display:flex;flex-wrap:wrap;gap:0.28rem;margin-top:0.28rem;">` +
+                  `<input type="text" id="man-etd-${berthNum}" placeholder="D\u00e9part pr\u00e9vu (ex: 19 nov. 18:00)" value="${escapeHtmlSimple((manOverride && manOverride.etd) || bState.etd || "")}" style="flex:1;min-width:0;padding:0.24rem 0.36rem;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.64rem;" />` +
                   `<button type="button" data-save-manual="${berthNum}" class="theme-toggle" style="font-size:0.6rem;padding:0.2rem 0.45rem;border-color:#10b981;color:#10b981;">\u2713 Mettre \u00e0 quai</button>` +
                   `<button type="button" data-free-manual="${berthNum}" class="theme-toggle" style="font-size:0.6rem;padding:0.2rem 0.45rem;">Quai libre</button>` +
                 `</div>` +
@@ -49471,18 +49964,18 @@
 
         body.innerHTML =
           `<div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:0.4rem;padding:0.42rem 0.55rem;border-radius:6px;background:var(--surface-subtle);border:1px solid var(--border);font-size:0.66rem;">` +
-            `<div>` +
+            `<div style="min-width:0;">` +
               `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${isLive ? "#10b981" : "#f59e0b"};margin-right:5px;"></span>` +
               `<strong>${chanLbl}</strong> \u2022 Synchro ${fetchedStr}` +
               (pv.portUpdatedLabel ? `<div class="mono" style="font-size:0.59rem;color:var(--text-light);margin-top:2px;">Port de Qu\u00e9bec : ${escapeHtmlSimple(pv.portUpdatedLabel)}</div>` : "") +
             `</div>` +
-            `<div style="display:flex;gap:0.35rem;align-items:center;">` +
+            `<div style="display:flex;flex-wrap:wrap;gap:0.35rem;align-items:center;">` +
               `<button type="button" id="portqc-modal-sync-btn" class="theme-toggle" style="font-size:0.64rem;padding:0.22rem 0.52rem;border-color:#38bdf8;color:#38bdf8;">${portQcFetchInFlight ? "\u27F3 Synchronisation..." : "\u27F3 Actualiser en direct"}</button>` +
               `<a href="${PORTQC_SCHEDULE_URL}" target="_blank" rel="noopener noreferrer" class="theme-toggle" style="font-size:0.62rem;padding:0.22rem 0.48rem;text-decoration:none;">\uD83C\uDF10 Site Port QC</a>` +
             `</div>` +
           `</div>` +
           otherHtml +
-          `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(275px,1fr));gap:0.6rem;">` +
+          `<div class="portqc-berths-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(265px,1fr));gap:0.6rem;">` +
             renderBerthCard("86", b86, "Face Sud-Est vers L\u00e9vis") +
             renderBerthCard("87", b87, "Face Nord-Ouest vers Qu\u00e9bec") +
           `</div>` +
@@ -49596,10 +50089,10 @@
           modal.style.cssText =
             "position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;padding:0.8rem;background:rgba(2,6,23,0.76);backdrop-filter:blur(6px);";
           modal.innerHTML =
-            `<div style="width:min(760px,96vw);max-height:90vh;overflow-y:auto;border-radius:12px;background:var(--surface);border:1px solid var(--border);box-shadow:0 20px 50px rgba(0,0,0,0.55);padding:0.85rem;display:flex;flex-direction:column;gap:0.65rem;">` +
-              `<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);padding-bottom:0.45rem;">` +
-                `<div style="font-weight:900;font-size:0.9rem;color:var(--text);">\uD83D\uDEA2 Navires en Direct \u2014 Quais Valero 86 &amp; 87 (Port de Qu\u00e9bec)</div>` +
-                `<button type="button" id="portqc-modal-close" class="theme-toggle" style="padding:0.15rem 0.48rem;font-size:0.75rem;">\u2715</button>` +
+            `<div class="portqc-modal-card" style="width:min(760px,96vw);max-height:90vh;overflow-y:auto;border-radius:12px;background:var(--card-bg-solid);border:1px solid var(--border);box-shadow:0 20px 50px rgba(0,0,0,0.55);padding:0.85rem;display:flex;flex-direction:column;gap:0.65rem;">` +
+              `<div class="portqc-modal-hdr" style="display:flex;justify-content:space-between;align-items:center;gap:0.4rem;border-bottom:1px solid var(--border);padding-bottom:0.45rem;">` +
+                `<div style="font-weight:900;font-size:0.88rem;color:var(--text);min-width:0;">\uD83D\uDEA2 Navires en Direct \u2014 Quais Valero 86 &amp; 87 (Port de Qu\u00e9bec)</div>` +
+                `<button type="button" id="portqc-modal-close" class="theme-toggle" style="padding:0.15rem 0.48rem;font-size:0.75rem;flex-shrink:0;">\u2715</button>` +
               `</div>` +
               `<div id="portqc-modal-content" style="display:flex;flex-direction:column;gap:0.6rem;"></div>` +
             `</div>`;
