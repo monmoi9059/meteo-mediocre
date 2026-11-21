@@ -2,9 +2,9 @@
   "version": 3,
   "source": "live_portqc",
   "syncChannel": "github_actions_portqc",
-  "portUpdatedLabel": "vendredi 20 novembre 2026 à 18:00",
-  "updatedAtIso": "2026-11-20T23:11:53.229Z",
-  "fetchedAt": 1795216313229,
+  "portUpdatedLabel": "vendredi 20 novembre 2026 à 23:00",
+  "updatedAtIso": "2026-11-21T04:02:00.732Z",
+  "fetchedAt": 1795233720732,
   "totalPortRows": 53,
   "otherValeroTankers": [
     {
@@ -12,7 +12,7 @@
       "name": "ALPINE MARINA",
       "flag": "MH",
       "loa": 183,
-      "etd": "21 nov. 08:00",
+      "etd": "21 nov. 16:00",
       "agent": "INCH",
       "cargo": "Vrac liquide"
     }
@@ -30,8 +30,8 @@
     "dwtApprox": "~18 500 TPL",
     "typeLabel": "Chimiquier / Produits Glace 1A",
     "arrival": "",
-    "etd": "21 nov. 04:45",
-    "etdIso": "2026-11-21T09:45:00.000Z",
+    "etd": "21 nov. 10:30",
+    "etdIso": "2026-11-21T15:30:00.000Z",
     "agent": "MCKE",
     "origin": "CA SYD",
     "dest": "CA SEI",
