@@ -677,9 +677,9 @@ replaceExact(
 
 // Couper scene.environment PBR CubeMap IBL et les ombres directionnelles
 replaceExact(
-  `        let activeEnvKey = "day";
-        scene.environment = envCubeMaps.day;`,
-  `        let activeEnvKey = "day";
+  `        let activeEnvKey = "continuous";
+        scene.environment = dynamicEnvCube;`,
+  `        let activeEnvKey = "continuous";
         scene.environment = null;`,
   "Disable scene.environment PBR IBL"
 );
@@ -964,23 +964,16 @@ replaceExact(
 );
 
 replaceExact(
-  `          const targetEnvKey = isNight ? "night" : isGolden ? "golden" : "day";
-          if (targetEnvKey !== activeEnvKey) {
-            activeEnvKey = targetEnvKey;
-            const envMapNow = envCubeMaps[activeEnvKey];
-            scene.environment = envMapNow;
-            waterMat.envMap = envMapNow;
-            waterMat.needsUpdate = true;
-            concreteMat.envMap = envMapNow;
-            concreteDarkMat.envMap = envMapNow;
-            caissonCapMat.envMap = envMapNow;
-            steelGalvMat.envMap = envMapNow;
-            concreteMat.needsUpdate = true;
-            concreteDarkMat.needsUpdate = true;
-            caissonCapMat.needsUpdate = true;
-            steelGalvMat.needsUpdate = true;
-          }`,
-  `          activeEnvKey = isNight ? "night" : isGolden ? "golden" : "day";`,
+  `            // Mise à jour continue de la cubemap PBR (reflets eau & quai mouillé sans re-compilation de shader WebGL)
+            scratchSkyColA.copy(skyDomeUniforms.uHorizonColor.value).lerp(skyDomeUniforms.uSolarHorizonColor.value, effTwiGlow * 0.65);
+            updateDynamicEnvCube(
+              "#" + skyDomeUniforms.uZenithColor.value.getHexString(),
+              "#" + skyDomeUniforms.uHorizonColor.value.getHexString(),
+              "#" + skyDomeUniforms.uGroundColor.value.getHexString(),
+              "#" + scratchSkyColA.getHexString(),
+              curTimeMs
+            );`,
+  `            // Édition Lite : cubemap PBR désactivée pour économiser la bande passante GPU`,
   "Skip runtime CubeMap env swaps"
 );
 

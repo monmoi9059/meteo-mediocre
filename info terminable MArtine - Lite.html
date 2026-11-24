@@ -192,10 +192,8 @@
         bottom: 0;
         z-index: 0;
         pointer-events: none;
-        background: linear-gradient(135deg, var(--sky-c1), var(--sky-c2), var(--sky-c3));
-        background-size: 300% 300%;
-        animation: bgShift var(--anim-speed) ease infinite;
-        transition: background 1.5s ease;
+        background: linear-gradient(180deg, var(--sky-c1) 0%, var(--sky-c2) 54%, var(--sky-c3) 100%);
+        background-size: 100% 100%;
       }
 
       .sky-fx,
@@ -23520,7 +23518,7 @@
           // Définition astronomique exacte : Jour si le bord supérieur réfracté du Soleil est au-dessus de l'horizon (-0.85°)
           c.isNight = exactSunAlt < -0.85;
           c.isCivilTwilight = exactSunAlt >= -6.5 && exactSunAlt < -0.85;
-          c.isGoldenHour = exactSunAlt >= -5.5 && exactSunAlt <= 7.8;
+          c.isGoldenHour = exactSunAlt >= -6.0 && exactSunAlt <= 8.0;
         } else {
           const goldenMargin = 3600;
           c.isNight = nowSec < sr || nowSec > ss;
@@ -23528,7 +23526,37 @@
           c.isGoldenHour =
             Math.abs(nowSec - sr) <= goldenMargin ||
             Math.abs(nowSec - ss) <= goldenMargin;
+          // Approximation continue de la hauteur solaire si Astronomy Engine n'est pas encore chargé
+          const daySpan = Math.max(7200, ss - sr);
+          if (nowSec >= sr && nowSec <= ss) {
+            c.sunAltDeg = Math.sin(((nowSec - sr) / daySpan) * Math.PI) * 42.0 - 0.85;
+          } else {
+            const nightSpan = Math.max(7200, 86400 - daySpan);
+            const sinceSet = nowSec > ss ? nowSec - ss : nowSec + 86400 - ss;
+            c.sunAltDeg = -Math.sin((sinceSet / nightSpan) * Math.PI) * 34.0 - 0.85;
+          }
         }
+      }
+
+      function smoothSolar01(edge0, edge1, x) {
+        const u = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0 || 1e-6)));
+        return u * u * (3 - 2 * u);
+      }
+
+      function sampleSolarHexPalette(stops, altDeg) {
+        if (altDeg <= stops[0].alt) return stops[0].c;
+        const last = stops[stops.length - 1];
+        if (altDeg >= last.alt) return last.c;
+        for (let i = 0; i < stops.length - 1; i++) {
+          const s0 = stops[i];
+          const s1 = stops[i + 1];
+          if (altDeg >= s0.alt && altDeg <= s1.alt) {
+            const u = Math.max(0, Math.min(1, (altDeg - s0.alt) / (s1.alt - s0.alt || 1e-6)));
+            const t = u * 0.58 + u * u * (3 - 2 * u) * 0.42;
+            return lerpColor(s0.c, s1.c, t);
+          }
+        }
+        return last.c;
       }
 
       function updateDynamicBackground() {
@@ -23539,122 +23567,94 @@
         const bgDiv = document.getElementById("dynamic-bg");
         if (!bgDiv) return;
 
-        let color1, color2, color3, waterColor;
-        let timeFactor = 0;
+        const sunAlt = typeof c.sunAltDeg === "number" && !isNaN(c.sunAltDeg) ? c.sunAltDeg : (c.isNight ? -12 : 24);
+        const dayBlend = smoothSolar01(-8.5, 8.5, sunAlt);
+        const nightBlend = 1.0 - smoothSolar01(-7.5, 2.5, sunAlt);
 
-        if (c.sunriseTime && c.sunsetTime && c.sunsetTime > c.sunriseTime) {
-          let totalDay = c.sunsetTime - c.sunriseTime;
-          let totalNight = 86400 - totalDay;
-          if (c.nowSec >= c.sunriseTime && c.nowSec <= c.sunsetTime) {
-            let progDay = (c.nowSec - c.sunriseTime) / totalDay;
-            timeFactor = 0.25 + progDay * 0.5;
-          } else {
-            let timeSinceSunset =
-              c.nowSec > c.sunsetTime
-                ? c.nowSec - c.sunsetTime
-                : c.nowSec + 86400 - c.sunsetTime;
-            let progNight = timeSinceSunset / totalNight;
-            timeFactor = 0.75 + progNight * 0.5;
-            if (timeFactor > 1.0) timeFactor -= 1.0;
-          }
-        } else {
-          timeFactor = c.nowSec / 86400;
+        // Progression continue physique selon l'altitude réelle du Soleil (-15° Nuit astronomique -> -6° Heure bleue -> 0° Aube/Crépuscule -> +5° Heure dorée -> +15° Plein jour)
+        const palTopAlt = [
+          { alt: -15.0, c: "#020617" },
+          { alt: -9.5,  c: "#051129" },
+          { alt: -5.5,  c: "#0a2246" },
+          { alt: -2.0,  c: "#0d3566" },
+          { alt: 0.5,   c: "#0a4b82" },
+          { alt: 5.5,   c: "#055c99" },
+          { alt: 15.0,  c: "#0369a1" },
+        ];
+        const palMidAlt = [
+          { alt: -15.0, c: "#040d1f" },
+          { alt: -9.5,  c: "#0a1d38" },
+          { alt: -5.5,  c: "#163860" },
+          { alt: -2.0,  c: "#2a547e" },
+          { alt: 0.5,   c: "#3e769e" },
+          { alt: 5.5,   c: "#1d82b8" },
+          { alt: 15.0,  c: "#0284c7" },
+        ];
+        const palBotAlt = [
+          { alt: -15.0, c: "#071326" },
+          { alt: -9.5,  c: "#122744" },
+          { alt: -5.8,  c: "#6e3d2e" },
+          { alt: -2.2,  c: "#c25b28" },
+          { alt: 0.5,   c: "#ea7b28" },
+          { alt: 5.0,   c: "#f6bd78" },
+          { alt: 11.0,  c: "#bae6fd" },
+          { alt: 22.0,  c: "#e0f2fe" },
+        ];
+        const waterAlt = [
+          { alt: -14.0, c: "#091523" },
+          { alt: -5.5,  c: "#13283d" },
+          { alt: 0.0,   c: "#243b4a" },
+          { alt: 6.0,   c: "#2e4b57" },
+          { alt: 16.0,  c: "#355864" },
+        ];
+
+        let color1 = sampleSolarHexPalette(palTopAlt, sunAlt);
+        let color2 = sampleSolarHexPalette(palMidAlt, sunAlt);
+        let color3 = sampleSolarHexPalette(palBotAlt, sunAlt);
+        let baseWaterColor = sampleSolarHexPalette(waterAlt, sunAlt);
+
+        const phase = getMoonPhase(dEff);
+        const moonIntensity = (1.0 - Math.abs(0.5 - phase) * 2) * nightBlend;
+        if (moonIntensity > 0.01) {
+          const moonGlow = "#1e293b";
+          color1 = lerpColor(color1, moonGlow, moonIntensity * 0.26);
+          color2 = lerpColor(color2, moonGlow, moonIntensity * 0.18);
+          color3 = lerpColor(color3, moonGlow, moonIntensity * 0.10);
         }
 
-        let palTop = [
-          { p: 0.0, c: "#020617" },
-          { p: 0.2, c: "#0f172a" },
-          { p: 0.25, c: "#fde047" },
-          { p: 0.35, c: "#bae6fd" },
-          { p: 0.5, c: "#38bdf8" },
-          { p: 0.65, c: "#bae6fd" },
-          { p: 0.75, c: "#fde047" },
-          { p: 0.8, c: "#1e1b4b" },
-          { p: 1.0, c: "#020617" },
-        ];
-        let palMid = [
-          { p: 0.0, c: "#000000" },
-          { p: 0.2, c: "#4338ca" },
-          { p: 0.25, c: "#f43f5e" },
-          { p: 0.35, c: "#2563eb" },
-          { p: 0.5, c: "#0284c7" },
-          { p: 0.65, c: "#2563eb" },
-          { p: 0.75, c: "#ea580c" },
-          { p: 0.8, c: "#312e81" },
-          { p: 1.0, c: "#000000" },
-        ];
-        let palBot = [
-          { p: 0.0, c: "#000000" },
-          { p: 0.2, c: "#060913" },
-          { p: 0.25, c: "#fbbf24" },
-          { p: 0.35, c: "#93c5fd" },
-          { p: 0.5, c: "#e0f2fe" },
-          { p: 0.65, c: "#93c5fd" },
-          { p: 0.75, c: "#fed7aa" },
-          { p: 0.8, c: "#0f0518" },
-          { p: 1.0, c: "#000000" },
-        ];
-
-        color1 = getColorFromStops(palTop, timeFactor);
-        color2 = getColorFromStops(palMid, timeFactor);
-        color3 = getColorFromStops(palBot, timeFactor);
-
-        let waterPal = [
-          { p: 0.0, c: "#111820" },
-          { p: 0.25, c: "#233036" },
-          { p: 0.35, c: "#424a40" },
-          { p: 0.5, c: "#505a49" },
-          { p: 0.65, c: "#424a40" },
-          { p: 0.75, c: "#233036" },
-          { p: 1.0, c: "#111820" },
-        ];
-        let baseWaterColor = getColorFromStops(waterPal, timeFactor);
-
-        let phase = getMoonPhase(dEff);
-        let moonIntensity = 1.0 - Math.abs(0.5 - phase) * 2;
-
-        if (c.isNight) {
-          let moonGlow = "#1e293b";
-          color1 = lerpColor(color1, moonGlow, moonIntensity * 0.3);
-          color2 = lerpColor(color2, moonGlow, moonIntensity * 0.2);
-          color3 = lerpColor(color3, moonGlow, moonIntensity * 0.1);
-        }
-
-        let isStormy = c.weatherCode >= 51 && c.weatherCode <= 99;
-        let isFoggy = c.weatherCode === 45 || c.weatherCode === 48;
-        let stormCloudCover = c.cloudCover / 100.0;
+        const isStormy = c.weatherCode >= 51 && c.weatherCode <= 99;
+        const isFoggy = c.weatherCode === 45 || c.weatherCode === 48;
+        let stormCloudCover = Math.max(0, Math.min(1, (c.cloudCover || 0) / 100.0));
         if (isFoggy) stormCloudCover = 1;
 
         if (stormCloudCover > 0) {
-          let stormColorTop = c.isNight ? "#111827" : "#64748b";
-          let stormColorMid = c.isNight ? "#1f2937" : "#94a3b8";
-          let stormColorBot = c.isNight ? "#374151" : "#cbd5e1";
+          let stormColorTop = lerpColor("#0f172a", "#64748b", dayBlend);
+          let stormColorMid = lerpColor("#1e293b", "#94a3b8", dayBlend);
+          let stormColorBot = lerpColor("#334155", "#cbd5e1", dayBlend);
 
           if (isStormy) {
-            stormColorTop = c.isNight ? "#030712" : "#334155";
-            stormColorMid = c.isNight ? "#111827" : "#475569";
-            stormColorBot = c.isNight ? "#1f2937" : "#64748b";
+            stormColorTop = lerpColor("#030712", "#334155", dayBlend);
+            stormColorMid = lerpColor("#0f172a", "#475569", dayBlend);
+            stormColorBot = lerpColor("#1e293b", "#64748b", dayBlend);
           }
           if (isFoggy) {
-            stormColorTop = c.isNight ? "#374151" : "#e2e8f0";
-            stormColorMid = c.isNight ? "#4b5563" : "#f1f5f9";
-            stormColorBot = c.isNight ? "#6b7280" : "#ffffff";
+            stormColorTop = lerpColor("#334155", "#e2e8f0", dayBlend);
+            stormColorMid = lerpColor("#475569", "#f1f5f9", dayBlend);
+            stormColorBot = lerpColor("#64748b", "#ffffff", dayBlend);
           }
 
-          color1 = lerpColor(color1, stormColorTop, stormCloudCover * 0.8);
-          color2 = lerpColor(color2, stormColorMid, stormCloudCover * 0.8);
-          color3 = lerpColor(color3, stormColorBot, stormCloudCover * 0.8);
+          color1 = lerpColor(color1, stormColorTop, stormCloudCover * 0.82);
+          color2 = lerpColor(color2, stormColorMid, stormCloudCover * 0.82);
+          color3 = lerpColor(color3, stormColorBot, stormCloudCover * 0.84);
         }
 
         // Modulation thermique subtile du ciel selon la vraie température extérieure :
-        // Froid polaire sec (<= -8°C) -> zénith cobalt profond et horizon cristallin glacé
-        // Chaleur estivale (>= 26°C) -> légère brume dorée ambrée à l'horizon
         const effSkyTemp = typeof c.temp === "number" ? c.temp : 12;
-        if (!c.isNight && stormCloudCover < 0.72) {
-          const clearWeight = 1.0 - stormCloudCover * 0.85;
+        if (dayBlend > 0.05 && stormCloudCover < 0.72) {
+          const clearWeight = (1.0 - stormCloudCover * 0.85) * dayBlend;
           if (effSkyTemp <= -8) {
             const coldAmt = Math.min(0.28, ((-8 - effSkyTemp) / 22) * 0.28) * clearWeight;
-            color1 = lerpColor(color1, "#1d4ed8", coldAmt * 0.75);
+            color1 = lerpColor(color1, "#075985", coldAmt * 0.75);
             color3 = lerpColor(color3, "#f0f9ff", coldAmt);
           } else if (effSkyTemp >= 26) {
             const warmAmt = Math.min(0.24, ((effSkyTemp - 26) / 12) * 0.24) * clearWeight;
@@ -23670,22 +23670,23 @@
           return "rgba(" + r + ", " + g + ", " + b + ", " + alpha + ")";
         }
 
-        waterColor = hexToRgba(baseWaterColor, c.isNight ? 0.75 : 0.65);
+        const waterAlpha = 0.75 - dayBlend * 0.10;
+        const waterColor = hexToRgba(baseWaterColor, waterAlpha);
 
         applyThemeMode();
 
-        let animSpeed = Math.max(2, 20 - c.wind * 0.6);
-        bgDiv.style.background = `linear-gradient(135deg, ${color1}, ${color2}, ${color3}, ${color1})`;
+        const animSpeed = Math.max(4, 22 - (c.wind || 8) * 0.5);
+        bgDiv.style.background = `linear-gradient(180deg, ${color1} 0%, ${color2} 54%, ${color3} 100%)`;
         document.body.style.setProperty("--sky-c1", color1);
         document.body.style.setProperty("--sky-c2", color2);
         document.body.style.setProperty("--sky-c3", color3);
         document.body.style.setProperty("--anim-speed", animSpeed + "s");
-        bgDiv.style.backgroundSize = "300% 300%";
-        bgDiv.style.animation = `bgShift ${animSpeed}s ease infinite`;
+        bgDiv.style.backgroundSize = "100% 100%";
+        bgDiv.style.animation = "none";
         bgDiv.style.setProperty("--water-c", waterColor);
 
-        let distantWaterColor = lerpColor(baseWaterColor, "#60a5fa", 0.2);
-        distantWaterColor = hexToRgba(distantWaterColor, c.isNight ? 0.7 : 0.6);
+        let distantWaterColor = lerpColor(baseWaterColor, "#60a5fa", 0.2 * dayBlend);
+        distantWaterColor = hexToRgba(distantWaterColor, 0.70 - dayBlend * 0.10);
 
         document.documentElement.style.setProperty("--water-c", waterColor);
         document.documentElement.style.setProperty(
@@ -23697,12 +23698,7 @@
           c.tideHeight + "vh"
         );
 
-        let nightLightsOpacity = 0;
-        if (c.isNight) {
-          nightLightsOpacity = 1;
-        } else if (c.isGoldenHour) {
-          nightLightsOpacity = 0.5;
-        }
+        const nightLightsOpacity = Number(nightBlend.toFixed(3));
         document.body.style.setProperty(
           "--night-lights-opacity",
           nightLightsOpacity
@@ -23888,15 +23884,22 @@
         }
 
         if (observer) {
-          if (
-            c.isNight ||
-            (c.isGoldenHour && c.cloudCover < 50) ||
-            starsModeActive
-          ) {
+          const skySunAlt =
+            typeof c.sunAltDeg === "number" && !isNaN(c.sunAltDeg)
+              ? c.sunAltDeg
+              : c.isNight
+                ? -12
+                : 24;
+          const starTwilMod = starsModeActive
+            ? 1.0
+            : 1.0 - smoothSolar01(-10.5, -2.0, skySunAlt);
+          const starCloudMod = starsModeActive
+            ? 1.0
+            : Math.max(0, 1.0 - Math.pow((c.cloudCover || 0) / 92, 1.35));
+          const starOpacityMod = starTwilMod * starCloudMod;
+
+          if (starOpacityMod > 0.015) {
             sCtx.save();
-            let starOpacityMod = c.isNight || starsModeActive ? 1.0 : 0.3;
-            if (c.cloudCover > 50 && !starsModeActive)
-              starOpacityMod *= (100 - c.cloudCover) / 50;
 
             starCatalog.forEach((star) => {
               let raHours = star.ra / 15;
@@ -23920,7 +23923,7 @@
                 sCtx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
                 if (star.mag < 1.5) {
                   sCtx.shadowBlur = 8;
-                  sCtx.shadowColor = "rgba(255, 255, 255, 0.8)";
+                  sCtx.shadowColor = `rgba(255, 255, 255, ${(0.8 * starOpacityMod).toFixed(2)})`;
                 } else {
                   sCtx.shadowBlur = 0;
                 }
@@ -24037,7 +24040,9 @@
               }
             });
 
-            // Planètes
+            // Planètes (fondu crépusculaire continu)
+            sCtx.save();
+            sCtx.globalAlpha = starsModeActive ? 1.0 : starOpacityMod;
             planetConfig.forEach((p) => {
               let equ = Astronomy.Equator(p.name, dDate, observer, true, true);
               let hor = Astronomy.Horizon(
@@ -24066,11 +24071,12 @@
                 sCtx.shadowBlur = 0;
               }
             });
+            sCtx.restore();
 
             sCtx.restore();
           }
 
-          // Lune réaliste
+          // Lune réaliste (transition continue nuit <-> crépuscule <-> jour)
           let moonEqu = Astronomy.Equator("Moon", dDate, observer, true, true);
           let moonHor = Astronomy.Horizon(
             dDate,
@@ -24080,14 +24086,22 @@
             "normal"
           );
           let moonPos = getCanvasXY(moonHor.azimuth, moonHor.altitude);
+          const moonNightFrac = 1.0 - smoothSolar01(-7.5, 2.5, skySunAlt);
+          const moonAltFade = starsModeActive
+            ? 1.0
+            : smoothSolar01(-1.2, 1.8, moonHor.altitude);
+          const moonCloudFade = starsModeActive
+            ? 1.0
+            : Math.max(0, 1.0 - Math.max(0, ((c.cloudCover || 0) - 62) / 34));
+          const moonOpacity = starsModeActive
+            ? 1.0
+            : (0.30 + 0.65 * moonNightFrac) * moonAltFade * moonCloudFade;
 
-          if (moonPos && (c.cloudCover < 95 || starsModeActive)) {
+          if (moonPos && moonOpacity > 0.015) {
             let phase = getMoonPhase(dDate);
             let moonX = moonPos.x;
             let moonY = moonPos.y;
             let radius = 30;
-            let moonOpacity = c.isNight ? 0.95 : 0.4;
-            if (starsModeActive) moonOpacity = 1.0;
 
             sCtx.save();
             sCtx.globalAlpha = moonOpacity;
@@ -24101,8 +24115,8 @@
               moonY,
               glowRadius
             );
-            glowGrad.addColorStop(0, "rgba(254, 249, 195, 0.3)");
-            glowGrad.addColorStop(0.5, "rgba(254, 249, 195, 0.08)");
+            glowGrad.addColorStop(0, `rgba(254, 249, 195, ${(0.08 + 0.22 * moonNightFrac).toFixed(2)})`);
+            glowGrad.addColorStop(0.5, `rgba(254, 249, 195, ${(0.02 + 0.06 * moonNightFrac).toFixed(2)})`);
             glowGrad.addColorStop(1, "rgba(254, 249, 195, 0)");
             sCtx.fillStyle = glowGrad;
             sCtx.beginPath();
@@ -24111,9 +24125,7 @@
 
             sCtx.beginPath();
             sCtx.arc(moonX, moonY, radius, 0, Math.PI * 2);
-            sCtx.fillStyle = c.isNight
-              ? "rgba(15, 23, 42, 0.8)"
-              : "rgba(255, 255, 255, 0.1)";
+            sCtx.fillStyle = `rgba(15, 23, 42, ${(0.08 + 0.72 * moonNightFrac).toFixed(2)})`;
             sCtx.fill();
 
             sCtx.save();
@@ -24191,7 +24203,7 @@
             sCtx.restore();
           }
 
-          // Soleil réaliste
+          // Soleil réaliste (taille, halo et rayons interpolés continûment selon l'altitude solaire)
           let sunEqu = Astronomy.Equator("Sun", dDate, observer, true, true);
           let sunHor = Astronomy.Horizon(
             dDate,
@@ -24201,27 +24213,32 @@
             "normal"
           );
           let sunPos = getCanvasXY(sunHor.azimuth, sunHor.altitude);
+          const sunAltFade = smoothSolar01(-2.2, 0.8, sunHor.altitude);
+          const sunCloudFade = Math.max(0, 1.0 - Math.max(0, ((c.cloudCover || 0) - 55) / 36));
+          const sunMasterAlpha = !starsModeActive ? sunAltFade * sunCloudFade : 0;
 
-          if (sunPos && c.cloudCover < 90 && !starsModeActive) {
+          if (sunPos && sunMasterAlpha > 0.015) {
             let sunX = sunPos.x;
             let sunY = sunPos.y;
+            const sunWarmFrac = 1.0 - smoothSolar01(-1.0, 11.5, sunHor.altitude);
 
-            if (c.cloudCover > 20 && c.cloudCover < 85 && !c.isNight) {
+            sCtx.save();
+            sCtx.globalAlpha = sunMasterAlpha;
+
+            if (c.cloudCover > 20 && c.cloudCover < 85 && sunHor.altitude > 0.3) {
+              const rayElevFade = smoothSolar01(0.3, 4.0, sunHor.altitude);
               sCtx.save();
               sCtx.translate(sunX, sunY);
               let numRays = 12;
               let rayTime = Date.now() * 0.0002;
+              const rayAlpha = (0.08 + 0.07 * sunWarmFrac) * rayElevFade;
+              const rayG = Math.round(255 - 28 * sunWarmFrac);
+              const rayB = Math.round(255 - 165 * sunWarmFrac);
               for (let i = 0; i < numRays; i++) {
                 let angle = (i / numRays) * Math.PI * 2 + rayTime;
                 let rayWidth = 0.05 + Math.sin(rayTime * 2 + i) * 0.02;
                 let rayGrad = sCtx.createRadialGradient(0, 0, 40, 0, 0, W * 0.8);
-                let rayAlpha = c.isGoldenHour ? 0.15 : 0.08;
-                rayGrad.addColorStop(
-                  0,
-                  c.isGoldenHour
-                    ? `rgba(253, 224, 71, ${rayAlpha})`
-                    : `rgba(255, 255, 255, ${rayAlpha})`
-                );
+                rayGrad.addColorStop(0, `rgba(254, ${rayG}, ${rayB}, ${rayAlpha.toFixed(3)})`);
                 rayGrad.addColorStop(1, "rgba(255, 255, 255, 0)");
                 sCtx.fillStyle = rayGrad;
                 sCtx.beginPath();
@@ -24233,7 +24250,7 @@
               sCtx.restore();
             }
 
-            let sunRadius = c.isGoldenHour ? 70 : 50;
+            let sunRadius = 50 + 20 * sunWarmFrac;
             let outerRadius = sunRadius * 4;
             let g = sCtx.createRadialGradient(
               sunX,
@@ -24243,17 +24260,16 @@
               sunY,
               outerRadius
             );
-            if (c.isGoldenHour) {
-              g.addColorStop(0, "rgba(255, 255, 255, 1)");
-              g.addColorStop(0.15, "rgba(254, 240, 138, 0.9)");
-              g.addColorStop(0.4, "rgba(251, 146, 60, 0.4)");
-              g.addColorStop(1, "rgba(251, 146, 60, 0)");
-            } else {
-              g.addColorStop(0, "rgba(255, 255, 255, 1)");
-              g.addColorStop(0.2, "rgba(254, 249, 195, 0.8)");
-              g.addColorStop(0.5, "rgba(253, 224, 71, 0.2)");
-              g.addColorStop(1, "rgba(253, 224, 71, 0)");
-            }
+            const midR = Math.round(254);
+            const midG = Math.round(249 - 9 * sunWarmFrac);
+            const midB = Math.round(195 - 57 * sunWarmFrac);
+            const rimR = Math.round(253 - 2 * sunWarmFrac);
+            const rimG = Math.round(224 - 78 * sunWarmFrac);
+            const rimB = Math.round(71 - 11 * sunWarmFrac);
+            g.addColorStop(0, "rgba(255, 255, 255, 1)");
+            g.addColorStop(0.18, `rgba(${midR}, ${midG}, ${midB}, ${(0.80 + 0.10 * sunWarmFrac).toFixed(2)})`);
+            g.addColorStop(0.45, `rgba(${rimR}, ${rimG}, ${rimB}, ${(0.20 + 0.20 * sunWarmFrac).toFixed(2)})`);
+            g.addColorStop(1, `rgba(${rimR}, ${rimG}, ${rimB}, 0)`);
 
             sCtx.fillStyle = g;
             sCtx.beginPath();
@@ -24264,11 +24280,13 @@
             sCtx.beginPath();
             sCtx.arc(sunX, sunY, sunRadius * 0.25, 0, Math.PI * 2);
             sCtx.fill();
+            sCtx.restore();
           }
         }
 
         // Arc-en-ciel
-        if (!c.isNight && c.rain > 0 && c.rain < 2.5 && c.cloudCover < 70) {
+        const rbSunAlt = typeof c.sunAltDeg === "number" ? c.sunAltDeg : (c.isNight ? -12 : 18);
+        if (rbSunAlt > 0.5 && c.rain > 0 && c.rain < 2.5 && c.cloudCover < 70) {
           sCtx.save();
           let rbX = W * 0.5;
           let rbY = H * 0.9;
@@ -24916,10 +24934,35 @@
         const cloudSpeedKmh = typeof c.cloudWindKmh === "number" ? c.cloudWindKmh : (c.wind || 12) * 1.35;
 
         // Si on est en mode 2D classique (!window.mode3DActive), dessiner les couches de nuages et rideaux de pluie distants selon le vent du ciel
+        const wSunAlt =
+          typeof c.sunAltDeg === "number" && !isNaN(c.sunAltDeg)
+            ? c.sunAltDeg
+            : c.isNight
+              ? -12
+              : 24;
+        const wDayFrac = smoothSolar01(-9.0, 3.5, wSunAlt);
+        const wCloudPct = typeof c.cloudCover === "number" ? c.cloudCover : 0;
+        const wTwiWarm =
+          smoothSolar01(-8.0, -1.5, wSunAlt) *
+          (1.0 - smoothSolar01(1.8, 8.5, wSunAlt)) *
+          (1.0 - Math.min(1, wCloudPct / 100) * 0.76);
         if (!window.mode3DActive) {
-          const cloudPct = typeof c.cloudCover === "number" ? c.cloudCover : 0;
+          const cloudPct = wCloudPct;
           if (cloudPct > 3) {
             const visibleCount = Math.ceil((cloudPct / 100) * clouds.length);
+            const dayClR = c.rain > 0.2 || cloudPct > 80 ? 148 : 241;
+            const dayClG = c.rain > 0.2 || cloudPct > 80 ? 163 : 245;
+            const dayClB = c.rain > 0.2 || cloudPct > 80 ? 184 : 249;
+            let clR = 51 + (dayClR - 51) * wDayFrac;
+            let clG = 65 + (dayClG - 65) * wDayFrac;
+            let clB = 85 + (dayClB - 85) * wDayFrac;
+            if (wTwiWarm > 0.01) {
+              const tw = wTwiWarm * 0.45;
+              clR = clR + (251 - clR) * tw;
+              clG = clG + (196 - clG) * tw;
+              clB = clB + (148 - clB) * tw;
+            }
+            const colStr = `${Math.round(clR)}, ${Math.round(clG)}, ${Math.round(clB)}`;
             for (let ci = 0; ci < visibleCount; ci++) {
               const cl = clouds[ci];
               cl.x += cloudSpeedKmh * 0.025 * (cloudLateralFactor || 0.4) * (0.6 + (ci % 3) * 0.25);
@@ -24928,7 +24971,6 @@
               const rCloud = 48 * cl.s * (0.75 + (cloudPct / 100) * 0.45);
               const g = wCtx.createRadialGradient(cl.x, cl.y, rCloud * 0.15, cl.x, cl.y, rCloud);
               const baseAlpha = Math.min(0.85, cl.op * (0.4 + (cloudPct / 100) * 0.8));
-              const colStr = c.isNight ? "51, 65, 85" : (c.rain > 0.2 || cloudPct > 80 ? "148, 163, 184" : "241, 245, 249");
               g.addColorStop(0, `rgba(${colStr}, ${baseAlpha.toFixed(2)})`);
               g.addColorStop(1, `rgba(${colStr}, 0)`);
               wCtx.fillStyle = g;
@@ -24974,11 +25016,13 @@
             Math.floor(effectiveRain * 82) + (effectiveRain > 0.15 ? 28 : 10)
           );
           const isFreezingRain = !!c.isFreezingRain || (curTempVal >= -3.5 && curTempVal <= 0.5);
+          const drR = Math.round(148 + (125 - 148) * wDayFrac);
+          const drG = Math.round(163 + (211 - 163) * wDayFrac);
+          const drB = Math.round(184 + (252 - 184) * wDayFrac);
+          const drA = (0.48 + 0.20 * wDayFrac).toFixed(2);
           wCtx.strokeStyle = isFreezingRain
             ? "rgba(186, 230, 253, 0.78)"
-            : c.isNight
-              ? "rgba(148, 163, 184, 0.48)"
-              : "rgba(125, 211, 252, 0.68)";
+            : `rgba(${drR}, ${drG}, ${drB}, ${drA})`;
           wCtx.lineWidth = effectiveRain > 5 ? 2.2 : 1.4;
           wCtx.beginPath();
           for (let i = 0; i < activeDrops; i++) {
@@ -25075,6 +25119,10 @@
           isSeaSmoke;
 
         if (isFoggy) {
+          const fgR = Math.round(156 + (241 - 156) * wDayFrac);
+          const fgG = Math.round(163 + (245 - 163) * wDayFrac);
+          const fgB = Math.round(175 + (249 - 175) * wDayFrac);
+          const baseFogRgb = `${fgR}, ${fgG}, ${fgB}`;
           fogParticles.forEach((fp, idx) => {
             const yFog = isSeaSmoke ? (H * 0.52 + (idx % 10) * (H * 0.045)) : fp.y;
             let grad = wCtx.createRadialGradient(
@@ -25085,11 +25133,7 @@
               yFog,
               fp.r
             );
-            let fogColor = isSeaSmoke
-              ? "224, 242, 254"
-              : c.isNight
-                ? "156, 163, 175"
-                : "241, 245, 249";
+            let fogColor = isSeaSmoke ? "224, 242, 254" : baseFogRgb;
             const alphaMult = isSeaSmoke
               ? Math.min(1.6, Math.abs(deltaT + 10) / 10)
               : isAdvectionFog
@@ -29664,8 +29708,10 @@
           if (tidesChart) tidesChart.update("none");
         } else {
           recomputeSolarStateForDate(projDate);
+          updateDynamicBackground();
         }
       }
+      window.applyScrubberOffset = applyScrubberOffset;
 
       // --- CONTROLEUR TIME-LAPSE MULTI-VITESSES (15m/s, 1h/s, 3h/s, 6h/s) ---
       const timeLapseCtrl = {
@@ -33124,48 +33170,57 @@
         const scene = new THREE.Scene();
         scene.fog = new THREE.FogExp2(0x8bb8d6, 0.00016);
 
-        // --- CARTE D'ENVIRONNEMENT PROCEDURALE (CUBEMAP PBR / REFLETS PHOTO-REALISTES) ---
-        function createEnvCubeTexture(topHex, horHex, botHex, sunGlowHex) {
-          const faces = [];
+        // --- CARTE D'ENVIRONNEMENT DYNAMIQUE CONTINUE (CUBEMAP PBR SANS RUPTURE JOUR / AUBE / NUIT) ---
+        const dynamicEnvFaces = [];
+        const dynamicEnvCtxs = [];
+        for (let f = 0; f < 6; f++) {
+          const cnv = document.createElement("canvas");
+          cnv.width = 64;
+          cnv.height = 64;
+          dynamicEnvFaces.push(cnv);
+          dynamicEnvCtxs.push(cnv.getContext("2d"));
+        }
+        const dynamicEnvCube = new THREE.CubeTexture(dynamicEnvFaces);
+        let lastEnvCubeSig = "";
+        let lastEnvCubeMs = -99999;
+
+        function updateDynamicEnvCube(topHex, horHex, botHex, sunGlowHex, nowPerfMs = 0) {
+          const sig = `${topHex}|${horHex}|${botHex}|${sunGlowHex}`;
+          if (sig === lastEnvCubeSig) return;
+          if (nowPerfMs > 0 && nowPerfMs - lastEnvCubeMs < 140) return;
+          lastEnvCubeSig = sig;
+          lastEnvCubeMs = nowPerfMs;
           for (let f = 0; f < 6; f++) {
-            const cnv = document.createElement("canvas");
-            cnv.width = 128;
-            cnv.height = 128;
-            const ctx = cnv.getContext("2d");
+            const ctx = dynamicEnvCtxs[f];
             if (f === 2) {
-              // +Y Zenith
-              const g = ctx.createRadialGradient(64, 64, 8, 64, 64, 90);
+              const g = ctx.createRadialGradient(32, 32, 4, 32, 32, 46);
               g.addColorStop(0, topHex);
               g.addColorStop(1, horHex);
               ctx.fillStyle = g;
-              ctx.fillRect(0, 0, 128, 128);
+              ctx.fillRect(0, 0, 64, 64);
             } else if (f === 3) {
-              // -Y Nadir (Fleuve profond)
               ctx.fillStyle = botHex;
-              ctx.fillRect(0, 0, 128, 128);
+              ctx.fillRect(0, 0, 64, 64);
             } else {
-              // Faces laterales Horizon
-              const g = ctx.createLinearGradient(0, 0, 0, 128);
+              const g = ctx.createLinearGradient(0, 0, 0, 64);
               g.addColorStop(0, topHex);
-              g.addColorStop(0.52, horHex);
+              g.addColorStop(0.50, horHex);
               g.addColorStop(0.58, sunGlowHex);
               g.addColorStop(1, botHex);
               ctx.fillStyle = g;
-              ctx.fillRect(0, 0, 128, 128);
+              ctx.fillRect(0, 0, 64, 64);
             }
-            faces.push(cnv);
           }
-          const cubeTex = new THREE.CubeTexture(faces);
-          cubeTex.needsUpdate = true;
-          return cubeTex;
+          dynamicEnvCube.needsUpdate = true;
         }
+        updateDynamicEnvCube("#0369a1", "#bae6fd", "#06283d", "#fef08a", 0);
 
         const envCubeMaps = {
-          day: createEnvCubeTexture("#1d4ed8", "#bae6fd", "#06283d", "#fef08a"),
-          golden: createEnvCubeTexture("#1e293b", "#f59e0b", "#071e30", "#fde047"),
-          night: createEnvCubeTexture("#020617", "#0f172a", "#020617", "#38bdf8"),
+          day: dynamicEnvCube,
+          golden: dynamicEnvCube,
+          night: dynamicEnvCube,
         };
-        let activeEnvKey = "day";
+        let activeEnvKey = "continuous";
         scene.environment = null;
 
         const camera3D = new THREE.PerspectiveCamera(
@@ -33215,14 +33270,17 @@
         waterRimLight.position.set(-150, 90, -200);
         scene.add(waterRimLight);
 
-        // --- DÔME ATMOSPHÉRIQUE 3D PHYSIQUE (RAYLEIGH + MIE + MUR D'ORAGE) & ASTRES 3D OCCULTÉS PAR LES NUAGES/NAVIRES ---
+        // --- DÔME ATMOSPHÉRIQUE 3D PHYSIQUE CONTINU (RAYLEIGH + MIE + CRÉPUSCULE AZIMUTAL + CEINTURE DE VÉNUS + MUR D'ORAGE) ---
         const skyDomeUniforms = {
           uZenithColor: { value: new THREE.Color(0x0369a1) },
           uHorizonColor: { value: new THREE.Color(0xbae6fd) },
+          uSolarHorizonColor: { value: new THREE.Color(0xe0f2fe) },
           uGroundColor: { value: new THREE.Color(0x083344) },
           uSunDir: { value: new THREE.Vector3(0.35, 0.45, -0.82).normalize() },
+          uSolarAzDir: { value: new THREE.Vector3(0.7, 0.0, -0.7).normalize() },
           uSunColor: { value: new THREE.Color(0xfffbeb) },
           uSunIntensity: { value: 1.0 },
+          uTwilightGlow: { value: 0.0 },
           uStormDir: { value: new THREE.Vector3(-0.7, 0.0, 0.7).normalize() },
           uStormDarkness: { value: 0.0 },
           uCloudCover: { value: 0.35 },
@@ -33242,10 +33300,13 @@
           fragmentShader: [
             "uniform vec3 uZenithColor;",
             "uniform vec3 uHorizonColor;",
+            "uniform vec3 uSolarHorizonColor;",
             "uniform vec3 uGroundColor;",
             "uniform vec3 uSunDir;",
+            "uniform vec3 uSolarAzDir;",
             "uniform vec3 uSunColor;",
             "uniform float uSunIntensity;",
+            "uniform float uTwilightGlow;",
             "uniform vec3 uStormDir;",
             "uniform float uStormDarkness;",
             "uniform float uCloudCover;",
@@ -33256,21 +33317,36 @@
             "  vec3 dir = normalize(vLocalPos);",
             "  float y = dir.y;",
             "  float up = max(y, 0.0);",
-            "  float rayleighCurve = pow(up, mix(0.56, 0.34, uHaze));",
+            "  vec2 hDir = normalize(dir.xz + vec2(0.0001));",
+            "  vec2 solDir = normalize(uSolarAzDir.xz + vec2(0.0001));",
+            "  float sunSide = clamp(dot(hDir, solDir) * 0.5 + 0.5, 0.0, 1.0);",
+            "  // Gradient vertical Rayleigh du côté anti-solaire / ambiant vers le zénith",
+            "  float rayleighCurve = pow(up, mix(0.54, 0.34, uHaze));",
             "  vec3 col = mix(uHorizonColor, uZenithColor, rayleighCurve);",
+            "  // Dôme crépusculaire directionnel vers l'azimut réel du Soleil (aube à l'ESE / crépuscule à l'OSO)",
+            "  if (uTwilightGlow > 0.001) {",
+            "    float twiDome = pow(sunSide, 1.65) * exp(-up * 3.75) * uTwilightGlow;",
+            "    col = mix(col, uSolarHorizonColor, clamp(twiDome * 0.88, 0.0, 0.90));",
+            "    float twiRim = pow(sunSide, 4.4) * exp(-abs(y) * 14.0) * uTwilightGlow;",
+            "    col += uSolarHorizonColor * twiRim * 0.24;",
+            "    // Ceinture de Vénus (douce bande rosée-cuivrée au-dessus de l'ombre bleutée de la Terre à l'opposé du Soleil)",
+            "    float antiSide = pow(1.0 - sunSide, 1.75);",
+            "    float venusBand = exp(-pow((up - 0.11) * 9.5, 2.0)) * antiSide * uTwilightGlow * (1.0 - uCloudCover * 0.8);",
+            "    col = mix(col, vec3(0.76, 0.53, 0.50), clamp(venusBand * 0.34, 0.0, 0.36));",
+            "  }",
             "  if (y < 0.0) {",
-            "    col = mix(uHorizonColor, uGroundColor, clamp(-y * 5.5, 0.0, 1.0));",
+            "    vec3 effHoriz = mix(uHorizonColor, uSolarHorizonColor, pow(sunSide, 1.8) * uTwilightGlow * 0.72);",
+            "    col = mix(effHoriz, uGroundColor, clamp(-y * 5.5, 0.0, 1.0));",
             "  }",
             "  // Bande atmosphérique lumineuse rasante à l'horizon (diffusion moléculaire)",
             "  float horizBand = exp(-abs(y) * mix(11.0, 6.0, uHaze));",
-            "  col += uHorizonColor * horizBand * 0.12 * (1.0 - uCloudCover * 0.65);",
+            "  col += mix(uHorizonColor, uSolarHorizonColor, sunSide * uTwilightGlow * 0.65) * horizBand * 0.10 * (1.0 - uCloudCover * 0.68);",
             "  // Diffusion avant de Mie autour du Soleil / de la Lune",
             "  float cosTheta = clamp(dot(dir, normalize(uSunDir)), -1.0, 1.0);",
-            "  float mieWide = pow(max(cosTheta, 0.0), 5.0) * 0.30;",
-            "  float mieCore = pow(max(cosTheta, 0.0), 48.0) * 0.52;",
+            "  float mieWide = pow(max(cosTheta, 0.0), 5.0) * 0.28;",
+            "  float mieCore = pow(max(cosTheta, 0.0), 48.0) * 0.48;",
             "  col += uSunColor * (mieWide + mieCore) * uSunIntensity * max(0.0, 1.0 - abs(y - uSunDir.y) * 0.45);",
             "  // Assombrissement directionnel réaliste du mur d'orage en amont vs éclaircie à l'opposé!",
-            "  vec2 hDir = normalize(dir.xz + vec2(0.0001));",
             "  vec2 sDir = normalize(uStormDir.xz + vec2(0.0001));",
             "  float stormAlign = dot(hDir, sDir) * 0.5 + 0.5;",
             "  float stormBand = smoothstep(0.28, 0.96, stormAlign) * exp(-up * 2.35) * uStormDarkness;",
@@ -46374,6 +46450,77 @@
         const scratchCloudTintB = new THREE.Color();
         const scratchSkyColA = new THREE.Color();
         const scratchSkyColB = new THREE.Color();
+        const scratchSkyColC = new THREE.Color();
+
+        function smooth3D01(e0, e1, x) {
+          const u = Math.max(0, Math.min(1, (x - e0) / (e1 - e0 || 1e-6)));
+          return u * u * (3 - 2 * u);
+        }
+
+        function sampleThreeColorStops(stops, altDeg, outCol) {
+          if (altDeg <= stops[0].alt) return outCol.setHex(stops[0].hex);
+          const last = stops[stops.length - 1];
+          if (altDeg >= last.alt) return outCol.setHex(last.hex);
+          for (let i = 0; i < stops.length - 1; i++) {
+            const s0 = stops[i];
+            const s1 = stops[i + 1];
+            if (altDeg >= s0.alt && altDeg <= s1.alt) {
+              const u = Math.max(0, Math.min(1, (altDeg - s0.alt) / (s1.alt - s0.alt || 1e-6)));
+              const t = u * 0.58 + u * u * (3 - 2 * u) * 0.42;
+              return outCol.setHex(s0.hex).lerp(scratchSkyColC.setHex(s1.hex), t);
+            }
+          }
+          return outCol.setHex(last.hex);
+        }
+
+        // Palettes atmosphériques 3D calibrées sans discontinuité (-15° Nuit astronomique -> -6° Heure bleue -> 0° Horizon -> +5° Heure dorée -> +15° Jour)
+        const SKY3D_ZENITH_STOPS = [
+          { alt: -15.0, hex: 0x020617 },
+          { alt: -9.5,  hex: 0x051129 },
+          { alt: -5.5,  hex: 0x0a2246 },
+          { alt: -2.0,  hex: 0x0d3566 },
+          { alt: 0.5,   hex: 0x0a4b82 },
+          { alt: 5.5,   hex: 0x055c99 },
+          { alt: 15.0,  hex: 0x0369a1 },
+        ];
+        const SKY3D_HORIZON_STOPS = [
+          { alt: -15.0, hex: 0x071326 },
+          { alt: -9.5,  hex: 0x0d213d },
+          { alt: -5.5,  hex: 0x1d3b5e },
+          { alt: -2.0,  hex: 0x3b5d80 },
+          { alt: 0.5,   hex: 0x648eb0 },
+          { alt: 5.5,   hex: 0x93c5fd },
+          { alt: 15.0,  hex: 0xbae6fd },
+        ];
+        const SKY3D_SOLAR_GLOW_STOPS = [
+          { alt: -15.0, hex: 0x071326 },
+          { alt: -10.0, hex: 0x162d4c },
+          { alt: -7.2,  hex: 0x4a3638 },
+          { alt: -4.8,  hex: 0x99492c },
+          { alt: -2.0,  hex: 0xd95d2b },
+          { alt: 0.8,   hex: 0xf58229 },
+          { alt: 5.5,   hex: 0xfdba74 },
+          { alt: 13.5,  hex: 0xe0f2fe },
+        ];
+        const HEMI3D_SKY_STOPS = [
+          { alt: -14.0, hex: 0x1e293b },
+          { alt: -6.5,  hex: 0x38587a },
+          { alt: -2.2,  hex: 0x8ea4b8 },
+          { alt: 2.0,   hex: 0xfed7aa },
+          { alt: 9.5,   hex: 0xe0f2fe },
+        ];
+        const HEMI3D_GND_STOPS = [
+          { alt: -14.0, hex: 0x020617 },
+          { alt: -5.5,  hex: 0x081b33 },
+          { alt: 0.5,   hex: 0x16324f },
+          { alt: 9.0,   hex: 0x0c4a6e },
+        ];
+        const DIR3D_SUN_STOPS = [
+          { alt: -3.0,  hex: 0xea580c },
+          { alt: 0.5,   hex: 0xfb923c },
+          { alt: 5.0,   hex: 0xfde68a },
+          { alt: 13.0,  hex: 0xffffff },
+        ];
 
         let cachedAstroObs3D = null;
         let cachedAstroLat3D = null;
@@ -46513,19 +46660,16 @@
             }
           }
 
-          // Mettre a jour la carte d'environnement (CubeMap) selon l'heure solaire simulee (eau + béton/acier du quai mouillé)
-          activeEnvKey = isNight ? "night" : isGolden ? "golden" : "day";
-
           // Éphémérides astronomiques réelles 3D (Soleil, Lune & Phase Lunaire) mises en cache (zéro allocation GC à 60 FPS)
           const effMsNow3D = effDateNow.getTime();
-          if (Math.abs(effMsNow3D - lastAstroCalcEffMs3D) > 45000 || curTimeMs - lastAstroCalcRealMs3D > 400) {
+          if (Math.abs(effMsNow3D - lastAstroCalcEffMs3D) > 5000 || curTimeMs - lastAstroCalcRealMs3D > 400) {
             lastAstroCalcEffMs3D = effMsNow3D;
             lastAstroCalcRealMs3D = curTimeMs;
             const locDayFrac = getLocationLocalParts(effMsNow3D).daySec / 86400;
             sunAzDeg3D = 85 + locDayFrac * 195;
-            sunAltDeg3D = Math.sin(Math.max(0.0, Math.min(1.0, (locDayFrac - 0.22) / 0.56)) * Math.PI) * 58;
+            sunAltDeg3D = -Math.cos(locDayFrac * Math.PI * 2) * 38.0 - 4.0;
             moonAzDeg3D = (sunAzDeg3D + 175) % 360;
-            moonAltDeg3D = isNight ? 28 : -12;
+            moonAltDeg3D = sunAltDeg3D < -2 ? 26 : -12;
             moonPhase3D = getMoonPhase(effDateNow);
             moonIllum3D = (1.0 - Math.cos(moonPhase3D * 2.0 * Math.PI)) * 0.5;
             updateMoon3DPhaseTexture(moonPhase3D);
@@ -46551,8 +46695,16 @@
               } catch (e) {}
             }
           }
-          lightAz = isNight ? (moonAltDeg3D > -4 ? moonAzDeg3D : ((sunAzDeg3D + 180) % 360)) : sunAzDeg3D;
-          lightAltDeg = Math.max(6, isNight ? (moonAltDeg3D > 4 ? moonAltDeg3D : 24) : sunAltDeg3D);
+
+          // Poids continus C1 dérivés de la hauteur solaire réelle (zéro saut booléen entre Nuit <-> Aube <-> Jour <-> Crépuscule)
+          const dayExp3D = smooth3D01(-9.0, 9.5, sunAltDeg3D);
+          const civilExp3D = smooth3D01(-7.0, 4.0, sunAltDeg3D);
+          const nightness3D = 1.0 - smooth3D01(-7.5, 2.5, sunAltDeg3D);
+          const twiWarmthRaw3D = smooth3D01(-9.2, -1.2, sunAltDeg3D) * (1.0 - smooth3D01(2.4, 11.5, sunAltDeg3D));
+          const sunDominant3D = sunAltDeg3D >= -2.2;
+          const fallbackNightAz = moonAltDeg3D > -4 ? moonAzDeg3D : ((sunAzDeg3D + 180) % 360);
+          lightAz = sunDominant3D ? sunAzDeg3D : fallbackNightAz;
+          lightAltDeg = Math.max(6, sunDominant3D ? sunAltDeg3D : (moonAltDeg3D > 4 ? moonAltDeg3D : 24));
 
           // Séparation physique réaliste :
           // 1) Vent de surface (10m) + enveloppe turbulente multi-harmonique des rafales (gustEnvelope3D)
@@ -46626,9 +46778,9 @@
           const isStormNow = wCodeEarly3D >= 51 || (c.rain || 0) > 0.1 || (c.snow || 0) > 0.1 || rainPhaseNow === "overhead" || rainPhaseNow === "incoming";
           const isDeepThunderNow = wCodeEarly3D >= 95 || Boolean(simActive3D && window.tempSimState.stormMode);
           const coverNorm = Math.max(0.0, Math.min(1.0, cloudPctNow / 100));
+          const clearCloudTwi3D = twiWarmthRaw3D * (1.0 - coverNorm * 0.78) * (isFogWmoNow ? 0.12 : 1.0);
 
           // Transmittance optique réelle du faisceau solaire/lunaire direct à travers les étages nuageux, la précipitation et le brouillard!
-          // À 100% Couvert (OMM 3) ou dans le brouillard (OMM 45/48), directBeamTransmittance = 0.0 -> aucun faux rayon ni reflet doré sur l'eau!
           const opaqueCloudEq = Math.max(
             cloudPctNow * (wCodeEarly3D >= 3 ? 0.98 : 0.72),
             cloudLowNow * 1.06,
@@ -46651,18 +46803,18 @@
           const lclNorm = Math.min(1.0, dewSpreadEarly / 9.5);
           const lclCeilingScale = (isFogWmoNow ? 0.58 : (isStormNow ? 0.72 : 0.78)) + lclNorm * (isFogWmoNow ? 0.14 : 0.36);
 
-          // 1) Dôme d'ambiance grise uniforme centré sur la caméra (renderOrder -5, derrière les nuages 3D mais devant Soleil/Lune/Étoiles!)
+          // 1) Dôme d'ambiance grise continue centré sur la caméra (zéro saut orange brutal à l'aube/crépuscule!)
           if (cloudPctNow >= 42 || isFogWmoNow) {
             overcastDomeMesh.visible = true;
             overcastDomeMesh.position.set(camera3D.position.x, -40, camera3D.position.z);
             const ovcFactor = isFogWmoNow ? 1.0 : Math.min(1, (cloudPctNow - 42) / 52);
-            overcastDomeMat.opacity = ovcFactor * (isNight ? 0.84 : (isDeepThunderNow ? 0.96 : (isStormNow || isFogWmoNow ? 0.92 : 0.85)));
-            if (isNight) overcastDomeMat.color.setHex(0x1e293b);
-            else if (isFogWmoNow) overcastDomeMat.color.setHex(0xdbe4ee);
-            else if (isGolden) overcastDomeMat.color.setHex(isStormNow ? 0x8b6b58 : (cloudPctNow >= 88 ? 0x94a3b8 : 0xd97746));
-            else if (isDeepThunderNow) overcastDomeMat.color.setHex(0x3b4959);
-            else if (isStormNow) overcastDomeMat.color.setHex(0x64748b);
-            else overcastDomeMat.color.setHex(0xcbd5e1);
+            const dayOvcOp = isDeepThunderNow ? 0.96 : (isStormNow || isFogWmoNow ? 0.92 : 0.85);
+            overcastDomeMat.opacity = ovcFactor * (0.82 + (dayOvcOp - 0.82) * dayExp3D);
+            const dayOvcHex = isFogWmoNow ? 0xdbe4ee : (isDeepThunderNow ? 0x3b4959 : (isStormNow ? 0x64748b : 0xcbd5e1));
+            overcastDomeMat.color.setHex(0x162235).lerp(scratchCloudTintA.setHex(dayOvcHex), dayExp3D);
+            if (clearCloudTwi3D > 0.01) {
+              overcastDomeMat.color.lerp(scratchCloudTintA.setHex(0xc88d68), clearCloudTwi3D * 0.32);
+            }
             if (lightningFlash3D > 0.02) {
               overcastDomeMat.color.lerp(scratchCloudTintA.setHex(0xbfdbfe), lightningFlash3D * 0.45);
             }
@@ -46671,7 +46823,7 @@
             overcastDomeMat.opacity = 0.0;
           }
 
-          // 2) Plafond de stratus / altostratus en translation linéaire stricte selon le vecteur vent + altitude réelle (bas vs élevé)
+          // 2) Plafond de stratus / altostratus en translation linéaire stricte selon le vecteur vent + teinte continue jour/nuit
           if (cloudPctNow >= 36 || isFogWmoNow) {
             overcastCanopyMesh.visible = true;
             const isHighDominantDeck = cloudHighNow >= 70 && cloudLowNow < 30 && !isFogWmoNow && !isStormNow;
@@ -46680,13 +46832,13 @@
               : (isHighDominantDeck ? (288 + lclNorm * 72) : (185 + lclNorm * 110));
             overcastCanopyMesh.position.set(camera3D.position.x, canopyBaseY, camera3D.position.z);
             const canopyFactor = isFogWmoNow ? 1.0 : Math.min(1, (cloudPctNow - 36) / 52);
-            overcastCanopyMat.opacity = canopyFactor * (isNight ? 0.62 : (isStormNow ? 0.84 : 0.72));
-            if (isNight) overcastCanopyMat.color.setHex(0x334155);
-            else if (isFogWmoNow) overcastCanopyMat.color.setHex(0xe2e8f0);
-            else if (isGolden) overcastCanopyMat.color.setHex(cloudPctNow >= 88 ? 0x94a3b8 : 0xfdba74);
-            else if (isDeepThunderNow) overcastCanopyMat.color.setHex(0x334155);
-            else if (isStormNow) overcastCanopyMat.color.setHex(0x475569);
-            else overcastCanopyMat.color.setHex(0xe2e8f0);
+            const dayCanOp = isStormNow ? 0.84 : 0.72;
+            overcastCanopyMat.opacity = canopyFactor * (0.60 + (dayCanOp - 0.60) * dayExp3D);
+            const dayCanHex = isFogWmoNow ? 0xe2e8f0 : (isDeepThunderNow ? 0x334155 : (isStormNow ? 0x475569 : 0xe2e8f0));
+            overcastCanopyMat.color.setHex(0x273549).lerp(scratchCloudTintA.setHex(dayCanHex), dayExp3D);
+            if (clearCloudTwi3D > 0.01) {
+              overcastCanopyMat.color.lerp(scratchCloudTintA.setHex(0xf6b27a), clearCloudTwi3D * 0.42);
+            }
             if (lightningFlash3D > 0.02) {
               overcastCanopyMat.color.lerp(scratchCloudTintA.setHex(0xdbeafe), lightningFlash3D * 0.55);
             }
@@ -46700,39 +46852,37 @@
             overcastCanopyMat.opacity = 0.0;
           }
 
-          // Teinte réaliste de référence des sommets et bases de nuages selon l'éclairage solaire / nocturne / orageux
-          let baseCrownHex = 0xffffff;
-          let baseBottomHex = 0x94a3b8;
-          let silverRimHex = 0xfffbeb;
-          if (isNight) {
-            baseCrownHex = isStormNow ? 0x1e293b : 0x475569;
-            baseBottomHex = 0x0f172a;
-            silverRimHex = 0x93c5fd;
-            cloudCirrusMat.color.setHex(0x334155);
-          } else if (isGolden) {
-            baseCrownHex = cloudPctNow >= 90 ? 0xcbd5e1 : 0xfed7aa;
-            baseBottomHex = isStormNow ? 0x431407 : (cloudPctNow >= 90 ? 0x64748b : 0xea580c);
-            silverRimHex = 0xfef08a;
-            cloudCirrusMat.color.setHex(cloudPctNow >= 90 ? 0xfed7aa : 0xfde047);
-          } else if (isDeepThunderNow) {
-            baseCrownHex = 0x64748b;
-            baseBottomHex = 0x1e293b;
-            silverRimHex = 0xe2e8f0;
-            cloudCirrusMat.color.setHex(0x475569);
-          } else if (isStormNow) {
-            baseCrownHex = 0x94a3b8;
-            baseBottomHex = 0x334155;
-            silverRimHex = 0xf8fafc;
-            cloudCirrusMat.color.setHex(0x64748b);
-          } else {
-            baseCrownHex = 0xffffff;
-            baseBottomHex = 0x94a3b8;
-            silverRimHex = 0xfffbeb;
-            cloudCirrusMat.color.setHex(0xf8fafc);
+          // Teinte continue des sommets, bases et cirrus selon l'altitude solaire réelle
+          const dayCrownHex = isDeepThunderNow ? 0x64748b : (isStormNow ? 0x94a3b8 : 0xffffff);
+          const nightCrownHex = isStormNow ? 0x1e293b : 0x475569;
+          scratchCloudTintA.setHex(nightCrownHex).lerp(scratchCloudTintB.setHex(dayCrownHex), dayExp3D);
+          if (clearCloudTwi3D > 0.01) {
+            scratchCloudTintA.lerp(scratchCloudTintB.setHex(0xfed7aa), clearCloudTwi3D * 0.65);
+          }
+          const baseCrownHex = scratchCloudTintA.getHex();
+
+          const dayBotHex = isDeepThunderNow ? 0x1e293b : (isStormNow ? 0x334155 : 0x94a3b8);
+          scratchCloudTintA.setHex(0x0f172a).lerp(scratchCloudTintB.setHex(dayBotHex), dayExp3D);
+          if (clearCloudTwi3D > 0.01) {
+            scratchCloudTintA.lerp(scratchCloudTintB.setHex(isStormNow ? 0x5c2d16 : 0xd97746), clearCloudTwi3D * 0.68);
+          }
+          const baseBottomHex = scratchCloudTintA.getHex();
+
+          scratchCloudTintA.setHex(0x93c5fd).lerp(scratchCloudTintB.setHex(0xfffbeb), dayExp3D);
+          if (clearCloudTwi3D > 0.01) {
+            scratchCloudTintA.lerp(scratchCloudTintB.setHex(0xfde68a), clearCloudTwi3D * 0.75);
+          }
+          const silverRimHex = scratchCloudTintA.getHex();
+
+          const dayCirrusHex = isDeepThunderNow ? 0x475569 : (isStormNow ? 0x64748b : 0xf8fafc);
+          cloudCirrusMat.color.setHex(0x334155).lerp(scratchCloudTintB.setHex(dayCirrusHex), smooth3D01(-10.5, 4.5, sunAltDeg3D));
+          const cirrusTwi = smooth3D01(-10.5, -2.0, sunAltDeg3D) * (1.0 - smooth3D01(2.0, 9.5, sunAltDeg3D)) * (1.0 - coverNorm * 0.65);
+          if (cirrusTwi > 0.01) {
+            cloudCirrusMat.color.lerp(scratchCloudTintB.setHex(0xfed7aa), cirrusTwi * 0.72);
           }
 
-          const globalCrownOp = cloudPctNow <= 2 ? 0 : (isNight ? 0.62 : 0.94) * Math.min(1, 0.42 + coverNorm * 0.64);
-          const globalBaseOp = cloudPctNow <= 2 ? 0 : (isNight ? 0.56 : 0.88) * Math.min(1, 0.40 + coverNorm * 0.68);
+          const globalCrownOp = cloudPctNow <= 2 ? 0 : (0.62 + 0.32 * dayExp3D) * Math.min(1, 0.42 + coverNorm * 0.64);
+          const globalBaseOp = cloudPctNow <= 2 ? 0 : (0.56 + 0.32 * dayExp3D) * Math.min(1, 0.40 + coverNorm * 0.68);
           cloudCrownMat.opacity = globalCrownOp;
           cloudBaseMat.opacity = globalBaseOp;
           // Les Cirrus de haute altitude (500 hPa) ne sont occultés que lorsque les couches BASSE ou MOYENNE sont épaisses!
@@ -46740,7 +46890,7 @@
           const highCoverNorm = Math.max(0, Math.min(1, Math.max(cloudHighNow, cloudPctNow * 0.35) / 100));
           cloudCirrusMat.opacity = (cloudPctNow <= 2 || highCoverNorm <= 0.03)
             ? 0
-            : (isNight ? 0.30 : 0.62) * Math.min(1, 0.30 + highCoverNorm * 0.75) * (1 - lowMidOcclusion * 0.88);
+            : (0.30 + 0.32 * dayExp3D) * Math.min(1, 0.30 + highCoverNorm * 0.75) * (1 - lowMidOcclusion * 0.88);
 
           // Direction horizontale de l'astre pour le liséré argenté (Mie forward-scattering sur le bord des cumulus!)
           const sunLightAzRad = (lightAz * Math.PI) / 180;
@@ -46794,7 +46944,7 @@
               const dzCam = cWorldZ - camera3D.position.z;
               const invD = 1.0 / (Math.hypot(dxCam, dzCam) || 1.0);
               const sunDot = Math.max(0, (dxCam * invD) * sunHorizX + (dzCam * invD) * sunHorizZ);
-              const silverScatter = Math.pow(sunDot, 3.0) * (isNight ? 0.30 : 0.78) * directBeamTransmittance;
+              const silverScatter = Math.pow(sunDot, 3.0) * (0.30 + 0.48 * dayExp3D) * directBeamTransmittance;
 
               scratchCloudTintA.setHex(baseCrownHex).lerp(scratchCloudTintB.setHex(silverRimHex), silverScatter);
               cl.crownMat.color.copy(scratchCloudTintA);
@@ -46877,16 +47027,16 @@
 
             const rIntensity = Math.max(0.25, c.rainFrontIntensity || (c.rain || 0) + (c.snow || 0) || 1.0);
             const intensityNorm = Math.min(1, rIntensity / 6.0);
-            rainCurtainMat.opacity = (isNight ? 0.46 : 0.72) * (isDrizzleCurtain ? 0.55 : 1.0) * (0.42 + intensityNorm * 0.58);
+            rainCurtainMat.opacity = (0.46 + 0.26 * dayExp3D) * (isDrizzleCurtain ? 0.55 : 1.0) * (0.42 + intensityNorm * 0.58);
             if (isSnowCurtain) {
-              rainCurtainMat.color.setHex(isNight ? 0xcbd5e1 : 0xf8fafc);
+              rainCurtainMat.color.setHex(0xcbd5e1).lerp(scratchSkyColA.setHex(0xf8fafc), dayExp3D);
             } else if (isFreezingCurtain) {
-              rainCurtainMat.color.setHex(isNight ? 0x93c5fd : 0xe0f2fe);
+              rainCurtainMat.color.setHex(0x93c5fd).lerp(scratchSkyColA.setHex(0xe0f2fe), dayExp3D);
             } else {
-              rainCurtainMat.color.setHex(isNight ? 0x64748b : 0xcbd5e1);
+              rainCurtainMat.color.setHex(0x64748b).lerp(scratchSkyColA.setHex(0xcbd5e1), dayExp3D);
             }
-            rainCellCapMat.color.setHex(isNight ? 0x0f172a : (isSnowCurtain ? 0x475569 : 0x334155));
-            rainCellCapMat.opacity = isNight ? 0.72 : 0.90;
+            rainCellCapMat.color.setHex(0x0f172a).lerp(scratchSkyColA.setHex(isSnowCurtain ? 0x475569 : 0x334155), dayExp3D);
+            rainCellCapMat.opacity = 0.72 + 0.18 * dayExp3D;
             rainSplashMat.opacity = (0.14 + intensityNorm * 0.30) * (isSnowCurtain ? 0.22 : (isDrizzleCurtain ? 0.45 : 1.0));
 
             const baseProg = typeof c.rainFrontProgress === "number" ? c.rainFrontProgress : 0;
@@ -46956,29 +47106,40 @@
             waterMat.shininess = 140;
           } else if (directBeamTransmittance < 0.22 || stormWaterDark > 0.55) {
             // Sous ciel couvert (OVC) ou brouillard, l'eau ne produit aucun éclat spéculaire solaire dur : reflet diffus gris-ardoise doux!
-            waterMat.specular.setHex(isNight ? 0x334155 : 0x64748b);
+            waterMat.specular.setHex(0x334155).lerp(scratchSkyColA.setHex(0x64748b), dayExp3D);
             waterMat.shininess = 78;
           } else {
-            waterMat.specular.setHex(isGolden ? 0xfde047 : isNight ? 0x7dd3fc : 0xe0f2fe);
-            waterMat.shininess = isGolden ? 245 : isNight ? 210 : 195;
+            waterMat.specular.setHex(0x7dd3fc).lerp(scratchSkyColA.setHex(0xe0f2fe), dayExp3D);
+            if (clearCloudTwi3D > 0.01) {
+              waterMat.specular.lerp(scratchSkyColA.setHex(0xfdba74), clearCloudTwi3D * 0.85);
+            }
+            waterMat.shininess = 210 + (195 - 210) * dayExp3D + clearCloudTwi3D * 42;
           }
-          waterMat.reflectivity = isNight
-            ? 0.22
-            : Math.max(0.09, 0.34 * (0.28 + directBeamTransmittance * 0.72) * (1.0 - stormWaterDark * 0.55) + lightningFlash3D * 0.18);
+          const dayRefl = Math.max(0.09, 0.34 * (0.28 + directBeamTransmittance * 0.72) * (1.0 - stormWaterDark * 0.55) + lightningFlash3D * 0.18);
+          waterMat.reflectivity = 0.20 + (dayRefl - 0.20) * dayExp3D;
 
           const waterWarmth = Math.max(0, Math.min(1, (effectiveWaterTemp + 1.0) / 22.0));
           const coldWaterTint = 1.0 - waterWarmth;
-          let baseDeepR = (isNight ? 0.012 : isGolden ? 0.026 : 0.022) * (1 - coldWaterTint * 0.15);
-          let baseDeepG = (isNight ? 0.058 : isGolden ? 0.152 : (0.175 + waterWarmth * 0.068));
-          let baseDeepB = (isNight ? 0.118 : isGolden ? 0.255 : (0.315 + waterWarmth * 0.078));
+          const dayDeepR = 0.022 * (1 - coldWaterTint * 0.15);
+          const dayDeepG = 0.175 + waterWarmth * 0.068;
+          const dayDeepB = 0.315 + waterWarmth * 0.078;
+          const nightDeepR = 0.011 * (1 - coldWaterTint * 0.15);
+          const nightDeepG = 0.054;
+          const nightDeepB = 0.112;
+          let baseDeepR = nightDeepR + (dayDeepR - nightDeepR) * dayExp3D + clearCloudTwi3D * 0.014;
+          let baseDeepG = nightDeepG + (dayDeepG - nightDeepG) * dayExp3D + clearCloudTwi3D * 0.008;
+          let baseDeepB = nightDeepB + (dayDeepB - nightDeepB) * dayExp3D;
 
-          let crestR = isNight ? 0.055 : isGolden ? 0.19 : (0.075 + coldWaterTint * 0.025);
-          let crestG = isNight ? 0.165 : isGolden ? 0.34 : (0.315 + waterWarmth * 0.075);
-          let crestB = isNight ? 0.275 : isGolden ? 0.46 : (0.485 + waterWarmth * 0.065);
+          const dayCrestR = 0.075 + coldWaterTint * 0.025;
+          const dayCrestG = 0.315 + waterWarmth * 0.075;
+          const dayCrestB = 0.485 + waterWarmth * 0.065;
+          let crestR = 0.052 + (dayCrestR - 0.052) * dayExp3D + clearCloudTwi3D * 0.095;
+          let crestG = 0.155 + (dayCrestG - 0.155) * dayExp3D + clearCloudTwi3D * 0.032;
+          let crestB = 0.265 + (dayCrestB - 0.265) * dayExp3D - clearCloudTwi3D * 0.015;
 
           // Assombrissement gris-ardoise maritime réaliste sous ciel couvert / grain d'orage + lueur d'éclair
-          if (!isNight && stormWaterDark > 0.02) {
-            const sd = stormWaterDark;
+          if (dayExp3D > 0.03 && stormWaterDark > 0.02) {
+            const sd = stormWaterDark * dayExp3D;
             baseDeepR = baseDeepR * (1 - sd * 0.35) + 0.052 * sd;
             baseDeepG = baseDeepG * (1 - sd * 0.58) + 0.088 * sd;
             baseDeepB = baseDeepB * (1 - sd * 0.62) + 0.122 * sd;
@@ -47046,7 +47207,7 @@
               ) + 0.16;
           }
 
-          // 4. Positionnement astronomique réel du Soleil / de la Lune 3D et de son reflet sur le fleuve (occulté à 100% sous ciel couvert!)
+          // 4. Positionnement astronomique réel du Soleil / de la Lune 3D et de son reflet sur le fleuve (transition douce sans saut à l'aube/crépuscule!)
           const lightDist = 340;
           const lightAzR = (lightAz * Math.PI) / 180;
           const lightAltR = (lightAltDeg * Math.PI) / 180;
@@ -47054,13 +47215,17 @@
           const lightY = Math.max(38, Math.sin(lightAltR) * lightDist);
           dirLight.position.set(Math.sin(lightAzR) * lightHoriz, lightY, -Math.cos(lightAzR) * lightHoriz);
           sunPathGroup.rotation.y = -lightAzR;
-          shimmerMat.color.setHex(
-            isNight ? 0xbae6fd : isGolden ? 0xfb923c : 0xfef08a
-          );
-          const bodyAboveHorizonFactor = isNight
-            ? (moonAltDeg3D > 1.2 ? Math.min(1.0, (moonAltDeg3D - 1.2) / 6.0) * Math.max(0.06, moonIllum3D) : 0.0)
-            : (sunAltDeg3D > -0.8 ? Math.min(1.0, (sunAltDeg3D + 0.8) / 4.5) : 0.0);
-          const targetShimmerOpacity = (isNight ? 0.28 : isGolden ? 0.56 : 0.40) * directBeamTransmittance * bodyAboveHorizonFactor;
+          if (sunDominant3D) {
+            sampleThreeColorStops(DIR3D_SUN_STOPS, sunAltDeg3D, shimmerMat.color);
+          } else {
+            shimmerMat.color.setHex(0xbae6fd);
+          }
+          const sunShimmerVis = smooth3D01(-0.8, 4.2, sunAltDeg3D);
+          const moonShimmerVis = (1.0 - smooth3D01(-6.0, -2.2, sunAltDeg3D)) *
+            (moonAltDeg3D > 1.2 ? smooth3D01(1.2, 7.0, moonAltDeg3D) * Math.max(0.06, moonIllum3D) : 0.0);
+          const bodyAboveHorizonFactor = sunDominant3D ? sunShimmerVis : moonShimmerVis;
+          const shimmerBasePeak = sunDominant3D ? (0.40 + clearCloudTwi3D * 0.16) : 0.28;
+          const targetShimmerOpacity = shimmerBasePeak * directBeamTransmittance * bodyAboveHorizonFactor;
           shimmerMat.opacity = targetShimmerOpacity;
           sunPathGroup.visible = targetShimmerOpacity > 0.012;
           if (sunPathGroup.visible) {
@@ -47551,15 +47716,16 @@
             }
           }
           if (dockLightCones3D && dockLightCones3D.length > 0) {
-            const showLightCones = isNight || isGolden || isStormNow;
-            dockLightConeMat.opacity = isNight ? 0.14 : (isGolden ? 0.065 : 0.085);
+            const coneStrength = Math.max(nightness3D, isStormNow ? 0.62 : 0.0);
+            const showLightCones = coneStrength > 0.04;
+            dockLightConeMat.opacity = 0.14 * coneStrength;
             for (let dl = 0; dl < dockLightCones3D.length; dl++) {
               dockLightCones3D[dl].visible = showLightCones;
             }
           }
 
           // 6. Bouées du chenal (avec halos lumineux IALA-B), voiliers de plaisance (uniquement par météo clémente hors hiver!) et glaces
-          const buoyHaloOp = isNight ? 0.88 : (isGolden ? 0.56 : 0.24);
+          const buoyHaloOp = 0.24 + 0.64 * nightness3D;
           buoys3D.forEach((b) => {
             const wy = sampleWaveHeight(b.x, b.z, t, windKnots, flowSign);
             b.group.position.y = waterLevelY + wy;
@@ -47941,18 +48107,32 @@
 
               rainMat3D.opacity = Math.min(
                 0.86,
-                ((isNight ? 0.36 : 0.48) + rainIntensityNorm * 0.34) * (isFineDrizzleMode ? 0.78 : 1.0) + lightningFlash3D * 0.22
+                ((0.36 + 0.12 * dayExp3D) + rainIntensityNorm * 0.34) * (isFineDrizzleMode ? 0.78 : 1.0) + lightningFlash3D * 0.22
               );
 
-              // Mise à jour paresseuse de la teinte vertex des gouttes (uniquement si l'ambiance lumineuse ou la phase change)
-              const nextRainColSig = `${isNight ? 1 : 0}_${isGolden ? 1 : 0}_${isFreezingPrecip3D ? 1 : 0}_${isFineDrizzleMode ? 1 : 0}_${Math.round(lightningFlash3D * 8)}`;
+              // Mise à jour paresseuse quantifiée (24 paliers continus) de la teinte vertex des gouttes : zéro GC et zéro saut brusque
+              const qDayRain = Math.round(dayExp3D * 24);
+              const qTwiRain = Math.round(clearCloudTwi3D * 24);
+              const nextRainColSig = `${qDayRain}_${qTwiRain}_${isFreezingPrecip3D ? 1 : 0}_${isFineDrizzleMode ? 1 : 0}_${Math.round(lightningFlash3D * 8)}`;
               if (nextRainColSig !== lastRainColorSig3D) {
                 lastRainColorSig3D = nextRainColSig;
-                let hr = 0.78, hg = 0.90, hb = 0.99;
-                if (isFreezingPrecip3D) { hr = 0.86; hg = 0.96; hb = 1.0; }
-                else if (isFineDrizzleMode) { hr = 0.84; hg = 0.91; hb = 0.97; }
-                else if (isGolden) { hr = 0.98; hg = 0.84; hb = 0.68; }
-                else if (isNight) { hr = 0.52; hg = 0.66; hb = 0.82; }
+                let hr = 0.52 + (0.78 - 0.52) * dayExp3D;
+                let hg = 0.66 + (0.90 - 0.66) * dayExp3D;
+                let hb = 0.82 + (0.99 - 0.82) * dayExp3D;
+                if (isFreezingPrecip3D) {
+                  hr = 0.72 + 0.14 * dayExp3D;
+                  hg = 0.86 + 0.10 * dayExp3D;
+                  hb = 1.0;
+                } else if (isFineDrizzleMode) {
+                  hr = 0.60 + 0.24 * dayExp3D;
+                  hg = 0.72 + 0.19 * dayExp3D;
+                  hb = 0.86 + 0.11 * dayExp3D;
+                } else if (clearCloudTwi3D > 0.01) {
+                  const twR = clearCloudTwi3D * 0.75;
+                  hr = hr + (0.98 - hr) * twR;
+                  hg = hg + (0.84 - hg) * twR;
+                  hb = hb + (0.68 - hb) * twR;
+                }
                 const lBoost = lightningFlash3D * 0.35;
                 hr = Math.min(1, hr + lBoost);
                 hg = Math.min(1, hg + lBoost);
@@ -48018,11 +48198,15 @@
               const isDrizzleRip = isDrizzle3D && localRainRateMm < 1.2;
               const ripStrength = Math.min(1.0, localRainRateMm / 7.5);
               const activeRipCount = Math.min(RAIN_RIPPLE_COUNT, Math.round((isDrizzleRip ? 34 : 20) + ripStrength * (RAIN_RIPPLE_COUNT - 20)));
-              const baseRipOp = (isNight ? 0.24 : 0.42) * (isDrizzleRip ? 0.42 : (0.35 + ripStrength * 0.65)) + lightningFlash3D * 0.20;
+              const baseRipOp = (0.24 + 0.18 * dayExp3D) * (isDrizzleRip ? 0.42 : (0.35 + ripStrength * 0.65)) + lightningFlash3D * 0.20;
+              scratchSkyColA.setHex(0x93c5fd).lerp(scratchSkyColB.setHex(0xe0f2fe), dayExp3D);
+              if (clearCloudTwi3D > 0.01) {
+                scratchSkyColA.lerp(scratchSkyColB.setHex(0xfed7aa), clearCloudTwi3D * 0.72);
+              }
               for (let mg = 0; mg < rainRippleMats.length; mg++) {
                 const cyc = ((t * 1.85 + mg / rainRippleMats.length) % 1.0);
                 rainRippleMats[mg].opacity = Math.max(0, (1.0 - cyc) * baseRipOp);
-                rainRippleMats[mg].color.setHex(isGolden ? 0xfed7aa : (isNight ? 0x93c5fd : 0xe0f2fe));
+                rainRippleMats[mg].color.copy(scratchSkyColA);
               }
               const anchorX = Math.abs(camera3D.position.x) < 260 ? camera3D.position.x : 0;
               const anchorZ = Math.abs(camera3D.position.z) < 260 ? camera3D.position.z : 0;
@@ -48053,7 +48237,11 @@
               const mistInt = (isDrizzle3D && localRainRateMm < 1.8)
                 ? Math.min(0.55, 0.22 + localRainRateMm * 0.45)
                 : Math.min(1.0, (localRainRateMm - 1.5) / 8.5);
-              const mistTint = isNight ? 0x64748b : (isGolden ? 0xfed7aa : 0xdbeafe);
+              scratchSkyColA.setHex(0x64748b).lerp(scratchSkyColB.setHex(0xdbeafe), dayExp3D);
+              if (clearCloudTwi3D > 0.01) {
+                scratchSkyColA.lerp(scratchSkyColB.setHex(0xfed7aa), clearCloudTwi3D * 0.65);
+              }
+              const mistOpVal = mistInt * (0.16 + 0.08 * dayExp3D);
               for (let rm = 0; rm < rainMistSprites3D.length; rm++) {
                 const ms = rainMistSprites3D[rm];
                 ms.ox += windDirX * (2.5 + instWindKnots3D * 0.32) * dt3D;
@@ -48073,8 +48261,8 @@
                 }
                 const sc = ms.baseScale * (0.88 + mistInt * 0.35 + Math.sin(t * 1.4 + ms.phase) * 0.1);
                 ms.sprite.scale.set(sc, sc * 0.42, 1);
-                ms.mat.color.setHex(mistTint);
-                ms.mat.opacity = mistInt * (isNight ? 0.16 : 0.24);
+                ms.mat.color.copy(scratchSkyColA);
+                ms.mat.opacity = mistOpVal;
               }
             }
           }
@@ -48089,7 +48277,10 @@
               spumeGeo3D.setDrawRange(0, activeSpume);
               spumeMat3D.opacity = Math.min(0.68, 0.20 + galeSpume * 0.44);
               spumeMat3D.size = 1.05 + galeSpume * 0.65;
-              spumeMat3D.color.setHex(isNight ? 0x93c5fd : (isGolden ? 0xfed7aa : 0xf0f9ff));
+              spumeMat3D.color.setHex(0x93c5fd).lerp(scratchSkyColA.setHex(0xf0f9ff), dayExp3D);
+              if (clearCloudTwi3D > 0.01) {
+                spumeMat3D.color.lerp(scratchSkyColA.setHex(0xfed7aa), clearCloudTwi3D * 0.68);
+              }
 
               const spumeVx = windDirX * (6.5 + instWindKnots3D * 0.52);
               const spumeVz = windDirZ * (6.5 + instWindKnots3D * 0.52);
@@ -48199,12 +48390,12 @@
 
           // 6) Arc-en-ciel Double 3D Physiquement Exact à 42° autour du point antisolaire (exige un faisceau solaire direct non occulté!)
           if (rainbow3DGroup && rainbowPrimaryMat) {
-            const canShowRainbow = !isNight &&
+            const canShowRainbow =
+              sunAltDeg3D > 1.2 &&
+              sunAltDeg3D < 43.0 &&
               directBeamTransmittance > 0.18 &&
               visMeters3D > 3500 &&
               effectiveAirTemp > 1.2 &&
-              sunAltDeg3D > 1.5 &&
-              sunAltDeg3D < 43.0 &&
               cloudPctNow < 88 && (
                 (rainPhaseNow === "passing" && (c.rainFrontIntensity || 0) >= 0.4) ||
                 (localRainRateMm >= 0.06 && localRainRateMm <= 5.2 && cloudPctNow <= 76)
@@ -48227,18 +48418,18 @@
               const dropFactor = rainPhaseNow === "passing"
                 ? Math.min(1.0, Math.max(0.58, (c.rainFrontIntensity || 1.5) / 2.6))
                 : Math.min(0.88, localRainRateMm / 2.0);
-              rainbowPrimaryMat.opacity = Math.min(0.86, 0.80 * sunClearFactor * dropFactor * (0.72 + sunLowBoost * 0.28));
+              const rbElevFade = smooth3D01(1.2, 3.2, sunAltDeg3D);
+              rainbowPrimaryMat.opacity = Math.min(0.86, 0.80 * rbElevFade * sunClearFactor * dropFactor * (0.72 + sunLowBoost * 0.28));
             }
           }
 
           // 6B) Faisceaux Crépusculaires Volumétriques 3D (Rayons de Tyndall / God-Rays : impossibles sous 100% OVC ou brouillard!)
           if (godRays3DGroup && godRayShafts3D.length > 0) {
             const canShowGodRays = !starsModeActive &&
-              !isNight &&
+              sunAltDeg3D > 2.2 &&
+              sunAltDeg3D < 44.0 &&
               directBeamTransmittance > 0.08 &&
               visMeters3D > 2500 &&
-              sunAltDeg3D > 2.5 &&
-              sunAltDeg3D < 44.0 &&
               cloudPctNow >= 18 &&
               cloudPctNow <= 88 &&
               localRainRateMm < 2.5 &&
@@ -48258,7 +48449,10 @@
               const brokenCloudWindow = 1.0 - Math.abs(cloudPctNow - 52) / 42;
               const lowSunFactor = Math.max(0.25, Math.min(1.0, (44.0 - sunAltDeg3D) / 34.0));
               const transRayFactor = Math.min(1.0, directBeamTransmittance * 1.35);
-              const rayTintHex = isGolden ? 0xfdba74 : 0xfef08a;
+              const rayElevFade = smooth3D01(2.2, 4.5, sunAltDeg3D);
+              const rayWarmFrac = 1.0 - smooth3D01(2.5, 11.5, sunAltDeg3D);
+              scratchSkyColA.setHex(0xfef08a).lerp(scratchSkyColB.setHex(0xfdba74), rayWarmFrac);
+              const rayBaseOp = (0.14 + 0.07 * rayWarmFrac) * rayElevFade;
               const baseAnchorDist = 920;
               const anchorX = camera3D.position.x + Math.sin(sAzR) * baseAnchorDist;
               const anchorZ = camera3D.position.z - Math.cos(sAzR) * baseAnchorDist;
@@ -48274,8 +48468,8 @@
                 );
                 sh.pivot.quaternion.setFromUnitVectors(UP_VEC_3D, scratchBatDir);
                 const gapPulse = 0.55 + 0.45 * Math.sin(t * 0.34 + sh.phase * 1.7);
-                sh.mat.color.setHex(rayTintHex);
-                sh.mat.opacity = Math.max(0.0, Math.min(0.24, (isGolden ? 0.21 : 0.14) * Math.max(0.22, brokenCloudWindow) * lowSunFactor * transRayFactor * gapPulse));
+                sh.mat.color.copy(scratchSkyColA);
+                sh.mat.opacity = Math.max(0.0, Math.min(0.24, rayBaseOp * Math.max(0.22, brokenCloudWindow) * lowSunFactor * transRayFactor * gapPulse));
               }
             }
           }
@@ -48301,11 +48495,11 @@
           } else {
             const wetRate = targetWetness > surfaceWetness3D
               ? Math.min(1.0, dt3D * 0.85)
-              : Math.min(1.0, dt3D * (0.05 + windKnots * 0.0025 + (!isNight && cloudPctNow < 50 ? 0.03 : 0)));
+              : Math.min(1.0, dt3D * (0.05 + windKnots * 0.0025 + (cloudPctNow < 50 ? 0.03 * dayExp3D : 0)));
             surfaceWetness3D += (targetWetness - surfaceWetness3D) * wetRate;
           }
 
-          const nextWetSig = `${Math.round(surfaceWetness3D * 200)}_${isFreezingPrecip3D ? 1 : 0}_${Math.round(lightningFlash3D * 10)}_${activeEnvKey}`;
+          const nextWetSig = `${Math.round(surfaceWetness3D * 200)}_${isFreezingPrecip3D ? 1 : 0}_${Math.round(lightningFlash3D * 10)}_${Math.round(clearCloudTwi3D * 20)}`;
           if (nextWetSig !== lastWetnessSig) {
             lastWetnessSig = nextWetSig;
             const wNorm = surfaceWetness3D;
@@ -48316,8 +48510,12 @@
             caissonCapMat.color.setHex(0xe2e8f0).lerp(scratchWetColorA.setHex(isFreezingPrecip3D ? 0xcbd5e1 : 0x8fa0b5), wNorm * 0.72);
             steelGalvMat.color.setHex(0x94a3b8).lerp(scratchWetColorA.setHex(0x64748b), wNorm * 0.55);
 
-            const specHex = isFreezingPrecip3D ? 0xe0f2fe : (isGolden ? 0xfed7aa : 0xcbd5e1);
-            scratchWetColorB.setHex(0x1e293b).lerp(scratchWetColorA.setHex(specHex), Math.min(1, wNorm * 1.1 + lightningFlash3D * 0.35));
+            if (isFreezingPrecip3D) {
+              scratchWetColorA.setHex(0xe0f2fe);
+            } else {
+              scratchWetColorA.setHex(0xcbd5e1).lerp(scratchSkyColA.setHex(0xfed7aa), clearCloudTwi3D * 0.85);
+            }
+            scratchWetColorB.setHex(0x1e293b).lerp(scratchWetColorA, Math.min(1, wNorm * 1.1 + lightningFlash3D * 0.35));
             concreteMat.specular.copy(scratchWetColorB);
             concreteDarkMat.specular.copy(scratchWetColorB);
             caissonCapMat.specular.copy(scratchWetColorB);
@@ -48346,14 +48544,17 @@
           flares3D.forEach((fl, idx) => {
             const flicker = 0.85 + Math.sin(t * 14 + idx * 2) * 0.22;
             fl.flame.scale.set(flicker, flicker * 1.15, flicker);
-            fl.flareLight.intensity = isNight ? 1.8 * flicker : 0.7 * flicker;
+            fl.flareLight.intensity = (0.7 + 1.1 * nightness3D) * flicker;
           });
 
           if (refinerySteamPuffs3D && refinerySteamPuffs3D.length > 0) {
             const steamDrift = 14.0 + windKnots * 1.65;
             const steamRise = Math.max(18.0, (34.0 + condenseFactor * 16.0) - windKnots * 0.35);
-            refinerySteamMat.opacity = (isNight ? 0.16 : 0.24) + condenseFactor * 0.26;
-            refinerySteamMat.color.setHex(isNight ? 0x94a3b8 : (isGolden ? 0xfed7aa : 0xf8fafc));
+            refinerySteamMat.opacity = (0.16 + 0.08 * dayExp3D) + condenseFactor * 0.26;
+            refinerySteamMat.color.setHex(0x94a3b8).lerp(scratchSkyColA.setHex(0xf8fafc), dayExp3D);
+            if (clearCloudTwi3D > 0.01) {
+              refinerySteamMat.color.lerp(scratchSkyColA.setHex(0xfed7aa), clearCloudTwi3D * 0.72);
+            }
             for (let rp = 0; rp < refinerySteamPuffs3D.length; rp++) {
               const sp = refinerySteamPuffs3D[rp];
               const age = (t * sp.speed + sp.phase) % 1.0;
@@ -48372,10 +48573,10 @@
             const weldWindow = Math.sin(t * 0.62) > 0.18 && Math.cos(t * 1.45) > -0.25;
             if (weldWindow) {
               const arcSpark = Math.max(0, Math.sin(t * 37.0) * 0.6 + Math.cos(t * 53.0) * 0.4);
-              davieWeldSprite.material.opacity = arcSpark * (isNight ? 0.95 : 0.62);
+              davieWeldSprite.material.opacity = arcSpark * (0.62 + 0.33 * nightness3D);
               const wSc = 5.5 + arcSpark * 7.5;
               davieWeldSprite.scale.set(wSc, wSc, 1);
-              davieWeldLight.intensity = arcSpark * (isNight ? 2.4 : 0.8);
+              davieWeldLight.intensity = arcSpark * (0.8 + 1.6 * nightness3D);
             } else {
               davieWeldSprite.material.opacity = 0.0;
               davieWeldLight.intensity = 0.0;
@@ -48456,7 +48657,7 @@
           ferryGroup.rotation.y = FERRY_AXIS_ROT_Y;
           ferryGroup.rotation.x = Math.sin(t * 1.8) * 0.022;
           ferryGroup.rotation.z = Math.cos(t * 1.35) * 0.012;
-          const navLightsActive = isNight || isGolden || cloudPctNow >= 85;
+          const navLightsActive = nightness3D > 0.12 || cloudPctNow >= 85;
           ferryLightFwd.visible = navLightsActive && fHeadingToQc;
           ferryLightAft.visible = navLightsActive && !fHeadingToQc;
           ferryLightPort.visible = navLightsActive;
@@ -48475,7 +48676,7 @@
 
           // C. Phare de la Pointe-Lévy (faisceau lumineux rotatif 360°)
           lighthouseBeam.rotation.y = t * 1.4;
-          lighthouseBeam.visible = isNight || isGolden;
+          lighthouseBeam.visible = nightness3D > 0.14 || isFogWmoNow;
 
           // D. Funiculaire du Vieux-Québec (va-et-vient des cabines sur la falaise)
           funicCabins.forEach((cb) => {
@@ -48523,26 +48724,32 @@
             sg.rightOuter.rotation.x = -outerFlap;
           }
 
-          // 8. Éclairage Jour / Heure Dorée / Nuit, Fenêtres Architecturales Émissives, Visibilité Réelle & Colorimétrie Thermique
-          const bridgeEmissiveInt = isNight ? 1.18 : (isGolden ? 0.58 : (isStormNow ? 0.35 : 0.0));
+          // 8. Éclairage Atmosphérique Continu C1 (Nuit <-> Heure Bleue <-> Aube/Crépuscule <-> Jour), Fenêtres Émissives & Brouillard Koschmieder
+          const stormDimBoost = isStormNow ? 0.32 : (coverNorm > 0.82 ? (coverNorm - 0.82) * 1.1 : 0.0);
+          const archLitFactor = Math.min(1.0, Math.max(nightness3D, stormDimBoost));
+          const bridgeEmissiveInt = 1.18 * archLitFactor;
           bridgeWinMat.color.setHex(0xffffff);
           bridgeWinMat.emissiveIntensity = bridgeEmissiveInt;
           bridge86WinMat.color.setHex(0xffffff);
           bridge86WinMat.emissiveIntensity = bridgeEmissiveInt;
-          sharedAccommodationMat.emissiveIntensity = isNight ? 0.96 : (isGolden ? 0.46 : (isStormNow ? 0.28 : 0.0));
-          const heritageEmissiveInt = isNight ? 1.12 : (isGolden ? 0.54 : (isStormNow ? 0.30 : 0.0));
+          sharedAccommodationMat.emissiveIntensity = 0.96 * archLitFactor;
+          const heritageEmissiveInt = 1.12 * archLitFactor;
           for (let hm = 0; hm < heritageLitMats3D.length; hm++) {
             heritageLitMats3D[hm].emissiveIntensity = heritageEmissiveInt;
           }
-          dockCabinWinMat.color.setHex(isNight ? 0xfde68a : (isGolden ? 0xfef08a : 0x38bdf8));
-          ferryCabinGlassMat.color.setHex(isNight ? 0xfde68a : (isGolden ? 0xfef08a : 0x38bdf8));
+          dockCabinWinMat.color.setHex(0x38bdf8).lerp(scratchSkyColA.setHex(0xfde68a), smooth3D01(0.15, 0.78, archLitFactor));
+          ferryCabinGlassMat.color.copy(dockCabinWinMat.color);
 
-          shipNightLight.intensity = (isNight && showShip87) ? 1.4 : 0.0;
-          ship86NightLight.intensity = (isNight && vessel86Group.visible) ? 1.15 : 0.0;
-          dockPointLight.intensity = isNight ? 1.6 : (isStormNow ? 0.65 : 0.2);
-          dock86PointLight.intensity = isNight ? 1.45 : (isStormNow ? 0.55 : 0.18);
+          const shipNightRamp = smooth3D01(0.28, 0.85, nightness3D);
+          shipNightLight.intensity = showShip87 ? 1.4 * shipNightRamp : 0.0;
+          ship86NightLight.intensity = vessel86Group.visible ? 1.15 * shipNightRamp : 0.0;
+          const baseDockPt = isStormNow ? 0.65 : 0.20;
+          const baseDock86Pt = isStormNow ? 0.55 : 0.18;
+          dockPointLight.intensity = baseDockPt + (1.60 - baseDockPt) * nightness3D;
+          dock86PointLight.intensity = baseDock86Pt + (1.45 - baseDock86Pt) * nightness3D;
+          const showCityLights = archLitFactor > 0.16;
           cityLightsList.forEach((cl) => {
-            cl.visible = isNight || isGolden || (cloudPctNow >= 90 && isStormNow);
+            cl.visible = showCityLights;
           });
 
           const overcastDim = 1.0 - Math.max(0, (cloudPctNow - 40) / 60) * 0.48;
@@ -48571,96 +48778,107 @@
           const coldLightNorm = Math.max(0, Math.min(1, (-effectiveAirTemp - 4.0) / 20.0));
           const heatLightNorm = Math.max(0, Math.min(1, (effectiveAirTemp - 23.0) / 12.0));
 
-          if (isNight) {
-            hemiLight.color.setHex(0x1e293b).lerp(scratchThermalColor.setHex(0x283c5a), coldLightNorm * 0.45);
-            hemiLight.groundColor.setHex(0x020617).lerp(scratchThermalColor.setHex(0x1e293b), currentSnowpackFactor * 0.35);
-            hemiLight.intensity = 0.55 + currentSnowpackFactor * 0.08 + lightningFlash3D * 1.45;
-            dirLight.color.setHex(0x93c5fd).lerp(scratchThermalColor.setHex(0xbfdbfe), coldLightNorm * 0.4);
-            const lunarFactor = moonAltDeg3D > 0 ? Math.max(0.16, moonIllum3D) : 0.12;
-            dirLight.intensity = 0.58 * lunarFactor * (0.20 + directBeamTransmittance * 0.80);
-            scene.fog.color.setHex(0x061326).lerp(scratchThermalColor.setHex(0x0b1d36), Math.max(coldLightNorm * 0.35, hasSnow3D ? 0.4 : 0));
-            if (fogVeilNorm > 0) {
-              scene.fog.color.lerp(scratchThermalColor.setHex(0x1e293b), fogVeilNorm * 0.72);
-            }
-          } else if (isGolden) {
-            hemiLight.color.setHex(0xfed7aa).lerp(scratchThermalColor.setHex(0xfecdd3), coldLightNorm * 0.35);
-            if (coverNorm > 0.75) {
-              hemiLight.color.lerp(scratchThermalColor.setHex(0x94a3b8), (coverNorm - 0.75) * 2.6);
-            }
-            hemiLight.groundColor.setHex(0x1e3a5f).lerp(scratchThermalColor.setHex(0x94a3b8), currentSnowpackFactor * 0.45);
-            hemiLight.intensity = (0.85 + currentSnowpackFactor * 0.08) * (0.68 + overcastDim * 0.32) + lightningFlash3D * 1.15;
-            dirLight.color.setHex(0xfb923c).lerp(scratchThermalColor.setHex(0xfdba74), heatLightNorm * 0.35);
-            dirLight.intensity = 1.25 * directLightScale;
-            scene.fog.color.setHex((isStormNow || coverNorm >= 0.88) ? 0x64748b : 0xd97746).lerp(scratchThermalColor.setHex(0xcbd5e1), hasSnow3D ? 0.45 : 0);
-            if (fogVeilNorm > 0) {
-              scene.fog.color.lerp(scratchThermalColor.setHex(0x94a3b8), fogVeilNorm * 0.82);
-            }
-          } else {
-            hemiLight.color.setHex((isStormNow || coverNorm >= 0.88) ? 0x94a3b8 : 0xe0f2fe);
-            if (!isStormNow && coverNorm < 0.88 && coldLightNorm > 0) {
-              hemiLight.color.lerp(scratchThermalColor.setHex(0xdbeafe), coldLightNorm * 0.55);
-            } else if (!isStormNow && coverNorm < 0.88 && heatLightNorm > 0) {
-              hemiLight.color.lerp(scratchThermalColor.setHex(0xfef3c7), heatLightNorm * 0.30);
-            }
-            hemiLight.groundColor.setHex(0x0c4a6e).lerp(scratchThermalColor.setHex(0xcbd5e1), currentSnowpackFactor * 0.55);
-            hemiLight.intensity = (0.95 + currentSnowpackFactor * 0.10) * (0.72 + overcastDim * 0.28) + lightningFlash3D * 1.25;
-            dirLight.color.setHex(0xffffff);
-            if (coldLightNorm > 0) {
-              dirLight.color.lerp(scratchThermalColor.setHex(0xeff6ff), coldLightNorm * 0.45);
-            } else if (heatLightNorm > 0) {
-              dirLight.color.lerp(scratchThermalColor.setHex(0xfffbeb), heatLightNorm * 0.55);
-            }
-            dirLight.intensity = (1.22 + coldLightNorm * 0.06) * directLightScale;
-            scene.fog.color.setHex(cloudPctNow >= 75 ? 0x7b8ea3 : 0x8bb8d6);
-            if (hasSnow3D) {
-              scene.fog.color.lerp(scratchThermalColor.setHex(0xdbeafe), 0.55);
-            } else if (coldLightNorm > 0) {
-              scene.fog.color.lerp(scratchThermalColor.setHex(0xa5c8e4), coldLightNorm * 0.42);
-            } else if (heatLightNorm > 0) {
-              scene.fog.color.lerp(scratchThermalColor.setHex(0x9ec0d4), heatLightNorm * 0.35);
-            }
-            if (fogVeilNorm > 0) {
-              scene.fog.color.lerp(scratchThermalColor.setHex(0xcbd5e1), fogVeilNorm * 0.85);
-            }
-          }
-          if (lightningFlash3D > 0.01) {
-            scene.fog.color.lerp(scratchThermalColor.setHex(0xdbeafe), lightningFlash3D * 0.42);
+          ambientLight.intensity = 0.28 + 0.14 * smooth3D01(-10.0, 4.0, sunAltDeg3D);
+          ambientLight.color.setHex(0xcbd5e1).lerp(scratchSkyColA.setHex(0xffffff), smooth3D01(-9.0, 3.0, sunAltDeg3D));
+
+          sampleThreeColorStops(HEMI3D_SKY_STOPS, sunAltDeg3D, hemiLight.color);
+          scratchSkyColA.setHex(0x1e293b).lerp(scratchSkyColB.setHex(0x94a3b8), dayExp3D);
+          hemiLight.color.lerp(scratchSkyColA, Math.min(0.88, coverNorm * 0.80 + (isStormNow ? 0.18 : 0)));
+          const clearHemiMod = (1.0 - coverNorm * 0.85) * dayExp3D;
+          if (coldLightNorm > 0 && clearHemiMod > 0.02) {
+            hemiLight.color.lerp(scratchThermalColor.setHex(0xdbeafe), coldLightNorm * 0.45 * clearHemiMod);
+          } else if (heatLightNorm > 0 && clearHemiMod > 0.02) {
+            hemiLight.color.lerp(scratchThermalColor.setHex(0xfef3c7), heatLightNorm * 0.28 * clearHemiMod);
           }
 
-          // 8B. Dôme Atmosphérique 3D (Rayleigh + Mie + Mur d'Orage Amont + Fusion Brume Koschmieder) & Astres 3D occultés physiquement!
+          sampleThreeColorStops(HEMI3D_GND_STOPS, sunAltDeg3D, hemiLight.groundColor);
+          if (currentSnowpackFactor > 0.01) {
+            scratchSkyColA.setHex(0x1e293b).lerp(scratchSkyColB.setHex(0xcbd5e1), dayExp3D);
+            hemiLight.groundColor.lerp(scratchSkyColA, currentSnowpackFactor * (0.35 + 0.20 * dayExp3D));
+          }
+          const nightHemiInt = 0.55 + currentSnowpackFactor * 0.08;
+          const dayHemiInt = (0.95 + currentSnowpackFactor * 0.10) * (0.72 + overcastDim * 0.28);
+          hemiLight.intensity = nightHemiInt + (dayHemiInt - nightHemiInt) * smooth3D01(-10.0, 6.0, sunAltDeg3D) + lightningFlash3D * 1.30;
+
+          // Relais continu Lune <-> Soleil sur dirLight (s'annule exactement vers -2.2° lors du passage de relais azimutal : zéro saut d'ombre!)
+          const moonBeamWeight = (1.0 - smooth3D01(-6.5, -2.3, sunAltDeg3D)) *
+            (moonAltDeg3D > 0 ? smooth3D01(0.0, 4.0, moonAltDeg3D) * Math.max(0.16, moonIllum3D) : 0.10);
+          const sunBeamWeight = smooth3D01(-2.1, 6.5, sunAltDeg3D);
+          if (sunDominant3D) {
+            sampleThreeColorStops(DIR3D_SUN_STOPS, sunAltDeg3D, dirLight.color);
+            const highDayMod = smooth3D01(5.0, 14.0, sunAltDeg3D);
+            if (coldLightNorm > 0 && highDayMod > 0.02) {
+              dirLight.color.lerp(scratchThermalColor.setHex(0xeff6ff), coldLightNorm * 0.42 * highDayMod);
+            } else if (heatLightNorm > 0 && highDayMod > 0.02) {
+              dirLight.color.lerp(scratchThermalColor.setHex(0xfffbeb), heatLightNorm * 0.48 * highDayMod);
+            }
+            dirLight.intensity = (1.24 + coldLightNorm * 0.05) * directLightScale * sunBeamWeight;
+          } else {
+            dirLight.color.setHex(0x93c5fd).lerp(scratchThermalColor.setHex(0xbfdbfe), coldLightNorm * 0.40);
+            dirLight.intensity = 0.58 * moonBeamWeight * (0.20 + directBeamTransmittance * 0.80);
+          }
+
+          // 8B. Dôme Atmosphérique 3D (Rayleigh + Lueur Crépusculaire Azimutale + Ceinture de Vénus + Fusion Brume Koschmieder) & Astres 3D
+          const effTwiGlow = twiWarmthRaw3D * (1.0 - coverNorm * 0.76) * (1.0 - fogVeilNorm * 0.85);
           if (skyDomeMesh && skyDomeUniforms) {
             skyDomeMesh.position.set(camera3D.position.x, 0, camera3D.position.z);
-            if (isNight) {
-              skyDomeUniforms.uZenithColor.value.setHex(0x020817).lerp(scratchSkyColA.setHex(0x0f172a), coverNorm * 0.65);
-              skyDomeUniforms.uHorizonColor.value.setHex(0x0b1d36).lerp(scratchSkyColA.setHex(0x1e293b), coverNorm * 0.55);
-              skyDomeUniforms.uGroundColor.value.setHex(0x020617);
-              skyDomeUniforms.uSunColor.value.setHex(0x93c5fd);
-              skyDomeUniforms.uSunIntensity.value = moonAltDeg3D > 0 ? 0.28 * moonIllum3D * directBeamTransmittance : 0.0;
-            } else if (isGolden) {
-              skyDomeUniforms.uZenithColor.value.setHex(0x172554).lerp(scratchSkyColA.setHex(0x334155), coverNorm * 0.84);
-              skyDomeUniforms.uHorizonColor.value.setHex(0xea580c).lerp(scratchSkyColA.setHex(0x64748b), coverNorm * 0.86);
-              skyDomeUniforms.uGroundColor.value.setHex(0x0c2438);
-              skyDomeUniforms.uSunColor.value.setHex(0xfde047);
-              skyDomeUniforms.uSunIntensity.value = 1.25 * directBeamTransmittance;
-            } else {
-              skyDomeUniforms.uZenithColor.value.setHex(0x0369a1)
-                .lerp(scratchSkyColA.setHex(0x0284c7), coldLightNorm * 0.35)
-                .lerp(scratchSkyColB.setHex(0x526275), coverNorm * 0.90);
-              skyDomeUniforms.uHorizonColor.value.setHex(0xbae6fd)
-                .lerp(scratchSkyColA.setHex(0xe0f2fe), Math.max(coldLightNorm * 0.3, heatLightNorm * 0.25))
-                .lerp(scratchSkyColB.setHex(0x7c93ab), coverNorm * 0.88);
-              skyDomeUniforms.uGroundColor.value.setHex(0x083344);
-              skyDomeUniforms.uSunColor.value.setHex(0xfffbeb);
-              skyDomeUniforms.uSunIntensity.value = 1.05 * directBeamTransmittance;
+
+            sampleThreeColorStops(SKY3D_ZENITH_STOPS, sunAltDeg3D, skyDomeUniforms.uZenithColor.value);
+            if (coldLightNorm > 0 && coverNorm < 0.88) {
+              skyDomeUniforms.uZenithColor.value.lerp(scratchSkyColA.setHex(0x0284c7), coldLightNorm * 0.30 * dayExp3D * (1.0 - coverNorm));
+            }
+            scratchSkyColA.setHex(0x0f172a).lerp(scratchSkyColB.setHex(0x526275), dayExp3D);
+            skyDomeUniforms.uZenithColor.value.lerp(scratchSkyColA, coverNorm * (0.65 + 0.25 * dayExp3D));
+
+            sampleThreeColorStops(SKY3D_HORIZON_STOPS, sunAltDeg3D, skyDomeUniforms.uHorizonColor.value);
+            if ((coldLightNorm > 0 || heatLightNorm > 0) && coverNorm < 0.88) {
+              skyDomeUniforms.uHorizonColor.value.lerp(
+                scratchSkyColA.setHex(0xe0f2fe),
+                Math.max(coldLightNorm * 0.28, heatLightNorm * 0.22) * dayExp3D * (1.0 - coverNorm)
+              );
+            }
+            scratchSkyColA.setHex(0x1b283b).lerp(scratchSkyColB.setHex(isStormNow ? 0x5c6f84 : 0x7c93ab), dayExp3D);
+            skyDomeUniforms.uHorizonColor.value.lerp(scratchSkyColA, coverNorm * (0.58 + 0.30 * dayExp3D));
+
+            sampleThreeColorStops(SKY3D_SOLAR_GLOW_STOPS, sunAltDeg3D, skyDomeUniforms.uSolarHorizonColor.value);
+            skyDomeUniforms.uSolarHorizonColor.value.lerp(skyDomeUniforms.uHorizonColor.value, coverNorm * 0.68);
+
+            skyDomeUniforms.uGroundColor.value.setHex(0x020617).lerp(scratchSkyColA.setHex(0x083344), dayExp3D);
+            const sunAzRadSky = (sunAzDeg3D * Math.PI) / 180;
+            skyDomeUniforms.uSolarAzDir.value.set(Math.sin(sunAzRadSky), 0, -Math.cos(sunAzRadSky));
+            skyDomeUniforms.uTwilightGlow.value = effTwiGlow;
+
+            // Calcul continu de la couleur du brouillard fluvial Koschmieder à partir de l'horizon atmosphérique réel
+            scratchSkyColA.setHex(0x061326).lerp(scratchSkyColB.setHex(isStormNow ? 0x6f8297 : 0x8bb8d6), dayExp3D);
+            scene.fog.color.copy(skyDomeUniforms.uHorizonColor.value).lerp(scratchSkyColA, 0.45);
+            if (effTwiGlow > 0.01) {
+              scene.fog.color.lerp(skyDomeUniforms.uSolarHorizonColor.value, effTwiGlow * 0.24);
+            }
+            if (hasSnow3D) {
+              scratchSkyColA.setHex(0x1e293b).lerp(scratchSkyColB.setHex(0xdbeafe), dayExp3D);
+              scene.fog.color.lerp(scratchSkyColA, 0.48);
+            } else if (coldLightNorm > 0) {
+              scratchSkyColA.setHex(0x0b1d36).lerp(scratchSkyColB.setHex(0xa5c8e4), dayExp3D);
+              scene.fog.color.lerp(scratchSkyColA, coldLightNorm * 0.36);
+            }
+            if (fogVeilNorm > 0) {
+              scratchSkyColA.setHex(0x1e293b).lerp(scratchSkyColB.setHex(0xcbd5e1), dayExp3D);
+              scene.fog.color.lerp(scratchSkyColA, fogVeilNorm * 0.82);
+            }
+            if (lightningFlash3D > 0.01) {
+              scene.fog.color.lerp(scratchThermalColor.setHex(0xdbeafe), lightningFlash3D * 0.42);
             }
 
             // Fusion sans couture Horizon Ciel <-> Brouillard Koschmieder sur le fleuve
-            const horizonFogBlend = Math.max(coverNorm * 0.42, fogVeilNorm * 0.96);
+            const horizonFogBlend = Math.max(0.28, coverNorm * 0.48, fogVeilNorm * 0.96);
             skyDomeUniforms.uHorizonColor.value.lerp(scene.fog.color, horizonFogBlend);
             if (deepFogNorm > 0.01) {
               skyDomeUniforms.uZenithColor.value.lerp(scene.fog.color, deepFogNorm * 0.88);
+              skyDomeUniforms.uSolarHorizonColor.value.lerp(scene.fog.color, deepFogNorm * 0.92);
               skyDomeUniforms.uGroundColor.value.lerp(scene.fog.color, deepFogNorm * 0.75);
             }
+
+            // Édition Lite : cubemap PBR désactivée pour économiser la bande passante GPU
 
             // Direction du mur d'orage sombre (en amont sur "incoming"/"overhead", en aval sur "passing" pour révéler l'éclaircie à l'opposé!)
             const stormOriginAz = rainPhaseNow === "passing" ? ((cloudDirFrom + 180) % 360) : cloudDirFrom;
@@ -48678,23 +48896,33 @@
             skyDomeUniforms.uHaze.value = Math.min(1.0, (effHumidity / 100) * 0.48 + fogVeilNorm * 0.52);
             skyDomeUniforms.uLightningFlash.value = lightningFlash3D;
 
-            // Direction de l'astre principal (Soleil le jour, Lune la nuit) dans le shader atmosphérique
-            const activeAstAzRad = ((isNight ? moonAzDeg3D : sunAzDeg3D) * Math.PI) / 180;
-            const activeAstAltRad = (Math.max(-6, isNight ? moonAltDeg3D : sunAltDeg3D) * Math.PI) / 180;
+            // Halo Mie de l'astre principal (Soleil >= -2.2°, Lune < -2.2° avec extinction continue à la charnière)
+            const activeAstAzRad = ((sunDominant3D ? sunAzDeg3D : moonAzDeg3D) * Math.PI) / 180;
+            const activeAstAltRad = (Math.max(-6, sunDominant3D ? sunAltDeg3D : moonAltDeg3D) * Math.PI) / 180;
             skyDomeUniforms.uSunDir.value.set(
               Math.sin(activeAstAzRad) * Math.cos(activeAstAltRad),
               Math.sin(activeAstAltRad),
               -Math.cos(activeAstAzRad) * Math.cos(activeAstAltRad)
             ).normalize();
+            if (sunDominant3D) {
+              sampleThreeColorStops(DIR3D_SUN_STOPS, sunAltDeg3D, skyDomeUniforms.uSunColor.value);
+              const sunHaloFade = smooth3D01(-2.2, 1.8, sunAltDeg3D);
+              const sunHaloPeak = 1.05 + 0.22 * (1.0 - smooth3D01(0.0, 9.0, sunAltDeg3D));
+              skyDomeUniforms.uSunIntensity.value = sunHaloPeak * sunHaloFade * directBeamTransmittance;
+            } else {
+              skyDomeUniforms.uSunColor.value.setHex(0x93c5fd);
+              const moonHaloFade = (1.0 - smooth3D01(-6.5, -2.2, sunAltDeg3D)) * smooth3D01(0.0, 4.0, moonAltDeg3D);
+              skyDomeUniforms.uSunIntensity.value = 0.28 * moonIllum3D * moonHaloFade * directBeamTransmittance;
+            }
           }
 
           let computedStarOpacity3D = 0.0;
           if (skyStarsPoints && skyStarsMat) {
-            const baseStarOp = isNight ? 0.94 : 0.30;
+            const starTwilFade3D = 1.0 - smooth3D01(-10.5, -2.0, sunAltDeg3D);
             const starCloudTrans = Math.max(0, 1.0 - Math.pow(coverNorm, 1.35) * 1.08);
             const starVisTrans = Math.min(1.0, Math.max(0, (visMeters3D - 1200) / 3800));
-            computedStarOpacity3D = (!starsModeActive && (isNight || (isGolden && coverNorm < 0.55)))
-              ? baseStarOp * starCloudTrans * starVisTrans
+            computedStarOpacity3D = !starsModeActive
+              ? 0.94 * starTwilFade3D * starCloudTrans * starVisTrans
               : 0.0;
             const starVis = computedStarOpacity3D > 0.015;
             skyStarsPoints.visible = starVis;
@@ -48706,7 +48934,9 @@
           }
 
           if (sun3DGroup) {
-            const showSun3D = !starsModeActive && !isNight && sunAltDeg3D > -1.5 && directBeamTransmittance > 0.025;
+            const sunHorizFade3D = smooth3D01(-1.8, 0.6, sunAltDeg3D);
+            const sunEffTrans = sunHorizFade3D * directBeamTransmittance;
+            const showSun3D = !starsModeActive && sunEffTrans > 0.018;
             sun3DGroup.visible = showSun3D;
             if (showSun3D) {
               const sAzR = (sunAzDeg3D * Math.PI) / 180;
@@ -48717,20 +48947,22 @@
                 Math.sin(sAltR) * sDist,
                 camera3D.position.z - Math.cos(sAzR) * Math.cos(sAltR) * sDist
               );
-              const sunTrans = directBeamTransmittance;
-              sunDiscMat.color.setHex(isGolden ? 0xfef08a : 0xffffff);
-              sunCoronaMat.color.setHex(isGolden ? 0xf97316 : 0xfde047);
-              sunAureoleMat.color.setHex(isGolden ? 0xea580c : 0xbae6fd);
-              sunDiscMat.opacity = Math.min(1.0, sunTrans * 1.15);
-              sunCoronaMat.opacity = sunTrans * (isGolden ? 0.85 : 0.65);
-              sunAureoleMat.opacity = (0.18 + coverNorm * 0.24) * sunTrans;
-              const sunSizeScale = isGolden ? 1.24 : 1.0;
+              const sunWarm3D = 1.0 - smooth3D01(-1.0, 11.5, sunAltDeg3D);
+              sunDiscMat.color.setHex(0xffffff).lerp(scratchSkyColA.setHex(0xfef08a), sunWarm3D);
+              sunCoronaMat.color.setHex(0xfde047).lerp(scratchSkyColA.setHex(0xf97316), sunWarm3D);
+              sunAureoleMat.color.setHex(0xbae6fd).lerp(scratchSkyColA.setHex(0xea580c), sunWarm3D);
+              sunDiscMat.opacity = Math.min(1.0, sunEffTrans * 1.15);
+              sunCoronaMat.opacity = sunEffTrans * (0.65 + 0.22 * sunWarm3D);
+              sunAureoleMat.opacity = (0.18 + coverNorm * 0.24) * sunEffTrans;
+              const sunSizeScale = 1.0 + 0.24 * sunWarm3D;
               sun3DGroup.scale.set(sunSizeScale, sunSizeScale, sunSizeScale);
             }
           }
 
           if (moon3DGroup) {
-            const showMoon3D = !starsModeActive && (isNight || isGolden) && moonAltDeg3D > 0.5 && directBeamTransmittance > 0.03;
+            const moonHorizFade3D = smooth3D01(-0.8, 1.8, moonAltDeg3D);
+            const moonEffOp3D = moonHorizFade3D * directBeamTransmittance * (0.28 + 0.68 * nightness3D);
+            const showMoon3D = !starsModeActive && moonEffOp3D > 0.02;
             moon3DGroup.visible = showMoon3D;
             if (showMoon3D) {
               const mAzR = (moonAzDeg3D * Math.PI) / 180;
@@ -48741,9 +48973,8 @@
                 Math.sin(mAltR) * mDist,
                 camera3D.position.z - Math.cos(mAzR) * Math.cos(mAltR) * mDist
               );
-              const moonTrans = directBeamTransmittance;
-              moonDiscMat.opacity = moonTrans * (isNight ? 0.96 : 0.48);
-              moonHaloMat.opacity = moonTrans * (isNight ? (0.28 + coverNorm * 0.20) * Math.max(0.25, moonIllum3D) : 0.12);
+              moonDiscMat.opacity = moonEffOp3D;
+              moonHaloMat.opacity = moonHorizFade3D * directBeamTransmittance * (0.08 + (0.22 + coverNorm * 0.18) * Math.max(0.25, moonIllum3D) * nightness3D);
             }
           }
 
@@ -48779,6 +49010,43 @@
           lastDiag3D.moonAltDeg3D = Number(moonAltDeg3D.toFixed(2));
           lastDiag3D.isNight = Boolean(isNight);
           lastDiag3D.isGolden = Boolean(isGolden);
+          lastDiag3D.dayExp3D = Number(dayExp3D.toFixed(4));
+          lastDiag3D.nightness3D = Number(nightness3D.toFixed(4));
+          lastDiag3D.twilightGlow = Number(effTwiGlow.toFixed(4));
+          if (skyDomeUniforms) {
+            lastDiag3D.zenithRGB = [
+              Number(skyDomeUniforms.uZenithColor.value.r.toFixed(4)),
+              Number(skyDomeUniforms.uZenithColor.value.g.toFixed(4)),
+              Number(skyDomeUniforms.uZenithColor.value.b.toFixed(4)),
+            ];
+            lastDiag3D.horizonRGB = [
+              Number(skyDomeUniforms.uHorizonColor.value.r.toFixed(4)),
+              Number(skyDomeUniforms.uHorizonColor.value.g.toFixed(4)),
+              Number(skyDomeUniforms.uHorizonColor.value.b.toFixed(4)),
+            ];
+            lastDiag3D.solarHorizonRGB = [
+              Number(skyDomeUniforms.uSolarHorizonColor.value.r.toFixed(4)),
+              Number(skyDomeUniforms.uSolarHorizonColor.value.g.toFixed(4)),
+              Number(skyDomeUniforms.uSolarHorizonColor.value.b.toFixed(4)),
+            ];
+          }
+          lastDiag3D.fogRGB = [
+            Number(scene.fog.color.r.toFixed(4)),
+            Number(scene.fog.color.g.toFixed(4)),
+            Number(scene.fog.color.b.toFixed(4)),
+          ];
+          lastDiag3D.hemiSkyRGB = [
+            Number(hemiLight.color.r.toFixed(4)),
+            Number(hemiLight.color.g.toFixed(4)),
+            Number(hemiLight.color.b.toFixed(4)),
+          ];
+          lastDiag3D.dirLightRGB = [
+            Number(dirLight.color.r.toFixed(4)),
+            Number(dirLight.color.g.toFixed(4)),
+            Number(dirLight.color.b.toFixed(4)),
+          ];
+          lastDiag3D.dirLightIntensity = Number(dirLight.intensity.toFixed(4));
+          lastDiag3D.hemiLightIntensity = Number(hemiLight.intensity.toFixed(4));
           lastDiag3D.cloudPctNow = cloudPctNow;
           lastDiag3D.cloudLowNow = cloudLowNow;
           lastDiag3D.cloudMidNow = cloudMidNow;
@@ -48824,7 +49092,7 @@
             hb.visible = Math.sin(t * 4.0 + hIdx) > -0.1;
           });
           bridgeNecklaceLights.forEach((nl) => {
-            nl.visible = isNight || isGolden;
+            nl.visible = archLitFactor > 0.18;
           });
 
           // Animation du convoi ferroviaire CN le long de la voie de la Rive-Sud vers le Pont de Québec

@@ -90,13 +90,13 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="v3.0-android"
-          NOTES=$'### 📱 Terminal St-Romuald 360° — Édition Native Android (v3.5 — Règles Officielles Arrivées & Départs 86 & 87)\n\n- **Logique Officielle des Arrivées & Départs (Sections 86 & 87 — Lauzon #03250)** :\n  - **Section 86 (`< 25 000 t DWT`, Réf. Caisson #5)** : Arrivée & Départ *(détaché)* de **PM + 1h30** à **BM + 1h00**\n  - **Section 86 (`> 25 000 t DWT`, Émissaire 9,7 m • UKC 0,5 m)** : Arrivée & Départ de **PM + 1h30** à **BM - 30 min**\n  - **Section 87 (`≤ 40 000 t DWT`)** : Arrivée **Bâbord à quai sur marée descendante (Jusant)** / **Tribord à quai sur marée montante (Flot)** • Départ **Aucune restriction**\n  - **Section 87 (`> 40 000 t DWT`)** : Arrivée de **PM + 1h30** à **BM - 30 min** *(TE max 15,5 m)* • Départ **Aucune restriction si TE < 13 m** / **PM + 1h00 à BM - 1h00 si TE ≥ 13 m**\n  - **Conformité Marée Temps Réel sur les Escales Port de Québec (ETA/ETD)**, filtre rapide `Arr. & Dép. / Arrivées / Départs` et hydratation instantanée `0 ms` des marées Lauzon\n- **Optimisation Tactile 100 % Mobile (`v3.4`)**, **Manœuvres Remorqueurs Automatiques aux ETA/ETD (`v3.3`)** & **Météo 3D Physique (`v3.2`)** + clé de signature persistante (mise à jour directe par-dessus `v3.0`–`v3.4`)'
+          NOTES=$'### 📱 Terminal St-Romuald 360° — Édition Native Android (v3.6 — Transitions Atmosphériques Continues Jour / Aube / Crépuscule / Nuit)\n\n- **Moteur Atmosphérique Continu $C^1$ (Aube, Jour, Crépuscule & Nuit — 2D & 3D)** :\n  - **Interpolation continue selon l\'altitude solaire réelle (`-15°` → `+15°+`)** : suppression totale des sauts brusques de couleur entre Nuit, Heure bleue, Lever/Coucher et Plein jour\n  - **Lueur crépusculaire directionnelle azimutale GLSL + Ceinture de Vénus** : halo ambré/cuivré localisé vers l\'azimut réel du soleil, ombre de la Terre et arche rosée subtile à l\'opposé, fusionnés sans couture avec la brume fluviale de Koschmieder\n  - **Atténuation physique sous couvert nuageux / brouillard** : aubes et crépuscules gris-argent maritime réalistes par temps couvert (zéro ciel orange artificiel sous OVC) + cubemap PBR dynamique continue sur le fleuve\n  - **Relais continu Lune ↔ Soleil, étoiles, nuages et éclairage architectural** sans discontinuité d\'ombre ni de teinte\n- **Logique Officielle Arrivées & Départs 86 & 87 (`v3.5`)**, **Optimisation 100 % Mobile (`v3.4`)**, **Remorqueurs ETA/ETD (`v3.3`)** & **Météo 3D Physique (`v3.2`)** + signature persistante (mise à jour directe)'
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" StRomuald-Terminal-Android.apk --clobber
-            gh release edit "$TAG" --title "Terminal St-Romuald 360° — Android APK (v3.5)" --notes "$NOTES" --latest
+            gh release edit "$TAG" --title "Terminal St-Romuald 360° — Android APK (v3.6)" --notes "$NOTES" --latest
           else
             gh release create "$TAG" StRomuald-Terminal-Android.apk \
-              --title "Terminal St-Romuald 360° — Android APK (v3.5)" \
+              --title "Terminal St-Romuald 360° — Android APK (v3.6)" \
               --notes "$NOTES" \
               --latest
           fi
