@@ -1226,13 +1226,79 @@
         justify-content: space-between;
         align-items: center;
       }
+      .ops-mode-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.25rem;
+        flex-wrap: wrap;
+        padding: 0.16rem 0.32rem;
+        background: var(--surface-subtle);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+      }
+      .ops-mode-pills {
+        display: inline-flex;
+        gap: 0.18rem;
+        flex-wrap: wrap;
+      }
+      .ops-mode-btn {
+        appearance: none;
+        background: transparent;
+        color: var(--text-light);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 0.08rem 0.36rem;
+        font-size: 0.58rem;
+        font-weight: 800;
+        cursor: pointer;
+        line-height: 1.25;
+        transition: all 0.15s ease;
+      }
+      .ops-mode-btn.active {
+        background: rgba(14, 165, 233, 0.2);
+        color: var(--accent);
+        border-color: var(--accent);
+      }
+      #ops-card[data-ops-filter="arrive"] .tl-row[data-op-dir="depart"],
+      #ops-card[data-ops-filter="depart"] .tl-row[data-op-dir="arrive"] {
+        display: none !important;
+      }
+      .ops-subcat-hdr {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 0.2rem;
+        font-size: 0.56rem;
+        font-weight: 800;
+        color: var(--accent);
+        letter-spacing: 0.02em;
+        padding: 0.12rem 0 0.06rem 0;
+        margin-top: 0.08rem;
+        border-top: 1px dashed var(--border);
+        min-width: 0;
+      }
+      .ops-subcat-hdr:first-of-type {
+        border-top: none;
+        margin-top: 0;
+        padding-top: 0;
+      }
+      .ops-subcat-note {
+        font-size: 0.52rem;
+        font-weight: 600;
+        color: var(--text-light);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
       .tl-row {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 0.16rem;
-        font-size: 0.66rem;
-        gap: 0.22rem;
+        margin-bottom: 0.13rem;
+        font-size: 0.63rem;
+        gap: 0.2rem;
+        min-width: 0;
       }
       .tl-row:last-child {
         margin-bottom: 0;
@@ -1241,28 +1307,99 @@
         font-weight: 700;
         color: var(--text);
         white-space: nowrap;
+        font-size: 0.61rem;
+        flex-shrink: 0;
       }
       .tl-right {
         display: flex;
         align-items: center;
-        gap: 0.28rem;
+        gap: 0.26rem;
         text-align: right;
+        min-width: 0;
       }
       .tl-meta {
         display: flex;
         flex-direction: column;
         align-items: flex-end;
-        line-height: 1.06;
+        line-height: 1.08;
+        min-width: 0;
       }
       .tl-next {
-        font-size: 0.63rem;
+        font-size: 0.59rem;
         color: var(--text);
         font-weight: 800;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
       }
       .tl-countdown {
-        font-size: 0.56rem;
+        font-size: 0.53rem;
         color: var(--text-light);
         font-weight: 700;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+      }
+      .rules-official-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.78rem;
+        margin-bottom: 1rem;
+        border: 1px solid var(--border-strong);
+      }
+      .rules-official-table th,
+      .rules-official-table td {
+        border: 1px solid var(--border);
+        padding: 0.48rem 0.55rem;
+        vertical-align: top;
+        text-align: left;
+      }
+      .rules-official-table th {
+        background: var(--surface-subtle);
+        color: var(--accent);
+        font-weight: 800;
+        font-size: 0.74rem;
+        text-transform: uppercase;
+      }
+      @media (max-width: 640px) {
+        .rules-official-table,
+        .rules-official-table thead,
+        .rules-official-table tbody,
+        .rules-official-table tr,
+        .rules-official-table td {
+          display: block;
+          width: 100%;
+          box-sizing: border-box;
+        }
+        .rules-official-table thead {
+          display: none;
+        }
+        .rules-official-table tr {
+          margin-bottom: 0.65rem;
+          border: 1px solid var(--border-strong);
+          border-radius: 8px;
+          overflow: hidden;
+          background: var(--surface-subtle);
+        }
+        .rules-official-table td {
+          border: none;
+          border-bottom: 1px solid var(--border);
+          padding: 0.42rem 0.6rem;
+        }
+        .rules-official-table td:last-child {
+          border-bottom: none;
+        }
+        .rules-official-table td[data-col]::before {
+          content: attr(data-col);
+          display: block;
+          font-size: 0.64rem;
+          font-weight: 800;
+          text-transform: uppercase;
+          color: var(--accent);
+          margin-bottom: 0.14rem;
+        }
       }
 
       /* FEUX DE SIGNALISATION MARITIMES (LENTILLES DE FRESNEL) */
@@ -17086,24 +17223,34 @@
       <!-- COLONNE 3 : OPÉRATIONS TEMPS RÉEL & MARÉES LAUZON (3250) -->
       <div class="col-right">
         <!-- Carte 1 : Feux de circulation & Fenêtres Opérationnelles (Compact Side-by-Side) -->
-        <div id="ops-card" class="card" style="flex: 0 0 auto; min-height: 0">
+        <div id="ops-card" class="card" data-ops-filter="all" style="flex: 0 0 auto; min-height: 0">
           <div class="card-header">
-            <h2>🚥 Opérations &amp; Accostage (Sec. 86 &amp; 87)</h2>
+            <h2>🚥 Arrivées &amp; Départs (Sec. 86 &amp; 87)</h2>
             <div style="display: flex; gap: 0.35rem; align-items: center">
               <span id="river-stage-sub" style="font-size: 0.65rem; font-weight: 700; color: var(--accent)">Lauzon #03250</span>
               <span id="ops-mode-badge" class="badge mono" style="font-size: 0.64rem">TEMPS RÉEL</span>
             </div>
           </div>
-          <div class="card-body" style="gap: 0.36rem; padding: 0.42rem 0.55rem">
-            <!-- Bandeau Horizontal : État du Fleuve (Courant + Accostage) -->
+          <div class="card-body" style="gap: 0.32rem; padding: 0.38rem 0.52rem">
+            <!-- Bandeau Horizontal : État du Fleuve (Courant + Côté d'accostage 87 ≤40k) -->
             <div class="river-state-strip">
               <div class="river-state-item">
                 <span class="tl-label">🌊 Courant :</span>
-                <span id="river-current" class="badge mono" style="font-size: 0.68rem">Calcul...</span>
+                <span id="river-current" class="badge mono" style="font-size: 0.66rem">Calcul...</span>
               </div>
               <div class="river-state-item">
-                <span class="tl-label">⚓ Accostage :</span>
-                <span id="berthing-side" style="font-weight: 800; font-size: 0.71rem; color: var(--accent); text-align: right">Calcul...</span>
+                <span class="tl-label">⚓ Quai 87 (&le;40k) :</span>
+                <span id="berthing-side" style="font-weight: 800; font-size: 0.68rem; color: var(--accent); text-align: right">Calcul...</span>
+              </div>
+            </div>
+
+            <!-- Filtre rapide Arrivées / Départs -->
+            <div class="ops-mode-bar">
+              <span class="mono" style="font-size: 0.56rem; font-weight: 700; color: var(--text-light)">FENÊTRES MARÉES :</span>
+              <div class="ops-mode-pills" role="group" aria-label="Filtrer Arrivées ou Départs">
+                <button type="button" class="ops-mode-btn active" data-ops-filter-btn="all">⚡ Arr. &amp; Dép.</button>
+                <button type="button" class="ops-mode-btn" data-ops-filter-btn="arrive">📥 Arrivées</button>
+                <button type="button" class="ops-mode-btn" data-ops-filter-btn="depart">📤 Départs</button>
               </div>
             </div>
 
@@ -17113,26 +17260,55 @@
               <div class="status-block">
                 <h3>
                   <span>⚓ Section 86</span>
-                  <span style="font-size: 0.58rem; color: var(--text-light)">Chimiquiers</span>
+                  <span style="font-size: 0.56rem; color: var(--text-light)">Chimiquiers</span>
                 </h3>
-                <div class="tl-row">
-                  <span class="tl-label">&le; 25 000 T</span>
+                <div class="ops-subcat-hdr">
+                  <span>&lt; 25 000 t DWT</span>
+                  <span class="ops-subcat-note" title="Référence Caisson #5 • Min PM+1h30 / Max BM+1h00">Réf. Caisson #5</span>
+                </div>
+                <div class="tl-row" data-op-dir="arrive">
+                  <span class="tl-label">📥 Arrivée</span>
                   <div class="tl-right">
                     <div class="tl-meta">
-                      <span class="tl-next mono" id="tl-sec86-small-next">--:--</span>
-                      <span class="tl-countdown mono" id="tl-sec86-small-cd"></span>
+                      <span class="tl-next mono" id="tl-sec86-small-arr-next">--:--</span>
+                      <span class="tl-countdown mono" id="tl-sec86-small-arr-cd"></span>
                     </div>
-                    <span class="light" id="tl-sec86-small"></span>
+                    <span class="light" id="tl-sec86-small-arr"></span>
                   </div>
                 </div>
-                <div class="tl-row">
-                  <span class="tl-label">&gt; 25k T (&le;12m)</span>
+                <div class="tl-row" data-op-dir="depart">
+                  <span class="tl-label" title="Navire détaché max 1h après BM">📤 Dép. (détaché)</span>
                   <div class="tl-right">
                     <div class="tl-meta">
-                      <span class="tl-next mono" id="tl-sec86-large-next">--:--</span>
-                      <span class="tl-countdown mono" id="tl-sec86-large-cd"></span>
+                      <span class="tl-next mono" id="tl-sec86-small-dep-next">--:--</span>
+                      <span class="tl-countdown mono" id="tl-sec86-small-dep-cd"></span>
                     </div>
-                    <span class="light" id="tl-sec86-large"></span>
+                    <span class="light" id="tl-sec86-small-dep"></span>
+                  </div>
+                </div>
+
+                <div class="ops-subcat-hdr">
+                  <span>&gt; 25 000 t DWT</span>
+                  <span class="ops-subcat-note" title="Émissaire 9,7 m • UKC 0,5 m • Min PM+1h30 / Max BM-30min">Ém. 9,7m • UKC 0,5m</span>
+                </div>
+                <div class="tl-row" data-op-dir="arrive">
+                  <span class="tl-label">📥 Arrivée</span>
+                  <div class="tl-right">
+                    <div class="tl-meta">
+                      <span class="tl-next mono" id="tl-sec86-large-arr-next">--:--</span>
+                      <span class="tl-countdown mono" id="tl-sec86-large-arr-cd"></span>
+                    </div>
+                    <span class="light" id="tl-sec86-large-arr"></span>
+                  </div>
+                </div>
+                <div class="tl-row" data-op-dir="depart">
+                  <span class="tl-label">📤 Départ</span>
+                  <div class="tl-right">
+                    <div class="tl-meta">
+                      <span class="tl-next mono" id="tl-sec86-large-dep-next">--:--</span>
+                      <span class="tl-countdown mono" id="tl-sec86-large-dep-cd"></span>
+                    </div>
+                    <span class="light" id="tl-sec86-large-dep"></span>
                   </div>
                 </div>
               </div>
@@ -17141,36 +17317,65 @@
               <div class="status-block">
                 <h3>
                   <span>🚢 Section 87 (Valero)</span>
-                  <span style="font-size: 0.58rem; color: var(--text-light)">Grand Quai</span>
+                  <span style="font-size: 0.56rem; color: var(--text-light)">Grand Quai</span>
                 </h3>
-                <div class="tl-row">
-                  <span class="tl-label">&le; 40 000 T</span>
+                <div class="ops-subcat-hdr">
+                  <span>&le; 40 000 t DWT</span>
+                  <span class="ops-subcat-note" title="Bâbord à quai sur jusant / Tribord à quai sur flot">Selon courant</span>
+                </div>
+                <div class="tl-row" data-op-dir="arrive">
+                  <span class="tl-label">📥 Arrivée</span>
                   <div class="tl-right">
                     <div class="tl-meta">
-                      <span class="tl-next mono" id="tl-sec87-small-next">--:--</span>
-                      <span class="tl-countdown mono" id="tl-sec87-small-cd"></span>
+                      <span class="tl-next mono" id="tl-sec87-small-arr-next">--:--</span>
+                      <span class="tl-countdown mono" id="tl-sec87-small-arr-cd"></span>
                     </div>
-                    <span class="light" id="tl-sec87-small"></span>
+                    <span class="light" id="tl-sec87-small-arr"></span>
                   </div>
                 </div>
-                <div class="tl-row">
-                  <span class="tl-label">&gt; 40k (TE &lt;13m)</span>
+                <div class="tl-row" data-op-dir="depart">
+                  <span class="tl-label">📤 Départ</span>
                   <div class="tl-right">
                     <div class="tl-meta">
-                      <span class="tl-next mono" id="tl-sec87-med-next">--:--</span>
-                      <span class="tl-countdown mono" id="tl-sec87-med-cd"></span>
+                      <span class="tl-next mono" id="tl-sec87-small-dep-next">--:--</span>
+                      <span class="tl-countdown mono" id="tl-sec87-small-dep-cd"></span>
                     </div>
-                    <span class="light" id="tl-sec87-med"></span>
+                    <span class="light" id="tl-sec87-small-dep"></span>
                   </div>
                 </div>
-                <div class="tl-row">
-                  <span class="tl-label">&gt; 40k (TE &gt;13m)</span>
+
+                <div class="ops-subcat-hdr">
+                  <span>&gt; 40 000 t DWT</span>
+                  <span class="ops-subcat-note" title="Arrivée TE max 15,5 m • Départ selon seuil TE 13 m">TE max 15,5m</span>
+                </div>
+                <div class="tl-row" data-op-dir="arrive">
+                  <span class="tl-label" title="Entre PM+1h30 et BM-30min • Tirant d'eau max 15,5 m">📥 Arr. (&le;15,5m)</span>
                   <div class="tl-right">
                     <div class="tl-meta">
-                      <span class="tl-next mono" id="tl-sec87-large-next">--:--</span>
-                      <span class="tl-countdown mono" id="tl-sec87-large-cd"></span>
+                      <span class="tl-next mono" id="tl-sec87-large-arr-next">--:--</span>
+                      <span class="tl-countdown mono" id="tl-sec87-large-arr-cd"></span>
                     </div>
-                    <span class="light" id="tl-sec87-large"></span>
+                    <span class="light" id="tl-sec87-large-arr"></span>
+                  </div>
+                </div>
+                <div class="tl-row" data-op-dir="depart">
+                  <span class="tl-label" title="Aucune restriction si le tirant d'eau est moins de 13 m">📤 Dép. (&lt;13m)</span>
+                  <div class="tl-right">
+                    <div class="tl-meta">
+                      <span class="tl-next mono" id="tl-sec87-med-dep-next">--:--</span>
+                      <span class="tl-countdown mono" id="tl-sec87-med-dep-cd"></span>
+                    </div>
+                    <span class="light" id="tl-sec87-med-dep"></span>
+                  </div>
+                </div>
+                <div class="tl-row" data-op-dir="depart">
+                  <span class="tl-label" title="À 13 m et plus : Min PM+1h00 / Max BM-1h00">📤 Dép. (&ge;13m)</span>
+                  <div class="tl-right">
+                    <div class="tl-meta">
+                      <span class="tl-next mono" id="tl-sec87-large-dep-next">--:--</span>
+                      <span class="tl-countdown mono" id="tl-sec87-large-dep-cd"></span>
+                    </div>
+                    <span class="light" id="tl-sec87-large-dep"></span>
                   </div>
                 </div>
               </div>
@@ -17323,11 +17528,11 @@
                     <th>Date &amp; Heure</th>
                     <th>État</th>
                     <th>Hauteur</th>
-                    <th style="background: rgba(56, 189, 248, 0.12)">86 (&le;25k)</th>
-                    <th style="background: rgba(56, 189, 248, 0.12)">86 (&gt;25k)</th>
-                    <th style="background: rgba(251, 191, 36, 0.12)">87 (&le;40k)</th>
-                    <th style="background: rgba(251, 191, 36, 0.12)">87 (&lt;13m)</th>
-                    <th style="background: rgba(251, 191, 36, 0.12)">87 (&gt;13m)</th>
+                    <th style="background: rgba(56, 189, 248, 0.12)" title="Section 86 — Moins de 25 000 t DWT (Réf. Caisson #5)">86 (&lt;25k)</th>
+                    <th style="background: rgba(56, 189, 248, 0.12)" title="Section 86 — Plus de 25 000 t DWT (Émissaire 9,7m • UKC 0,5m)">86 (&gt;25k)</th>
+                    <th style="background: rgba(251, 191, 36, 0.12)" title="Section 87 — 40 000 t DWT et moins">87 (&le;40k)</th>
+                    <th style="background: rgba(251, 191, 36, 0.12)" title="Section 87 — Plus de 40 000 t DWT : Arrivée (TE max 15,5 m)">87 (&gt;40k Arr.)</th>
+                    <th style="background: rgba(251, 191, 36, 0.12)" title="Section 87 — Plus de 40 000 t DWT : Départ (seuil TE 13 m)">87 (&gt;40k Dép.)</th>
                   </tr>
                 </thead>
                 <tbody id="tides-body">
@@ -17461,47 +17666,95 @@
 
     <!-- 2. MODAL RÈGLES DE MANŒUVRE OFFICIELLES (SECTIONS 86 & 87) -->
     <div id="rules-modal" class="modal-overlay">
-      <div class="modal-content" style="max-width: 680px">
+      <div class="modal-content" style="max-width: 720px">
         <div class="modal-header">
-          <h3>📖 Règles de Manœuvre — Sections 86 &amp; 87 (St-Romuald)</h3>
+          <h3>📖 Règles Officielles Arrivée &amp; Départ — Sections 86 &amp; 87</h3>
           <button id="close-rules" class="btn-close">✖</button>
         </div>
-        <div class="modal-body" style="font-size: 0.9rem; line-height: 1.55">
-          <div style="background: rgba(0, 128, 157, 0.12); border-left: 4px solid var(--valero-teal); padding: 0.65rem 0.85rem; border-radius: 0.4rem; margin-bottom: 1rem; font-size: 0.84rem">
-            <strong>Référence opérationnelle :</strong> Station marégraphique de Lauzon (<strong>#03250</strong>). Les fenêtres ci-dessous sont calculées automatiquement dans le tableau et les feux de circulation du terminal.
+        <div class="modal-body" style="font-size: 0.88rem; line-height: 1.5">
+          <div style="background: rgba(0, 128, 157, 0.12); border-left: 4px solid var(--valero-teal); padding: 0.6rem 0.8rem; border-radius: 0.4rem; margin-bottom: 0.9rem; font-size: 0.82rem">
+            <strong>Référence opérationnelle :</strong> Station marégraphique de Lauzon (<strong>#03250</strong>). Toutes les fenêtres d'<strong>Arrivée</strong> et de <strong>Départ</strong> ci-dessous sont calculées en temps réel sur chaque cycle <strong>Marée Haute (PM) &rarr; Marée Basse (BM)</strong>.
           </div>
 
-          <h4 style="color: var(--accent); margin-bottom: 0.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.25rem">
-            ⚓ Section 86
-          </h4>
-          <p style="margin-bottom: 0.5rem"><strong>Navires de 25 000 tonnes (DWT) et moins :</strong></p>
-          <ul style="margin-bottom: 1rem; padding-left: 1.4rem">
-            <li><strong>Accostage :</strong> En tout temps, sauf de <strong>1h00 à 3h30 après la marée haute (PM)</strong>.</li>
-            <li><strong>Appareillage :</strong> En tout temps, sauf de <strong>1h30 à 3h30 après la marée haute (PM)</strong>.</li>
-          </ul>
+          <!-- Tableau officiel conforme à la fiche opérationnelle St-Romuald -->
+          <table class="rules-official-table">
+            <thead>
+              <tr>
+                <th>Section</th>
+                <th>Poids Navire (DWT)</th>
+                <th>📥 Arrivée (Accostage)</th>
+                <th>📤 Départ (Appareillage)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td data-col="Section"><strong style="color: var(--accent); font-size: 0.95rem">86</strong></td>
+                <td data-col="Poids Navire">
+                  <strong>Moins de 25 000 t dwtM</strong><br />
+                  <span style="font-size: 0.74rem; color: var(--text-light)">Référence Caisson #5</span>
+                </td>
+                <td data-col="Arrivée">
+                  <strong>Min :</strong> 1,5 h (1h30) après marée haute (PM)<br />
+                  <strong>Max :</strong> 1 h (1h00) après marée basse (BM)<br />
+                  <span style="font-size: 0.74rem; color: var(--accent)">• Référence Caisson #5</span>
+                </td>
+                <td data-col="Départ">
+                  <strong>Min :</strong> 1,5 h (1h30) après marée haute (PM)<br />
+                  <strong>Max :</strong> 1 h (1h00) après la marée basse (BM)<br />
+                  <span style="font-size: 0.74rem; color: #10b981; font-weight: 700">• (Détaché)</span>
+                </td>
+              </tr>
+              <tr>
+                <td data-col="Section"><strong style="color: var(--accent); font-size: 0.95rem">86</strong></td>
+                <td data-col="Poids Navire">
+                  <strong>Plus de 25 000 t dwt</strong><br />
+                  <span style="font-size: 0.74rem; color: #f59e0b; font-weight: 700">Émissaire 9,7 m • UKC 0,5 m</span>
+                </td>
+                <td data-col="Arrivée">
+                  <strong>Min :</strong> 1,5 h (1h30) après marée haute (PM)<br />
+                  <strong>Max :</strong> 30 min (0h30) avant marée basse (BM)<br />
+                  <span style="font-size: 0.74rem; color: #f59e0b">• Émissaire 9,7 m (UKC 0,5 m)</span>
+                </td>
+                <td data-col="Départ">
+                  <strong>Min :</strong> 1,5 h (1h30) après la marée haute (PM)<br />
+                  <strong>Max :</strong> 30 min (0h30) avant la marée basse (BM)<br />
+                  <span style="font-size: 0.74rem; color: #f59e0b">• Émissaire 9,7 m (UKC 0,5 m)</span>
+                </td>
+              </tr>
+              <tr>
+                <td data-col="Section"><strong style="color: var(--valero-gold); font-size: 0.95rem">87</strong></td>
+                <td data-col="Poids Navire"><strong>40 000 t dwt et moins</strong></td>
+                <td data-col="Arrivée">
+                  <strong>Bâbord à quai</strong> avec courant de <strong>marée descendante</strong> (Jusant)<br />
+                  <strong>Tribord à quai</strong> avec courant de <strong>marée montante</strong> (Flot)
+                </td>
+                <td data-col="Départ">
+                  <strong style="color: #10b981">Aucune restriction</strong>
+                </td>
+              </tr>
+              <tr>
+                <td data-col="Section"><strong style="color: var(--valero-gold); font-size: 0.95rem">87</strong></td>
+                <td data-col="Poids Navire">
+                  <strong>Plus de 40 000 t DWT</strong><br />
+                  <span style="font-size: 0.74rem; color: var(--text-light)">Tirant d'eau max 15,5 m</span>
+                </td>
+                <td data-col="Arrivée">
+                  Entre <strong>1,5 h (1h30) après la marée haute (PM)</strong> et <strong>0,5 h (30 min) avant la marée basse (BM)</strong>.<br />
+                  <span style="font-size: 0.74rem; color: #38bdf8; font-weight: 700">• Tirant d'eau max : 15,5 m</span>
+                </td>
+                <td data-col="Départ">
+                  • <strong>TE &lt; 13 m :</strong> <strong style="color: #10b981">Aucune restriction</strong><br />
+                  • <strong>TE &ge; 13 m (13 m et plus) :</strong><br />
+                  &nbsp;&nbsp;<strong>Min :</strong> 1 h (1h00) après la marée haute (PM)<br />
+                  &nbsp;&nbsp;<strong>Max :</strong> 1 h (1h00) avant la marée basse (BM)
+                </td>
+              </tr>
+            </tbody>
+          </table>
 
-          <p style="margin-bottom: 0.5rem"><strong>Navires de plus de 25 000 tonnes (DWT) (Tirant d'eau max 12,0 m) :</strong></p>
-          <ul style="margin-bottom: 1.4rem; padding-left: 1.4rem">
-            <li><strong>Accostage (PM) :</strong> De <strong>1h30 avant PM</strong> jusqu'à <strong>1h00 après PM</strong>.</li>
-            <li><strong>Accostage (BM) :</strong> De <strong>1h30 avant BM</strong> jusqu'à <strong>0h30 après BM</strong>.</li>
-            <li><strong>Appareillage :</strong> De <strong>2h00 avant BM</strong> jusqu'à <strong>1h00 après PM</strong>.</li>
-          </ul>
-
-          <h4 style="color: var(--valero-gold); margin-bottom: 0.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.25rem">
-            🚢 Section 87 (Quai Valero)
-          </h4>
-          <p style="margin-bottom: 0.5rem"><strong>Navires de 40 000 tonnes (DWT) et moins :</strong></p>
-          <ul style="margin-bottom: 1rem; padding-left: 1.4rem">
-            <li><strong>Accostage :</strong> En tout temps, sauf de <strong>1h00 à 4h00 après la marée haute (PM)</strong>.</li>
-            <li><strong>Appareillage :</strong> En tout temps.</li>
-          </ul>
-
-          <p style="margin-bottom: 0.5rem"><strong>Navires de plus de 40 000 tonnes (DWT) :</strong></p>
-          <ul style="margin-bottom: 0.5rem; padding-left: 1.4rem">
-            <li><strong>Accostage (TE &lt; 13,0 m) :</strong> De <strong>1h00 avant BM</strong> jusqu'à <strong>0h30 après BM</strong>, OU de <strong>1h00 avant PM</strong> jusqu'à <strong>1h00 après PM</strong>.</li>
-            <li><strong>Accostage (TE &gt; 13,0 m) :</strong> De <strong>1h00 avant PM</strong> jusqu'à <strong>1h00 après PM</strong> uniquement.</li>
-            <li><strong>Appareillage :</strong> De <strong>2h00 avant BM</strong> jusqu'à <strong>1h00 après PM</strong>.</li>
-          </ul>
+          <div style="background: var(--surface-subtle); border: 1px solid var(--border); border-radius: 0.4rem; padding: 0.55rem 0.75rem; font-size: 0.79rem; color: var(--text-light)">
+            <strong>Rappel manœuvre face au courant (St-Romuald — Rive Sud) :</strong> En marée descendante (<em>Jusant</em>, du Pont de Québec vers l'Île d'Orléans), le navire remonte le courant cap à l'Ouest &rarr; <strong>Bâbord à quai</strong>. En marée montante (<em>Flot</em>, de l'Île d'Orléans vers les Ponts), le navire fait face au courant cap à l'Est &rarr; <strong>Tribord à quai</strong>.
+          </div>
         </div>
       </div>
     </div>
@@ -22637,7 +22890,7 @@
             headerSub: "📍 Section 86 & 87 • Port de Québec",
             scrubber: "⏱️ Météo & Temps (-6h à +24h)",
             anim: "🎥 Aperçu 3D 360°",
-            ops: "🚥 Opérations & Accostage (Sec. 86 & 87)",
+            ops: "🚥 Arrivées & Départs (Sec. 86 & 87)",
             tides: "🌊 Marées & Fenêtres (Lauzon 3250)",
             mapAis: "🚢 Trafic Maritime (AIS)",
             weatherPrefix: "☁️ Météo",
@@ -28422,7 +28675,61 @@
         { eventDate: "2026-11-10T23:42:00Z", value: 5.28 }, // PM 18:42 HNE
         { eventDate: "2026-11-11T07:39:00Z", value: 0.35 }, // BM 02:39 HNE
         { eventDate: "2026-11-11T12:12:00Z", value: 4.38 }, // PM 07:12 HNE
-        { eventDate: "2026-11-11T19:18:00Z", value: 0.47 }  // BM 14:18 HNE
+        { eventDate: "2026-11-11T19:18:00Z", value: 0.47 }, // BM 14:18 HNE
+        { eventDate: "2026-11-22T04:09:00Z", value: 0.38 },
+        { eventDate: "2026-11-22T09:09:00Z", value: 4.25 },
+        { eventDate: "2026-11-22T16:12:00Z", value: 0.44 },
+        { eventDate: "2026-11-22T21:21:00Z", value: 4.95 },
+        { eventDate: "2026-11-23T05:03:00Z", value: 0.28 },
+        { eventDate: "2026-11-23T09:51:00Z", value: 4.39 },
+        { eventDate: "2026-11-23T16:57:00Z", value: 0.37 },
+        { eventDate: "2026-11-23T22:00:00Z", value: 5.32 },
+        { eventDate: "2026-11-24T05:57:00Z", value: 0.23 },
+        { eventDate: "2026-11-24T10:33:00Z", value: 4.49 },
+        { eventDate: "2026-11-24T17:42:00Z", value: 0.33 },
+        { eventDate: "2026-11-24T22:42:00Z", value: 5.60 },
+        { eventDate: "2026-11-25T06:45:00Z", value: 0.23 },
+        { eventDate: "2026-11-25T11:15:00Z", value: 4.55 },
+        { eventDate: "2026-11-25T18:30:00Z", value: 0.30 },
+        { eventDate: "2026-11-25T23:24:00Z", value: 5.79 },
+        { eventDate: "2026-11-26T07:36:00Z", value: 0.25 },
+        { eventDate: "2026-11-26T12:00:00Z", value: 4.54 },
+        { eventDate: "2026-11-26T19:15:00Z", value: 0.30 },
+        { eventDate: "2026-11-27T00:12:00Z", value: 5.82 },
+        { eventDate: "2026-11-27T08:24:00Z", value: 0.29 },
+        { eventDate: "2026-11-27T12:48:00Z", value: 4.47 },
+        { eventDate: "2026-11-27T20:03:00Z", value: 0.33 },
+        { eventDate: "2026-11-28T00:57:00Z", value: 5.68 },
+        { eventDate: "2026-11-28T09:12:00Z", value: 0.32 },
+        { eventDate: "2026-11-28T13:36:00Z", value: 4.34 },
+        { eventDate: "2026-11-28T20:51:00Z", value: 0.39 },
+        { eventDate: "2026-11-29T01:54:00Z", value: 5.43 },
+        { eventDate: "2026-11-29T10:00:00Z", value: 0.36 },
+        { eventDate: "2026-11-29T14:33:00Z", value: 4.20 },
+        { eventDate: "2026-11-29T21:45:00Z", value: 0.48 },
+        { eventDate: "2026-11-30T02:51:00Z", value: 5.11 },
+        { eventDate: "2026-11-30T10:51:00Z", value: 0.40 },
+        { eventDate: "2026-11-30T15:39:00Z", value: 4.11 },
+        { eventDate: "2026-11-30T22:45:00Z", value: 0.57 },
+        { eventDate: "2026-12-01T04:00:00Z", value: 4.76 },
+        { eventDate: "2026-12-01T11:48:00Z", value: 0.44 },
+        { eventDate: "2026-12-01T16:54:00Z", value: 4.13 },
+        { eventDate: "2026-12-01T23:54:00Z", value: 0.63 },
+        { eventDate: "2026-12-02T05:12:00Z", value: 4.48 },
+        { eventDate: "2026-12-02T12:48:00Z", value: 0.48 },
+        { eventDate: "2026-12-02T18:06:00Z", value: 4.28 },
+        { eventDate: "2026-12-03T01:12:00Z", value: 0.62 },
+        { eventDate: "2026-12-03T06:27:00Z", value: 4.32 },
+        { eventDate: "2026-12-03T13:45:00Z", value: 0.52 },
+        { eventDate: "2026-12-03T19:09:00Z", value: 4.51 },
+        { eventDate: "2026-12-04T02:24:00Z", value: 0.57 },
+        { eventDate: "2026-12-04T07:39:00Z", value: 4.22 },
+        { eventDate: "2026-12-04T14:42:00Z", value: 0.55 },
+        { eventDate: "2026-12-04T20:06:00Z", value: 4.69 },
+        { eventDate: "2026-12-05T03:33:00Z", value: 0.48 },
+        { eventDate: "2026-12-05T08:39:00Z", value: 4.17 },
+        { eventDate: "2026-12-05T15:33:00Z", value: 0.55 },
+        { eventDate: "2026-12-05T20:54:00Z", value: 4.83 }
       ];
 
       // Générateur de marées certifié pour Lauzon (#03250)
@@ -28437,40 +28744,68 @@
           return t >= start - 12 * 3600000 && t <= end + 12 * 3600000;
         });
 
-        if (ephemerisEvents.length >= 4) {
+        if (ephemerisEvents.length >= 6) {
           return ephemerisEvents;
         }
 
-        // 2. Modèle harmonique réaliste calibré SHC Lauzon (#03250) pour les dates hors éphéméride
-        // Ancré sur la PM réelle de Lauzon du 31 oct 2026 22:57 HAE (2026-11-01T02:57:00Z)
-        const anchorMs = new Date("2026-11-01T02:57:00Z").getTime();
+        // 2. Modèle harmonique fluvial calibré SHC Lauzon (#03250) avec asymétrie M4 du Saint-Laurent (~7h12 jusant / ~5h13 flot)
+        // Ancré sur la PM réelle de Lauzon du 24 nov 2026 17:42 HNE (2026-11-24T22:42:00Z)
+        const anchorPmMs = new Date("2026-11-24T22:42:00Z").getTime();
         const M2_HALF = 6.2103 * 3600000;
-        let k = Math.floor((start - anchorMs) / M2_HALF);
+        const RIVER_EBB_ASYM_MS = 0.48 * 3600000; // Allonge le jusant à ~7h10 et raccourcit le flot à ~5h15
+        let k = Math.floor((start - anchorPmMs) / M2_HALF) - 2;
         const raw = [];
-        for (let i = 0; i < 28; i++) {
+        for (let i = 0; i < 34; i++) {
           const idx = k + i;
-          const tMs = anchorMs + idx * M2_HALF;
-          const isHigh = idx % 2 === 0;
+          const isHigh = ((idx % 2) + 2) % 2 === 0;
+          const asymOffset = isHigh ? -RIVER_EBB_ASYM_MS : RIVER_EBB_ASYM_MS;
+          const tMs = anchorPmMs + idx * M2_HALF + asymOffset;
           const diurnalMod = Math.cos(idx * Math.PI) * 0.48;
           const springMod = Math.sin(idx * 0.08) * 0.32;
           const val = isHigh
-            ? 4.52 + diurnalMod + springMod
-            : 0.46 - diurnalMod * 0.15 - springMod * 0.10;
+            ? 4.65 + diurnalMod + springMod
+            : 0.38 - diurnalMod * 0.12 - springMod * 0.08;
           raw.push({
             eventDate: new Date(tMs).toISOString().replace(/\.\d{3}Z$/, "Z"),
-            value: Math.max(0.25, Math.round(val * 100) / 100),
+            value: Math.max(0.20, Math.round(val * 100) / 100),
           });
         }
         return raw;
       }
 
+      // =========================================================================
+      // MOTEUR OFFICIEL DES RÈGLES D'ARRIVÉE & DÉPART — VALERO ST-ROMUALD (86 & 87)
+      // Station de référence : Lauzon #03250 (Chaque fenêtre est définie sur PM -> BM)
+      // =========================================================================
+      function computeEbbCycleWindows(pmMs, bmMs) {
+        const HR = 3600000;
+        return {
+          pmDate: new Date(pmMs),
+          bmDate: new Date(bmMs),
+          // Section 86 (< 25 000 t DWT • Réf. Caisson #5) : Arrivée & Départ (détaché) = [PM + 1h30, BM + 1h00]
+          s86SmallArr: { start: new Date(pmMs + 1.5 * HR), end: new Date(bmMs + 1.0 * HR) },
+          s86SmallDep: { start: new Date(pmMs + 1.5 * HR), end: new Date(bmMs + 1.0 * HR) },
+          // Section 86 (> 25 000 t DWT • Émissaire 9,7m UKC 0,5m) : Arrivée & Départ = [PM + 1h30, BM - 0h30]
+          s86LargeArr: { start: new Date(pmMs + 1.5 * HR), end: new Date(bmMs - 0.5 * HR) },
+          s86LargeDep: { start: new Date(pmMs + 1.5 * HR), end: new Date(bmMs - 0.5 * HR) },
+          // Section 87 (> 40 000 t DWT • Arrivée TE max 15,5 m) = [PM + 1h30, BM - 0h30]
+          s87LargeArr: { start: new Date(pmMs + 1.5 * HR), end: new Date(bmMs - 0.5 * HR) },
+          // Section 87 (> 40 000 t DWT • Départ TE >= 13 m) = [PM + 1h00, BM - 1h00]
+          s87LargeDepGe13: { start: new Date(pmMs + 1.0 * HR), end: new Date(bmMs - 1.0 * HR) },
+        };
+      }
+
       function processRawTides(raw) {
         if (!Array.isArray(raw)) return [];
-        // Trier rigoureusement par ordre chronologique
+        const HR = 3600000;
+        const AVG_EBB_MS = 7.15 * HR;
+        const AVG_FLOOD_MS = 5.25 * HR;
+
+        // 1. Trier chronologiquement et classifier PM (Haute) / BM (Basse)
         const sorted = [...raw].sort(
           (a, b) => new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime()
         );
-        const processed = [];
+        const baseExtrema = [];
         for (let i = 0; i < sorted.length; i++) {
           const curr = sorted[i];
           const prev = sorted[i - 1];
@@ -28484,87 +28819,206 @@
           } else if (prev) {
             isHigh = cVal > Number(prev.value);
           }
-          // Clôture sécurisée pour le secteur Lauzon / Québec (BM toujours <= 1.8m, PM toujours >= 2.4m)
           if (cVal >= 2.4) isHigh = true;
           if (cVal <= 1.8) isHigh = false;
-
           const tDate = new Date(curr.eventDate);
-          let sec86_small = {};
-          let sec86_large = {};
-          let sec87_small = {};
-          let sec87_med = {};
-          let sec87_large = {};
-
-          if (isHigh) {
-            sec86_small = {
-              type: "forbidden",
-              accStart: new Date(tDate.getTime() + 1 * 3600000),
-              accEnd: new Date(tDate.getTime() + 3.5 * 3600000),
-              appStart: new Date(tDate.getTime() + 1.5 * 3600000),
-              appEnd: new Date(tDate.getTime() + 3.5 * 3600000),
-            };
-            sec86_large = {
-              type: "allowed_pm",
-              accStart: new Date(tDate.getTime() - 1.5 * 3600000),
-              accEnd: new Date(tDate.getTime() + 1 * 3600000),
-            };
-            if (prev) {
-              const prevDate = new Date(prev.eventDate);
-              sec86_large.appStart = new Date(prevDate.getTime() - 2 * 3600000);
-              sec86_large.appEnd = new Date(tDate.getTime() + 1 * 3600000);
-            }
-
-            sec87_small = {
-              type: "forbidden",
-              accStart: new Date(tDate.getTime() + 1 * 3600000),
-              accEnd: new Date(tDate.getTime() + 4 * 3600000),
-            };
-            sec87_med = {
-              type: "allowed_pm",
-              accStart: new Date(tDate.getTime() - 1 * 3600000),
-              accEnd: new Date(tDate.getTime() + 1 * 3600000),
-            };
-            sec87_large = {
-              type: "allowed_pm",
-              accStart: new Date(tDate.getTime() - 1 * 3600000),
-              accEnd: new Date(tDate.getTime() + 1 * 3600000),
-            };
-            if (prev) {
-              const prevDate = new Date(prev.eventDate);
-              sec87_med.appStart = new Date(prevDate.getTime() - 2 * 3600000);
-              sec87_med.appEnd = new Date(tDate.getTime() + 1 * 3600000);
-              sec87_large.appStart = new Date(prevDate.getTime() - 2 * 3600000);
-              sec87_large.appEnd = new Date(tDate.getTime() + 1 * 3600000);
-            }
-          } else {
-            sec86_small = { type: "always" };
-            sec86_large = {
-              type: "allowed_bm",
-              accStart: new Date(tDate.getTime() - 1.5 * 3600000),
-              accEnd: new Date(tDate.getTime() + 0.5 * 3600000),
-            };
-            sec87_small = { type: "always" };
-            sec87_med = {
-              type: "allowed_bm",
-              accStart: new Date(tDate.getTime() - 1 * 3600000),
-              accEnd: new Date(tDate.getTime() + 0.5 * 3600000),
-            };
-            sec87_large = { type: "none_bm" };
-          }
-
-          processed.push({
+          baseExtrema.push({
             date: tDate,
+            timeMs: tDate.getTime(),
             type: isHigh ? "Haute" : "Basse",
-            val: curr.value,
-            sec86_small,
-            sec86_large,
-            sec87_small,
-            sec87_med,
-            sec87_large,
+            val: cVal,
           });
         }
+
+        // 2. Construire la liste complète des cycles de jusant (PM -> BM) pour évaluation exacte
+        const ebbCycles = [];
+        if (baseExtrema.length > 0 && baseExtrema[0].type === "Basse") {
+          ebbCycles.push(computeEbbCycleWindows(baseExtrema[0].timeMs - AVG_EBB_MS, baseExtrema[0].timeMs));
+        }
+        for (let i = 0; i < baseExtrema.length; i++) {
+          const curr = baseExtrema[i];
+          if (curr.type === "Haute") {
+            let nextBmMs = curr.timeMs + AVG_EBB_MS;
+            for (let j = i + 1; j < baseExtrema.length; j++) {
+              if (baseExtrema[j].type === "Basse") {
+                nextBmMs = baseExtrema[j].timeMs;
+                break;
+              }
+            }
+            ebbCycles.push(computeEbbCycleWindows(curr.timeMs, nextBmMs));
+          }
+        }
+
+        // 3. Enrichir chaque extremum pour le tableau des marées (#tides-card) et stocker ebbCycles
+        const processed = baseExtrema.map((ext, i) => {
+          if (ext.type === "Haute") {
+            let nextBmMs = ext.timeMs + AVG_EBB_MS;
+            for (let j = i + 1; j < baseExtrema.length; j++) {
+              if (baseExtrema[j].type === "Basse") {
+                nextBmMs = baseExtrema[j].timeMs;
+                break;
+              }
+            }
+            const cyc = computeEbbCycleWindows(ext.timeMs, nextBmMs);
+            return {
+              date: ext.date,
+              type: "Haute",
+              val: ext.val,
+              ebbCycle: cyc,
+            };
+          } else {
+            let prevPmMs = ext.timeMs - AVG_EBB_MS;
+            for (let j = i - 1; j >= 0; j--) {
+              if (baseExtrema[j].type === "Haute") {
+                prevPmMs = baseExtrema[j].timeMs;
+                break;
+              }
+            }
+            let nextPmMs = ext.timeMs + AVG_FLOOD_MS;
+            for (let j = i + 1; j < baseExtrema.length; j++) {
+              if (baseExtrema[j].type === "Haute") {
+                nextPmMs = baseExtrema[j].timeMs;
+                break;
+              }
+            }
+            return {
+              date: ext.date,
+              type: "Basse",
+              val: ext.val,
+              prevEbbCycle: computeEbbCycleWindows(prevPmMs, ext.timeMs),
+              nextEbbOpen1h30: new Date(nextPmMs + 1.5 * HR),
+              nextEbbOpen1h00: new Date(nextPmMs + 1.0 * HR),
+            };
+          }
+        });
+        processed._ebbCycles = ebbCycles;
         return processed;
       }
+
+      function getEbbCyclesFromProcessed(processed) {
+        if (!processed) return [];
+        if (Array.isArray(processed._ebbCycles) && processed._ebbCycles.length > 0) {
+          return processed._ebbCycles;
+        }
+        return processed.filter((p) => p.type === "Haute" && p.ebbCycle).map((p) => p.ebbCycle);
+      }
+
+      function evalTidalWindowList(cycles, windowProp, nowMs, fTimeFn) {
+        for (let i = 0; i < cycles.length; i++) {
+          const w = cycles[i][windowProp];
+          if (!w || !w.start || !w.end) continue;
+          const sMs = w.start.getTime();
+          const eMs = w.end.getTime();
+          if (eMs <= sMs) continue;
+          if (nowMs >= sMs && nowMs <= eMs) {
+            return {
+              state: "green",
+              isOpen: true,
+              headline: `OUVERT \u2192 ${fTimeFn(w.end)}`,
+              countdown: `\uD83D\uDFE2 Ferme dans ${formatCountdownMs(eMs - nowMs)}`,
+              windowStart: w.start,
+              windowEnd: w.end,
+            };
+          }
+          if (sMs > nowMs) {
+            return {
+              state: "red",
+              isOpen: false,
+              headline: `${fTimeFn(w.start)} \u2013 ${fTimeFn(w.end)}`,
+              countdown: `\u23F3 Ouvre dans ${formatCountdownMs(sMs - nowMs)}`,
+              windowStart: w.start,
+              windowEnd: w.end,
+            };
+          }
+        }
+        return {
+          state: "red",
+          isOpen: false,
+          headline: "--:--",
+          countdown: "",
+          windowStart: null,
+          windowEnd: null,
+        };
+      }
+
+      // Évalue la conformité d'une escale navire (ETA ou ETD) par rapport aux règles officielles 86 & 87
+      function evaluateVesselCallTideWindow(berthStr, direction, targetMs, dwtTons) {
+        const processed = window.lastProcessedTides;
+        if (!processed || !processed.length || !targetMs || isNaN(targetMs)) return null;
+        const cycles = getEbbCyclesFromProcessed(processed);
+        const fT = (d) => (d ? d.toLocaleTimeString("fr-CA", timeOptions) : "--:--");
+        const isArrive = direction !== "depart";
+        const b = String(berthStr) === "86" ? "86" : "87";
+
+        if (b === "86") {
+          const isLarge86 = (Number(dwtTons) || 0) > 25000;
+          const prop = isLarge86
+            ? (isArrive ? "s86LargeArr" : "s86LargeDep")
+            : (isArrive ? "s86SmallArr" : "s86SmallDep");
+          const res = evalTidalWindowList(cycles, prop, targetMs, fT);
+          const ruleTag = isLarge86 ? ">25k (PM+1h30..BM-30m)" : "<25k (PM+1h30..BM+1h)";
+          if (res.isOpen) {
+            return {
+              ok: true,
+              badge: `\u2705 Fen\u00eatre ${ruleTag} : ${fT(res.windowStart)}\u2013${fT(res.windowEnd)}`,
+            };
+          }
+          return {
+            ok: false,
+            badge: `\u26A0\uFE0F Hors fen\u00eatre ${ruleTag} (proch. ${res.headline})`,
+          };
+        }
+
+        // Section 87
+        const isLarge87 = (Number(dwtTons) || 0) > 40000;
+        if (!isLarge87) {
+          if (!isArrive) {
+            return { ok: true, badge: "\u2705 D\u00e9part \u226440k : Aucune restriction" };
+          }
+          // Arrivée <= 40 000 t DWT : Bâbord sur jusant / Tribord sur flot
+          let nextT = null;
+          for (let i = 0; i < processed.length; i++) {
+            if (processed[i].date.getTime() > targetMs) {
+              nextT = processed[i];
+              break;
+            }
+          }
+          const isRising = nextT ? nextT.type === "Haute" : false;
+          return {
+            ok: true,
+            badge: isRising
+              ? "\u2705 Arr. \u226440k : Tribord \u00e0 quai (mar\u00e9e montante)"
+              : "\u2705 Arr. \u226440k : B\u00e2bord \u00e0 quai (mar\u00e9e descendante)",
+          };
+        }
+
+        if (isArrive) {
+          const res = evalTidalWindowList(cycles, "s87LargeArr", targetMs, fT);
+          if (res.isOpen) {
+            return {
+              ok: true,
+              badge: `\u2705 Fen\u00eatre Arr. >40k (TE \u226415,5m) : ${fT(res.windowStart)}\u2013${fT(res.windowEnd)}`,
+            };
+          }
+          return {
+            ok: false,
+            badge: `\u26A0\uFE0F Hors fen\u00eatre Arr. >40k (proch. ${res.headline})`,
+          };
+        } else {
+          const resGe13 = evalTidalWindowList(cycles, "s87LargeDepGe13", targetMs, fT);
+          if (resGe13.isOpen) {
+            return {
+              ok: true,
+              badge: `\u2705 D\u00e9p. >40k OK : libre (<13m) \u2022 ${fT(resGe13.windowStart)}\u2013${fT(resGe13.windowEnd)} (\u226513m)`,
+            };
+          }
+          return {
+            ok: true,
+            badge: `\u2139\uFE0F D\u00e9p. >40k : OK si TE <13m \u2022 Si \u226513m att. ${resGe13.headline}`,
+          };
+        }
+      }
+      window.evaluateVesselCallTideWindow = evaluateVesselCallTideWindow;
 
       // Rendu du graphique des marées avec interpolation cosinus lisse aux 20 min + lignes Maintenant & Projection
       function renderTidesChart(processed) {
@@ -28742,44 +29196,49 @@
           const fTime = (d) =>
             d ? d.toLocaleTimeString("fr-CA", timeOptions) : "";
 
-          let s86_small_str =
-            t.sec86_small.type === "forbidden"
-              ? `<span style="color:#ef4444; font-size:0.75rem;">🚫 Acc: ${fTime(t.sec86_small.accStart)}-${fTime(t.sec86_small.accEnd)}<br>🚫 App: ${fTime(t.sec86_small.appStart)}-${fTime(t.sec86_small.appEnd)}</span>`
-              : `<span style="color:#10b981; font-size:0.75rem;">✅ En tout temps</span>`;
-
+          let s86_small_str = "";
           let s86_large_str = "";
-          if (t.sec86_large.type === "allowed_pm") {
-            s86_large_str = `<span style="color:#10b981; font-size:0.75rem;">✅ Acc: ${fTime(t.sec86_large.accStart)}-${fTime(t.sec86_large.accEnd)}</span>`;
-            if (t.sec86_large.appStart) {
-              s86_large_str += `<br><span style="color:#38bdf8; font-size:0.75rem;">🚢 App: ${fTime(t.sec86_large.appStart)}-${fTime(t.sec86_large.appEnd)}</span>`;
-            }
-          } else {
-            s86_large_str = `<span style="color:#10b981; font-size:0.75rem;">✅ Acc: ${fTime(t.sec86_large.accStart)}-${fTime(t.sec86_large.accEnd)}<br><small style="color:var(--text-light)">(App: voir PM)</small></span>`;
-          }
+          let s87_small_str = "";
+          let s87_arr_large_str = "";
+          let s87_dep_large_str = "";
 
-          let s87_small_str =
-            t.sec87_small.type === "forbidden"
-              ? `<span style="color:#ef4444; font-size:0.75rem;">🚫 Acc: ${fTime(t.sec87_small.accStart)}-${fTime(t.sec87_small.accEnd)}</span><br><span style="color:#10b981; font-size:0.75rem;">✅ App: Toujours</span>`
-              : `<span style="color:#10b981; font-size:0.75rem;">✅ En tout temps</span>`;
-
-          let s87_med_str = "";
-          if (t.sec87_med.type === "allowed_pm") {
-            s87_med_str = `<span style="color:#10b981; font-size:0.75rem;">✅ Acc: ${fTime(t.sec87_med.accStart)}-${fTime(t.sec87_med.accEnd)}</span>`;
-            if (t.sec87_med.appStart) {
-              s87_med_str += `<br><span style="color:#38bdf8; font-size:0.75rem;">🚢 App: ${fTime(t.sec87_med.appStart)}-${fTime(t.sec87_med.appEnd)}</span>`;
-            }
+          if (t.type === "Haute" && t.ebbCycle) {
+            const c = t.ebbCycle;
+            s86_small_str =
+              `<span style="color:#10b981; font-size:0.73rem;">📥 Arr: <strong>${fTime(c.s86SmallArr.start)}–${fTime(c.s86SmallArr.end)}</strong></span>` +
+              `<br><span style="color:#38bdf8; font-size:0.72rem;">📤 Dép (dét.): <strong>${fTime(c.s86SmallDep.start)}–${fTime(c.s86SmallDep.end)}</strong></span>`;
+            s86_large_str =
+              `<span style="color:#10b981; font-size:0.73rem;">📥 Arr: <strong>${fTime(c.s86LargeArr.start)}–${fTime(c.s86LargeArr.end)}</strong></span>` +
+              `<br><span style="color:#38bdf8; font-size:0.72rem;">📤 Dép: <strong>${fTime(c.s86LargeDep.start)}–${fTime(c.s86LargeDep.end)}</strong></span>`;
+            s87_small_str =
+              `<span style="color:#10b981; font-size:0.73rem;">📥 Arr: <strong>Bâbord</strong> (Jusant)</span>` +
+              `<br><span style="color:#10b981; font-size:0.72rem;">📤 Dép: ✅ Sans restriction</span>`;
+            s87_arr_large_str =
+              `<span style="color:#10b981; font-size:0.73rem;">📥 <strong>${fTime(c.s87LargeArr.start)}–${fTime(c.s87LargeArr.end)}</strong></span>` +
+              `<br><small style="color:var(--text-light)">TE max 15,5 m</small>`;
+            s87_dep_large_str =
+              `<span style="color:#10b981; font-size:0.72rem;">&lt;13m: ✅ Sans restr.</span>` +
+              `<br><span style="color:#38bdf8; font-size:0.72rem;">&ge;13m: <strong>${fTime(c.s87LargeDepGe13.start)}–${fTime(c.s87LargeDepGe13.end)}</strong></span>`;
           } else {
-            s87_med_str = `<span style="color:#10b981; font-size:0.75rem;">✅ Acc: ${fTime(t.sec87_med.accStart)}-${fTime(t.sec87_med.accEnd)}<br><small style="color:var(--text-light)">(App: voir PM)</small></span>`;
-          }
-
-          let s87_large_str = "";
-          if (t.sec87_large.type === "allowed_pm") {
-            s87_large_str = `<span style="color:#10b981; font-size:0.75rem;">✅ Acc: ${fTime(t.sec87_large.accStart)}-${fTime(t.sec87_large.accEnd)}</span>`;
-            if (t.sec87_large.appStart) {
-              s87_large_str += `<br><span style="color:#38bdf8; font-size:0.75rem;">🚢 App: ${fTime(t.sec87_large.appStart)}-${fTime(t.sec87_large.appEnd)}</span>`;
-            }
-          } else {
-            s87_large_str = `<span style="color:var(--text-light); font-size:0.75rem;">❌ Acc: Interdit (BM)<br><small>(App: voir PM)</small></span>`;
+            const pc = t.prevEbbCycle;
+            const end86s = pc ? fTime(pc.s86SmallArr.end) : "--:--";
+            const end86l = pc ? fTime(pc.s86LargeArr.end) : "--:--";
+            const end87Dep = pc ? fTime(pc.s87LargeDepGe13.end) : "--:--";
+            s86_small_str =
+              `<span style="color:#f59e0b; font-size:0.72rem;">⏳ Jusqu'à <strong>${end86s}</strong> (BM+1h)</span>` +
+              `<br><small style="color:#ef4444">🚫 Fermé sur flot &rarr; ${fTime(t.nextEbbOpen1h30)}</small>`;
+            s86_large_str =
+              `<span style="color:#ef4444; font-size:0.72rem;">🚫 Fermé à ${end86l} (BM-30m)</span>` +
+              `<br><small style="color:var(--text-light)">Ouvre à ${fTime(t.nextEbbOpen1h30)}</small>`;
+            s87_small_str =
+              `<span style="color:#38bdf8; font-size:0.73rem;">📥 Arr: <strong>Tribord</strong> (Flot)</span>` +
+              `<br><span style="color:#10b981; font-size:0.72rem;">📤 Dép: ✅ Sans restriction</span>`;
+            s87_arr_large_str =
+              `<span style="color:#ef4444; font-size:0.72rem;">🚫 Fermé sur flot</span>` +
+              `<br><small style="color:var(--text-light)">Ouvre à ${fTime(t.nextEbbOpen1h30)}</small>`;
+            s87_dep_large_str =
+              `<span style="color:#10b981; font-size:0.72rem;">&lt;13m: ✅ Sans restr.</span>` +
+              `<br><small style="color:#ef4444">&ge;13m: fermé (${end87Dep}) &rarr; ${fTime(t.nextEbbOpen1h00)}</small>`;
           }
 
           tbody.innerHTML += `<tr>
@@ -28789,8 +29248,8 @@
             <td style="background: rgba(56, 189, 248, 0.05);">${s86_small_str}</td>
             <td style="background: rgba(56, 189, 248, 0.05);">${s86_large_str}</td>
             <td style="background: rgba(251, 191, 36, 0.05);">${s87_small_str}</td>
-            <td style="background: rgba(251, 191, 36, 0.05);">${s87_med_str}</td>
-            <td style="background: rgba(251, 191, 36, 0.05);">${s87_large_str}</td>
+            <td style="background: rgba(251, 191, 36, 0.05);">${s87_arr_large_str}</td>
+            <td style="background: rgba(251, 191, 36, 0.05);">${s87_dep_large_str}</td>
           </tr>`;
         }
       }
@@ -28808,8 +29267,29 @@
 
       async function fetchTides() {
         try {
-          fetchWaterTemp();
           const now = new Date();
+          // 0. Hydratation instantanée (0 ms) dès le démarrage pour que les feux Arrivée/Départ soient immédiatement actifs sans attendre le réseau
+          if (!window.lastProcessedTides || !window.lastProcessedTides.length) {
+            let seedRaw = null;
+            try {
+              const cachedBoot = localStorage.getItem("terminal_lauzon_tides_v4");
+              if (cachedBoot) {
+                const parsedBoot = JSON.parse(cachedBoot);
+                if (isValidLauzonTideData(parsedBoot)) seedRaw = parsedBoot;
+              }
+            } catch (_) {}
+            if (!seedRaw) {
+              seedRaw = generateFallbackLauzonTides(now.getTime() - 24 * 3600000, now.getTime() + 6 * 86400000);
+            }
+            const seedProcessed = processRawTides(seedRaw);
+            window.lastProcessedTides = seedProcessed;
+            renderTidesTable(seedProcessed);
+            renderTideExtremaStrip(seedProcessed);
+            renderTidesChart(seedProcessed);
+            updateRealtimeState();
+          }
+
+          fetchWaterTemp();
           // Format ISO strict sans millisecondes (YYYY-MM-DDTHH:mm:ssZ) requis par l'API DFO IWLS
           const toApiIso = (d) => d.toISOString().replace(/\.\d{3}Z$/, "Z");
           const start = toApiIso(new Date(now.getTime() - 24 * 3600000));
@@ -28824,10 +29304,13 @@
 
           let raw = null;
 
-          // 1. Appel direct avec l'ID officiel certifié de Lauzon 03250
+          // 1. Appel direct avec l'ID officiel certifié de Lauzon 03250 (timeout 5s)
           try {
             const url = `https://api-iwls.dfo-mpo.gc.ca/api/v1/stations/${LAUZON_DFO_STATION_ID}/data?time-series-code=wlp-hilo&from=${start}&to=${end}`;
-            const res = await fetch(url);
+            const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
+            const timerId = ctrl ? setTimeout(() => ctrl.abort(), 5000) : null;
+            const res = await fetch(url, ctrl ? { signal: ctrl.signal } : undefined);
+            if (timerId) clearTimeout(timerId);
             if (res.ok) {
               const data = await res.json();
               if (isValidLauzonTideData(data)) {
@@ -28866,7 +29349,7 @@
           renderTideExtremaStrip(processed);
           renderTidesChart(processed);
           updateRealtimeState();
-        if (typeof updateLoadingArmsUI === "function") { updateLoadingArmsUI(); }
+          if (typeof updateLoadingArmsUI === "function") { updateLoadingArmsUI(); }
         } catch (err) {
           console.warn("Utilisation des éphémérides officielles certifiées SHC Lauzon:", err);
           updateTelemetryStatus(false);
@@ -28879,6 +29362,7 @@
           updateRealtimeState();
         }
       }
+      window.updateRealtimeState = updateRealtimeState;
 
       function formatCountdownMs(diffMs) {
         if (diffMs <= 0) return "Imminent";
@@ -28946,157 +29430,128 @@
 
           const distToPrev = Math.abs(nowTime - prevTide.date.getTime());
           const distToNext = Math.abs(nextTide.date.getTime() - nowTime);
-          const isSlack = distToPrev <= 1800000 || distToNext <= 1800000;
+          const SLACK_RADIUS_MS = 25 * 60000;
+          const isSlack = distToPrev <= SLACK_RADIUS_MS || distToNext <= SLACK_RADIUS_MS;
+          const nearExt = distToPrev <= distToNext ? prevTide : nextTide;
+          const nextEstablishedSide = nearExt.type === "Haute" ? "Bâbord" : "Tribord";
 
           if (isSlack) {
             currentConditions.flowDirection = "slack";
             currentEl.textContent = "🔄 Étale (Renverse)";
             currentEl.style.background = "rgba(251, 191, 36, 0.2)";
             currentEl.style.color = "#fbbf24";
-            berthEl.textContent = "Indifférent (Étale)";
+            berthEl.textContent = `Étale (\u2192 ${nextEstablishedSide})`;
           } else if (nextTide.type === "Haute") {
+            // Marée montante (Flot : de l'Île d'Orléans vers les Ponts) -> Navire cap à l'Est face au courant -> Tribord à quai!
             currentConditions.flowDirection = "left";
             currentEl.textContent = "⬅️ Flot (Montant)";
             currentEl.style.background = "rgba(56, 189, 248, 0.2)";
             currentEl.style.color = "#38bdf8";
-            berthEl.textContent = "Bâbord (Port side) 👈";
+            berthEl.textContent = "Tribord à quai 👉";
           } else {
+            // Marée descendante (Jusant : des Ponts vers l'Île d'Orléans) -> Navire cap à l'Ouest face au courant -> Bâbord à quai!
             currentConditions.flowDirection = "right";
             currentEl.textContent = "➡️ Jusant (Descendant)";
             currentEl.style.background = "rgba(16, 185, 129, 0.2)";
             currentEl.style.color = "#10b981";
-            berthEl.textContent = "Tribord (Starboard) 👉";
+            berthEl.textContent = "Bâbord à quai 👈";
           }
 
           updateDynamicBackground();
           checkWindCurrentHazard();
         }
 
-        // 2. Évaluation des feux de circulation et comptes à rebours
-        function setLight(id, isOpen, nextText, countdownText) {
+        // 2. Évaluation des 9 feux officiels d'Arrivée & de Départ (Sections 86 & 87)
+        function setLightState(id, colorClass, nextText, countdownText) {
           const light = document.getElementById(id);
           const text = document.getElementById(id + "-next");
           const cd = document.getElementById(id + "-cd");
           if (!light || !text) return;
-          light.className = "light " + (isOpen ? "green" : "red");
-          text.innerHTML = nextText;
+          light.className = "light " + colorClass;
+          text.textContent = nextText;
           if (cd) cd.textContent = countdownText || "";
         }
 
-        // A. Section 86 <= 25 000 T
-        let s86s_open = true;
-        let s86s_next = "Ouvert en tout temps";
-        let s86s_cd = "";
-        for (let t of processed) {
-          if (t.sec86_small.type === "forbidden") {
-            const start = t.sec86_small.accStart.getTime();
-            const end = t.sec86_small.accEnd.getTime();
-            if (nowTime >= start && nowTime <= end) {
-              s86s_open = false;
-              s86s_next = `Ouvre à ${fTime(t.sec86_small.accEnd)}`;
-              s86s_cd = `⏳ Dans ${formatCountdownMs(end - nowTime)}`;
-              break;
-            } else if (start > nowTime) {
-              s86s_next = `Ferme à ${fTime(t.sec86_small.accStart)}`;
-              s86s_cd = `🟢 Ouvert (${formatCountdownMs(start - nowTime)} rest.)`;
-              break;
-            }
-          }
-        }
-        setLight("tl-sec86-small", s86s_open, s86s_next, s86s_cd);
+        const ebbCycles = getEbbCyclesFromProcessed(processed);
 
-        // B. Section 86 > 25 000 T
-        let s86l_open = false;
-        let s86l_next = "--:--";
-        let s86l_cd = "";
-        for (let t of processed) {
-          if (t.sec86_large.accStart && t.sec86_large.accEnd) {
-            const start = t.sec86_large.accStart.getTime();
-            const end = t.sec86_large.accEnd.getTime();
-            if (nowTime >= start && nowTime <= end) {
-              s86l_open = true;
-              s86l_next = `OUVERT (Ferme à ${fTime(t.sec86_large.accEnd)})`;
-              s86l_cd = `🟢 Reste ${formatCountdownMs(end - nowTime)}`;
-              break;
-            } else if (start > nowTime) {
-              s86l_next = `Fenêtre: ${fTime(t.sec86_large.accStart)} - ${fTime(t.sec86_large.accEnd)}`;
-              s86l_cd = `⏳ Ouvre dans ${formatCountdownMs(start - nowTime)}`;
-              break;
-            }
-          }
-        }
-        setLight("tl-sec86-large", s86l_open, s86l_next, s86l_cd);
+        // A1 & A2. Section 86 — Moins de 25 000 t DWT (Réf. Caisson #5) : Arrivée & Départ (détaché) = [PM+1h30, BM+1h00]
+        const r86sArr = evalTidalWindowList(ebbCycles, "s86SmallArr", nowTime, fTime);
+        setLightState("tl-sec86-small-arr", r86sArr.state, r86sArr.headline, r86sArr.countdown);
 
-        // C. Section 87 <= 40 000 T
-        let s87s_open = true;
-        let s87s_next = "Ouvert en tout temps";
-        let s87s_cd = "";
-        for (let t of processed) {
-          if (t.sec87_small.type === "forbidden") {
-            const start = t.sec87_small.accStart.getTime();
-            const end = t.sec87_small.accEnd.getTime();
-            if (nowTime >= start && nowTime <= end) {
-              s87s_open = false;
-              s87s_next = `Ouvre à ${fTime(t.sec87_small.accEnd)}`;
-              s87s_cd = `⏳ Dans ${formatCountdownMs(end - nowTime)}`;
-              break;
-            } else if (start > nowTime) {
-              s87s_next = `Ferme à ${fTime(t.sec87_small.accStart)}`;
-              s87s_cd = `🟢 Ouvert (${formatCountdownMs(start - nowTime)} rest.)`;
-              break;
-            }
-          }
-        }
-        setLight("tl-sec87-small", s87s_open, s87s_next, s87s_cd);
+        const r86sDep = evalTidalWindowList(ebbCycles, "s86SmallDep", nowTime, fTime);
+        setLightState("tl-sec86-small-dep", r86sDep.state, r86sDep.headline, r86sDep.countdown);
 
-        // D. Section 87 > 40 000 T (TE < 13m)
-        let s87m_open = false;
-        let s87m_next = "--:--";
-        let s87m_cd = "";
-        for (let t of processed) {
-          if (t.sec87_med.accStart && t.sec87_med.accEnd) {
-            const start = t.sec87_med.accStart.getTime();
-            const end = t.sec87_med.accEnd.getTime();
-            if (nowTime >= start && nowTime <= end) {
-              s87m_open = true;
-              s87m_next = `OUVERT (Ferme à ${fTime(t.sec87_med.accEnd)})`;
-              s87m_cd = `🟢 Reste ${formatCountdownMs(end - nowTime)}`;
-              break;
-            } else if (start > nowTime) {
-              s87m_next = `Fenêtre: ${fTime(t.sec87_med.accStart)} - ${fTime(t.sec87_med.accEnd)}`;
-              s87m_cd = `⏳ Ouvre dans ${formatCountdownMs(start - nowTime)}`;
-              break;
-            }
-          }
-        }
-        setLight("tl-sec87-med", s87m_open, s87m_next, s87m_cd);
+        // B1 & B2. Section 86 — Plus de 25 000 t DWT (Émissaire 9,7m • UKC 0,5m) : Arrivée & Départ = [PM+1h30, BM-0h30]
+        const r86lArr = evalTidalWindowList(ebbCycles, "s86LargeArr", nowTime, fTime);
+        setLightState("tl-sec86-large-arr", r86lArr.state, r86lArr.headline, r86lArr.countdown);
 
-        // E. Section 87 > 40 000 T (TE > 13m)
-        let s87l_open = false;
-        let s87l_next = "--:--";
-        let s87l_cd = "";
-        for (let t of processed) {
-          if (
-            t.sec87_large.type === "allowed_pm" &&
-            t.sec87_large.accStart &&
-            t.sec87_large.accEnd
-          ) {
-            const start = t.sec87_large.accStart.getTime();
-            const end = t.sec87_large.accEnd.getTime();
-            if (nowTime >= start && nowTime <= end) {
-              s87l_open = true;
-              s87l_next = `OUVERT (Ferme à ${fTime(t.sec87_large.accEnd)})`;
-              s87l_cd = `🟢 Reste ${formatCountdownMs(end - nowTime)}`;
-              break;
-            } else if (start > nowTime) {
-              s87l_next = `Fenêtre: ${fTime(t.sec87_large.accStart)} - ${fTime(t.sec87_large.accEnd)}`;
-              s87l_cd = `⏳ Ouvre dans ${formatCountdownMs(start - nowTime)}`;
-              break;
-            }
+        const r86lDep = evalTidalWindowList(ebbCycles, "s86LargeDep", nowTime, fTime);
+        setLightState("tl-sec86-large-dep", r86lDep.state, r86lDep.headline, r86lDep.countdown);
+
+        // C1. Section 87 — 40 000 t DWT et moins : Arrivée = Bâbord sur jusant / Tribord sur flot
+        if (prevTide && nextTide) {
+          const distP = Math.abs(nowTime - prevTide.date.getTime());
+          const distN = Math.abs(nextTide.date.getTime() - nowTime);
+          const slackNow = distP <= 25 * 60000 || distN <= 25 * 60000;
+          if (slackNow) {
+            const near = distP <= distN ? prevTide : nextTide;
+            const targetSide = near.type === "Haute" ? "Bâbord (Jusant)" : "Tribord (Flot)";
+            const remSlackMs = distP <= 25 * 60000 ? (25 * 60000 - distP) : (distN + 25 * 60000);
+            setLightState(
+              "tl-sec87-small-arr",
+              "amber",
+              `Étale \u2192 ${targetSide}`,
+              `🟡 Courant dans ${formatCountdownMs(remSlackMs)}`
+            );
+          } else if (nextTide.type === "Basse") {
+            setLightState(
+              "tl-sec87-small-arr",
+              "green",
+              "Bâbord à quai (Jusant)",
+              `🟢 BM à ${fTime(nextTide.date)} (${formatCountdownMs(distN)})`
+            );
+          } else {
+            setLightState(
+              "tl-sec87-small-arr",
+              "green",
+              "Tribord à quai (Flot)",
+              `🟢 PM à ${fTime(nextTide.date)} (${formatCountdownMs(distN)})`
+            );
           }
+        } else {
+          setLightState("tl-sec87-small-arr", "green", "Selon courant (Bâb./Trib.)", "");
         }
-        setLight("tl-sec87-large", s87l_open, s87l_next, s87l_cd);
+
+        // C2. Section 87 — 40 000 t DWT et moins : Départ = Aucune restriction
+        setLightState("tl-sec87-small-dep", "green", "Aucune restriction", "🟢 Ouvert en tout temps");
+
+        // D1. Section 87 — Plus de 40 000 t DWT : Arrivée (TE max 15,5 m) = [PM+1h30, BM-0h30]
+        const r87lArr = evalTidalWindowList(ebbCycles, "s87LargeArr", nowTime, fTime);
+        setLightState("tl-sec87-large-arr", r87lArr.state, r87lArr.headline, r87lArr.countdown);
+
+        // D2. Section 87 — Plus de 40 000 t DWT : Départ TE < 13 m = Aucune restriction
+        setLightState("tl-sec87-med-dep", "green", "Aucune restriction", "🟢 Si tirant d'eau < 13 m");
+
+        // D3. Section 87 — Plus de 40 000 t DWT : Départ TE >= 13 m = [PM+1h00, BM-1h00]
+        const r87lDep = evalTidalWindowList(ebbCycles, "s87LargeDepGe13", nowTime, fTime);
+        setLightState("tl-sec87-large-dep", r87lDep.state, r87lDep.headline, r87lDep.countdown);
+
+        if (typeof updateLiveVesselDOMBadges === "function") {
+          updateLiveVesselDOMBadges();
+        }
       }
+
+      // Filtre rapide Arrivées / Départs dans #ops-card
+      document.querySelectorAll("[data-ops-filter-btn]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const mode = btn.getAttribute("data-ops-filter-btn") || "all";
+          const opsCard = document.getElementById("ops-card");
+          if (opsCard) opsCard.setAttribute("data-ops-filter", mode);
+          document.querySelectorAll("[data-ops-filter-btn]").forEach((b) => {
+            b.classList.toggle("active", b === btn);
+          });
+        });
+      });
 
       // =========================================================================
       // TIME SCRUBBER : PROJECTION TEMPORELLE GLOBALE (-6h à +24h)
@@ -50162,7 +50617,7 @@
                   window.focusBerthIn3D(berthNum);
                 }
               });
-              const firstRow = blockEl.querySelector(".tl-row");
+              const firstRow = blockEl.querySelector(".ops-subcat-hdr, .tl-row");
               if (firstRow) blockEl.insertBefore(pill, firstRow);
               else blockEl.appendChild(pill);
             }
@@ -50198,6 +50653,32 @@
                   ? `Libre \u2022 Arr: ${bState.expected.eta || "Sous peu"} (${Math.round(bState.expected.loa || 149)}m)`
                   : `${srcTag}`));
 
+            // Conformité automatique de l'ETA / ETD du navire par rapport aux règles officielles 86 & 87
+            let tideCheckHtml = "";
+            if (typeof window.evaluateVesselCallTideWindow === "function" && !tmHere) {
+              const targetSpec = occ ? bState : bState.expected;
+              if (targetSpec) {
+                const rawIso = occ
+                  ? (bState.etdIso || (bState.etd ? parsePortQcDateToIso(bState.etd, pv.fetchedAt || Date.now()) : null))
+                  : (targetSpec.timeIso || (targetSpec.eta ? parsePortQcDateToIso(targetSpec.eta, pv.fetchedAt || Date.now()) : null));
+                const targetMs = rawIso ? Date.parse(rawIso) : NaN;
+                const dwtDigits = String(targetSpec.dwtApprox || "").replace(/[^\d]/g, "");
+                const estDwt = dwtDigits
+                  ? parseInt(dwtDigits, 10)
+                  : ((targetSpec.loa || 150) >= 200 ? 75000 : ((targetSpec.loa || 150) >= 165 ? 45000 : 18500));
+                if (!isNaN(targetMs)) {
+                  const chk = window.evaluateVesselCallTideWindow(berthNum, occ ? "depart" : "arrive", targetMs, estDwt);
+                  if (chk && chk.badge) {
+                    const chkCol = chk.ok ? "#10b981" : "#f59e0b";
+                    tideCheckHtml =
+                      `<div class="mono" style="font-size:0.50rem;color:${chkCol};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escapeHtmlSimple(chk.badge)}">` +
+                        escapeHtmlSimple(chk.badge) +
+                      `</div>`;
+                  }
+                }
+              }
+            }
+
             const previewBtnHtml = (!occ && !tmHere)
               ? `<button type="button" data-act="sim-berth" data-berth="${berthNum}" class="theme-toggle" style="padding:0.02rem 0.18rem;font-size:0.51rem;line-height:1.2;${isSimOn ? "border-color:#38bdf8;color:#38bdf8;" : ""}" title="Afficher/masquer le prochain navire attendu en 3D au Poste ${berthNum}">3D</button>`
               : "";
@@ -50219,7 +50700,8 @@
               `<div class="mono" style="font-size:0.53rem;color:var(--text-light);display:flex;justify-content:space-between;gap:0.18rem;min-width:0;white-space:nowrap;overflow:hidden;">` +
                 `<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;" title="${escapeHtmlSimple(metaLine)}">${escapeHtmlSimple(metaLine)}</span>` +
                 `<span style="color:${badgeColor};font-weight:800;flex-shrink:0;">${badgeLabel}</span>` +
-              `</div>`;
+              `</div>` +
+              tideCheckHtml;
 
             pill.querySelector('[data-act="refresh-portqc"]')?.addEventListener("click", (e) => {
               e.stopPropagation();

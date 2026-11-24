@@ -10,8 +10,8 @@ android {
         applicationId = "ca.portquebec.stromuald.terminal"
         minSdk = 26
         targetSdk = 35
-        versionCode = 340
-        versionName = "3.4.0"
+        versionCode = 350
+        versionName = "3.5.0"
     }
 
     signingConfigs {
