@@ -2,17 +2,26 @@
   "version": 3,
   "source": "live_portqc",
   "syncChannel": "github_actions_portqc",
-  "portUpdatedLabel": "vendredi 27 novembre 2026 à 09:00",
-  "updatedAtIso": "2026-11-27T14:02:07.349Z",
-  "fetchedAt": 1795788127349,
+  "portUpdatedLabel": "vendredi 27 novembre 2026 à 17:45",
+  "updatedAtIso": "2026-11-27T22:45:16.969Z",
+  "fetchedAt": 1795819516969,
   "totalPortRows": 43,
   "otherValeroTankers": [
+    {
+      "berth": "50",
+      "name": "HINCH SPIRIT",
+      "flag": "CA",
+      "loa": 137,
+      "etd": "28 nov. 05:00",
+      "agent": "MCKT",
+      "cargo": "Vrac liquide"
+    },
     {
       "berth": "51",
       "name": "ARVIK I",
       "flag": "CA",
       "loa": 189,
-      "etd": "27 nov. 21:00",
+      "etd": "28 nov. 14:00",
       "agent": "FDNQC",
       "cargo": "Vrac liquide"
     }
@@ -30,8 +39,8 @@
     "dwtApprox": "~18 500 TPL",
     "typeLabel": "Chimiquier / Produits Glace 1A",
     "arrival": "",
-    "etd": "27 nov. 22:00",
-    "etdIso": "2026-11-28T03:00:00.000Z",
+    "etd": "27 nov. 23:00",
+    "etdIso": "2026-11-28T04:00:00.000Z",
     "agent": "PETRO",
     "origin": "CA MTR",
     "dest": "CA GPE",
