@@ -41794,12 +41794,14 @@
           const tm = window.tugManeuver;
           const tmActive87 = Boolean(tm && tm.berth === "87" && (tm.state === "departing" || tm.state === "arriving") && tm.activeVesselSpec);
           const tmActive86 = Boolean(tm && tm.berth === "86" && (tm.state === "departing" || tm.state === "arriving") && tm.activeVesselSpec);
+          const app87 = b87 && b87.approaching ? b87.approaching : null;
+          const app86 = b86 && b86.approaching ? b86.approaching : null;
 
           // --- Mise à jour Navire Poste 87 (Face Nord-Ouest -Z vers Québec) ---
           if (b87) {
             const spec87 = tmActive87
               ? tm.activeVesselSpec
-              : (window.previewShip87Override || (b87.occupied ? b87 : (b87.expected || b87)));
+              : (app87 || window.previewShip87Override || (b87.occupied ? b87 : (b87.expected || b87)));
             const dispName87 = spec87 && spec87.name ? spec87.name : "POSTE 87";
             const dispFlag87 = (spec87 && spec87.flag) || "CA";
             const loa87 = Math.max(110, Math.min(315, Number(spec87 && spec87.loa) || 274));
@@ -41810,7 +41812,8 @@
 
             // Contact bâbord exact contre la ligne de défenses -Z (z_local = -9.4m) côté Québec
             dockLocalToWorldXZ(4.0, -(9.4 + 8.0 * sZ87), tankerBasePos);
-            if (!tm || tm.berth !== "87" || tm.state === "docked") {
+            const is87MovingNow = Boolean(app87 || (tm && tm.berth === "87" && tm.state !== "docked"));
+            if (!is87MovingNow) {
               tankerGroup.position.x = tankerBasePos.x;
               tankerGroup.position.z = tankerBasePos.z;
             }
@@ -41834,7 +41837,7 @@
           if (b86) {
             const spec86 = tmActive86
               ? tm.activeVesselSpec
-              : (window.previewShip86Override || (b86.occupied ? b86 : (b86.expected || b86)));
+              : (app86 || window.previewShip86Override || (b86.occupied ? b86 : (b86.expected || b86)));
             const dispName86 = spec86 && spec86.name ? spec86.name : "POSTE 86";
             const dispFlag86 = (spec86 && spec86.flag) || "CA";
             const loa86 = Math.max(95, Math.min(210, Number(spec86 && spec86.loa) || 149));
@@ -41845,7 +41848,8 @@
 
             // Contact tribord exact contre la ligne de défenses +Z (z_local = +9.4m) côté Lévis du même quai
             dockLocalToWorldXZ(8.0, 9.4 + 6.25 * sZ86, vessel86BasePos);
-            if (!tm || tm.berth !== "86" || tm.state === "docked") {
+            const is86Moving = Boolean(app86 || (tm && tm.berth === "86" && (tm.state === "departing" || tm.state === "arriving")));
+            if (!is86Moving && (!tm || tm.berth !== "86" || tm.state === "docked")) {
               vessel86Group.position.x = vessel86BasePos.x;
               vessel86Group.position.z = vessel86BasePos.z;
             }
@@ -41863,7 +41867,6 @@
             paintShipNameplate(ship86BridgeBoard, dispName86, "POSTE 86 • " + dispFlag86);
             paintMaritimeFlag(ship86Flag, dispFlag86);
 
-            const is86Moving = Boolean(tm && tm.berth === "86" && (tm.state === "departing" || tm.state === "arriving"));
             const show86 = is86Moving || !!b86.occupied || !!window.forceShowBerth86Ship;
             vessel86Group.visible = show86;
             gangway86Bridge.rotation.x = (show86 && !is86Moving) ? -0.16 : 0.62;
@@ -46989,6 +46992,24 @@
           }
         }
 
+        const ARRIVAL_APPROACH_MS = 90 * 60 * 1000;   // 1h30 (90 min) d'approche du quai avant l'ETA
+        const ARRIVAL_TUG_RETURN_MS = 12 * 60 * 1000; // 12 min de retour des remorqueurs vers Bassin Louise après l'accostage à l'ETA
+        const MANUAL_ARRIVAL_DOCK_P = 0.80;           // Bouton manuel Accostage : 0..0.80 approche+accostage, 0.80..1.0 retour remorqueurs
+        window.ARRIVAL_APPROACH_WINDOW_MS = ARRIVAL_APPROACH_MS;
+        window.ARRIVAL_TUG_RETURN_WINDOW_MS = ARRIVAL_TUG_RETURN_MS;
+
+        function formatApproachRemainingMs(remMs) {
+          const clamped = Math.max(0, Number(remMs) || 0);
+          if (clamped <= 0) return "0 min";
+          if (clamped < 60000) return `${Math.max(1, Math.ceil(clamped / 1000))} s`;
+          const totalMins = Math.ceil(clamped / 60000);
+          const h = Math.floor(totalMins / 60);
+          const m = totalMins % 60;
+          if (h > 0) return `${h}h${String(m).padStart(2, "0")}`;
+          return `${m} min`;
+        }
+        window.formatApproachRemainingMs = formatApproachRemainingMs;
+
         function getBerthDisplayShipName(berthNum = "87") {
           const is86 = String(berthNum) === "86";
           const tmNow = window.tugManeuver;
@@ -46997,6 +47018,7 @@
           }
           const pv = window.livePortVessels;
           const bObj = pv ? (is86 ? pv.berth86 : pv.berth87) : null;
+          if (bObj && bObj.approaching && bObj.approaching.name) return bObj.approaching.name;
           if (bObj && bObj.occupied && bObj.name) return bObj.name;
           if (bObj && bObj.expected && bObj.expected.name) return bObj.expected.name;
           if (bObj && bObj.name && !/LIBRE/i.test(bObj.name)) return bObj.name;
@@ -47007,7 +47029,7 @@
           return getBerthDisplayShipName("87");
         }
 
-        // Contrôleur global de manœuvre (Postes 87 & 86 + Déclenchement automatique aux heures ETA / ETD!)
+        // Contrôleur global de manœuvre (Postes 87 & 86 + Approches 1h30 synchronisées à l'ETA en temps réel / curseur / Time-Lapse!)
         window.tugManeuver = {
           berth: "87",
           state: "docked",
@@ -47020,7 +47042,17 @@
           activeVesselSpec: null,
           autoTriggered: false,
           autoTriggerType: "",
+          scheduleDriven: false,
+          approachStartMs: 0,
+          etaMs: 0,
+          etaLabel: "",
+          remainingMs: 0,
+          tugReturn: null,
+          suppressedAutoEventKey: "",
+          lastHornEventKey: "",
+          lastRevealedEventKey: "",
           lastTriggeredEventKey: "",
+          _lastUiProgKey: "",
           queue: [],
 
           _resolveArgs: function (berthOrOpts, maybeOpts) {
@@ -47043,8 +47075,8 @@
             const pv = window.livePortVessels;
             const bObj = pv ? (bNum === "86" ? pv.berth86 : pv.berth87) : null;
             const src = bNum === "86"
-              ? (window.previewShip86Override || (bObj && bObj.occupied ? bObj : (bObj && bObj.expected) || bObj))
-              : (window.previewShip87Override || (bObj && bObj.occupied ? bObj : (bObj && bObj.expected) || bObj));
+              ? (window.previewShip86Override || (bObj && bObj.approaching) || (bObj && bObj.occupied ? bObj : (bObj && bObj.expected) || bObj))
+              : (window.previewShip87Override || (bObj && bObj.approaching) || (bObj && bObj.occupied ? bObj : (bObj && bObj.expected) || bObj));
             if (src && src.name && !/LIBRE/i.test(src.name)) {
               return {
                 berth: bNum,
@@ -47081,11 +47113,139 @@
             this.progress = 0.0;
             this.autoTriggered = false;
             this.autoTriggerType = "";
+            this.scheduleDriven = false;
+            this.approachStartMs = 0;
+            this.etaMs = 0;
+            this.etaLabel = "";
+            this.remainingMs = 0;
+            this.tugReturn = null;
             this.updateUI();
           },
 
           toggleBerth: function () {
             this.setBerth(this.berth === "87" ? "86" : "87");
+          },
+
+          syncScheduledArrival: function (berthNum, appObj, effMs, opts = {}) {
+            if (!appObj || !appObj.name || !Number.isFinite(appObj.etaMs) || !Number.isFinite(appObj.approachStartMs)) {
+              return false;
+            }
+            const bNum = String(berthNum) === "86" ? "86" : "87";
+            const evKey = `arrive_sched_${bNum}_${appObj.name}_${appObj.etaMs}`;
+            if (this.suppressedAutoEventKey && this.suppressedAutoEventKey === evKey && !opts.force) {
+              return false;
+            }
+            const durMs = Math.max(1, appObj.etaMs - appObj.approachStartMs);
+            const schedProg = Math.max(0, Math.min(1, (effMs - appObj.approachStartMs) / durMs));
+            const remMs = Math.max(0, appObj.etaMs - effMs);
+            const sameEvent = (
+              this.state === "arriving" &&
+              this.scheduleDriven &&
+              this.berth === bNum &&
+              this.lastTriggeredEventKey === evKey
+            );
+
+            this.berth = bNum;
+            this.state = "arriving";
+            this.scheduleDriven = true;
+            this.autoTriggered = true;
+            this.autoTriggerType = "ETA";
+            this.approachStartMs = appObj.approachStartMs;
+            this.etaMs = appObj.etaMs;
+            this.etaLabel = appObj.eta || "";
+            this.progress = schedProg;
+            this.remainingMs = remMs;
+            this.tugReturn = null;
+            this.lastTriggeredEventKey = evKey;
+            this.activeVesselSpec = {
+              berth: bNum,
+              name: appObj.name,
+              flag: appObj.flag || "CA",
+              flagName: appObj.flagName || "Canada",
+              loa: appObj.loa || (bNum === "86" ? 149 : 229),
+              agent: appObj.agent || "",
+              eta: appObj.eta || "",
+            };
+
+            if (!sameEvent) {
+              if (bNum === "86") VESSEL86_DOCKED_POS.copy(vessel86BasePos);
+              else TANKER_DOCKED_POS.copy(tankerBasePos);
+              if (typeof window.applyLiveVesselsTo3D === "function") window.applyLiveVesselsTo3D();
+              if (!opts.silentReveal && this.lastRevealedEventKey !== evKey) {
+                this._revealHudOnAutoTrigger();
+                this.lastRevealedEventKey = evKey;
+              }
+              if (!opts.silent && this.lastHornEventKey !== evKey) {
+                playShipHorn("arrive");
+                this.lastHornEventKey = evKey;
+              }
+            }
+            this.updateUI();
+            return true;
+          },
+
+          syncScheduledTugReturn: function (berthNum, retObj, effMs) {
+            if (!retObj || !Number.isFinite(retObj.etaMs) || !Number.isFinite(retObj.returnEndMs)) {
+              return false;
+            }
+            const bNum = String(berthNum) === "86" ? "86" : "87";
+            const evKey = `tugret_${bNum}_${retObj.name || ""}_${retObj.etaMs}`;
+            const wasChanged = (
+              this.state !== "docked" ||
+              this.scheduleDriven ||
+              !this.tugReturn ||
+              this.tugReturn.evKey !== evKey
+            );
+            this.berth = bNum;
+            this.state = "docked";
+            this.scheduleDriven = false;
+            this.progress = 0.0;
+            this.speedKnots = 0.0;
+            this.approachStartMs = 0;
+            this.etaMs = 0;
+            this.etaLabel = "";
+            this.remainingMs = 0;
+            this.activeVesselSpec = null;
+            this.autoTriggered = true;
+            this.autoTriggerType = "ETA";
+            this.tugReturn = {
+              berth: bNum,
+              name: retObj.name || getBerthDisplayShipName(bNum),
+              eta: retObj.eta || "",
+              etaMs: retObj.etaMs,
+              returnEndMs: retObj.returnEndMs,
+              evKey,
+            };
+            if (wasChanged) {
+              if (typeof window.applyLiveVesselsTo3D === "function") window.applyLiveVesselsTo3D();
+              this.updateUI();
+            }
+            return true;
+          },
+
+          clearScheduledState: function () {
+            if (!this.scheduleDriven && !this.tugReturn) return false;
+            this.scheduleDriven = false;
+            this.tugReturn = null;
+            this.approachStartMs = 0;
+            this.etaMs = 0;
+            this.etaLabel = "";
+            this.remainingMs = 0;
+            this.activeVesselSpec = null;
+            this.autoTriggered = false;
+            this.autoTriggerType = "";
+            this.state = "docked";
+            this.progress = 0.0;
+            this.speedKnots = 0.0;
+            tugBow.group.position.set(TUG_STANDBY_BOW.x, waterLevelY, TUG_STANDBY_BOW.z);
+            tugBow.group.rotation.set(0, TUG_BASSIN_ROT, 0);
+            tugStern.group.position.set(TUG_STANDBY_STERN.x, waterLevelY, TUG_STANDBY_STERN.z);
+            tugStern.group.rotation.set(0, TUG_BASSIN_ROT, 0);
+            towLineBow.visible = false;
+            towLineStern.visible = false;
+            if (typeof window.applyLiveVesselsTo3D === "function") window.applyLiveVesselsTo3D();
+            this.updateUI();
+            return true;
           },
 
           startDeparture: function (berthOrOpts, maybeOpts) {
@@ -47106,6 +47266,13 @@
             this.activeVesselSpec = spec;
             this.autoTriggered = Boolean(opts.autoTriggered);
             this.autoTriggerType = opts.triggerReason || (opts.autoTriggered ? "ETD" : "");
+            this.scheduleDriven = false;
+            this.approachStartMs = 0;
+            this.etaMs = 0;
+            this.etaLabel = "";
+            this.remainingMs = 0;
+            this.tugReturn = null;
+            if (!opts.autoTriggered) this.suppressedAutoEventKey = "";
             this.lastTriggeredEventKey = evKey;
             if (bNum === "86") {
               window.forceShowBerth86Ship = true;
@@ -47140,6 +47307,13 @@
             this.activeVesselSpec = spec;
             this.autoTriggered = Boolean(opts.autoTriggered);
             this.autoTriggerType = opts.triggerReason || (opts.autoTriggered ? "ETA" : "");
+            this.scheduleDriven = false;
+            this.approachStartMs = 0;
+            this.etaMs = 0;
+            this.etaLabel = "";
+            this.remainingMs = 0;
+            this.tugReturn = null;
+            if (!opts.autoTriggered) this.suppressedAutoEventKey = "";
             this.lastTriggeredEventKey = evKey;
             if (bNum === "86") {
               window.forceShowBerth86Ship = true;
@@ -47161,6 +47335,13 @@
             const pv = window.livePortVessels;
             const bObj = pv ? (finBerth === "86" ? pv.berth86 : pv.berth87) : null;
             const liveOccupied = Boolean(bObj && bObj.occupied);
+
+            this.scheduleDriven = false;
+            this.approachStartMs = 0;
+            this.etaMs = 0;
+            this.etaLabel = "";
+            this.remainingMs = 0;
+            this.tugReturn = null;
 
             if (this.state === "departing") {
               this.progress = 1.0;
@@ -47193,14 +47374,27 @@
               } else {
                 this.startArrival(nextJob.bNum, nextJob.opts);
               }
+            } else if (typeof window.syncPortQcScheduleAndAutoTugs === "function") {
+              window.syncPortQcScheduleAndAutoTugs("maneuver_complete");
             }
           },
 
-          resetToDock: function () {
+          resetToDock: function (opts) {
+            if (opts && opts.userInitiated && this.scheduleDriven && this.lastTriggeredEventKey) {
+              this.suppressedAutoEventKey = this.lastTriggeredEventKey;
+            } else if (!opts || !opts.keepSuppressed) {
+              this.suppressedAutoEventKey = "";
+            }
             this.queue = [];
             this.activeVesselSpec = null;
             this.autoTriggered = false;
             this.autoTriggerType = "";
+            this.scheduleDriven = false;
+            this.approachStartMs = 0;
+            this.etaMs = 0;
+            this.etaLabel = "";
+            this.remainingMs = 0;
+            this.tugReturn = null;
             window.forceShowBerth87Ship = false;
             window.forceShowBerth86Ship = false;
             TANKER_DOCKED_POS.copy(tankerBasePos);
@@ -47264,13 +47458,20 @@
             let statusColor = bOccupied ? "#10b981" : "#94a3b8";
             let statusBg = bOccupied ? "rgba(16, 185, 129, 0.2)" : "rgba(148, 163, 184, 0.2)";
             const isMoving = this.state === "departing" || this.state === "arriving";
+            const hasTugReturn = Boolean(this.state === "docked" && this.tugReturn);
 
             if (this.state === "departing") {
               statusTxt = `APPAREILLAGE ${secNum} (${Math.round(this.progress * 100)}%)`;
               statusColor = "#f59e0b";
               statusBg = "rgba(245, 158, 11, 0.2)";
             } else if (this.state === "arriving") {
-              statusTxt = `ACCOSTAGE ${secNum} (${Math.round(this.progress * 100)}%)`;
+              const pct = Math.min(100, Math.round(this.progress * 100));
+              if (this.scheduleDriven) {
+                const remStr = formatApproachRemainingMs(this.remainingMs);
+                statusTxt = `APPROCHE ${secNum} (${pct}% \u2022 -${remStr})`;
+              } else {
+                statusTxt = `ACCOSTAGE ${secNum} (${pct}%)`;
+              }
               statusColor = "#38bdf8";
               statusBg = "rgba(56, 189, 248, 0.2)";
             } else if (this.state === "departed") {
@@ -47286,10 +47487,18 @@
             }
 
             if (autoPill) {
-              if (this.autoTriggered && (isMoving || this.autoTriggerType)) {
+              if (this.autoTriggered && (isMoving || hasTugReturn || this.autoTriggerType)) {
                 autoPill.style.display = "inline-flex";
                 const isEtd = this.autoTriggerType === "ETD";
-                autoPill.textContent = isEtd ? `\u23F1\uFE0F ETD SEC. ${secNum}` : `\u23F1\uFE0F ETA SEC. ${secNum}`;
+                if (this.scheduleDriven && this.state === "arriving") {
+                  autoPill.textContent = this.etaLabel
+                    ? `\u23F1\uFE0F ETA ${this.etaLabel} (1h30)`
+                    : `\u23F1\uFE0F APPROCHE 1h30 SEC. ${secNum}`;
+                } else if (hasTugReturn) {
+                  autoPill.textContent = `\u23F1\uFE0F ETA SEC. ${secNum} \u2022 AMARR\u00C9`;
+                } else {
+                  autoPill.textContent = isEtd ? `\u23F1\uFE0F ETD SEC. ${secNum}` : `\u23F1\uFE0F ETA SEC. ${secNum}`;
+                }
                 autoPill.style.color = isEtd ? "#fbbf24" : "#38bdf8";
                 autoPill.style.background = isEtd ? "rgba(245, 158, 11, 0.22)" : "rgba(56, 189, 248, 0.22)";
                 autoPill.style.borderColor = isEtd ? "rgba(245, 158, 11, 0.48)" : "rgba(56, 189, 248, 0.48)";
@@ -47309,11 +47518,13 @@
 
             if (narrativeEl) {
               if (this.state === "docked") {
-                if (bOccupied) {
+                if (hasTugReturn) {
+                  narrativeEl.textContent = `[ETA] ${this.tugReturn.name} amarr\u00e9 (Poste ${secNum}) \u2022 Retour des remorqueurs Oc\u00e9an au Bassin Louise`;
+                } else if (bOccupied) {
                   const etdNote = bObj && bObj.etd ? ` (ETD ${bObj.etd})` : "";
                   narrativeEl.textContent = `${shipName} amarr\u00e9 \u00e0 la Section ${secNum}${etdNote} \u2022 Remorqueurs Oc\u00e9an au Bassin Louise`;
                 } else if (bObj && bObj.expected && bObj.expected.name) {
-                  narrativeEl.textContent = `Poste ${secNum} libre \u2022 Attendu : ${bObj.expected.name}${bObj.expected.eta ? " (ETA " + bObj.expected.eta + ")" : ""} \u2022 Remorqueurs en veille`;
+                  narrativeEl.textContent = `Poste ${secNum} libre \u2022 Attendu : ${bObj.expected.name}${bObj.expected.eta ? " (ETA " + bObj.expected.eta + " \u2022 approche 1h30 avant)" : ""} \u2022 Remorqueurs en veille`;
                 } else {
                   narrativeEl.textContent = `Poste ${secNum} libre en temps r\u00e9el \u2022 Remorqueurs Oc\u00e9an Taiga & K. Rusby au Bassin Louise`;
                 }
@@ -47328,7 +47539,7 @@
         document.getElementById("btn-maneuver-berth")?.addEventListener("click", () => window.tugManeuver?.toggleBerth());
         document.getElementById("btn-maneuver-arrive")?.addEventListener("click", () => window.tugManeuver?.startArrival());
         document.getElementById("btn-maneuver-depart")?.addEventListener("click", () => window.tugManeuver?.startDeparture());
-        document.getElementById("btn-maneuver-reset")?.addEventListener("click", () => window.tugManeuver?.resetToDock());
+        document.getElementById("btn-maneuver-reset")?.addEventListener("click", () => window.tugManeuver?.resetToDock({ userInitiated: true }));
         document.getElementById("btn-maneuver-cam")?.addEventListener("click", () => window.tugManeuver?.toggleCameraTracking());
 
         document.getElementById("btn-maneuver-close")?.addEventListener("click", () => {
@@ -48349,19 +48560,25 @@
             isVisible: () => Boolean(tankerGroup && tankerGroup.visible),
             getDynamicLabel: () => {
               const b87 = window.livePortVessels && window.livePortVessels.berth87;
-              const nm = (b87 && b87.name) ? b87.name : (b87 && b87.expected && b87.expected.name ? b87.expected.name : "Cap Qu\u00e9bec");
+              const nm = (b87 && b87.approaching && b87.approaching.name)
+                ? b87.approaching.name
+                : ((b87 && b87.name) ? b87.name : (b87 && b87.expected && b87.expected.name ? b87.expected.name : "Cap Qu\u00e9bec"));
               return "\uD83D\uDEA2 " + nm;
             },
             getDynamicSub: () => {
               const b87 = window.livePortVessels && window.livePortVessels.berth87;
-              if (!b87) return "P\u00e9trolier \u2022 Poste 87 (Face Qu\u00e9bec)";
-              const loa = b87.loa || 274;
-              const typ = b87.typeLabel || "P\u00e9trolier";
-              const flg = b87.flagName || b87.flag || "CA";
+              const src = (b87 && b87.approaching) || b87;
+              if (!src) return "P\u00e9trolier \u2022 Poste 87 (Face Qu\u00e9bec)";
+              const loa = src.loa || 274;
+              const typ = src.typeLabel || "P\u00e9trolier";
+              const flg = src.flagName || src.flag || "CA";
               return `${typ} (${loa}m \u2022 ${flg}) \u2022 Poste 87 (Vers Qu\u00e9bec)`;
             },
             getDynamicDraft: () => {
               const b87 = window.livePortVessels && window.livePortVessels.berth87;
+              if (b87 && b87.approaching) {
+                return `Approche 1h30 \u2022 ETA: ${b87.approaching.eta || "--"}`;
+              }
               if (b87 && b87.arrival) {
                 return `Arr.: ${b87.arrival}${b87.etd ? " \u2022 ETD: " + b87.etd : ""}`;
               }
@@ -48373,10 +48590,21 @@
               const tm = window.tugManeuver;
               const b87 = window.livePortVessels && window.livePortVessels.berth87;
               const opTag = (b87 && b87.operation) ? ` \u2022 ${b87.operation}` : "";
-              if (!tm || tm.state === "docked") return `\u00C0 quai Poste 87 (0.0 nds)${opTag}`;
-              if (tm.state === "departing") return "Appareillage (" + tm.speedKnots.toFixed(1) + " nds)";
-              if (tm.state === "arriving") return "Accostage (" + tm.speedKnots.toFixed(1) + " nds)";
-              return "En transit aval (" + tm.speedKnots.toFixed(1) + " nds)";
+              if (tm && tm.berth === "87" && tm.state === "arriving") {
+                if (tm.scheduleDriven) {
+                  return `Approche 1h30 (${Math.round(tm.progress * 100)}% \u2022 -${formatApproachRemainingMs(tm.remainingMs)} \u2022 ${tm.speedKnots.toFixed(1)} nds)`;
+                }
+                return "Accostage (" + tm.speedKnots.toFixed(1) + " nds)";
+              }
+              if (b87 && b87.approaching) {
+                const effMs = typeof getEffectiveTimeMs === "function" ? getEffectiveTimeMs() : Date.now();
+                const remMs = Math.max(0, b87.approaching.etaMs - effMs);
+                const pct = Math.round(Math.max(0, Math.min(1, (effMs - b87.approaching.approachStartMs) / Math.max(1, b87.approaching.etaMs - b87.approaching.approachStartMs))) * 100);
+                return `Approche 1h30 (${pct}% \u2022 -${formatApproachRemainingMs(remMs)})`;
+              }
+              if (tm && tm.berth === "87" && tm.state === "departing") return "Appareillage (" + tm.speedKnots.toFixed(1) + " nds)";
+              if (tm && tm.berth === "87" && tm.state === "departed") return "En transit aval (" + tm.speedKnots.toFixed(1) + " nds)";
+              return `\u00C0 quai Poste 87 (0.0 nds)${opTag}`;
             },
           },
           {
@@ -48388,19 +48616,25 @@
             isVisible: () => Boolean(vessel86Group && vessel86Group.visible),
             getDynamicLabel: () => {
               const b86 = window.livePortVessels && window.livePortVessels.berth86;
-              const nm = (b86 && b86.name) || "Navire Poste 86";
+              const nm = (b86 && b86.approaching && b86.approaching.name)
+                ? b86.approaching.name
+                : ((b86 && b86.name) || "Navire Poste 86");
               return "\uD83D\uDEE2\uFE0F " + nm;
             },
             getDynamicSub: () => {
               const b86 = window.livePortVessels && window.livePortVessels.berth86;
-              if (!b86) return "P\u00e9trolier / Chimiquier \u2022 Poste 86 (Face L\u00e9vis)";
-              const loa = b86.loa || 183;
-              const typ = b86.typeLabel || "P\u00e9trolier-Chimiquier";
-              const flg = b86.flagName || b86.flag || "CA";
+              const src = (b86 && b86.approaching) || b86;
+              if (!src) return "P\u00e9trolier / Chimiquier \u2022 Poste 86 (Face L\u00e9vis)";
+              const loa = src.loa || 183;
+              const typ = src.typeLabel || "P\u00e9trolier-Chimiquier";
+              const flg = src.flagName || src.flag || "CA";
               return `${typ} (${loa}m \u2022 ${flg}) \u2022 Poste 86 (Vers L\u00e9vis)`;
             },
             getDynamicDraft: () => {
               const b86 = window.livePortVessels && window.livePortVessels.berth86;
+              if (b86 && b86.approaching) {
+                return `Approche 1h30 \u2022 ETA: ${b86.approaching.eta || "--"}`;
+              }
               if (b86 && b86.arrival) {
                 return `Arr.: ${b86.arrival}${b86.etd ? " \u2022 ETD: " + b86.etd : ""}`;
               }
@@ -48409,7 +48643,21 @@
             getPos: () => new THREE.Vector3(vessel86Group.position.x, vessel86Group.position.y + 22, vessel86Group.position.z),
             getRealDist: () => computeDynamicRealDistStr(vessel86Group.position),
             getStatus: () => {
+              const tm = window.tugManeuver;
               const b86 = window.livePortVessels && window.livePortVessels.berth86;
+              if (tm && tm.berth === "86" && tm.state === "arriving") {
+                if (tm.scheduleDriven) {
+                  return `Approche 1h30 (${Math.round(tm.progress * 100)}% \u2022 -${formatApproachRemainingMs(tm.remainingMs)} \u2022 ${tm.speedKnots.toFixed(1)} nds)`;
+                }
+                return "Accostage (" + tm.speedKnots.toFixed(1) + " nds)";
+              }
+              if (b86 && b86.approaching) {
+                const effMs = typeof getEffectiveTimeMs === "function" ? getEffectiveTimeMs() : Date.now();
+                const remMs = Math.max(0, b86.approaching.etaMs - effMs);
+                const pct = Math.round(Math.max(0, Math.min(1, (effMs - b86.approaching.approachStartMs) / Math.max(1, b86.approaching.etaMs - b86.approaching.approachStartMs))) * 100);
+                return `Approche 1h30 (${pct}% \u2022 -${formatApproachRemainingMs(remMs)})`;
+              }
+              if (tm && tm.berth === "86" && tm.state === "departing") return "Appareillage (" + tm.speedKnots.toFixed(1) + " nds)";
               return (b86 && b86.operation)
                 ? `\u00C0 quai Poste 86 \u2022 ${b86.operation}`
                 : "\u00C0 quai Poste 86 (Bras connect\u00e9s)";
@@ -48425,11 +48673,12 @@
             getRealDist: () => computeDynamicRealDistStr(tugBow.group.position),
             getStatus: () => {
               const tm = window.tugManeuver;
+              if (tm && tm.state === "docked" && tm.tugReturn) return "Retour vers Bassin Louise (11.8 nds)";
               if (!tm || tm.state === "docked" || tm.state === "departed") return "\u00C0 quai Bassin Louise (4,3 km)";
               if (tm.state === "departing" && tm.progress < 0.25) return "En route depuis Bassin Louise (12.5 nds)";
               if (tm.state === "departing" && tm.progress > 0.86) return "Retour vers Bassin Louise (11.8 nds)";
-              if (tm.state === "arriving" && tm.progress > 0.78) return "Retour vers Bassin Louise (11.8 nds)";
-              return "Assistance active Sec. 87";
+              if (tm.state === "arriving" && !tm.scheduleDriven && tm.progress >= MANUAL_ARRIVAL_DOCK_P) return "Retour vers Bassin Louise (11.8 nds)";
+              return `Assistance active Sec. ${tm.berth || "87"}`;
             },
           },
           {
@@ -48442,11 +48691,12 @@
             getRealDist: () => computeDynamicRealDistStr(tugStern.group.position),
             getStatus: () => {
               const tm = window.tugManeuver;
+              if (tm && tm.state === "docked" && tm.tugReturn) return "Retour vers Bassin Louise (11.8 nds)";
               if (!tm || tm.state === "docked" || tm.state === "departed") return "\u00C0 quai Bassin Louise (4,3 km)";
               if (tm.state === "departing" && tm.progress < 0.25) return "En route depuis Bassin Louise (12.5 nds)";
               if (tm.state === "departing" && tm.progress > 0.86) return "Retour vers Bassin Louise (11.8 nds)";
-              if (tm.state === "arriving" && tm.progress > 0.78) return "Retour vers Bassin Louise (11.8 nds)";
-              return "Assistance active Sec. 87";
+              if (tm.state === "arriving" && !tm.scheduleDriven && tm.progress >= MANUAL_ARRIVAL_DOCK_P) return "Retour vers Bassin Louise (11.8 nds)";
+              return `Assistance active Sec. ${tm.berth || "87"}`;
             },
           },
           {
@@ -48458,9 +48708,12 @@
             getPos: () => dock87WorldAnchor.clone(),
             getRealDist: () => computeDynamicRealDistStr(dock87WorldAnchor),
             getStatus: () => {
+              const tm = window.tugManeuver;
               const b87 = window.livePortVessels && window.livePortVessels.berth87;
               const occ = Boolean((b87 && b87.occupied) || window.forceShowBerth87Ship);
-              if (window.tugManeuver && window.tugManeuver.state !== "docked") return "Bras relev\u00e9s (Man\u0153uvre en cours)";
+              if ((b87 && b87.approaching) || (tm && tm.berth === "87" && tm.state !== "docked")) {
+                return "Bras relev\u00e9s (Man\u0153uvre d'approche / accostage en cours)";
+              }
               if (occ) return `\u00C0 quai : ${(b87 && b87.name) || "Navire actif"} \u2022 Bras connect\u00e9s`;
               if (b87 && b87.expected && b87.expected.name) return `Poste libre \u2022 Attendu : ${b87.expected.name}`;
               return "Poste 87 libre \u2022 Bras Chiksan relev\u00e9s";
@@ -48475,8 +48728,12 @@
             getPos: () => dock86WorldAnchor.clone(),
             getRealDist: () => computeDynamicRealDistStr(dock86WorldAnchor),
             getStatus: () => {
+              const tm = window.tugManeuver;
               const b86 = window.livePortVessels && window.livePortVessels.berth86;
               const occ86 = Boolean((b86 && b86.occupied) || window.forceShowBerth86Ship);
+              if ((b86 && b86.approaching) || (tm && tm.berth === "86" && tm.state !== "docked")) {
+                return "Bras relev\u00e9s (Man\u0153uvre d'approche / accostage en cours)";
+              }
               if (occ86) return `\u00C0 quai : ${(b86 && b86.name) || "Navire actif"} \u2022 Bras connect\u00e9s`;
               if (b86 && b86.expected && b86.expected.name) return `Poste libre \u2022 Attendu : ${b86.expected.name}`;
               return "Poste 86 libre \u2022 Bras Chiksan relev\u00e9s";
@@ -50614,9 +50871,70 @@
         const UP_VEC_3D = new THREE.Vector3(0, 1, 0);
 
         const scratchShipPos = new THREE.Vector3();
+        const scratchSecShipPos = new THREE.Vector3();
         const scratchBowTugPos = new THREE.Vector3();
         const scratchSternTugPos = new THREE.Vector3();
         const scratchDeltaVec = new THREE.Vector3();
+
+        function evalArrivalShipPose(is86, rawP, outPos) {
+          const p = Math.max(0, Math.min(1, Number(rawP) || 0));
+          const bDockedPos = is86 ? VESSEL86_DOCKED_POS : TANKER_DOCKED_POS;
+          const bDockedRot = is86 ? VESSEL86_DOCKED_ROT : TANKER_DOCKED_ROT;
+          const bClearPos = is86 ? VESSEL86_CLEAR_POS : TANKER_CLEAR_POS;
+          const bClearRot = is86 ? VESSEL86_CLEAR_ROT : TANKER_CLEAR_ROT;
+          if (p < 0.30) {
+            const u = p / 0.30;
+            const s = 0.25 * u + 0.75 * (u * u * (3 - 2 * u));
+            outPos.lerpVectors(TANKER_CHANNEL_POS, TANKER_TURN_POS, s);
+            return {
+              phase: 1,
+              u,
+              rotY: TANKER_ARRIVE_CHAN_ROT + (TANKER_ARRIVE_TURN_ROT - TANKER_ARRIVE_CHAN_ROT) * s,
+              speedKnots: 6.8 - u * 3.0,
+            };
+          } else if (p < 0.62) {
+            const u = (p - 0.30) / 0.32;
+            const s = 0.25 * u + 0.75 * (u * u * (3 - 2 * u));
+            outPos.lerpVectors(TANKER_TURN_POS, bClearPos, s);
+            return {
+              phase: 2,
+              u,
+              rotY: TANKER_ARRIVE_TURN_ROT + (bClearRot - TANKER_ARRIVE_TURN_ROT) * s,
+              speedKnots: 3.8 - u * 2.4,
+            };
+          } else {
+            const u = Math.min(1, (p - 0.62) / 0.38);
+            const s = (-1.3 * u * u + 1.6 * u + 0.7) * u;
+            outPos.lerpVectors(bClearPos, bDockedPos, s);
+            return {
+              phase: 3,
+              u,
+              rotY: bClearRot + (bDockedRot - bClearRot) * s,
+              speedKnots: Math.max(0, 1.4 * (1 - u)),
+            };
+          }
+        }
+
+        function evalTugReturnFromBerth(is86, bDockedPos, bDockedRot, bTugApproachWp, bWSide, rawU, outBow, outStern) {
+          const u = Math.max(0, Math.min(1, Number(rawU) || 0));
+          const s = u * u * (3 - 2 * u);
+          const bowRelease = getShipRelativeVec3(bDockedPos, bDockedRot, is86 ? 20 : 32, bWSide * (is86 ? 16 : 18));
+          const sternRelease = getShipRelativeVec3(bDockedPos, bDockedRot, is86 ? -20 : -32, bWSide * (is86 ? 16 : 18));
+          evalQuadBezierXZ(bowRelease, bTugApproachWp, TUG_STANDBY_BOW, s, outBow, scratchDeltaVec);
+          evalQuadBezierXZ(sternRelease, bTugApproachWp, TUG_STANDBY_STERN, s, outStern, null);
+          const startRot = bDockedRot - bWSide * (Math.PI / 2);
+          const returnRot = Math.atan2(-scratchDeltaVec.z, scratchDeltaVec.x);
+          let rot = returnRot;
+          if (u < 0.14) {
+            rot = shortestAngleLerp(startRot, returnRot, u / 0.14);
+          } else if (u > 0.90) {
+            rot = shortestAngleLerp(returnRot, TUG_BASSIN_ROT, (u - 0.90) / 0.10);
+          }
+          return {
+            rot,
+            thrust: u < 0.95 ? 0.82 : 0.20,
+          };
+        }
         const scratchBittBow = new THREE.Vector3();
         const scratchBittStern = new THREE.Vector3();
         const scratchAttachBow = new THREE.Vector3();
@@ -51419,10 +51737,15 @@
             }
           }
 
-          // 5. Mouvement hydrodynamique 3D temps réel des navires aux Postes 87 & 86 + Manœuvres de remorquage ETA/ETD
-          if (typeof window._nextPortQcTransitionMs === "number" && typeof window.syncPortQcScheduleAndAutoTugs === "function") {
-            const effLoopMs = typeof getEffectiveTimeMs === "function" ? getEffectiveTimeMs() : Date.now();
-            if (effLoopMs >= window._nextPortQcTransitionMs) {
+          // 5. Mouvement hydrodynamique 3D temps réel des navires aux Postes 87 & 86 + Manœuvres de remorquage ETA/ETD (approche 1h30 synchronisée)
+          const effLoopMs = typeof getEffectiveTimeMs === "function" ? getEffectiveTimeMs() : Date.now();
+          if (typeof window.syncPortQcScheduleAndAutoTugs === "function") {
+            const tmPre = window.tugManeuver;
+            const needsScheduledBoundarySync =
+              (typeof window._nextPortQcTransitionMs === "number" && effLoopMs >= window._nextPortQcTransitionMs) ||
+              (tmPre && tmPre.scheduleDriven && tmPre.state === "arriving" && (effLoopMs < tmPre.approachStartMs || effLoopMs >= tmPre.etaMs)) ||
+              (tmPre && tmPre.tugReturn && (effLoopMs < tmPre.tugReturn.etaMs || effLoopMs >= tmPre.tugReturn.returnEndMs));
+            if (needsScheduledBoundarySync) {
               window.syncPortQcScheduleAndAutoTugs("eta_etd_reached");
             }
           }
@@ -51440,7 +51763,16 @@
           // CALCUL DES TRAJECTOIRES DE MANOEUVRE (APPAREILLAGE & ACCOSTAGE — POSTES 87 & 86)
           // -------------------------------------------------------------
           const tm = window.tugManeuver;
-          if (tm && (tm.state === "departing" || tm.state === "arriving")) {
+          if (tm && tm.state === "arriving" && tm.scheduleDriven && tm.etaMs > tm.approachStartMs) {
+            const schedDurMs = Math.max(1, tm.etaMs - tm.approachStartMs);
+            tm.progress = Math.max(0, Math.min(1, (effLoopMs - tm.approachStartMs) / schedDurMs));
+            tm.remainingMs = Math.max(0, tm.etaMs - effLoopMs);
+            const uiProgKey = `${Math.round(tm.progress * 1000)}_${Math.ceil(tm.remainingMs / 1000)}`;
+            if (tm._lastUiProgKey !== uiProgKey) {
+              tm._lastUiProgKey = uiProgKey;
+              tm.updateUI();
+            }
+          } else if (tm && (tm.state === "departing" || tm.state === "arriving")) {
             const tlMult = (window.timeLapseCtrl && window.timeLapseCtrl.playing) ? 2.4 : 1.0;
             const deltaProg = 0.001 * tm.speedMultiplier * tlMult * dt60;
             tm.progress += deltaProg;
@@ -51492,13 +51824,24 @@
           if (tmState === "docked") {
             sP.copy(dockedPos);
             sRot = dockedRot;
-            bowTugTarget.copy(TUG_STANDBY_BOW);
-            sternTugTarget.copy(TUG_STANDBY_STERN);
-            bowTugRot = TUG_BASSIN_ROT;
-            sternTugRot = TUG_BASSIN_ROT;
             linesActive = false;
-            thrustIntensity = 0.1;
             if (tm) tm.speedKnots = 0.0;
+            if (tm && tm.tugReturn && effLoopMs >= tm.tugReturn.etaMs && effLoopMs < tm.tugReturn.returnEndMs) {
+              const retDur = Math.max(1, tm.tugReturn.returnEndMs - tm.tugReturn.etaMs);
+              const retU = Math.max(0, Math.min(1, (effLoopMs - tm.tugReturn.etaMs) / retDur));
+              const retRes = evalTugReturnFromBerth(isTm86, dockedPos, dockedRot, tugApproachWp, wSide, retU, bowTugTarget, sternTugTarget);
+              bowTugRot = retRes.rot;
+              sternTugRot = retRes.rot;
+              thrustIntensity = retRes.thrust;
+              tugTransitFocus = true;
+              setTugNarrativeText(`[ETA] ${tm.tugReturn.name} amarr\u00e9 (Poste ${activeSecLbl}) \u2022 Retour des remorqueurs Oc\u00e9an au Bassin Louise`);
+            } else {
+              bowTugTarget.copy(TUG_STANDBY_BOW);
+              sternTugTarget.copy(TUG_STANDBY_STERN);
+              bowTugRot = TUG_BASSIN_ROT;
+              sternTugRot = TUG_BASSIN_ROT;
+              thrustIntensity = 0.1;
+            }
           } else if (tmState === "departed") {
             sP.copy(TANKER_CHANNEL_POS);
             sRot = TANKER_CHANNEL_ROT;
@@ -51600,82 +51943,104 @@
               }
             }
           } else if (tmState === "arriving") {
-            if (tmP < 0.24) {
-              // Phase 1/5 : Approche du navire depuis l'Île d'Orléans & sortie courbe des remorqueurs à sa rencontre
-              const u = tmP / 0.24;
-              const s = u * u * (3 - 2 * u);
-              sP.lerpVectors(TANKER_CHANNEL_POS, TANKER_TURN_POS, s);
-              sRot = TANKER_ARRIVE_CHAN_ROT + (TANKER_ARRIVE_TURN_ROT - TANKER_ARRIVE_CHAN_ROT) * s;
-              const bowMeet = getShipRelativeVec3(sP, sRot, isTm86 ? 38 : 56, 14 * wSide);
-              const sternMeet = getShipRelativeVec3(sP, sRot, isTm86 ? -32 : -44, -16 * wSide);
-              const tugU = Math.min(1, u / 0.65);
-              const tugS = tugU * tugU * (3 - 2 * tugU);
-              evalQuadBezierXZ(TUG_STANDBY_BOW, TUG_NARROWS_WP, bowMeet, tugS, bowTugTarget, scratchDeltaVec);
-              evalQuadBezierXZ(TUG_STANDBY_STERN, TUG_NARROWS_WP, sternMeet, tugS, sternTugTarget, null);
-              if (tugU < 1.0) {
-                bowTugRot = Math.atan2(-scratchDeltaVec.z, scratchDeltaVec.x);
-                sternTugRot = bowTugRot;
-              } else {
-                bowTugRot = sRot;
-                sternTugRot = sRot;
-              }
-              thrustIntensity = 0.75;
-              linesActive = u >= 0.65;
-              if (tm) {
-                tm.speedKnots = 7.0 - u * 3.2;
-                setTugNarrativeText(`${autoPrefix}Phase 1/5 : Sortie des remorqueurs du Bassin Louise \u2022 Prise en charge de ${activeShipDisplayName} dans le chenal`);
-              }
-            } else if (tmP < 0.50) {
-              // Phase 2/5 : Freinage et alignement devant la Section 87 ou l'entrée aval du Poste 86
-              const u = (tmP - 0.24) / 0.26;
-              const s = u * u * (3 - 2 * u);
-              sP.lerpVectors(TANKER_TURN_POS, clearPos, s);
-              sRot = TANKER_ARRIVE_TURN_ROT + (clearRot - TANKER_ARRIVE_TURN_ROT) * s;
-              bowTugTarget.copy(getShipRelativeVec3(sP, sRot, isTm86 ? 24 : 42, wSide * (isTm86 ? 22 : 24)));
-              sternTugTarget.copy(getShipRelativeVec3(sP, sRot, isTm86 ? -22 : -38, wSide * (isTm86 ? 22 : 24)));
-              bowTugRot = sRot + wSide * (Math.PI / 2);
-              sternTugRot = sRot + wSide * (Math.PI / 2);
-              thrustIntensity = 0.8;
-              linesActive = true;
-              if (tm) {
-                tm.speedKnots = 3.8 - u * 2.2;
-                setTugNarrativeText(`${autoPrefix}Phase 2/5 : Freinage & alignement d'approche de ${activeShipDisplayName} vers le Poste ${activeSecLbl}`);
-              }
-            } else if (tmP < 0.78) {
-              // Phase 3/5 : Poussée latérale et accostage en douceur contre les défenses du Poste 87 ou 86
-              const u = (tmP - 0.50) / 0.28;
-              const s = u * u * (3 - 2 * u);
-              sP.lerpVectors(clearPos, dockedPos, s);
-              sRot = clearRot + (dockedRot - clearRot) * s;
-              bowTugTarget.copy(getShipRelativeVec3(sP, sRot, isTm86 ? 20 : 32, wSide * (isTm86 ? 16 : 18)));
-              sternTugTarget.copy(getShipRelativeVec3(sP, sRot, isTm86 ? -20 : -32, wSide * (isTm86 ? 16 : 18)));
-              bowTugRot = sRot - wSide * (Math.PI / 2);
-              sternTugRot = sRot - wSide * (Math.PI / 2);
-              thrustIntensity = 0.9;
-              linesActive = true;
-              if (tm) {
-                tm.speedKnots = 1.4 - u * 1.2;
-                setTugNarrativeText(`${autoPrefix}Phase 3/5 : Pouss\u00e9e lat\u00e9rale des remorqueurs \u2022 Accostage en douceur de ${activeShipDisplayName} au Poste ${activeSecLbl}`);
-              }
-            } else {
-              // Phase 4/4 : Navire amarré • Les remorqueurs regagnent le Bassin Louise!
-              const u = (tmP - 0.78) / 0.22;
-              const s = u * u * (3 - 2 * u);
+            const isSchedArr = Boolean(tm && tm.scheduleDriven);
+            const isManualTugRet = !isSchedArr && tmP >= MANUAL_ARRIVAL_DOCK_P;
+            if (isManualTugRet) {
+              // Fin de démo manuelle : Navire amarré • Retour fluide des remorqueurs vers Bassin Louise
+              const retU = Math.max(0, Math.min(1, (tmP - MANUAL_ARRIVAL_DOCK_P) / (1.0 - MANUAL_ARRIVAL_DOCK_P)));
               sP.copy(dockedPos);
               sRot = dockedRot;
-              const bowRelease = getShipRelativeVec3(sP, sRot, isTm86 ? 22 : 32, wSide * 22);
-              const sternRelease = getShipRelativeVec3(sP, sRot, isTm86 ? -22 : -32, wSide * 22);
-              evalQuadBezierXZ(bowRelease, tugApproachWp, TUG_STANDBY_BOW, s, bowTugTarget, scratchDeltaVec);
-              evalQuadBezierXZ(sternRelease, tugApproachWp, TUG_STANDBY_STERN, s, sternTugTarget, null);
-              const returnRot = Math.atan2(-scratchDeltaVec.z, scratchDeltaVec.x);
-              bowTugRot = u < 0.92 ? returnRot : shortestAngleLerp(returnRot, TUG_BASSIN_ROT, (u - 0.92) / 0.08);
-              sternTugRot = bowTugRot;
-              thrustIntensity = u < 0.95 ? 0.82 : 0.2;
+              const retRes = evalTugReturnFromBerth(isTm86, dockedPos, dockedRot, tugApproachWp, wSide, retU, bowTugTarget, sternTugTarget);
+              bowTugRot = retRes.rot;
+              sternTugRot = retRes.rot;
+              thrustIntensity = retRes.thrust;
               linesActive = false;
               tugTransitFocus = true;
               if (tm) {
                 tm.speedKnots = 0.0;
                 setTugNarrativeText(`${autoPrefix}Phase 4/4 : ${activeShipDisplayName} amarr\u00e9 (Poste ${activeSecLbl}) \u2022 Retour des remorqueurs Oc\u00e9an au Bassin Louise`);
+              }
+            } else {
+              // Approche continue 1h30 (0.0 = ETA - 1h30 -> 1.0 = accostage aux défenses à l'ETA exacte)
+              const approachP = isSchedArr
+                ? Math.max(0, Math.min(1, tmP))
+                : Math.max(0, Math.min(1, tmP / MANUAL_ARRIVAL_DOCK_P));
+              const arrPose = evalArrivalShipPose(isTm86, approachP, sP);
+              sRot = arrPose.rotY;
+              const arrPrefix = isSchedArr
+                ? `[ETA -${formatApproachRemainingMs(tm.remainingMs)}] `
+                : autoPrefix;
+              const phaseDenom = isSchedArr ? "3" : "4";
+              const bowP1X = isTm86 ? 28 : 46;
+              const sternP1X = isTm86 ? -24 : -40;
+              const bowP2X = isTm86 ? 24 : 42;
+              const sternP2X = isTm86 ? -22 : -38;
+              const bowP3X = isTm86 ? 20 : 32;
+              const sternP3X = isTm86 ? -20 : -32;
+              const latP12 = isTm86 ? 22 : 24;
+              const latP3 = isTm86 ? 16 : 18;
+
+              if (arrPose.phase === 1) {
+                // Phase 1 (0%..30% = 27 min) : Approche depuis l'Île d'Orléans & sortie des remorqueurs à sa rencontre
+                const u = arrPose.u;
+                const bowMeet = getShipRelativeVec3(sP, sRot, bowP1X, wSide * latP12);
+                const sternMeet = getShipRelativeVec3(sP, sRot, sternP1X, wSide * latP12);
+                const tugU = Math.min(1, u / 0.55);
+                const tugS = tugU * tugU * (3 - 2 * tugU);
+                evalQuadBezierXZ(TUG_STANDBY_BOW, TUG_NARROWS_WP, bowMeet, tugS, bowTugTarget, scratchDeltaVec);
+                evalQuadBezierXZ(TUG_STANDBY_STERN, TUG_NARROWS_WP, sternMeet, tugS, sternTugTarget, null);
+                const transitRot = Math.atan2(-scratchDeltaVec.z, scratchDeltaVec.x);
+                if (tugU < 0.80) {
+                  bowTugRot = transitRot;
+                  sternTugRot = transitRot;
+                } else if (tugU < 1.0) {
+                  bowTugRot = shortestAngleLerp(transitRot, sRot, (tugU - 0.80) / 0.20);
+                  sternTugRot = bowTugRot;
+                } else {
+                  bowTugRot = sRot;
+                  sternTugRot = sRot;
+                }
+                thrustIntensity = 0.75;
+                linesActive = u >= 0.55;
+                if (tm) {
+                  tm.speedKnots = arrPose.speedKnots;
+                  setTugNarrativeText(`${arrPrefix}Phase 1/${phaseDenom} : Sortie des remorqueurs du Bassin Louise \u2022 Prise en charge de ${activeShipDisplayName} dans le chenal`);
+                }
+              } else if (arrPose.phase === 2) {
+                // Phase 2 (30%..62% = 29 min) : Freinage et alignement devant le Poste 87 ou 86
+                const u = arrPose.u;
+                const sw = Math.min(1, u / 0.20);
+                const swS = sw * sw * (3 - 2 * sw);
+                const curBowX = bowP1X + (bowP2X - bowP1X) * swS;
+                const curSternX = sternP1X + (sternP2X - sternP1X) * swS;
+                bowTugTarget.copy(getShipRelativeVec3(sP, sRot, curBowX, wSide * latP12));
+                sternTugTarget.copy(getShipRelativeVec3(sP, sRot, curSternX, wSide * latP12));
+                bowTugRot = sRot + wSide * (Math.PI / 2) * swS;
+                sternTugRot = bowTugRot;
+                thrustIntensity = 0.80;
+                linesActive = true;
+                if (tm) {
+                  tm.speedKnots = arrPose.speedKnots;
+                  setTugNarrativeText(`${arrPrefix}Phase 2/${phaseDenom} : Freinage & alignement d'approche de ${activeShipDisplayName} vers le Poste ${activeSecLbl}`);
+                }
+              } else {
+                // Phase 3 (62%..100% = 34 min) : Poussée latérale lente et accostage en douceur contre les défenses jusqu'à l'ETA
+                const u = arrPose.u;
+                const pbRaw = Math.min(1, u / 0.18);
+                const pb = pbRaw * pbRaw * (3 - 2 * pbRaw);
+                const curBowX = bowP2X + (bowP3X - bowP2X) * pb;
+                const curSternX = sternP2X + (sternP3X - sternP2X) * pb;
+                const curLat = latP12 + (latP3 - latP12) * pb;
+                bowTugTarget.copy(getShipRelativeVec3(sP, sRot, curBowX, wSide * curLat));
+                sternTugTarget.copy(getShipRelativeVec3(sP, sRot, curSternX, wSide * curLat));
+                bowTugRot = sRot + wSide * (Math.PI / 2) * (1 - 2 * pb);
+                sternTugRot = bowTugRot;
+                thrustIntensity = 0.90 * (1 - 0.55 * u * u * u);
+                linesActive = true;
+                if (tm) {
+                  tm.speedKnots = arrPose.speedKnots;
+                  setTugNarrativeText(`${arrPrefix}Phase 3/${phaseDenom} : Pouss\u00e9e lat\u00e9rale des remorqueurs \u2022 Accostage en douceur de ${activeShipDisplayName} au Poste ${activeSecLbl}`);
+                }
               }
             }
           }
@@ -51685,11 +52050,23 @@
             tm.currentShipRotY = sRot;
           }
 
-          // Visibilité & positionnement 3D temps réel du navire au Poste 87
-          const pos87NowX = !isTm86 ? sP.x : TANKER_DOCKED_POS.x;
-          const pos87NowZ = !isTm86 ? sP.z : TANKER_DOCKED_POS.z;
-          const rot87Now = !isTm86 ? sRot : TANKER_DOCKED_ROT;
-          const showShip87 = (!isTm86 && tmState !== "docked") || b87Occupied;
+          // Visibilité & positionnement 3D temps réel du navire au Poste 87 (inclut approche simultanée si 86 est escorté)
+          let pos87NowX = !isTm86 ? sP.x : TANKER_DOCKED_POS.x;
+          let pos87NowZ = !isTm86 ? sP.z : TANKER_DOCKED_POS.z;
+          let rot87Now = !isTm86 ? sRot : TANKER_DOCKED_ROT;
+          let sec87Approaching = false;
+          let sec87SpeedKnots = (!isTm86 && tm && typeof tm.speedKnots === "number") ? tm.speedKnots : 0.0;
+          if (isTm86 && ship87Live && ship87Live.approaching && !b87Occupied) {
+            const a87 = ship87Live.approaching;
+            const p87 = Math.max(0, Math.min(1, (effLoopMs - a87.approachStartMs) / Math.max(1, a87.etaMs - a87.approachStartMs)));
+            const pose87 = evalArrivalShipPose(false, p87, scratchSecShipPos);
+            pos87NowX = scratchSecShipPos.x;
+            pos87NowZ = scratchSecShipPos.z;
+            rot87Now = pose87.rotY;
+            sec87SpeedKnots = pose87.speedKnots;
+            sec87Approaching = true;
+          }
+          const showShip87 = (!isTm86 && tmState !== "docked") || sec87Approaching || b87Occupied;
           const shipWaveY = sampleWaveHeight(pos87NowX, pos87NowZ, t, windKnots, flowSign);
           tankerGroup.visible = showShip87;
           tankerGroup.position.x = pos87NowX;
@@ -51708,11 +52085,23 @@
             ship87Flag.mesh.rotation.z = -Math.max(0, 1.0 - instWindKnots3D / 9.0) * 0.42;
           }
 
-          // Visibilité & mouvement hydrodynamique 3D temps réel du navire au Poste 86 (avec support complet accostage/appareillage!)
-          const pos86NowX = isTm86 ? sP.x : VESSEL86_DOCKED_POS.x;
-          const pos86NowZ = isTm86 ? sP.z : VESSEL86_DOCKED_POS.z;
-          const rot86Now = isTm86 ? sRot : VESSEL86_DOCKED_ROT;
-          const showShip86 = (isTm86 && tmState !== "docked") || b86Occupied;
+          // Visibilité & mouvement hydrodynamique 3D temps réel du navire au Poste 86 (avec support complet approche 1h30/accostage/appareillage!)
+          let pos86NowX = isTm86 ? sP.x : VESSEL86_DOCKED_POS.x;
+          let pos86NowZ = isTm86 ? sP.z : VESSEL86_DOCKED_POS.z;
+          let rot86Now = isTm86 ? sRot : VESSEL86_DOCKED_ROT;
+          let sec86Approaching = false;
+          let sec86SpeedKnots = (isTm86 && tm && typeof tm.speedKnots === "number") ? tm.speedKnots : 0.0;
+          if (!isTm86 && ship86Live && ship86Live.approaching && !b86Occupied) {
+            const a86 = ship86Live.approaching;
+            const p86 = Math.max(0, Math.min(1, (effLoopMs - a86.approachStartMs) / Math.max(1, a86.etaMs - a86.approachStartMs)));
+            const pose86 = evalArrivalShipPose(true, p86, scratchSecShipPos);
+            pos86NowX = scratchSecShipPos.x;
+            pos86NowZ = scratchSecShipPos.z;
+            rot86Now = pose86.rotY;
+            sec86SpeedKnots = pose86.speedKnots;
+            sec86Approaching = true;
+          }
+          const showShip86 = (isTm86 && tmState !== "docked") || sec86Approaching || b86Occupied;
           vessel86Group.visible = showShip86;
           if (showShip86) {
             const ship86WaveY = sampleWaveHeight(pos86NowX, pos86NowZ, t, windKnots, flowSign);
@@ -51722,7 +52111,7 @@
             vessel86Group.position.y = waterLevelY + ship86WaveY * 0.45;
             vessel86Group.rotation.x = Math.sin(t * 1.62 + 0.9) * rollAmp * 1.08;
             vessel86Group.rotation.z = Math.cos(t * 1.24 + 0.5) * pitchAmp * 1.08;
-            const spd86Boost = (isTm86 && tm && tm.speedKnots > 0.3) ? Math.min(0.45, tm.speedKnots * 0.055) : 0;
+            const spd86Boost = sec86SpeedKnots > 0.3 ? Math.min(0.45, sec86SpeedKnots * 0.055) : 0;
             wake86RingMesh.scale.x = 1.62 + spd86Boost + Math.sin(t * 2.85 + 0.7) * 0.06;
             wake86RingMesh.scale.z = 0.30 + spd86Boost * 0.25 + Math.cos(t * 2.85 + 0.7) * 0.025;
             radar86Scanner.rotation.y = -t * 3.1;
@@ -51833,7 +52222,7 @@
             isgottRedMastLight87.visible = isNight || isGolden || isStormNow || Math.sin(t * 3.0) > -0.65;
           }
           if (tankerKelvinWakeMesh && tankerKelvinWakeMat) {
-            const shipSpd = (!isTm86 && tm && typeof tm.speedKnots === "number") ? tm.speedKnots : 0.0;
+            const shipSpd = sec87SpeedKnots;
             const showWake87 = showShip87 && shipSpd > 0.30;
             tankerKelvinWakeMesh.visible = showWake87;
             if (showWake87) {
@@ -53262,17 +53651,18 @@
           }
 
           // G. Animation des Bras Chiksan articulés, Coupées et Aussières d'amarrage (Postes 87 & 86 indépendants)
-          const isDockedNow = showShip87 && (
+          const isManualArrDocked = Boolean(tmState === "arriving" && (!tm || !tm.scheduleDriven) && tmP >= MANUAL_ARRIVAL_DOCK_P);
+          const isDockedNow = showShip87 && !sec87Approaching && (
             isTm86 ||
             tmState === "docked" ||
             (tmState === "departing" && tmP < 0.23) ||
-            (tmState === "arriving" && tmP >= 0.78)
+            isManualArrDocked
           );
-          const isDocked86Now = showShip86 && (
+          const isDocked86Now = showShip86 && !sec86Approaching && (
             !isTm86 ||
             tmState === "docked" ||
             (tmState === "departing" && tmP < 0.23) ||
-            (tmState === "arriving" && tmP >= 0.78)
+            isManualArrDocked
           );
           mooringLinesGroup.visible = isDockedNow || isDocked86Now;
           gangwayBridge.visible = isDockedNow;
@@ -54459,11 +54849,16 @@
         const fallbackSnap = window.DEFAULT_PORTQC_SNAPSHOT || { version: 3, source: "seed_portqc", berth86: { berth: "86", occupied: false, upcoming: [] }, berth87: { berth: "87", occupied: false, upcoming: [] } };
         const base = rawSnap ? JSON.parse(JSON.stringify(rawSnap)) : JSON.parse(JSON.stringify(fallbackSnap));
         const refParseMs = base.fetchedAt || Date.now();
+        const APPROACH_MS = typeof window.ARRIVAL_APPROACH_WINDOW_MS === "number" ? window.ARRIVAL_APPROACH_WINDOW_MS : 90 * 60 * 1000;
+        const TUG_RETURN_MS = typeof window.ARRIVAL_TUG_RETURN_WINDOW_MS === "number" ? window.ARRIVAL_TUG_RETURN_WINDOW_MS : 12 * 60 * 1000;
         let nextTransitionMs = Infinity;
 
         ["86", "87"].forEach((berthKey) => {
           const prop = berthKey === "86" ? "berth86" : "berth87";
           const b = base[prop] || {};
+          b.approaching = null;
+          b.postArrivalTugReturn = null;
+          b.arrivedAtEtaMs = null;
           const upcomingRaw = Array.isArray(b.upcoming)
             ? b.upcoming
             : (b.expected ? [b.expected] : []);
@@ -54512,7 +54907,7 @@
             }
           }
 
-          // 2) Vérifier si un navire attendu a atteint son ETA (et n'a pas encore dépassé sa propre durée d'escale)
+          // 2) Vérifier les fenêtres d'approche 1h30 (ETA - 90 min -> ETA) et les accostages à l'ETA exacte
           const DEFAULT_STAY_MS = 18 * 3600000;
           const futureUpcoming = [];
           for (let i = 0; i < parsedUpcoming.length; i++) {
@@ -54524,10 +54919,13 @@
             const stayEndMs = !isNaN(u._etdMs) && u._etdMs > u._etaMs
               ? u._etdMs
               : (u._etaMs + DEFAULT_STAY_MS);
+            const approachStartMs = u._etaMs - APPROACH_MS;
+            const tugReturnEndMs = u._etaMs + TUG_RETURN_MS;
 
             if (nowMs >= u._etaMs) {
               if (!b.occupied && nowMs < stayEndMs) {
                 b.occupied = true;
+                b.arrivedAtEtaMs = u._etaMs;
                 b.name = u.name;
                 b.resNo = u.resNo || "";
                 b.flag = u.flag || "CA";
@@ -54545,6 +54943,18 @@
                 b.dest = u.dest || "";
                 b.operation = u.operation || u.cargo || "Vrac liquide";
                 b.cargo = u.cargo || u.operation || "Vrac liquide";
+                if (nowMs < tugReturnEndMs) {
+                  b.postArrivalTugReturn = {
+                    berth: berthKey,
+                    name: u.name,
+                    eta: u.eta || u.arrival || "",
+                    etaMs: u._etaMs,
+                    returnEndMs: tugReturnEndMs,
+                  };
+                  if (tugReturnEndMs < nextTransitionMs) {
+                    nextTransitionMs = tugReturnEndMs;
+                  }
+                }
                 if (stayEndMs > nowMs && stayEndMs < nextTransitionMs) {
                   nextTransitionMs = stayEndMs;
                 }
@@ -54552,6 +54962,29 @@
               // Si déjà reparti (nowMs >= stayEndMs) ou déjà promu à quai, ne reste plus dans la file future
             } else {
               futureUpcoming.push(u);
+              if (!b.occupied && !b.approaching && nowMs >= approachStartMs) {
+                const prog = Math.max(0, Math.min(1, (nowMs - approachStartMs) / APPROACH_MS));
+                b.approaching = {
+                  berth: berthKey,
+                  name: u.name,
+                  flag: u.flag || "CA",
+                  flagName: u.flagName || "Canada",
+                  loa: u.loa || (berthKey === "87" ? 229 : 149),
+                  beam: u.beam || (berthKey === "87" ? 40 : 25),
+                  dwtApprox: u.dwtApprox || "",
+                  typeLabel: u.typeLabel || "P\u00e9trolier / Chimiquier",
+                  agent: u.agent || "",
+                  eta: u.eta || u.arrival || "",
+                  etaIso: u.timeIso || new Date(u._etaMs).toISOString(),
+                  etaMs: u._etaMs,
+                  approachStartMs,
+                  durationMs: APPROACH_MS,
+                  progress: prog,
+                  remainingMs: Math.max(0, u._etaMs - nowMs),
+                };
+              } else if (approachStartMs > nowMs && approachStartMs < nextTransitionMs) {
+                nextTransitionMs = approachStartMs;
+              }
               if (u._etaMs < nextTransitionMs) {
                 nextTransitionMs = u._etaMs;
               }
@@ -54578,6 +55011,8 @@
           if (man) {
             if (man.mode === "free") {
               b.occupied = false;
+              b.approaching = null;
+              b.postArrivalTugReturn = null;
               b.isManual = true;
               b.etd = "";
               b.name = b.expected ? b.expected.name : `POSTE ${berthKey} LIBRE`;
@@ -54599,6 +55034,8 @@
                   nextTransitionMs = manEtdMs;
                 }
                 b.occupied = true;
+                b.approaching = null;
+                b.postArrivalTugReturn = null;
                 b.isManual = true;
                 b.name = String(man.name).trim().toUpperCase();
                 b.flag = flagInfo.flag;
@@ -54633,6 +55070,8 @@
           out[k] = {
             occupied: occ,
             shipName: occ && b && b.name ? String(b.name).trim().toUpperCase() : "",
+            approachingName: b && b.approaching && b.approaching.name ? String(b.approaching.name).trim().toUpperCase() : "",
+            tugReturnActive: Boolean(b && b.postArrivalTugReturn),
             spec: occ && b ? {
               berth: k,
               name: b.name,
@@ -54658,87 +55097,150 @@
         const nextLive = reconcilePortQcTimeline(raw, effMs);
         window.livePortVessels = nextLive;
         const nextState = snapshotBerthKeyState(nextLive);
+        const tm = window.tugManeuver;
+
+        const syncScheduledArrivalAndReturn = (silent, silentReveal, allowInterruptManual) => {
+          if (!tm) return false;
+          const isManualActive = Boolean(
+            !tm.autoTriggered && !tm.scheduleDriven && (tm.state === "departing" || tm.state === "arriving")
+          );
+          if (isManualActive && !allowInterruptManual) return false;
+          const isAutoDepartActive = Boolean(tm.autoTriggered && !tm.scheduleDriven && tm.state === "departing");
+
+          // 1) Vérifier si un navire est actuellement dans sa fenêtre d'approche 1h30 (ETA - 90 min -> ETA)
+          const approachCandidates = [];
+          ["87", "86"].forEach((k) => {
+            const b = k === "86" ? nextLive.berth86 : nextLive.berth87;
+            if (b && b.approaching) {
+              approachCandidates.push({ berth: k, approaching: b.approaching });
+            }
+          });
+          if (approachCandidates.length > 0) {
+            if (isAutoDepartActive && !allowInterruptManual) return false;
+            approachCandidates.sort((a, b) => (b.approaching.progress - a.approaching.progress) || (a.approaching.etaMs - b.approaching.etaMs));
+            const primary = approachCandidates[0];
+            if (typeof tm.syncScheduledArrival === "function") {
+              return tm.syncScheduledArrival(primary.berth, primary.approaching, effMs, { silent, silentReveal });
+            }
+            return false;
+          }
+
+          // 2) Vérifier si un navire vient tout juste d'accoster à son ETA (retour fluide des remorqueurs vers Bassin Louise)
+          const tugReturnCandidates = [];
+          ["87", "86"].forEach((k) => {
+            const b = k === "86" ? nextLive.berth86 : nextLive.berth87;
+            if (b && b.postArrivalTugReturn) {
+              tugReturnCandidates.push({ berth: k, tugReturn: b.postArrivalTugReturn });
+            }
+          });
+          if (tugReturnCandidates.length > 0 && !isAutoDepartActive) {
+            tugReturnCandidates.sort((a, b) => b.tugReturn.etaMs - a.tugReturn.etaMs);
+            const primaryRet = tugReturnCandidates[0];
+            if (typeof tm.syncScheduledTugReturn === "function") {
+              return tm.syncScheduledTugReturn(primaryRet.berth, primaryRet.tugReturn, effMs);
+            }
+            return false;
+          }
+
+          // 3) Hors fenêtre d'approche 1h30 et hors retour remorqueurs : nettoyer l'état planifié s'il était actif
+          if ((tm.scheduleDriven || tm.tugReturn) && typeof tm.clearScheduledState === "function") {
+            return tm.clearScheduledState();
+          }
+          return false;
+        };
 
         // Initialisation silencieuse au démarrage et lors de la toute première hydratation réseau Live
-        if (!_autoTugPrevState || (reason === "initial_snapshot" && !_hasHydratedInitialLivePortQc)) {
+        if (!_autoTugPrevState || reason === "initial_boot" || (reason === "initial_snapshot" && !_hasHydratedInitialLivePortQc)) {
           if (reason === "initial_snapshot") _hasHydratedInitialLivePortQc = true;
           _autoTugPrevState = nextState;
           _autoTugPrevEffMs = effMs;
+          syncScheduledArrivalAndReturn(true, true, true);
           if (typeof window.applyLiveVesselsTo3D === "function") window.applyLiveVesselsTo3D();
-          if (window.tugManeuver && typeof window.tugManeuver.updateUI === "function") window.tugManeuver.updateUI();
+          if (tm && typeof tm.updateUI === "function") tm.updateUI();
           if (typeof updateLiveVesselDOMBadges === "function") updateLiveVesselDOMBadges();
           if (typeof renderPortQcModalBodyIfOpen === "function") renderPortQcModalBodyIfOpen();
           return;
         }
 
-        // Saisie manuelle directe (bouton "Mettre à quai" / "Quai libre") : adopter l'état immédiatement sans fausse manœuvre, tout en armant la future ETD!
+        // Saisie manuelle directe (bouton "Mettre à quai" / "Quai libre") : adopter l'état immédiatement sans fausse manœuvre
         if (reason === "manual_edit") {
           _autoTugPrevState = nextState;
           _autoTugPrevEffMs = effMs;
+          syncScheduledArrivalAndReturn(true, true, true);
           if (typeof window.applyLiveVesselsTo3D === "function") window.applyLiveVesselsTo3D();
-          if (window.tugManeuver && typeof window.tugManeuver.updateUI === "function") window.tugManeuver.updateUI();
+          if (tm && typeof tm.updateUI === "function") tm.updateUI();
           if (typeof updateLiveVesselDOMBadges === "function") updateLiveVesselDOMBadges();
           if (typeof renderPortQcModalBodyIfOpen === "function") renderPortQcModalBodyIfOpen();
           return;
         }
 
-        const jumpedBackward = _autoTugPrevEffMs !== null && effMs < _autoTugPrevEffMs - 60000;
+        const isScrubberReason = reason === "scrubber";
+        if (isScrubberReason && tm) {
+          tm.suppressedAutoEventKey = "";
+        }
+
+        const jumpedBackward = _autoTugPrevEffMs !== null && effMs < _autoTugPrevEffMs - 5000;
         if (jumpedBackward) {
           _autoTugPrevState = nextState;
           _autoTugPrevEffMs = effMs;
-          if (window.tugManeuver && window.tugManeuver.autoTriggered && (window.tugManeuver.state === "departing" || window.tugManeuver.state === "arriving")) {
-            window.tugManeuver.resetToDock();
-          } else {
-            if (typeof window.applyLiveVesselsTo3D === "function") window.applyLiveVesselsTo3D();
-            if (window.tugManeuver && typeof window.tugManeuver.updateUI === "function") window.tugManeuver.updateUI();
-            if (typeof updateLiveVesselDOMBadges === "function") updateLiveVesselDOMBadges();
+          if (tm && tm.autoTriggered && !tm.scheduleDriven && tm.state === "departing") {
+            tm.resetToDock();
           }
+          syncScheduledArrivalAndReturn(true, true, true);
+          if (typeof window.applyLiveVesselsTo3D === "function") window.applyLiveVesselsTo3D();
+          if (tm && typeof tm.updateUI === "function") tm.updateUI();
+          if (typeof updateLiveVesselDOMBadges === "function") updateLiveVesselDOMBadges();
+          if (typeof renderPortQcModalBodyIfOpen === "function") renderPortQcModalBodyIfOpen();
           return;
         }
 
-        const tm = window.tugManeuver;
         let stateChanged = false;
         ["87", "86"].forEach((k) => {
-          const prevB = _autoTugPrevState[k] || { occupied: false, shipName: "", spec: null };
-          const curB = nextState[k] || { occupied: false, shipName: "", spec: null };
-          if (prevB.occupied === curB.occupied && prevB.shipName === curB.shipName) return;
-          stateChanged = true;
+          const prevB = _autoTugPrevState[k] || { occupied: false, shipName: "", approachingName: "", tugReturnActive: false, spec: null };
+          const curB = nextState[k] || { occupied: false, shipName: "", approachingName: "", tugReturnActive: false, spec: null };
+          const curLiveB = k === "86" ? nextLive.berth86 : nextLive.berth87;
 
-          if (tm) {
-            if (prevB.occupied && !curB.occupied) {
-              // ETD atteinte : le navire quitte le quai assisté des remorqueurs Océan!
+          if (
+            prevB.occupied !== curB.occupied ||
+            prevB.shipName !== curB.shipName ||
+            prevB.approachingName !== curB.approachingName ||
+            prevB.tugReturnActive !== curB.tugReturnActive
+          ) {
+            stateChanged = true;
+          }
+
+          // Déclenchement automatique de l'appareillage (ETD) uniquement lors d'un franchissement réel ou d'un Time-Lapse récent
+          if (tm && prevB.occupied && (!curB.occupied || (curB.occupied && prevB.shipName !== curB.shipName))) {
+            const depAgeMs = curLiveB && curLiveB.lastDepartedSpec && Number.isFinite(curLiveB.lastDepartedSpec.etdMs)
+              ? (effMs - curLiveB.lastDepartedSpec.etdMs)
+              : 0;
+            const skipStaleScrubberDep = isScrubberReason && (Boolean(curLiveB && curLiveB.approaching) || depAgeMs > 15 * 60 * 1000);
+            if (!skipStaleScrubberDep && !(curLiveB && curLiveB.approaching && isScrubberReason)) {
               tm.startDeparture(k, {
                 vesselSpec: prevB.spec,
                 autoTriggered: true,
                 triggerReason: "ETD",
-              });
-            } else if (!prevB.occupied && curB.occupied) {
-              // ETA atteinte : le navire accoste au quai assisté des remorqueurs Océan!
-              tm.startArrival(k, {
-                vesselSpec: curB.spec,
-                autoTriggered: true,
-                triggerReason: "ETA",
-              });
-            } else if (prevB.occupied && curB.occupied && prevB.shipName !== curB.shipName) {
-              // Rotation d'escale : l'ancien navire appareille (ETD) puis le nouveau navire accoste (ETA)!
-              tm.startDeparture(k, {
-                vesselSpec: prevB.spec,
-                autoTriggered: true,
-                triggerReason: "ETD",
-              });
-              tm.startArrival(k, {
-                vesselSpec: curB.spec,
-                autoTriggered: true,
-                triggerReason: "ETA",
               });
             }
           }
         });
 
+        const schedSilent = isScrubberReason || reason === "snapshot" || reason === "periodic";
+        const schedChanged = syncScheduledArrivalAndReturn(schedSilent, isScrubberReason, isScrubberReason);
+
         _autoTugPrevState = nextState;
         _autoTugPrevEffMs = effMs;
 
-        if (stateChanged || reason === "snapshot") {
+        const anyApproaching = Boolean(
+          (nextLive.berth87 && nextLive.berth87.approaching) ||
+          (nextLive.berth86 && nextLive.berth86.approaching)
+        );
+        const anyTugReturn = Boolean(
+          (nextLive.berth87 && nextLive.berth87.postArrivalTugReturn) ||
+          (nextLive.berth86 && nextLive.berth86.postArrivalTugReturn)
+        );
+
+        if (stateChanged || schedChanged || anyApproaching || anyTugReturn || reason === "snapshot") {
           if (typeof window.applyLiveVesselsTo3D === "function") window.applyLiveVesselsTo3D();
           if (tm && typeof tm.updateUI === "function") tm.updateUI();
           if (typeof updateLiveVesselDOMBadges === "function") updateLiveVesselDOMBadges();
@@ -54814,9 +55316,16 @@
 
         const renderBerthCard = (berthNum, bState, faceLbl) => {
           const occ = Boolean(bState.occupied);
+          const app = !occ && bState.approaching ? bState.approaching : null;
           const simActive = berthNum === "87" ? Boolean(window.forceShowBerth87Ship) : Boolean(window.forceShowBerth86Ship);
           const manOverride = window.manualBerthOverrides && window.manualBerthOverrides[berthNum];
           const upcoming = Array.isArray(bState.upcoming) ? bState.upcoming : (bState.expected ? [bState.expected] : []);
+
+          const appEffMs = typeof getEffectiveTimeMs === "function" ? getEffectiveTimeMs() : Date.now();
+          const appPct = app ? Math.round(Math.max(0, Math.min(1, (appEffMs - app.approachStartMs) / Math.max(1, app.etaMs - app.approachStartMs))) * 100) : 0;
+          const appRemStr = app && typeof window.formatApproachRemainingMs === "function"
+            ? window.formatApproachRemainingMs(Math.max(0, app.etaMs - appEffMs))
+            : "";
 
           const curStatusHtml = occ
             ? `<div style="display:flex;justify-content:space-between;align-items:center;gap:0.4rem;padding:0.42rem 0.5rem;border-radius:6px;background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.35);">` +
@@ -54826,13 +55335,21 @@
                 `</div>` +
                 `<button type="button" data-focus3d="${berthNum}" class="theme-toggle" style="font-size:0.62rem;padding:0.2rem 0.45rem;">\uD83C\uDFAF Voir 3D</button>` +
               `</div>`
-            : `<div style="display:flex;justify-content:space-between;align-items:center;gap:0.4rem;padding:0.42rem 0.5rem;border-radius:6px;background:var(--surface-subtle);border:1px solid var(--border);">` +
-                `<div>` +
-                  `<div style="font-weight:800;font-size:0.75rem;color:var(--text-muted);">\u2693 POSTE ${berthNum} ACTUELLEMENT LIBRE</div>` +
-                  `<div class="mono" style="font-size:0.63rem;color:var(--text-light);margin-top:2px;">${bState.expected ? `Prochain attendu : ${flagIsoToEmoji(bState.expected.flag)} ${escapeHtmlSimple(bState.expected.name)} (${escapeHtmlSimple(bState.expected.eta || "")})` : "Aucun navire amarr\u00e9 en ce moment"}</div>` +
-                `</div>` +
-                `<button type="button" data-sim-toggle="${berthNum}" class="theme-toggle" style="font-size:0.62rem;padding:0.2rem 0.45rem;${simActive ? "border-color:#38bdf8;color:#38bdf8;" : ""}">${simActive ? "\uD83D\uDC41\uFE0F 3D Actif" : "\uD83D\uDC41\uFE0F Aper\u00e7u 3D"}</button>` +
-              `</div>`;
+            : (app
+              ? `<div style="display:flex;justify-content:space-between;align-items:center;gap:0.4rem;padding:0.42rem 0.5rem;border-radius:6px;background:rgba(56,189,248,0.12);border:1px solid rgba(56,189,248,0.38);">` +
+                  `<div>` +
+                    `<div style="font-weight:800;font-size:0.78rem;color:#38bdf8;">\u2693 EN APPROCHE (1h30 \u2022 ${appPct}%) : ${flagIsoToEmoji(app.flag)} ${escapeHtmlSimple(app.name)}</div>` +
+                    `<div class="mono" style="font-size:0.64rem;color:var(--text-light);margin-top:2px;">LOA ${Math.round(app.loa || 185)}m \u2022 Remorqueurs Oc\u00e9an \u2022 Accostage ETA <strong>${escapeHtmlSimple(app.eta || "--")}</strong>${appRemStr ? ` (-${appRemStr})` : ""}</div>` +
+                  `</div>` +
+                  `<button type="button" data-focus3d="${berthNum}" class="theme-toggle" style="font-size:0.62rem;padding:0.2rem 0.45rem;border-color:#38bdf8;color:#38bdf8;">\uD83C\uDFAF Voir 3D</button>` +
+                `</div>`
+              : `<div style="display:flex;justify-content:space-between;align-items:center;gap:0.4rem;padding:0.42rem 0.5rem;border-radius:6px;background:var(--surface-subtle);border:1px solid var(--border);">` +
+                  `<div>` +
+                    `<div style="font-weight:800;font-size:0.75rem;color:var(--text-muted);">\u2693 POSTE ${berthNum} ACTUELLEMENT LIBRE</div>` +
+                    `<div class="mono" style="font-size:0.63rem;color:var(--text-light);margin-top:2px;">${bState.expected ? `Prochain attendu : ${flagIsoToEmoji(bState.expected.flag)} ${escapeHtmlSimple(bState.expected.name)} (${escapeHtmlSimple(bState.expected.eta || "")})` : "Aucun navire amarr\u00e9 en ce moment"}</div>` +
+                  `</div>` +
+                  `<button type="button" data-sim-toggle="${berthNum}" class="theme-toggle" style="font-size:0.62rem;padding:0.2rem 0.45rem;${simActive ? "border-color:#38bdf8;color:#38bdf8;" : ""}">${simActive ? "\uD83D\uDC41\uFE0F 3D Actif" : "\uD83D\uDC41\uFE0F Aper\u00e7u 3D"}</button>` +
+                `</div>`);
 
           const queueRows = upcoming.length
             ? upcoming.map((u, idx) =>
@@ -55037,9 +55554,11 @@
           const sim87Spec = window.previewShip87Override || b87.expected;
           svgHullTxt.textContent = tmDom87
             ? tmDom.activeVesselSpec.name
-            : (b87.occupied
-              ? b87.name
-              : (window.forceShowBerth87Ship ? ((sim87Spec && sim87Spec.name) || "CAP QUEBEC") + " (3D)" : "POSTE 87 LIBRE"));
+            : (b87.approaching && b87.approaching.name
+              ? b87.approaching.name
+              : (b87.occupied
+                ? b87.name
+                : (window.forceShowBerth87Ship ? ((sim87Spec && sim87Spec.name) || "CAP QUEBEC") + " (3D)" : "POSTE 87 LIBRE")));
         }
 
         // Synchroniser l'azimut du bouton Chantier Davie avec la géomorphologie réelle de Lauzon (74°)
@@ -55082,44 +55601,63 @@
             }
 
             const tmHere = Boolean(tmDom && tmDom.berth === berthNum && (tmDom.state === "departing" || tmDom.state === "arriving") && tmDom.activeVesselSpec);
+            const appHere = !bState.occupied && bState.approaching ? bState.approaching : null;
             const occ = Boolean(bState.occupied);
             const isSimOn = berthNum === "87" ? Boolean(window.forceShowBerth87Ship) : Boolean(window.forceShowBerth86Ship);
+            const isApproachingNow = Boolean((tmHere && tmDom.state === "arriving") || appHere);
+            const effPillMs = typeof getEffectiveTimeMs === "function" ? getEffectiveTimeMs() : Date.now();
+            const appPctNow = appHere
+              ? Math.round(Math.max(0, Math.min(1, (effPillMs - appHere.approachStartMs) / Math.max(1, appHere.etaMs - appHere.approachStartMs))) * 100)
+              : (tmHere ? Math.round((tmDom.progress || 0) * 100) : 0);
+            const appRemNow = appHere && typeof window.formatApproachRemainingMs === "function"
+              ? window.formatApproachRemainingMs(Math.max(0, appHere.etaMs - effPillMs))
+              : "";
+
             const dotCol = tmHere
               ? (tmDom.state === "departing" ? "#f59e0b" : "#38bdf8")
-              : (occ ? "#10b981" : (isSimOn ? "#38bdf8" : (bState.expected ? "#f59e0b" : "#64748b")));
+              : (appHere ? "#38bdf8" : (occ ? "#10b981" : (isSimOn ? "#38bdf8" : (bState.expected ? "#f59e0b" : "#64748b"))));
             pill.style.borderLeft = `3px solid ${dotCol}`;
 
             const previewSpec = berthNum === "87" ? (window.previewShip87Override || bState.expected) : (window.previewShip86Override || bState.expected);
-            const flagEmo = tmHere
-              ? flagIsoToEmoji(tmDom.activeVesselSpec.flag)
+            const activeAppSpec = tmHere ? tmDom.activeVesselSpec : appHere;
+            const flagEmo = activeAppSpec
+              ? flagIsoToEmoji(activeAppSpec.flag)
               : (occ ? flagIsoToEmoji(bState.flag) : (previewSpec ? flagIsoToEmoji(previewSpec.flag) : "\u2693"));
             const shipHeadline = tmHere
-              ? `\u2693 ${tmDom.state === "departing" ? "Appareillage" : "Accostage"}: ${flagEmo} ${tmDom.activeVesselSpec.name}`
-              : (occ
-                ? `${flagEmo} ${bState.name}`
-                : (isSimOn && previewSpec
-                  ? `3D: ${flagEmo} ${previewSpec.name}`
-                  : (bState.expected ? `\u23F3 ${flagEmo} ${bState.expected.name}` : "Poste libre (aucun navire)")));
+              ? (tmDom.state === "departing"
+                ? `\u2693 Appareillage: ${flagEmo} ${tmDom.activeVesselSpec.name}`
+                : (tmDom.scheduleDriven
+                  ? `\u2693 Approche (${appPctNow}%): ${flagEmo} ${tmDom.activeVesselSpec.name}`
+                  : `\u2693 Accostage: ${flagEmo} ${tmDom.activeVesselSpec.name}`))
+              : (appHere
+                ? `\u2693 Approche (${appPctNow}%): ${flagEmo} ${appHere.name}`
+                : (occ
+                  ? `${flagEmo} ${bState.name}`
+                  : (isSimOn && previewSpec
+                    ? `3D: ${flagEmo} ${previewSpec.name}`
+                    : (bState.expected ? `\u23F3 ${flagEmo} ${bState.expected.name}` : "Poste libre (aucun navire)"))));
 
             const nextNote = (occ && bState.expected && bState.expected.name)
               ? ` \u2022 Suiv: ${bState.expected.name}`
               : "";
-            const metaLine = tmHere
+            const metaLine = (tmHere && tmDom.state === "departing")
               ? `LOA ${Math.round(tmDom.activeVesselSpec.loa || 180)}m \u2022 Escorte Oc\u00e9an Taiga & K. Rusby en cours`
-              : (occ
-                ? `LOA ${Math.round(bState.loa || (berthNum === "87" ? 274 : 149))}m \u2022 ${bState.etd ? `D\u00e9p: ${bState.etd}` : (bState.typeLabel || "\u00C0 quai")}${nextNote}`
-                : (bState.expected
-                  ? `Libre \u2022 Arr: ${bState.expected.eta || "Sous peu"} (${Math.round(bState.expected.loa || 149)}m)`
-                  : `${srcTag}`));
+              : (isApproachingNow && activeAppSpec
+                ? `LOA ${Math.round(activeAppSpec.loa || 180)}m \u2022 Remorqueurs Oc\u00e9an${appHere && appHere.eta ? ` \u2022 ETA ${appHere.eta}` : ""}${appRemNow ? ` (-${appRemNow})` : ""}`
+                : (occ
+                  ? `LOA ${Math.round(bState.loa || (berthNum === "87" ? 274 : 149))}m \u2022 ${bState.etd ? `D\u00e9p: ${bState.etd}` : (bState.typeLabel || "\u00C0 quai")}${nextNote}`
+                  : (bState.expected
+                    ? `Libre \u2022 Arr: ${bState.expected.eta || "Sous peu"} (${Math.round(bState.expected.loa || 149)}m)`
+                    : `${srcTag}`)));
 
             // Conformité automatique de l'ETA / ETD du navire par rapport aux règles officielles 86 & 87
             let tideCheckHtml = "";
-            if (typeof window.evaluateVesselCallTideWindow === "function" && !tmHere) {
-              const targetSpec = occ ? bState : bState.expected;
+            if (typeof window.evaluateVesselCallTideWindow === "function" && !(tmHere && tmDom.state === "departing")) {
+              const targetSpec = occ ? bState : (appHere || bState.expected);
               if (targetSpec) {
                 const rawIso = occ
                   ? (bState.etdIso || (bState.etd ? parsePortQcDateToIso(bState.etd, pv.fetchedAt || Date.now()) : null))
-                  : (targetSpec.timeIso || (targetSpec.eta ? parsePortQcDateToIso(targetSpec.eta, pv.fetchedAt || Date.now()) : null));
+                  : (targetSpec.etaIso || targetSpec.timeIso || (targetSpec.eta ? parsePortQcDateToIso(targetSpec.eta, pv.fetchedAt || Date.now()) : null));
                 const targetMs = rawIso ? Date.parse(rawIso) : NaN;
                 const dwtDigits = String(targetSpec.dwtApprox || "").replace(/[^\d]/g, "");
                 const estDwt = dwtDigits
@@ -55138,7 +55676,7 @@
               }
             }
 
-            const previewBtnHtml = (!occ && !tmHere)
+            const previewBtnHtml = (!occ && !tmHere && !appHere)
               ? `<button type="button" data-act="sim-berth" data-berth="${berthNum}" class="theme-toggle" style="padding:0.02rem 0.18rem;font-size:0.51rem;line-height:1.2;${isSimOn ? "border-color:#38bdf8;color:#38bdf8;" : ""}" title="Afficher/masquer le prochain navire attendu en 3D au Poste ${berthNum}">3D</button>`
               : "";
 
@@ -55147,7 +55685,7 @@
 
             pill.innerHTML =
               `<div style="display:flex;justify-content:space-between;align-items:center;gap:0.18rem;min-width:0;">` +
-                `<span class="mono" style="flex:1;min-width:0;font-size:0.59rem;font-weight:800;color:${occ || isSimOn ? "var(--text)" : "var(--text-muted)"};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escapeHtmlSimple(shipHeadline + " — " + srcTag)}">` +
+                `<span class="mono" style="flex:1;min-width:0;font-size:0.59rem;font-weight:800;color:${occ || isSimOn || isApproachingNow ? "var(--text)" : "var(--text-muted)"};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escapeHtmlSimple(shipHeadline + " — " + srcTag)}">` +
                   `<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${dotCol};margin-right:4px;vertical-align:middle;"></span>${escapeHtmlSimple(shipHeadline)}` +
                 `</span>` +
                 `<span style="display:inline-flex;gap:0.12rem;align-items:center;flex-shrink:0;">` +
@@ -55340,7 +55878,7 @@
       }
       window.fetchLiveBerthVessels = fetchLiveBerthVessels;
 
-      updateLiveVesselDOMBadges();
+      syncPortQcScheduleAndAutoTugs("initial_boot");
       fetchLiveBerthVessels(false);
       setInterval(() => {
         fetchLiveBerthVessels(false);
@@ -55360,6 +55898,7 @@
       }, 60000);
       document.addEventListener("visibilitychange", () => {
         if (!document.hidden && window.livePortVessels) {
+          if (window.rawPortVesselsSnapshot) syncPortQcScheduleAndAutoTugs("periodic");
           const ageMs = Date.now() - (window.livePortVessels.fetchedAt || 0);
           if (ageMs > 120000) fetchLiveBerthVessels(false);
         }

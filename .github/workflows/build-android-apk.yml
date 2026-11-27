@@ -90,13 +90,13 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="v3.0-android"
-          NOTES=$'### 📱 Terminal St-Romuald 360° — Édition Native Android (v3.6 — Transitions Atmosphériques Continues Jour / Aube / Crépuscule / Nuit)\n\n- **Moteur Atmosphérique Continu $C^1$ (Aube, Jour, Crépuscule & Nuit — 2D & 3D)** :\n  - **Interpolation continue selon l\'altitude solaire réelle (`-15°` → `+15°+`)** : suppression totale des sauts brusques de couleur entre Nuit, Heure bleue, Lever/Coucher et Plein jour\n  - **Lueur crépusculaire directionnelle azimutale GLSL + Ceinture de Vénus** : halo ambré/cuivré localisé vers l\'azimut réel du soleil, ombre de la Terre et arche rosée subtile à l\'opposé, fusionnés sans couture avec la brume fluviale de Koschmieder\n  - **Atténuation physique sous couvert nuageux / brouillard** : aubes et crépuscules gris-argent maritime réalistes par temps couvert (zéro ciel orange artificiel sous OVC) + cubemap PBR dynamique continue sur le fleuve\n  - **Relais continu Lune ↔ Soleil, étoiles, nuages et éclairage architectural** sans discontinuité d\'ombre ni de teinte\n- **Logique Officielle Arrivées & Départs 86 & 87 (`v3.5`)**, **Optimisation 100 % Mobile (`v3.4`)**, **Remorqueurs ETA/ETD (`v3.3`)** & **Météo 3D Physique (`v3.2`)** + signature persistante (mise à jour directe)'
+          NOTES=$'### 📱 Terminal St-Romuald 360° — Édition Native Android (v3.7 — Approches du Quai 1h30 avant l\'ETA avec Remorqueurs)\n\n- **Approches du Quai Synchronisées sur 1h30 (90 min avant l\'ETA — Postes 86 & 87)** :\n  - **Démarrage automatique à `ETA - 1h30`** : la manœuvre d\'arrivée avec les remorqueurs *Océan Taiga* et *Océan K. Rusby* débute exactement 90 min avant l\'heure d\'arrivée prévue et s\'étire lentement jusqu\'à l\'accostage contre les défenses à l\'**ETA exacte**\n  - **Synchronisation Temps Réel, Curseur (-6h → +24h) & Time-Lapse** : progression verrouillée sur l\'horloge simulée (avance/recul au curseur, saut direct au milieu d\'une approche, lecture fluide Time-Lapse, puis retour progressif des remorqueurs vers le Bassin Louise après l\'accostage)\n  - **Cinématique continue sans à-coup** : 3 phases fluides (chenal → freinage/alignement → poussée latérale douce jusqu\'à `0.0 nds` à l\'ETA), bras Chiksan et aussières connectés au moment exact de l\'accostage, compteur `APPROCHE (% • -XhXX)` en temps réel dans le HUD et les pastilles Quai 86/87\n- **Moteur Atmosphérique Continu $C^1$ (`v3.6`)**, **Règles Officielles Arrivées & Départs 86 & 87 (`v3.5`)**, **Optimisation 100 % Mobile (`v3.4`)**, **Remorqueurs ETA/ETD (`v3.3`)** & **Météo 3D Physique (`v3.2`)** + signature persistante (mise à jour directe)'
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" StRomuald-Terminal-Android.apk --clobber
-            gh release edit "$TAG" --title "Terminal St-Romuald 360° — Android APK (v3.6)" --notes "$NOTES" --latest
+            gh release edit "$TAG" --title "Terminal St-Romuald 360° — Android APK (v3.7)" --notes "$NOTES" --latest
           else
             gh release create "$TAG" StRomuald-Terminal-Android.apk \
-              --title "Terminal St-Romuald 360° — Android APK (v3.6)" \
+              --title "Terminal St-Romuald 360° — Android APK (v3.7)" \
               --notes "$NOTES" \
               --latest
           fi
