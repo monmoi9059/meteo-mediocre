@@ -2,9 +2,9 @@
   "version": 3,
   "source": "live_portqc",
   "syncChannel": "github_actions_portqc",
-  "portUpdatedLabel": "vendredi 27 novembre 2026 à 17:45",
-  "updatedAtIso": "2026-11-27T22:45:16.969Z",
-  "fetchedAt": 1795819516969,
+  "portUpdatedLabel": "vendredi 27 novembre 2026 à 23:30",
+  "updatedAtIso": "2026-11-28T04:31:57.563Z",
+  "fetchedAt": 1795840317563,
   "totalPortRows": 43,
   "otherValeroTankers": [
     {
